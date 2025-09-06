@@ -1,0 +1,9 @@
+{
+  "name": "stock-picker-screenshots",
+  "version": "1.0.0",
+  "description": "Design iteration screenshots",
+  "main": "docs/project/screenshots/screenshot.js",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}
