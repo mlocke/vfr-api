@@ -1,51 +1,60 @@
-# Stock Picker Platform - UI/UX Design System
+# Stock Picker Platform - High-Tech UI/UX Design System
 
 ## Overview
-This document establishes the comprehensive design system and UI/UX guidelines for the Stock Picker Financial Analysis Platform, based on the current splash page implementation.
+This document establishes the comprehensive design system and UI/UX guidelines for the Stock Picker Financial Analysis Platform, featuring a cutting-edge cyberpunk aesthetic that positions the platform as a next-generation AI-powered trading tool.
 
 ## Design Philosophy
 
 ### Core Principles
-- **Professional Trust**: Financial platforms require credible, professional aesthetics
-- **Data-Driven Visual Hierarchy**: Clear presentation of complex financial information
-- **Progressive Enhancement**: Smooth interactions and micro-animations enhance user experience
-- **Accessibility First**: Inclusive design for all users
-- **Performance Optimized**: Fast loading and smooth animations
+- **Cyberpunk Sophistication**: High-tech aesthetic that implies advanced AI and data processing
+- **Neon-Enhanced Trust**: Glowing elements and high contrast build confidence in precision
+- **Data-Centric Visual Language**: Every element suggests real-time data analysis
+- **Interactive Responsiveness**: Glowing, pulsing, and animated feedback for all interactions
+- **Future-Forward Identity**: Design that looks ahead to the next generation of fintech
 
 ### Visual Identity
-- **Modern Glass-morphism**: Backdrop blur effects with semi-transparent elements
-- **Financial Industry Colors**: Blues and greens conveying trust and growth
-- **Gradient Backgrounds**: Dynamic depth without overwhelming content
-- **Animated Elements**: Subtle motion design to indicate live data and engagement
+- **Dark Glass-morphism**: Deep black backgrounds with neon-lit borders and glows
+- **Cyberpunk Color Palette**: Electric blues, cyans, magentas, and neon accents
+- **Multi-layered Lighting**: Glows, shadows, and particle effects create depth
+- **Animated Data Elements**: Scanning beams, pulsing indicators, and flowing particles
 
-## Color Palette
+## Cyberpunk Color Palette
 
-### Primary Colors
+### Neon Accent Colors
 ```css
---primary-blue: #0066CC        /* Main brand color, trust and stability */
---primary-dark: #004499        /* Darker variant for emphasis */
---secondary-green: #00C851     /* Success, growth, positive metrics */
---accent-gold: #FFD700         /* Premium features, highlights */
---danger-red: #FF4444          /* Alerts, negative metrics, warnings */
+--neon-cyan: #00FFFF           /* Primary neon - data elements, trust indicators */
+--neon-green: #00FF7F          /* Success, positive metrics, growth signals */
+--electric-pink: #FF00FF       /* AI predictions, advanced analytics */
+--electric-blue: #0080FF       /* Technical analysis, chart elements */
+--neon-yellow: #FFFF00         /* Warnings, fundamental analysis */
+--hot-pink: #FF0080           /* Negative metrics, risk alerts */
 ```
 
-### Neutral Colors
+### Base Colors
 ```css
---text-primary: #1A1A1A        /* Main text on light backgrounds */
---text-secondary: #666666      /* Secondary text, labels */
---text-light: #999999          /* Tertiary text, captions */
---bg-primary: #FFFFFF          /* Main background */
---bg-secondary: #F8FAFC        /* Secondary backgrounds */
---bg-dark: #1A1A1A            /* Dark theme backgrounds */
---border-light: #E5E7EB        /* Subtle borders and dividers */
+--deep-black: #000000          /* Primary background, maximum contrast */
+--dark-navy: #0a0a0a          /* Secondary backgrounds */
+--space-blue: #1a1a2e         /* Card backgrounds, sections */
+--cyber-gray: #16213e         /* Inactive elements */
+--matrix-green: #0f3460       /* Deep accent backgrounds */
+```
+
+### Glow & Shadow System
+```css
+--glow-cyan: 0 0 20px rgba(0, 255, 255, 0.5)
+--glow-green: 0 0 20px rgba(0, 255, 127, 0.5)
+--glow-pink: 0 0 20px rgba(255, 0, 255, 0.5)
+--inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.1)
+--cyber-shadow: 0 0 30px rgba(0, 255, 255, 0.3)
 ```
 
 ### Application Guidelines
-- **Primary Blue**: Navigation, CTAs, important UI elements
-- **Secondary Green**: Positive financial metrics, success states, growth indicators
-- **Accent Gold**: Premium features, logo elements, special highlights
-- **Text Hierarchy**: Primary > Secondary > Light for information density
-- **Background Gradients**: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`
+- **Neon Cyan**: Primary CTAs, data values, trust elements, live indicators
+- **Neon Green**: Positive values, success states, portfolio growth
+- **Electric Pink**: AI/ML features, predictions, advanced analytics
+- **Electric Blue**: Technical indicators, charts, analysis tools
+- **White Text**: Maximum contrast on dark backgrounds
+- **Gradients**: Multi-color neon gradients for hero elements
 
 ## Typography
 
@@ -74,11 +83,21 @@ Monospace: 'JetBrains Mono', monospace
 ```
 
 ### Typography Guidelines
-- **Inter Font**: Primary typeface for all interface text
-- **JetBrains Mono**: Data displays, metrics, technical information
-- **Weight Hierarchy**: 300 (light) → 400 (regular) → 500 (medium) → 600 (semibold) → 700 (bold)
+- **Inter Font**: Primary typeface for all interface text, enhanced with neon glows
+- **JetBrains Mono**: All data displays, metrics, technical information with glowing effects
+- **Weight Hierarchy**: 300 (light) → 400 (regular) → 500 (medium) → 600 (semibold) → 700 (bold) → 800/900 (ultra-bold for heroes)
 - **Line Height**: 1.1-1.6 depending on content density
-- **Text Shadows**: `0 2px 4px rgba(0, 0, 0, 0.3)` for text on gradients
+- **Text Glow Effects**: 
+  ```css
+  /* Hero titles */
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.5), 0 0 30px rgba(0, 255, 255, 0.3);
+  
+  /* Data values */
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+  
+  /* Interactive elements */
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  ```
 
 ## Layout System
 
@@ -121,44 +140,81 @@ Tablet: max-width: 768px
 Desktop: 769px and above
 ```
 
-## Component Library
+## High-Tech Component Library
 
 ### Buttons
 
-#### Primary CTA Button
+#### Neon CTA Button
 ```css
 .cta-button {
-    background: linear-gradient(135deg, var(--secondary-green), var(--primary-blue));
-    color: white;
-    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #00ffff, #0080ff, #8000ff);
+    color: #000000;
+    padding: 1.2rem 2.5rem;
+    border: 2px solid rgba(0, 255, 255, 0.6);
     border-radius: 50px;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow-medium);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
 }
 
 .cta-button:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-heavy);
+    transform: translateY(-4px);
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 255, 255, 1);
+}
+
+.cta-button::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.cta-button:hover::before {
+    left: 100%;
 }
 ```
 
 ### Cards
 
-#### Glass-morphism Cards
+#### Cyberpunk Glass Cards
 ```css
-.glass-card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+.cyber-card {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(15px);
     border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: var(--shadow-heavy);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    box-shadow: 
+        0 0 40px rgba(0, 255, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.glass-card:hover {
+.cyber-card:hover {
     transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.8);
+    box-shadow: 
+        0 0 50px rgba(0, 255, 255, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.cyber-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
 }
 ```
 
@@ -206,56 +262,124 @@ Desktop: 769px and above
 - Background: `linear-gradient(135deg, var(--primary-blue), var(--secondary-green))`
 - Icons: Financial emojis (📊, 🤖, ⚖️, 🎯)
 
-## Visual Effects & Animations
+## Cyberpunk Visual Effects & Animations
 
-### Shadow System
+### Glow & Shadow System
 ```css
---shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
---shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
---shadow-heavy: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+--cyber-glow-small: 0 0 10px rgba(0, 255, 255, 0.5);
+--cyber-glow-medium: 0 0 20px rgba(0, 255, 255, 0.5);
+--cyber-glow-large: 0 0 30px rgba(0, 255, 255, 0.5);
+--cyber-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+--inner-light: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+--multi-glow: 0 0 20px rgba(0, 255, 255, 0.3), 0 0 40px rgba(0, 255, 255, 0.2), 0 0 60px rgba(0, 255, 255, 0.1);
 ```
 
-### Animation Library
-
-#### Entrance Animations
+### Scanning & Beam Effects
 ```css
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-30px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Live ticker scanning beam */
+@keyframes scan {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
-@keyframes fadeInLeft {
-    from { opacity: 0; transform: translateX(-50px); }
-    to { opacity: 1; transform: translateX(0); }
+/* CTA button sweep effect */
+@keyframes sweep {
+    from { left: -100%; }
+    to { left: 100%; }
 }
 
-@keyframes fadeInRight {
-    from { opacity: 0; transform: translateX(50px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Data line scanning */
+@keyframes dataFlow {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
 }
 ```
 
-#### Interactive Animations
+### Cyberpunk Animation Library
+
+#### Enhanced Entrance Animations
 ```css
-@keyframes pulse {
+@keyframes cyberFadeInDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-30px);
+        filter: blur(5px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0);
+        filter: blur(0px);
+    }
+}
+
+@keyframes glowIn {
+    from { 
+        opacity: 0;
+        box-shadow: 0 0 0 rgba(0, 255, 255, 0);
+    }
+    to { 
+        opacity: 1;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    }
+}
+
+@keyframes dataSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateX(-50px);
+        text-shadow: none;
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0);
+        text-shadow: 0 0 5px rgba(0, 255, 255, 0.8);
+    }
+}
+```
+
+#### Advanced Interactive Animations
+```css
+@keyframes cyberPulse {
     0%, 100% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+        box-shadow: 
+            0 0 0 0 rgba(0, 255, 255, 0.7),
+            0 0 20px rgba(0, 255, 255, 0.3);
     }
     50% {
         transform: scale(1.05);
-        box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+        box-shadow: 
+            0 0 0 10px rgba(0, 255, 255, 0),
+            0 0 30px rgba(0, 255, 255, 0.6);
     }
 }
 
-@keyframes chartGrow {
-    from { width: 0; }
-    to { width: 100%; }
+@keyframes logoRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes textGlow {
+    from { 
+        filter: brightness(1) contrast(1);
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    }
+    to { 
+        filter: brightness(1.2) contrast(1.1);
+        text-shadow: 0 0 20px rgba(0, 255, 255, 1);
+    }
+}
+
+@keyframes chartLineGrow {
+    from { 
+        width: 0; 
+        box-shadow: 0 0 0 rgba(0, 255, 255, 0);
+    }
+    to { 
+        width: 100%; 
+        box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+    }
 }
 ```
 
