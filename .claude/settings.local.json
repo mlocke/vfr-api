@@ -18,7 +18,8 @@
       "Bash(timeout 5s npx @playwright/mcp)",
       "Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp scrape --url \"https://www.caffeinemarketing.com/blog/best-fintech-website-design-examples\" --formats markdown)",
       "WebFetch(domain:www.caffeinemarketing.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npx create-next-app:*)"
     ],
     "deny": [],
     "ask": []
