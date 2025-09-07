@@ -22,6 +22,8 @@ from .government.treasury_fiscal_collector import TreasuryFiscalCollector
 from .government.treasury_direct_collector import TreasuryDirectCollector
 from .government.bea_collector import BEACollector
 from .government.bls_collector import BLSCollector
+from .government.eia_collector import EIACollector
+from .government.fdic_collector import FDICCollector
 # from .government.fred_collector import FREDCollector  # When implemented
 # from .market.alpha_vantage_collector import AlphaVantageCollector  # When implemented
 
@@ -37,6 +39,9 @@ class RequestType(Enum):
     FISCAL_DATA = "fiscal_data"
     EMPLOYMENT_DATA = "employment_data"
     INFLATION_DATA = "inflation_data"
+    ENERGY_DATA = "energy_data"
+    COMMODITY_DATA = "commodity_data"
+    BANKING_DATA = "banking_data"
     MARKET_SCREENING = "market_screening"
     TECHNICAL_ANALYSIS = "technical_analysis"
 
@@ -189,6 +194,61 @@ class CollectorRouter:
                 requires_specific_companies=False
             ),
             
+            'eia': CollectorCapability(
+                collector_class=EIACollector,
+                primary_use_cases=[
+                    RequestType.ENERGY_DATA,
+                    RequestType.COMMODITY_DATA,
+                    RequestType.ECONOMIC_DATA
+                ],
+                strengths=[
+                    'Comprehensive energy market data (oil, gas, electricity)',
+                    'Real-time commodity prices (WTI crude, Henry Hub gas)',
+                    'Energy production and consumption statistics',
+                    'Renewable energy capacity and generation data',
+                    'Electricity grid and regional power market data',
+                    'Coal, nuclear, and alternative fuel statistics',
+                    'Energy forecasts and market analysis',
+                    'Free access with API key registration'
+                ],
+                limitations=[
+                    'Requires free API key registration',
+                    'No company-specific data (energy sector only)',
+                    'US-focused energy data primarily',
+                    'Conservative rate limiting (60 req/min)',
+                    'Energy market focus (not broader economic data)'
+                ],
+                max_companies=None,
+                requires_specific_companies=False
+            ),
+            
+            'fdic': CollectorCapability(
+                collector_class=FDICCollector,
+                primary_use_cases=[
+                    RequestType.BANKING_DATA,
+                    RequestType.SECTOR_ANALYSIS  # Banking sector
+                ],
+                strengths=[
+                    'Comprehensive banking institution data (4,000+ US banks)',
+                    'Bank health scoring and risk assessment (CAMELS-style)',
+                    'Regulatory status and compliance information',
+                    'Geographic banking market analysis',
+                    'Systematic risk assessment for banking sector',
+                    'Bank failure data and early warning indicators',
+                    'Free access with no API keys required',
+                    'Quarterly financial data from Call Reports'
+                ],
+                limitations=[
+                    'Banking sector only (no other companies)',
+                    'Quarterly data frequency (not real-time)',
+                    'No market price data for bank stocks',
+                    'US banking institutions only',
+                    'Limited international banking data'
+                ],
+                max_companies=None,  # Can analyze entire banking sector
+                requires_specific_companies=False
+            ),
+            
             # Future collectors to be added:
             # 'fred': CollectorCapability(...),
             # 'alpha_vantage': CollectorCapability(...),
@@ -281,6 +341,15 @@ class CollectorRouter:
             analysis['specificity_level'] = 'high'
         elif any(key in filter_criteria for key in ['cpi', 'ppi', 'inflation', 'consumer_price', 'producer_price']):
             analysis['request_type'] = RequestType.INFLATION_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['energy', 'oil', 'gas', 'petroleum', 'crude', 'electricity', 'eia_series', 'energy_sector']):
+            analysis['request_type'] = RequestType.ENERGY_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['commodities', 'commodity', 'wti', 'henry_hub', 'natural_gas', 'renewable']):
+            analysis['request_type'] = RequestType.COMMODITY_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['banking_sector', 'bank_health', 'banking', 'banks', 'financial_institutions', 'fdic', 'institution_analysis', 'banking_market']):
+            analysis['request_type'] = RequestType.BANKING_DATA
             analysis['specificity_level'] = 'high'
         else:
             analysis['request_type'] = RequestType.MARKET_SCREENING

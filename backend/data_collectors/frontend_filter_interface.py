@@ -34,6 +34,8 @@ class FilterType(Enum):
     GEOGRAPHIC = "geographic"
     ECONOMIC_INDICATORS = "economic_indicators"
     TREASURY_SECURITIES = "treasury_securities"
+    ENERGY_DATA = "energy_data"
+    COMMODITY_DATA = "commodity_data"
     TIME_PERIOD = "time_period"
     ANALYSIS_TYPE = "analysis_type"
     FINANCIAL_METRICS = "financial_metrics"
@@ -218,6 +220,70 @@ class FrontendFilterInterface:
                 category=FilterType.TREASURY_SECURITIES,
                 applicable_collectors=["treasury_direct"],
                 example_usage="Inflation hedging and variable rate analysis"
+            )
+        ])
+        
+        # Energy data filters (EIA collector)
+        filters[FilterType.ENERGY_DATA].extend([
+            FilterOption(
+                value="petroleum,natural_gas,electricity",
+                label="Primary Energy Sources",
+                description="Oil, natural gas, and electricity market analysis",
+                category=FilterType.ENERGY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Comprehensive energy sector performance analysis"
+            ),
+            FilterOption(
+                value="wti_crude,henry_hub,retail_electricity",
+                label="Key Energy Prices",
+                description="WTI crude oil, Henry Hub natural gas, and retail electricity prices",
+                category=FilterType.ENERGY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Energy price trend analysis and forecasting"
+            ),
+            FilterOption(
+                value="production,consumption,capacity",
+                label="Energy Supply & Demand",
+                description="Energy production, consumption, and capacity metrics",
+                category=FilterType.ENERGY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Energy supply-demand balance and capacity utilization"
+            ),
+            FilterOption(
+                value="renewable,coal,nuclear",
+                label="Energy Sources Mix",
+                description="Renewable energy, coal, and nuclear generation data",
+                category=FilterType.ENERGY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Energy transition and fuel mix analysis"
+            )
+        ])
+        
+        # Commodity data filters (EIA collector)
+        filters[FilterType.COMMODITY_DATA].extend([
+            FilterOption(
+                value="crude_oil,gasoline,diesel,heating_oil",
+                label="Petroleum Products",
+                description="Crude oil and refined petroleum product prices and inventories",
+                category=FilterType.COMMODITY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Petroleum market analysis and refining margin tracking"
+            ),
+            FilterOption(
+                value="natural_gas,lng,pipeline",
+                label="Natural Gas Markets",
+                description="Natural gas spot prices, LNG exports, and pipeline flows",
+                category=FilterType.COMMODITY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Natural gas supply chain and export market analysis"
+            ),
+            FilterOption(
+                value="coal,nuclear_fuel,renewable_materials",
+                label="Alternative Energy Commodities",
+                description="Coal, uranium, and renewable energy materials",
+                category=FilterType.COMMODITY_DATA,
+                applicable_collectors=["eia"],
+                example_usage="Alternative fuel commodity markets and pricing"
             )
         ])
         
