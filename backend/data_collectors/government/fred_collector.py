@@ -109,20 +109,29 @@ class FREDCollector(DataCollectorInterface):
         'CAPACITY': 'Capacity Utilization: Total Industry'
     }
     
-    def __init__(self, config: CollectorConfig):
+    def __init__(self, config: Optional[CollectorConfig] = None):
         """
         Initialize FRED collector.
         
         Args:
-            config: Configuration including API key
+            config: Optional configuration including API key
             
         Raises:
-            ValueError: If API key not provided
+            ValueError: If API key not provided when making actual API calls
         """
-        if not config.api_key:
+        if config and not config.api_key:
             raise ValueError("FRED API key is required. Get one at https://fred.stlouisfed.org/docs/api/api_key.html")
         
-        super().__init__(config)
+        # Create default config if none provided (for testing purposes)
+        self.config = config or CollectorConfig(
+            api_key=None,  # Will need to be set before making API calls
+            base_url="https://api.stlouisfed.org/fred/",
+            timeout=30,
+            max_retries=3,
+            requests_per_minute=120
+        )
+        
+        super().__init__(self.config)
         
         # Standard headers
         self.headers = {
@@ -150,6 +159,60 @@ class FREDCollector(DataCollectorInterface):
         self._categories_cache: Optional[Dict] = None
         
         logger.info("FRED collector initialized")
+    
+    # Filtering and activation methods
+    def should_activate(self, filter_criteria: Dict[str, Any]) -> bool:
+        """
+        Determine if this collector should activate based on filter criteria.
+        
+        FRED collector activates for economic indicators and FRED series data.
+        """
+        # Check for FRED-specific indicators
+        fred_indicators = [
+            'fred_series', 'economic', 'gdp', 'unemployment', 'inflation', 
+            'interest_rates', 'monetary', 'employment', 'cpi', 'federal_funds',
+            'economic_indicators'
+        ]
+        
+        # Check if any FRED indicators are mentioned in the criteria
+        criteria_str = str(filter_criteria).lower()
+        has_fred_indicators = any(indicator in criteria_str for indicator in fred_indicators)
+        
+        # Don't activate for individual company analysis
+        has_companies = bool(filter_criteria.get('companies')) or bool(filter_criteria.get('symbols'))
+        has_specific_companies = has_companies and len(filter_criteria.get('companies', filter_criteria.get('symbols', []))) <= 20
+        
+        # Don't activate for Treasury-specific requests
+        has_treasury = any(key in criteria_str for key in ['treasury', 'bonds', 'bills', 'notes', 'federal_debt'])
+        
+        return has_fred_indicators and not has_specific_companies and not has_treasury
+    
+    def get_activation_priority(self, filter_criteria: Dict[str, Any]) -> int:
+        """
+        Get activation priority based on filter criteria (0-100 scale).
+        
+        Higher priority for economic indicators and FRED series data.
+        """
+        if not self.should_activate(filter_criteria):
+            return 0
+        
+        priority = 50  # Base priority for FRED data
+        
+        # Higher priority for explicit FRED series requests
+        if filter_criteria.get('fred_series'):
+            priority = 95
+        
+        # High priority for economic analysis
+        if filter_criteria.get('analysis_type') == 'economic':
+            priority += 25
+        
+        # Medium priority for general economic indicators
+        criteria_str = str(filter_criteria).lower()
+        economic_terms = ['gdp', 'unemployment', 'inflation', 'interest_rates', 'employment']
+        if any(term in criteria_str for term in economic_terms):
+            priority += 15
+        
+        return min(priority, 100)
     
     @property
     def source_name(self) -> str:

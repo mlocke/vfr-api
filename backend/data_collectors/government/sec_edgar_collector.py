@@ -72,17 +72,10 @@ class SECEdgarCollector(DataCollectorInterface):
         """
         self.base_url = "https://data.sec.gov"
         self.config = config or CollectorConfig(
-            source="SEC_EDGAR",
-            rate_limit_config=RateLimitConfig(
-                requests_per_second=10,  # SEC guideline: 10 requests per second
-                requests_per_minute=600,
-                requests_per_hour=36000
-            ),
-            retry_config=RetryConfig(
-                max_retries=3,
-                backoff_factor=1.0,
-                retry_delays=[1, 2, 4]
-            )
+            base_url="https://data.sec.gov",
+            timeout=30,
+            max_retries=3,
+            requests_per_minute=600  # SEC guideline: 10 requests per second
         )
         
         # SEC requires User-Agent header for all requests
@@ -92,8 +85,19 @@ class SECEdgarCollector(DataCollectorInterface):
             'Host': 'data.sec.gov'
         }
         
-        self.rate_limiter = RateLimiter(self.config.rate_limit_config)
-        self.error_handler = ErrorHandler(self.config.retry_config)
+        # Create rate limiter and error handler from simple config
+        rate_limit_config = RateLimitConfig(
+            requests_per_second=10,  # SEC guideline
+            requests_per_minute=self.config.requests_per_minute
+        )
+        retry_config = RetryConfig(
+            max_attempts=self.config.max_retries,
+            backoff_factor=1.0,
+            initial_delay=1.0
+        )
+        
+        self.rate_limiter = RateLimiter(rate_limit_config)
+        self.error_handler = ErrorHandler(retry_config)
         
         # Common financial metrics for fundamental analysis
         self.key_financial_concepts = {
@@ -1112,7 +1116,10 @@ class SECEdgarCollector(DataCollectorInterface):
     
     def get_rate_limits(self) -> RateLimitConfig:
         """Get current rate limit configuration."""
-        return self.config.rate_limit_config
+        return RateLimitConfig(
+            requests_per_second=10,
+            requests_per_minute=self.config.requests_per_minute
+        )
     
     def validate_data(self, data: pd.DataFrame) -> Dict[str, Any]:
         """Validate SEC EDGAR data quality."""

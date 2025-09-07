@@ -19,6 +19,7 @@ from enum import Enum
 from .base import DataCollectorInterface
 from .government.sec_edgar_collector import SECEdgarCollector
 from .government.treasury_fiscal_collector import TreasuryFiscalCollector
+from .government.treasury_direct_collector import TreasuryDirectCollector
 from .government.bea_collector import BEACollector
 # from .government.fred_collector import FREDCollector  # When implemented
 # from .market.alpha_vantage_collector import AlphaVantageCollector  # When implemented
@@ -130,6 +131,29 @@ class CollectorRouter:
                     'US-focused economic data only',
                     'Conservative rate limiting (2 req/sec)',
                     'Complex data structure requiring processing'
+                ],
+                max_companies=None,
+                requires_specific_companies=False
+            ),
+            
+            'treasury_direct': CollectorCapability(
+                collector_class=TreasuryDirectCollector,
+                primary_use_cases=[
+                    RequestType.FISCAL_DATA
+                ],
+                strengths=[
+                    'Treasury securities data (Bills, Notes, Bonds, TIPS)',
+                    'Yield curve analysis and interest rate data',
+                    'Treasury auction results and schedules',
+                    'Real-time Treasury market data',
+                    'Free access with no API keys required',
+                    'Comprehensive maturity range coverage (1Mo-30Yr)'
+                ],
+                limitations=[
+                    'No company-specific data',
+                    'Limited to US Treasury securities only',
+                    'Conservative rate limiting (1 req/sec)',
+                    'No equity or corporate bond data'
                 ],
                 max_companies=None,
                 requires_specific_companies=False

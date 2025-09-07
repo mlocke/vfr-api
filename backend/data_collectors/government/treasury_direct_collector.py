@@ -664,3 +664,365 @@ class TreasuryDirectCollector(DataCollectorInterface):
             validation_results[symbol] = is_valid
         
         return validation_results
+    
+    def should_activate(self, filter_criteria: Dict[str, Any]) -> bool:
+        """
+        Determine if Treasury Direct collector should handle the request.
+        
+        Activates for:
+        - Treasury-specific requests (bonds, bills, notes, yield curves)
+        - Interest rate analysis
+        - Government debt securities analysis
+        - Auction data requests
+        
+        Does NOT activate for:
+        - Individual company requests (SEC EDGAR territory)
+        - Economic indicators (FRED territory)
+        - Government spending/fiscal policy (Treasury Fiscal territory)
+        """
+        # Check for Treasury-specific request patterns
+        treasury_indicators = [
+            'treasury', 'bonds', 'bills', 'notes', 'yield_curve', 'interest_rates',
+            'auction', 'tips', 'frns', 'savings_bonds', 'government_securities',
+            'debt_securities', 'treasury_yield', 'treasury_auction'
+        ]
+        
+        # Check if any Treasury indicators are present in keys or values
+        for key, value in filter_criteria.items():
+            key_lower = key.lower()
+            if any(indicator in key_lower for indicator in treasury_indicators):
+                return True
+            
+            # Check values for Treasury-related terms
+            if isinstance(value, str):
+                value_lower = value.lower()
+                if any(indicator in value_lower for indicator in treasury_indicators):
+                    return True
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str) and any(indicator in item.lower() for indicator in treasury_indicators):
+                        return True
+        
+        # Check for specific Treasury data types
+        if 'data_type' in filter_criteria:
+            data_type = filter_criteria['data_type'].lower()
+            if any(indicator in data_type for indicator in treasury_indicators):
+                return True
+        
+        # Check for security types
+        if 'security_types' in filter_criteria:
+            security_types = filter_criteria['security_types']
+            if isinstance(security_types, list):
+                for sec_type in security_types:
+                    if sec_type.lower() in self.SECURITY_TYPES:
+                        return True
+            elif isinstance(security_types, str):
+                if security_types.lower() in self.SECURITY_TYPES:
+                    return True
+        
+        # Check for maturity-related requests
+        if 'maturities' in filter_criteria or 'maturity' in filter_criteria:
+            return True
+        
+        # Don't activate for individual company requests (SEC EDGAR territory)
+        if any(key in filter_criteria for key in ['companies', 'symbols', 'tickers', 'ciks']):
+            return False
+            
+        # Don't activate for economic indicator requests (FRED territory)
+        if any(key in filter_criteria for key in ['fred_series', 'economic_indicator']):
+            return False
+            
+        # Don't activate for government spending/fiscal policy (Treasury Fiscal territory)
+        if any(key in filter_criteria for key in ['government_spending', 'federal_budget', 'fiscal_policy']):
+            return False
+            
+        return False
+    
+    def get_activation_priority(self, filter_criteria: Dict[str, Any]) -> int:
+        """
+        Return priority level for Treasury Direct collector (0-100).
+        
+        Priority 95: Specific Treasury securities requests
+        Priority 85: Treasury yield curve and interest rate requests
+        Priority 75: General Treasury data requests
+        Priority 0: Not applicable for this request type
+        """
+        if not self.should_activate(filter_criteria):
+            return 0
+            
+        # Very high priority for specific Treasury securities
+        high_priority_terms = ['treasury_auction', 'specific_securities', 'cusip']
+        if any(term in str(filter_criteria).lower() for term in high_priority_terms):
+            return 95
+            
+        # High priority for yield curve and interest rate requests
+        medium_high_terms = ['yield_curve', 'interest_rates', 'treasury_yield', 'bonds', 'bills', 'notes']
+        if any(term in str(filter_criteria).lower() for term in medium_high_terms):
+            return 85
+            
+        # Medium-high priority for general Treasury requests
+        medium_terms = ['treasury', 'government_securities', 'debt_securities']
+        if any(term in str(filter_criteria).lower() for term in medium_terms):
+            return 75
+            
+        return 60  # Default for other Treasury requests
+    
+    def filter_by_security_type(self, security_types: List[str], 
+                               date_range: Optional[DateRange] = None) -> Dict[str, Any]:
+        """
+        Filter Treasury data by specific security types.
+        
+        Args:
+            security_types: List of security types ('bills', 'notes', 'bonds', 'tips', 'frns')
+            date_range: Optional date range for filtering
+            
+        Returns:
+            Dictionary containing filtered Treasury securities data
+        """
+        if date_range is None:
+            # Default to last year
+            end_date = date.today()
+            start_date = end_date - timedelta(days=365)
+            date_range = DateRange(start_date, end_date)
+        
+        filtered_results = {
+            'filter_criteria': {
+                'security_types': security_types,
+                'date_range': {
+                    'start': date_range.start_date.isoformat(),
+                    'end': date_range.end_date.isoformat()
+                }
+            },
+            'results_by_type': {},
+            'metadata': {
+                'filter_date': datetime.now().isoformat(),
+                'source': 'Treasury Direct Security Type Filter'
+            }
+        }
+        
+        for sec_type in security_types:
+            if sec_type.lower() in self.SECURITY_TYPES:
+                try:
+                    # Get auction data for this security type
+                    auction_data = self.get_auction_data(date_range, sec_type)
+                    
+                    # Get yield curve data if applicable
+                    yield_data = None
+                    if sec_type.lower() in ['notes', 'bonds']:
+                        yield_data = self.get_daily_yield_curve(date_range)
+                    
+                    filtered_results['results_by_type'][sec_type] = {
+                        'security_name': self.SECURITY_TYPES[sec_type.lower()],
+                        'auction_data': auction_data.to_dict('records') if not auction_data.empty else [],
+                        'yield_data': yield_data.to_dict('records') if yield_data is not None and not yield_data.empty else [],
+                        'data_points': len(auction_data) if not auction_data.empty else 0
+                    }
+                except Exception as e:
+                    logger.warning(f"Error filtering {sec_type} data: {e}")
+                    filtered_results['results_by_type'][sec_type] = {
+                        'error': f"Unable to retrieve {sec_type} data: {e}"
+                    }
+        
+        return filtered_results
+    
+    def filter_by_maturity_range(self, min_maturity: str, max_maturity: str,
+                                date_range: Optional[DateRange] = None) -> Dict[str, Any]:
+        """
+        Filter Treasury yield data by maturity range.
+        
+        Args:
+            min_maturity: Minimum maturity (e.g., '1 Yr')
+            max_maturity: Maximum maturity (e.g., '10 Yr')
+            date_range: Optional date range for filtering
+            
+        Returns:
+            Dictionary containing yield data within maturity range
+        """
+        if date_range is None:
+            # Default to last 3 months
+            end_date = date.today()
+            start_date = end_date - timedelta(days=90)
+            date_range = DateRange(start_date, end_date)
+        
+        # Define maturity ordering for filtering
+        maturity_order = [
+            '1 Mo', '2 Mo', '3 Mo', '4 Mo', '6 Mo',
+            '1 Yr', '2 Yr', '3 Yr', '5 Yr', '7 Yr', '10 Yr', '20 Yr', '30 Yr'
+        ]
+        
+        try:
+            min_idx = maturity_order.index(min_maturity)
+            max_idx = maturity_order.index(max_maturity)
+        except ValueError as e:
+            return {
+                'error': f"Invalid maturity specified: {e}",
+                'valid_maturities': maturity_order
+            }
+        
+        if min_idx > max_idx:
+            return {
+                'error': f"Minimum maturity ({min_maturity}) cannot be greater than maximum ({max_maturity})"
+            }
+        
+        target_maturities = maturity_order[min_idx:max_idx + 1]
+        
+        filtered_results = {
+            'filter_criteria': {
+                'maturity_range': {
+                    'min': min_maturity,
+                    'max': max_maturity,
+                    'included_maturities': target_maturities
+                },
+                'date_range': {
+                    'start': date_range.start_date.isoformat(),
+                    'end': date_range.end_date.isoformat()
+                }
+            },
+            'yield_data': [],
+            'maturity_analysis': {},
+            'metadata': {
+                'filter_date': datetime.now().isoformat(),
+                'source': 'Treasury Direct Maturity Range Filter'
+            }
+        }
+        
+        try:
+            # Get yield curve data for the date range
+            all_yield_data = self.get_daily_yield_curve(date_range)
+            
+            if not all_yield_data.empty:
+                # Filter by target maturities if the data has a maturity column
+                if 'maturity' in all_yield_data.columns:
+                    filtered_data = all_yield_data[all_yield_data['maturity'].isin(target_maturities)]
+                    filtered_results['yield_data'] = filtered_data.to_dict('records')
+                else:
+                    # If no maturity column, return all data with a note
+                    filtered_results['yield_data'] = all_yield_data.to_dict('records')
+                    filtered_results['note'] = 'Maturity filtering unavailable - returning all yield curve data'
+                
+                # Calculate maturity analysis
+                for maturity in target_maturities:
+                    maturity_data = [record for record in filtered_results['yield_data'] 
+                                   if record.get('maturity') == maturity]
+                    if maturity_data:
+                        yields = [float(record.get('value', 0)) for record in maturity_data 
+                                if record.get('value') and record.get('value') != '.']
+                        if yields:
+                            filtered_results['maturity_analysis'][maturity] = {
+                                'data_points': len(yields),
+                                'latest_yield': yields[-1] if yields else None,
+                                'average_yield': round(sum(yields) / len(yields), 3) if yields else None,
+                                'min_yield': min(yields) if yields else None,
+                                'max_yield': max(yields) if yields else None
+                            }
+            
+        except Exception as e:
+            logger.error(f"Error filtering by maturity range: {e}")
+            filtered_results['error'] = f"Unable to filter by maturity range: {e}"
+        
+        return filtered_results
+    
+    def screen_by_yield_criteria(self, min_yield: Optional[float] = None, 
+                               max_yield: Optional[float] = None,
+                               target_maturities: Optional[List[str]] = None,
+                               date_range: Optional[DateRange] = None) -> Dict[str, Any]:
+        """
+        Screen Treasury securities by yield criteria.
+        
+        Args:
+            min_yield: Minimum yield threshold (as percentage)
+            max_yield: Maximum yield threshold (as percentage) 
+            target_maturities: Specific maturities to analyze
+            date_range: Optional date range for analysis
+            
+        Returns:
+            Dictionary containing securities meeting yield criteria
+        """
+        if date_range is None:
+            # Default to last 30 days
+            end_date = date.today()
+            start_date = end_date - timedelta(days=30)
+            date_range = DateRange(start_date, end_date)
+        
+        if target_maturities is None:
+            target_maturities = ['2 Yr', '5 Yr', '10 Yr', '30 Yr']  # Common benchmark maturities
+        
+        screening_results = {
+            'screening_criteria': {
+                'min_yield': min_yield,
+                'max_yield': max_yield,
+                'target_maturities': target_maturities,
+                'date_range': {
+                    'start': date_range.start_date.isoformat(),
+                    'end': date_range.end_date.isoformat()
+                }
+            },
+            'qualified_securities': [],
+            'yield_analysis': {},
+            'metadata': {
+                'screening_date': datetime.now().isoformat(),
+                'securities_screened': 0,
+                'securities_qualified': 0,
+                'source': 'Treasury Direct Yield Screening'
+            }
+        }
+        
+        try:
+            # Get recent yield data
+            for maturity in target_maturities:
+                latest_yield_data = self.get_latest_yield_curve(maturity)
+                
+                if latest_yield_data and 'value' in latest_yield_data:
+                    try:
+                        current_yield = float(latest_yield_data['value'])
+                        screening_results['metadata']['securities_screened'] += 1
+                        
+                        # Apply yield criteria
+                        passes_screening = True
+                        screening_details = {}
+                        
+                        if min_yield is not None:
+                            passes = current_yield >= min_yield
+                            screening_details['min_yield_check'] = {
+                                'actual': current_yield,
+                                'required': min_yield,
+                                'passed': passes
+                            }
+                            passes_screening = passes_screening and passes
+                        
+                        if max_yield is not None:
+                            passes = current_yield <= max_yield
+                            screening_details['max_yield_check'] = {
+                                'actual': current_yield,
+                                'required_max': max_yield,
+                                'passed': passes
+                            }
+                            passes_screening = passes_screening and passes
+                        
+                        if passes_screening:
+                            qualified_security = {
+                                'maturity': maturity,
+                                'current_yield': current_yield,
+                                'record_date': latest_yield_data.get('record_date'),
+                                'screening_details': screening_details,
+                                'qualification_status': 'QUALIFIED'
+                            }
+                            screening_results['qualified_securities'].append(qualified_security)
+                            screening_results['metadata']['securities_qualified'] += 1
+                        
+                        # Add to yield analysis
+                        screening_results['yield_analysis'][maturity] = {
+                            'current_yield': current_yield,
+                            'record_date': latest_yield_data.get('record_date'),
+                            'passed_screening': passes_screening
+                        }
+                        
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Invalid yield value for {maturity}: {latest_yield_data.get('value')}")
+                        continue
+        
+        except Exception as e:
+            logger.error(f"Error in yield screening: {e}")
+            screening_results['error'] = f"Yield screening failed: {e}"
+        
+        return screening_results

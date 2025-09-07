@@ -1,6 +1,6 @@
 {
   "description": "Comprehensive SEC EDGAR financial data for major US companies across all sectors",
-  "timestamp": "2025-09-07T00:44:38.923116",
+  "timestamp": "2025-09-07T14:40:15.424083",
   "sample_data": {
     "AAPL": {
       "company_info": {
@@ -75,7 +75,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:30.941551"
+      "extraction_timestamp": "2025-09-07T14:40:05.605646"
     },
     "MSFT": {
       "company_info": {
@@ -146,7 +146,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:31.547841"
+      "extraction_timestamp": "2025-09-07T14:40:06.364109"
     },
     "GOOGL": {
       "company_info": {
@@ -220,7 +220,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:32.148048"
+      "extraction_timestamp": "2025-09-07T14:40:07.028408"
     },
     "META": {
       "company_info": {
@@ -291,7 +291,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:32.704002"
+      "extraction_timestamp": "2025-09-07T14:40:07.674576"
     },
     "NVDA": {
       "company_info": {
@@ -362,7 +362,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:33.269709"
+      "extraction_timestamp": "2025-09-07T14:40:08.254961"
     },
     "JPM": {
       "company_info": {
@@ -433,7 +433,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:34.133339"
+      "extraction_timestamp": "2025-09-07T14:40:09.604017"
     },
     "BAC": {
       "company_info": {
@@ -504,7 +504,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:34.926521"
+      "extraction_timestamp": "2025-09-07T14:40:10.397641"
     },
     "JNJ": {
       "company_info": {
@@ -577,7 +577,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:35.806531"
+      "extraction_timestamp": "2025-09-07T14:40:11.177960"
     },
     "PFE": {
       "company_info": {
@@ -650,7 +650,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:36.505406"
+      "extraction_timestamp": "2025-09-07T14:40:12.012872"
     },
     "AMZN": {
       "company_info": {
@@ -722,7 +722,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:37.104427"
+      "extraction_timestamp": "2025-09-07T14:40:12.698525"
     },
     "WMT": {
       "company_info": {
@@ -797,7 +797,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:37.707274"
+      "extraction_timestamp": "2025-09-07T14:40:13.462935"
     },
     "XOM": {
       "company_info": {
@@ -873,7 +873,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:38.327788"
+      "extraction_timestamp": "2025-09-07T14:40:14.758347"
     },
     "TSLA": {
       "company_info": {
@@ -948,7 +948,7 @@
         "quality_rating": "Limited",
         "data_recency": "Unknown"
       },
-      "extraction_timestamp": "2025-09-07T00:44:38.914946"
+      "extraction_timestamp": "2025-09-07T14:40:15.419320"
     }
   },
   "data_type": "SEC EDGAR Comprehensive Company Data",
