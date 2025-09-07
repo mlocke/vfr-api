@@ -326,7 +326,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 All data collector integration guides are centralized in `/docs/project/modules/data-ingestion/`:
 
 **Current Implementations**:
-- **SEC EDGAR**: `sec-edgar-usage-guide.md` - Individual company fundamental analysis ✅
+- **SEC EDGAR**: `government-apis/sec-edgar-usage-guide.md` - Individual company fundamental analysis ✅
 - **Collector Routing**: `collector-routing-guide.md` - Smart routing system ✅
 - **FRED Economic**: `government-apis/FRED-*-COMPLETE.md` - Federal Reserve data ✅
 
