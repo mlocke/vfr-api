@@ -45,7 +45,7 @@ A next-generation financial analysis tool that leverages government APIs and mar
 
 **🧪 Production-Ready Backend**
 
-- Government data collectors: BEA ✅, FRED ✅, SEC EDGAR ✅, Treasury Direct ✅, Treasury Fiscal ✅
+- Government data collectors: BEA ✅, FRED ✅, SEC EDGAR ✅, Treasury Direct ✅, Treasury Fiscal ✅, BLS ✅
 - **🆕 Smart routing system** for automatic optimal data source selection
 - **🆕 Advanced filtering capabilities** with financial screening
 - **🌟 100% test coverage** - All collectors verified and production ready
@@ -177,6 +177,7 @@ A next-generation financial analysis tool that leverages government APIs and mar
 - **[Treasury Direct API](https://www.treasurydirect.gov/webapis/)** - Treasury securities, yield curve ⭐ **ACTIVE WITH SCREENING**
 - **🆕 [Treasury Fiscal API](https://api.fiscaldata.treasury.gov/)** - Federal debt, government spending ⭐ **NEW & ACTIVE**
 - **🆕 [BEA API](https://apps.bea.gov/API/)** - GDP, regional economics, industry data ⭐ **ACTIVE WITH GEOGRAPHIC FILTERING**
+- **🆕 [BLS API](https://api.bls.gov/publicAPI/v2/)** - Employment, unemployment, wages, CPI inflation ⭐ **ACTIVE WITH LABOR FILTERING**
 
 ### **Market Data (🔄 PLANNED)**
 
@@ -198,6 +199,7 @@ A next-generation financial analysis tool that leverages government APIs and mar
 - **Complete Treasury market** data (Treasury Direct) with yield/maturity filtering
 - **🆕 Federal fiscal data** (Treasury Fiscal) - debt, spending, government operations
 - **🆕 GDP & regional economics** (BEA) - state-level, industry, personal income data
+- **🆕 Employment & labor market** (BLS) - unemployment, wages, CPI inflation, productivity
 - **🆕 88 filter combinations** across 7 categories for comprehensive analysis
 - **Real-time updates** with intelligent caching and performance optimization
 
@@ -327,7 +329,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] **🌟 Advanced Filtering System** - 88 options, smart routing, **100% test success** ✅
 - [x] **🆕 SEC EDGAR Enhancement** - Financial screening and ratio filtering
 - [x] **Cyberpunk Dashboard UI** - Live economic visualization
-- [x] **🌟 Government Data Collectors** - 5 operational, **100% verified** (SEC, Treasury×2, FRED, BEA)
+- [x] **🌟 Government Data Collectors** - 6 operational, **100% verified** (SEC, Treasury×2, FRED, BEA, BLS)
 - [x] **Sample Data Generation** - Complete test outputs
 - [x] **🆕 Comprehensive Documentation** - Enhanced with filtering guides
 - [x] **🆕 Frontend Integration Layer** - Filter translation and validation ready
@@ -371,7 +373,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 All data collector integration guides are centralized in `/docs/project/modules/data-ingestion/`:
 
-**✅ Current Implementations (5 Active Collectors)**:
+**✅ Current Implementations (6 Active Collectors)**:
 - **🆕 Advanced Filtering System**: `ADVANCED_FILTERING_SYSTEM.md` - Complete system documentation
 - **SEC EDGAR Enhanced**: `government-apis/SEC_EDGAR_IMPLEMENTATION_COMPLETE.md` - With financial screening ✅
 - **Collector Routing**: `collector-routing-guide.md` - Smart routing system ✅
@@ -379,6 +381,7 @@ All data collector integration guides are centralized in `/docs/project/modules/
 - **🆕 Treasury Direct**: Treasury securities, yield curve analysis ✅
 - **🆕 Treasury Fiscal**: Federal debt, government spending analysis ✅
 - **🆕 BEA Integration**: `government-apis/bea-usage-guide.md` - GDP and regional data ✅
+- **🆕 BLS Integration**: `government-apis/bls-usage-guide.md` - Employment and labor data ✅
 
 **📋 Planned Integrations**:
 - **Market Data APIs**: Alpha Vantage, IEX Cloud integration

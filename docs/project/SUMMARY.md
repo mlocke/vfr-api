@@ -59,6 +59,7 @@ The Stock Picker Platform is a **next-generation financial analysis tool** that 
 - Treasury Fiscal Data Collector: **WORKING** (Federal debt, government spending)
 - SEC EDGAR Collector: **IMPLEMENTED** (Company fundamentals, financial ratios)
 - FRED Collector: **IMPLEMENTED** (Economic indicators, monetary data)
+- BLS Collector: **IMPLEMENTED** (Employment, unemployment, wages, CPI inflation)
 - Smart routing system: **FUNCTIONAL**
 - Rate limiting and error handling: **PRODUCTION-READY**
 

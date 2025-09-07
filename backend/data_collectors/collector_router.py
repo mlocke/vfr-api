@@ -21,6 +21,7 @@ from .government.sec_edgar_collector import SECEdgarCollector
 from .government.treasury_fiscal_collector import TreasuryFiscalCollector
 from .government.treasury_direct_collector import TreasuryDirectCollector
 from .government.bea_collector import BEACollector
+from .government.bls_collector import BLSCollector
 # from .government.fred_collector import FREDCollector  # When implemented
 # from .market.alpha_vantage_collector import AlphaVantageCollector  # When implemented
 
@@ -34,6 +35,8 @@ class RequestType(Enum):
     INDEX_ANALYSIS = "index_analysis"
     ECONOMIC_DATA = "economic_data"
     FISCAL_DATA = "fiscal_data"
+    EMPLOYMENT_DATA = "employment_data"
+    INFLATION_DATA = "inflation_data"
     MARKET_SCREENING = "market_screening"
     TECHNICAL_ANALYSIS = "technical_analysis"
 
@@ -159,6 +162,33 @@ class CollectorRouter:
                 requires_specific_companies=False
             ),
             
+            'bls': CollectorCapability(
+                collector_class=BLSCollector,
+                primary_use_cases=[
+                    RequestType.EMPLOYMENT_DATA,
+                    RequestType.INFLATION_DATA,
+                    RequestType.ECONOMIC_DATA
+                ],
+                strengths=[
+                    'Official US employment and unemployment statistics',
+                    'Consumer Price Index (CPI) and Producer Price Index (PPI)',
+                    'Job Openings and Labor Turnover Survey (JOLTS) data',
+                    'Employment Cost Index and wage data',
+                    'Labor productivity and unit labor cost measures',
+                    'Free access with optional API key for higher limits',
+                    'Monthly release schedule with reliable data quality'
+                ],
+                limitations=[
+                    'No company-specific data',
+                    'Limited to US labor market data',
+                    'Rate limited (25 req/day without API key, 500 with)',
+                    'Monthly data frequency (not real-time)',
+                    'No financial market or stock data'
+                ],
+                max_companies=None,
+                requires_specific_companies=False
+            ),
+            
             # Future collectors to be added:
             # 'fred': CollectorCapability(...),
             # 'alpha_vantage': CollectorCapability(...),
@@ -245,6 +275,12 @@ class CollectorRouter:
             analysis['specificity_level'] = 'high'
         elif any(key in filter_criteria for key in ['gdp', 'nipa', 'regional', 'industry_gdp', 'personal_income', 'bea_data']):
             analysis['request_type'] = RequestType.ECONOMIC_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['employment', 'unemployment', 'labor_force', 'jobs', 'jolts', 'bls_series']):
+            analysis['request_type'] = RequestType.EMPLOYMENT_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['cpi', 'ppi', 'inflation', 'consumer_price', 'producer_price']):
+            analysis['request_type'] = RequestType.INFLATION_DATA
             analysis['specificity_level'] = 'high'
         else:
             analysis['request_type'] = RequestType.MARKET_SCREENING

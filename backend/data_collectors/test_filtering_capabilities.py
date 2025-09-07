@@ -27,6 +27,7 @@ from data_collectors.government.sec_edgar_collector import SECEdgarCollector
 from data_collectors.government.treasury_direct_collector import TreasuryDirectCollector
 from data_collectors.government.treasury_fiscal_collector import TreasuryFiscalCollector
 from data_collectors.government.bea_collector import BEACollector
+from data_collectors.government.bls_collector import BLSCollector
 from data_collectors.government.fred_collector import FREDCollector
 from data_collectors.base import DateRange
 
@@ -40,6 +41,7 @@ def test_individual_collector_filtering():
         "treasury_direct": test_treasury_direct_filtering(), 
         "treasury_fiscal": test_treasury_fiscal_filtering(),
         "bea": test_bea_filtering(),
+        "bls": test_bls_filtering(),
         "fred": test_fred_filtering()
     }
     
@@ -319,6 +321,82 @@ def test_bea_filtering():
         
     except Exception as e:
         print(f"   ❌ BEA: Error - {e}")
+        return {"error": str(e)}
+
+
+def test_bls_filtering():
+    """Test BLS collector filtering capabilities."""
+    print("👷 Testing BLS Filtering...")
+    
+    try:
+        collector = BLSCollector()
+        test_results = {}
+        
+        # Test 1: Employment data (should activate)
+        filter1 = {'employment': 'true', 'analysis_type': 'employment'}
+        should_activate1 = collector.should_activate(filter1)
+        priority1 = collector.get_activation_priority(filter1)
+        
+        test_results['employment_data'] = {
+            'filter': filter1,
+            'should_activate': should_activate1,
+            'priority': priority1,
+            'expected': 'Should activate with high priority for employment data'
+        }
+        
+        # Test 2: BLS series (should activate)
+        filter2 = {'bls_series': ['LNS14000000', 'CUUR0000SA0'], 'analysis_type': 'economic'}
+        should_activate2 = collector.should_activate(filter2)
+        priority2 = collector.get_activation_priority(filter2)
+        
+        test_results['bls_series'] = {
+            'filter': filter2,
+            'should_activate': should_activate2,
+            'priority': priority2,
+            'expected': 'Should activate with very high priority for BLS series'
+        }
+        
+        # Test 3: Inflation/CPI data (should activate)
+        filter3 = {'cpi': 'true', 'inflation': 'true'}
+        should_activate3 = collector.should_activate(filter3)
+        priority3 = collector.get_activation_priority(filter3)
+        
+        test_results['inflation_data'] = {
+            'filter': filter3,
+            'should_activate': should_activate3,
+            'priority': priority3,
+            'expected': 'Should activate for CPI/inflation data'
+        }
+        
+        # Test 4: Individual companies (should NOT activate)
+        filter4 = {'companies': ['AAPL'], 'analysis_type': 'fundamental'}
+        should_activate4 = collector.should_activate(filter4)
+        priority4 = collector.get_activation_priority(filter4)
+        
+        test_results['company_analysis'] = {
+            'filter': filter4,
+            'should_activate': should_activate4,
+            'priority': priority4,
+            'expected': 'Should NOT activate - SEC EDGAR territory'
+        }
+        
+        # Test 5: Treasury data (should NOT activate)
+        filter5 = {'treasury_securities': 'bonds', 'analysis_type': 'fiscal'}
+        should_activate5 = collector.should_activate(filter5)
+        priority5 = collector.get_activation_priority(filter5)
+        
+        test_results['treasury_data'] = {
+            'filter': filter5,
+            'should_activate': should_activate5,
+            'priority': priority5,
+            'expected': 'Should NOT activate - Treasury territory'
+        }
+        
+        print(f"   ✅ BLS: {len(test_results)} tests completed")
+        return test_results
+        
+    except Exception as e:
+        print(f"   ❌ BLS: Error - {e}")
         return {"error": str(e)}
 
 
