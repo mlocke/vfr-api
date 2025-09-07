@@ -18,6 +18,8 @@ from enum import Enum
 
 from .base import DataCollectorInterface
 from .government.sec_edgar_collector import SECEdgarCollector
+from .government.treasury_fiscal_collector import TreasuryFiscalCollector
+from .government.bea_collector import BEACollector
 # from .government.fred_collector import FREDCollector  # When implemented
 # from .market.alpha_vantage_collector import AlphaVantageCollector  # When implemented
 
@@ -30,6 +32,7 @@ class RequestType(Enum):
     SECTOR_ANALYSIS = "sector_analysis"
     INDEX_ANALYSIS = "index_analysis"
     ECONOMIC_DATA = "economic_data"
+    FISCAL_DATA = "fiscal_data"
     MARKET_SCREENING = "market_screening"
     TECHNICAL_ANALYSIS = "technical_analysis"
 
@@ -84,6 +87,54 @@ class CollectorRouter:
                 requires_specific_companies=True
             ),
             
+            'treasury_fiscal': CollectorCapability(
+                collector_class=TreasuryFiscalCollector,
+                primary_use_cases=[
+                    RequestType.FISCAL_DATA,
+                    RequestType.ECONOMIC_DATA
+                ],
+                strengths=[
+                    'Real federal debt data ($37.43T current)',
+                    'Government spending and revenue analysis',
+                    'Treasury operations data',
+                    'Investment-grade fiscal health scoring',
+                    'Free access with no API keys required',
+                    'Daily updated government financial data'
+                ],
+                limitations=[
+                    'No company-specific data',
+                    'US government data only',
+                    'Conservative rate limiting (5 req/sec)',
+                    'Some endpoints may be unavailable'
+                ],
+                max_companies=None,
+                requires_specific_companies=False
+            ),
+            
+            'bea': CollectorCapability(
+                collector_class=BEACollector,
+                primary_use_cases=[
+                    RequestType.ECONOMIC_DATA
+                ],
+                strengths=[
+                    'Comprehensive GDP components and analysis',
+                    'Regional economic data (state, county, metro)',
+                    'Industry-specific GDP and value-added data',
+                    'Personal income and consumption metrics',
+                    'International trade and investment data',
+                    'Authoritative source for US economic statistics'
+                ],
+                limitations=[
+                    'Requires free API key registration',
+                    'No company-specific data',
+                    'US-focused economic data only',
+                    'Conservative rate limiting (2 req/sec)',
+                    'Complex data structure requiring processing'
+                ],
+                max_companies=None,
+                requires_specific_companies=False
+            ),
+            
             # Future collectors to be added:
             # 'fred': CollectorCapability(...),
             # 'alpha_vantage': CollectorCapability(...),
@@ -119,9 +170,21 @@ class CollectorRouter:
         selected_collectors = self._select_optimal_collectors(capable_collectors, filter_criteria)
         
         # Step 4: Instantiate and return collectors
-        active_collectors = [
-            capability.collector_class() for capability in selected_collectors
-        ]
+        active_collectors = []
+        for capability in selected_collectors:
+            try:
+                # Try to instantiate collector without arguments first
+                collector = capability.collector_class()
+                active_collectors.append(collector)
+            except Exception as e:
+                logger.warning(f"Failed to instantiate {capability.collector_class.__name__} without config: {e}")
+                try:
+                    # Try with None config parameter
+                    collector = capability.collector_class(config=None)
+                    active_collectors.append(collector)
+                except Exception as e2:
+                    logger.error(f"Failed to instantiate {capability.collector_class.__name__} with None config: {e2}")
+                    # Skip this collector if both methods fail
         
         logger.info(f"Selected {len(active_collectors)} collectors: {[c.__class__.__name__ for c in active_collectors]}")
         return active_collectors
@@ -151,6 +214,12 @@ class CollectorRouter:
             analysis['request_type'] = RequestType.INDEX_ANALYSIS
             analysis['specificity_level'] = 'medium'
         elif filter_criteria.get('economic_indicator') or filter_criteria.get('fred_series'):
+            analysis['request_type'] = RequestType.ECONOMIC_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['treasury_series', 'fiscal_data', 'debt_data', 'government_spending']):
+            analysis['request_type'] = RequestType.FISCAL_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['gdp', 'nipa', 'regional', 'industry_gdp', 'personal_income', 'bea_data']):
             analysis['request_type'] = RequestType.ECONOMIC_DATA
             analysis['specificity_level'] = 'high'
         else:
@@ -186,7 +255,14 @@ class CollectorRouter:
             if request_analysis['request_type'] in capability.primary_use_cases:
                 
                 # Check specific requirements
-                collector_instance = capability.collector_class()
+                try:
+                    collector_instance = capability.collector_class()
+                except Exception:
+                    try:
+                        collector_instance = capability.collector_class(config=None)
+                    except Exception:
+                        logger.warning(f"Cannot instantiate {capability.collector_class.__name__} for activation check")
+                        continue
                 
                 if hasattr(collector_instance, 'should_activate'):
                     if collector_instance.should_activate(filter_criteria):
@@ -212,7 +288,14 @@ class CollectorRouter:
         collector_scores = []
         
         for capability in capable_collectors:
-            collector_instance = capability.collector_class()
+            try:
+                collector_instance = capability.collector_class()
+            except Exception:
+                try:
+                    collector_instance = capability.collector_class(config=None)
+                except Exception:
+                    logger.warning(f"Cannot instantiate {capability.collector_class.__name__} for priority check")
+                    continue
             
             if hasattr(collector_instance, 'get_activation_priority'):
                 priority = collector_instance.get_activation_priority(filter_criteria)

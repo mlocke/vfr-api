@@ -92,6 +92,37 @@ Successfully implemented the foundation infrastructure and government data colle
     - Auction results and upcoming auctions
     - Treasury security type support
 
+#### 2.4 Treasury Fiscal Data Collector ✅
+
+- **File**: `backend/data_collectors/government/treasury_fiscal_collector.py`
+- **Data Sources**:
+    - Federal debt to the penny (real $37.43T current data)
+    - Government spending and revenue analysis
+    - Daily Treasury operations and cash flow
+    - Federal budget analysis and trends
+- **Key Features**:
+    - No API key required (free access)
+    - Investment-grade fiscal health scoring (0-100 scale)
+    - Smart filter-driven activation system
+    - Fallback mechanisms for endpoint failures
+    - Market impact analysis and sector implications
+
+#### 2.5 Bureau of Economic Analysis (BEA) Collector ✅
+
+- **File**: `backend/data_collectors/government/bea_collector.py`
+- **Data Sources**:
+    - GDP components and quarterly/annual analysis (NIPA tables)
+    - Regional economic data (state, county, metro GDP and income)
+    - Industry-specific GDP and value-added metrics
+    - Personal income and consumption expenditures
+    - International trade and investment position data
+- **Key Features**:
+    - Free API key required (36-character UserID)
+    - Comprehensive economic analysis with investment context
+    - Regional investment opportunity identification
+    - Industry sector rotation insights
+    - Smart filter-driven activation for economic requests
+
 ### Phase 3: Configuration & Documentation (COMPLETED)
 
 #### 3.1 Configuration System ✅
@@ -133,11 +164,13 @@ Successfully implemented the foundation infrastructure and government data colle
 
 ### Collectors Implemented
 
-| Collector       | Status      | API Key Required | Rate Limit | Data Types                  |
-| --------------- | ----------- | ---------------- | ---------- | --------------------------- |
-| SEC EDGAR       | ✅ Complete | ❌ No            | 10 req/sec | Company filings, financials |
-| FRED            | ✅ Complete | ✅ Free          | 2 req/sec  | Economic indicators         |
-| Treasury Direct | ✅ Complete | ❌ No            | 1 req/sec  | Treasury data, yields       |
+| Collector        | Status      | API Key Required | Rate Limit | Data Types                     |
+| ---------------- | ----------- | ---------------- | ---------- | ------------------------------ |
+| SEC EDGAR        | ✅ Complete | ❌ No            | 10 req/sec | Company filings, financials    |
+| FRED             | ✅ Complete | ✅ Free          | 2 req/sec  | Economic indicators            |
+| Treasury Direct  | ✅ Complete | ❌ No            | 1 req/sec  | Treasury data, yields          |
+| Treasury Fiscal  | ✅ Complete | ❌ No            | 5 req/sec  | Federal debt, fiscal analysis  |
+| BEA              | ✅ Complete | ✅ Free          | 2 req/sec  | GDP, regional, industry data   |
 
 ### Architecture Quality
 
@@ -157,10 +190,16 @@ Successfully implemented the foundation infrastructure and government data colle
     - Instant approval, completely free
     - Provides access to 800K+ economic indicators
 
+2. **BEA API Key** (Free) - Required for GDP and regional data
+    - Get at: https://apps.bea.gov/API/signup/
+    - Free registration, 36-character UserID provided
+    - Provides access to comprehensive US economic statistics
+
 ### No Keys Required
 
 - **SEC EDGAR**: Direct API access, no registration needed
 - **Treasury Direct**: Government API, free access
+- **Treasury Fiscal**: Direct Treasury Fiscal Data API access, no registration needed
 
 ## 🚀 Ready for Production
 
@@ -239,6 +278,36 @@ macro_data = fred_collector.collect_batch(macro_indicators, date_range)
 rates = treasury_collector.collect_batch(yield_maturities, date_range)
 ```
 
+### For Fiscal and Investment Analysis
+
+```python
+# Treasury fiscal data for investment context
+fiscal_collector = TreasuryFiscalCollector()
+debt_data = fiscal_collector.get_debt_to_penny(limit=30)
+fiscal_health = fiscal_collector.get_comprehensive_fiscal_summary()
+
+# Investment-grade analysis
+fiscal_score = fiscal_health['investment_context']['fiscal_health_score']
+debt_level = fiscal_health['investment_context']['debt_implications']['debt_level_assessment']
+market_considerations = fiscal_health['investment_context']['market_considerations']
+```
+
+### For GDP and Regional Economic Analysis
+
+```python
+# BEA economic data for comprehensive analysis
+bea_collector = BEACollector()
+gdp_data = bea_collector.get_gdp_data(frequency='Q', years=['2024'])
+regional_data = bea_collector.get_regional_data(geography_type='state')
+industry_data = bea_collector.get_industry_gdp_data(industry_level='sector')
+
+# Economic context for investment decisions
+economic_summary = bea_collector.get_comprehensive_economic_summary()
+economic_trends = economic_summary['investment_context']['economic_trends']
+regional_opportunities = economic_summary['investment_context']['regional_opportunities']
+sector_performance = economic_summary['investment_context']['sector_performance']
+```
+
 ## 🏆 Success Criteria Met
 
 ### ✅ Technical Excellence
@@ -285,8 +354,10 @@ The government collectors alone provide access to:
 - **All US public company data** (SEC EDGAR)
 - **800,000+ economic indicators** (FRED)
 - **Complete US Treasury market data** (Treasury Direct)
+- **Real-time federal fiscal data** (Treasury Fiscal - $37.43T debt, spending analysis)
+- **Comprehensive GDP & regional data** (BEA - GDP components, state/metro economics, industry analysis)
 
-This covers the majority of data needs for fundamental analysis, economic research, and financial modeling without any paid API subscriptions.
+This covers the complete spectrum of data needs for fundamental analysis, economic research, fiscal analysis, regional investment strategies, and financial modeling without any paid API subscriptions.
 
 ---
 
