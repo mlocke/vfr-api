@@ -1,0 +1,42 @@
+{
+	"generated_at": "2025-09-06T16:28:27.122920",
+	"description": "FRED Economic Data Collector - Sample Outputs",
+	"total_files": 7,
+	"files": {
+		"historical_analysis.json": {
+			"description": "Historical analysis with trends and statistics for key economic indicators",
+			"timestamp": "2025-09-06T16:28:27.121509",
+			"data_type": "FRED Economic Data"
+		},
+		"series_search.json": {
+			"description": "Search results for popular economic topics in FRED database",
+			"timestamp": "2025-09-06T16:28:15.275617",
+			"data_type": "FRED Economic Data"
+		},
+		"basic_series_data.json": {
+			"description": "Basic economic indicators with latest values and recent historical data",
+			"timestamp": "2025-09-06T16:28:00.257719",
+			"data_type": "FRED Economic Data"
+		},
+		"series_updates.json": {
+			"description": "Recently updated economic series from FRED database",
+			"timestamp": "2025-09-06T16:28:00.499634",
+			"data_type": "FRED Economic Data"
+		},
+		"economic_dashboard.json": {
+			"description": "Comprehensive economic dashboard with key indicators by sector",
+			"timestamp": "2025-09-06T16:28:26.734509",
+			"data_type": "FRED Economic Data"
+		},
+		"tags_and_categories.json": {
+			"description": "Popular tags and root categories for organizing FRED data",
+			"timestamp": "2025-09-06T16:28:24.118729",
+			"data_type": "FRED Economic Data"
+		},
+		"economic_releases.json": {
+			"description": "Major economic data releases tracked by FRED",
+			"timestamp": "2025-09-06T16:28:00.622404",
+			"data_type": "FRED Economic Data"
+		}
+	}
+}

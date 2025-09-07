@@ -1,0 +1,37 @@
+{
+  "description": "Complete investment analysis dashboard for Apple Inc. with financial metrics, ratios, and basic investment insights ready for Stock Picker platform integration",
+  "timestamp": "2025-09-07T00:16:53.742496",
+  "sample_data": {
+    "company_overview": {
+      "name": "Apple Inc.",
+      "cik": 320193,
+      "sic_code": null,
+      "industry": null,
+      "tickers": [],
+      "exchanges": [],
+      "data_quality": "High"
+    },
+    "key_financial_metrics": {},
+    "financial_ratios": {},
+    "ratio_categories": {
+      "Liquidity": {},
+      "Leverage": {},
+      "Profitability": {}
+    },
+    "investment_summary": {
+      "strengths": [],
+      "concerns": [],
+      "overall_score": "Not Available"
+    },
+    "metadata": {
+      "analysis_date": "2025-09-07T00:16:53.742486",
+      "data_sources": [
+        "SEC EDGAR Company Facts API"
+      ],
+      "metrics_count": 0,
+      "ratios_count": 0
+    }
+  },
+  "data_type": "SEC EDGAR Financial Data",
+  "source": "U.S. Securities and Exchange Commission"
+}

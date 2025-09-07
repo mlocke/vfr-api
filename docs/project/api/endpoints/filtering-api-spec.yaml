@@ -1,1408 +1,1456 @@
 openapi: 3.0.3
 info:
-  title: Stock Picker Filtering API
-  description: |
-    Comprehensive API specification for stock screening and filtering capabilities.
-    Supports sector-based filtering, individual stock analysis, multi-criteria screening,
-    and real-time filter updates across global financial markets.
-  version: 1.0.0
-  contact:
-    name: Stock Picker API Team
-    email: api-support@stockpicker.com
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    title: Stock Picker Filtering API
+    description: |
+        Comprehensive API specification for stock screening and filtering capabilities.
+        Supports sector-based filtering, individual stock analysis, multi-criteria screening,
+        and real-time filter updates across global financial markets.
+    version: 1.0.0
+    contact:
+        name: Stock Picker API Team
+        email: api-support@stockpicker.com
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.stockpicker.com/v1
-    description: Production server
-  - url: https://staging-api.stockpicker.com/v1
-    description: Staging server
-  - url: https://dev-api.stockpicker.com/v1
-    description: Development server
+    - url: https://api.stockpicker.com/v1
+      description: Production server
+    - url: https://staging-api.stockpicker.com/v1
+      description: Staging server
+    - url: https://dev-api.stockpicker.com/v1
+      description: Development server
 
 security:
-  - ApiKeyAuth: []
-  - BearerAuth: []
+    - ApiKeyAuth: []
+    - BearerAuth: []
 
 paths:
-  /screening/filter:
-    post:
-      tags:
-        - Screening
-      summary: Apply multi-criteria stock filtering
-      description: |
-        Filter stocks based on multiple criteria including sector, market cap,
-        financial ratios, technical indicators, and geographic region.
-        Supports complex filtering combinations with logical operators.
-      operationId: filterStocks
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FilterRequest'
-            examples:
-              sector_filter:
-                summary: Simple sector filter
-                value:
-                  filters:
-                    sector: "energy"
-                  sort_by: "market_cap"
-                  sort_order: "desc"
-                  limit: 50
-              complex_filter:
-                summary: Complex multi-criteria filter
-                value:
-                  filters:
-                    sector: "technology"
-                    market_cap:
-                      min: 1000000000
-                      max: 100000000000
-                    pe_ratio:
-                      min: 5
-                      max: 25
-                    geographic_region: "north_america"
-                  sort_by: "pe_ratio"
-                  sort_order: "asc"
-                  limit: 100
-      responses:
-        '200':
-          description: Successfully filtered stocks
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FilterResponse'
-        '400':
-          description: Invalid filter criteria
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '429':
-          description: Rate limit exceeded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/filter:
+        post:
+            tags:
+                - Screening
+            summary: Apply multi-criteria stock filtering
+            description: |
+                Filter stocks based on multiple criteria including sector, market cap,
+                financial ratios, technical indicators, and geographic region.
+                Supports complex filtering combinations with logical operators.
+            operationId: filterStocks
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/FilterRequest"
+                        examples:
+                            sector_filter:
+                                summary: Simple sector filter
+                                value:
+                                    filters:
+                                        sector: "energy"
+                                    sort_by: "market_cap"
+                                    sort_order: "desc"
+                                    limit: 50
+                            complex_filter:
+                                summary: Complex multi-criteria filter
+                                value:
+                                    filters:
+                                        sector: "technology"
+                                        market_cap:
+                                            min: 1000000000
+                                            max: 100000000000
+                                        pe_ratio:
+                                            min: 5
+                                            max: 25
+                                        geographic_region: "north_america"
+                                    sort_by: "pe_ratio"
+                                    sort_order: "asc"
+                                    limit: 100
+            responses:
+                "200":
+                    description: Successfully filtered stocks
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FilterResponse"
+                "400":
+                    description: Invalid filter criteria
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "429":
+                    description: Rate limit exceeded
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Internal server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/sectors:
-    get:
-      tags:
-        - Reference Data
-      summary: Get available sectors for filtering
-      description: |
-        Retrieve list of available sectors with GICS classification codes,
-        stock counts, and market statistics for each sector.
-      operationId: getSectors
-      parameters:
-        - name: include_stats
-          in: query
-          description: Include statistical information for each sector
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: region
-          in: query
-          description: Filter sectors by geographic region
-          required: false
-          schema:
-            type: string
-            enum: [north_america, europe, asia_pacific, latin_america, africa, global]
-      responses:
-        '200':
-          description: List of available sectors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SectorsResponse'
-        '400':
-          description: Invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/sectors:
+        get:
+            tags:
+                - Reference Data
+            summary: Get available sectors for filtering
+            description: |
+                Retrieve list of available sectors with GICS classification codes,
+                stock counts, and market statistics for each sector.
+            operationId: getSectors
+            parameters:
+                - name: include_stats
+                  in: query
+                  description: Include statistical information for each sector
+                  required: false
+                  schema:
+                      type: boolean
+                      default: false
+                - name: region
+                  in: query
+                  description: Filter sectors by geographic region
+                  required: false
+                  schema:
+                      type: string
+                      enum: [north_america, europe, asia_pacific, latin_america, africa, global]
+            responses:
+                "200":
+                    description: List of available sectors
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SectorsResponse"
+                "400":
+                    description: Invalid parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/stocks/{symbol}:
-    get:
-      tags:
-        - Individual Stocks
-      summary: Get comprehensive individual stock analysis
-      description: |
-        Retrieve detailed analysis for a single stock including company profile,
-        financial metrics, peer comparison, and historical performance.
-      operationId: getStockAnalysis
-      parameters:
-        - name: symbol
-          in: path
-          description: Stock symbol (e.g., AAPL, GOOGL)
-          required: true
-          schema:
-            type: string
-            pattern: '^[A-Z]{1,10}$'
-        - name: exchange
-          in: query
-          description: Exchange code if symbol is ambiguous
-          required: false
-          schema:
-            type: string
-            example: "NASDAQ"
-        - name: include_peers
-          in: query
-          description: Include peer comparison analysis
-          required: false
-          schema:
-            type: boolean
-            default: true
-        - name: peer_count
-          in: query
-          description: Number of peers to include in comparison
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 20
-            default: 10
-        - name: time_horizon
-          in: query
-          description: Time horizon for historical analysis
-          required: false
-          schema:
-            type: string
-            enum: [1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y, 10y]
-            default: "1y"
-      responses:
-        '200':
-          description: Individual stock analysis
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StockAnalysisResponse'
-        '404':
-          description: Stock symbol not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '400':
-          description: Invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/stocks/{symbol}:
+        get:
+            tags:
+                - Individual Stocks
+            summary: Get comprehensive individual stock analysis
+            description: |
+                Retrieve detailed analysis for a single stock including company profile,
+                financial metrics, peer comparison, and historical performance.
+            operationId: getStockAnalysis
+            parameters:
+                - name: symbol
+                  in: path
+                  description: Stock symbol (e.g., AAPL, GOOGL)
+                  required: true
+                  schema:
+                      type: string
+                      pattern: "^[A-Z]{1,10}$"
+                - name: exchange
+                  in: query
+                  description: Exchange code if symbol is ambiguous
+                  required: false
+                  schema:
+                      type: string
+                      example: "NASDAQ"
+                - name: include_peers
+                  in: query
+                  description: Include peer comparison analysis
+                  required: false
+                  schema:
+                      type: boolean
+                      default: true
+                - name: peer_count
+                  in: query
+                  description: Number of peers to include in comparison
+                  required: false
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                      default: 10
+                - name: time_horizon
+                  in: query
+                  description: Time horizon for historical analysis
+                  required: false
+                  schema:
+                      type: string
+                      enum: [1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y, 10y]
+                      default: "1y"
+            responses:
+                "200":
+                    description: Individual stock analysis
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/StockAnalysisResponse"
+                "404":
+                    description: Stock symbol not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "400":
+                    description: Invalid parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/peers/{symbol}:
-    get:
-      tags:
-        - Individual Stocks
-      summary: Get peer companies for comparison
-      description: |
-        Identify and retrieve peer companies based on sector, market cap,
-        and business model similarity for comparative analysis.
-      operationId: getPeerCompanies
-      parameters:
-        - name: symbol
-          in: path
-          description: Stock symbol for peer identification
-          required: true
-          schema:
-            type: string
-            pattern: '^[A-Z]{1,10}$'
-        - name: count
-          in: query
-          description: Number of peers to return
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 50
-            default: 10
-        - name: similarity_method
-          in: query
-          description: Method for determining peer similarity
-          required: false
-          schema:
-            type: string
-            enum: [sector_only, market_cap_weighted, business_model, ml_similarity]
-            default: "market_cap_weighted"
-        - name: include_metrics
-          in: query
-          description: Include key financial metrics for peers
-          required: false
-          schema:
-            type: boolean
-            default: true
-      responses:
-        '200':
-          description: List of peer companies
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PeerCompaniesResponse'
-        '404':
-          description: Stock symbol not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/peers/{symbol}:
+        get:
+            tags:
+                - Individual Stocks
+            summary: Get peer companies for comparison
+            description: |
+                Identify and retrieve peer companies based on sector, market cap,
+                and business model similarity for comparative analysis.
+            operationId: getPeerCompanies
+            parameters:
+                - name: symbol
+                  in: path
+                  description: Stock symbol for peer identification
+                  required: true
+                  schema:
+                      type: string
+                      pattern: "^[A-Z]{1,10}$"
+                - name: count
+                  in: query
+                  description: Number of peers to return
+                  required: false
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 50
+                      default: 10
+                - name: similarity_method
+                  in: query
+                  description: Method for determining peer similarity
+                  required: false
+                  schema:
+                      type: string
+                      enum: [sector_only, market_cap_weighted, business_model, ml_similarity]
+                      default: "market_cap_weighted"
+                - name: include_metrics
+                  in: query
+                  description: Include key financial metrics for peers
+                  required: false
+                  schema:
+                      type: boolean
+                      default: true
+            responses:
+                "200":
+                    description: List of peer companies
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PeerCompaniesResponse"
+                "404":
+                    description: Stock symbol not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/custom:
-    post:
-      tags:
-        - Advanced Screening
-      summary: Create custom screening strategy
-      description: |
-        Create and execute custom screening strategies with user-defined formulas,
-        complex mathematical expressions, and advanced filtering logic.
-      operationId: customScreening
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CustomScreeningRequest'
-      responses:
-        '200':
-          description: Custom screening results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FilterResponse'
-        '400':
-          description: Invalid screening strategy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/custom:
+        post:
+            tags:
+                - Advanced Screening
+            summary: Create custom screening strategy
+            description: |
+                Create and execute custom screening strategies with user-defined formulas,
+                complex mathematical expressions, and advanced filtering logic.
+            operationId: customScreening
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CustomScreeningRequest"
+            responses:
+                "200":
+                    description: Custom screening results
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/FilterResponse"
+                "400":
+                    description: Invalid screening strategy
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/strategies:
-    get:
-      tags:
-        - Screening Strategies
-      summary: Get pre-built screening strategies
-      description: |
-        Retrieve list of pre-built screening strategies such as Growth,
-        Value, Income, Quality, and Momentum strategies.
-      operationId: getScreeningStrategies
-      parameters:
-        - name: category
-          in: query
-          description: Filter strategies by category
-          required: false
-          schema:
-            type: string
-            enum: [growth, value, income, quality, momentum, custom]
-      responses:
-        '200':
-          description: List of screening strategies
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ScreeningStrategiesResponse'
+    /screening/strategies:
+        get:
+            tags:
+                - Screening Strategies
+            summary: Get pre-built screening strategies
+            description: |
+                Retrieve list of pre-built screening strategies such as Growth,
+                Value, Income, Quality, and Momentum strategies.
+            operationId: getScreeningStrategies
+            parameters:
+                - name: category
+                  in: query
+                  description: Filter strategies by category
+                  required: false
+                  schema:
+                      type: string
+                      enum: [growth, value, income, quality, momentum, custom]
+            responses:
+                "200":
+                    description: List of screening strategies
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ScreeningStrategiesResponse"
 
-  /screening/realtime/subscribe:
-    post:
-      tags:
-        - Real-time
-      summary: Subscribe to real-time filter updates
-      description: |
-        Subscribe to WebSocket stream for real-time updates when stocks
-        meet or exit specified filtering criteria.
-      operationId: subscribeRealtimeFilters
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RealtimeSubscriptionRequest'
-      responses:
-        '200':
-          description: Subscription created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeSubscriptionResponse'
-        '400':
-          description: Invalid subscription parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/realtime/subscribe:
+        post:
+            tags:
+                - Real-time
+            summary: Subscribe to real-time filter updates
+            description: |
+                Subscribe to WebSocket stream for real-time updates when stocks
+                meet or exit specified filtering criteria.
+            operationId: subscribeRealtimeFilters
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/RealtimeSubscriptionRequest"
+            responses:
+                "200":
+                    description: Subscription created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RealtimeSubscriptionResponse"
+                "400":
+                    description: Invalid subscription parameters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/realtime/unsubscribe:
-    post:
-      tags:
-        - Real-time
-      summary: Unsubscribe from real-time filter updates
-      description: |
-        Unsubscribe from WebSocket stream and stop receiving real-time
-        filter updates for specified subscription ID.
-      operationId: unsubscribeRealtimeFilters
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subscription_id:
-                  type: string
-                  format: uuid
-              required:
-                - subscription_id
-      responses:
-        '200':
-          description: Successfully unsubscribed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Successfully unsubscribed"
-        '404':
-          description: Subscription not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/realtime/unsubscribe:
+        post:
+            tags:
+                - Real-time
+            summary: Unsubscribe from real-time filter updates
+            description: |
+                Unsubscribe from WebSocket stream and stop receiving real-time
+                filter updates for specified subscription ID.
+            operationId: unsubscribeRealtimeFilters
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                subscription_id:
+                                    type: string
+                                    format: uuid
+                            required:
+                                - subscription_id
+            responses:
+                "200":
+                    description: Successfully unsubscribed
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Successfully unsubscribed"
+                "404":
+                    description: Subscription not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/saved:
-    get:
-      tags:
-        - Saved Screens
-      summary: Get user's saved screening filters
-      description: |
-        Retrieve list of user's saved screening filters and strategies
-        for quick reuse and modification.
-      operationId: getSavedScreens
-      parameters:
-        - name: limit
-          in: query
-          description: Maximum number of saved screens to return
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: offset
-          in: query
-          description: Number of saved screens to skip
-          required: false
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-      responses:
-        '200':
-          description: List of saved screening filters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SavedScreensResponse'
+    /screening/saved:
+        get:
+            tags:
+                - Saved Screens
+            summary: Get user's saved screening filters
+            description: |
+                Retrieve list of user's saved screening filters and strategies
+                for quick reuse and modification.
+            operationId: getSavedScreens
+            parameters:
+                - name: limit
+                  in: query
+                  description: Maximum number of saved screens to return
+                  required: false
+                  schema:
+                      type: integer
+                      minimum: 1
+                      maximum: 100
+                      default: 20
+                - name: offset
+                  in: query
+                  description: Number of saved screens to skip
+                  required: false
+                  schema:
+                      type: integer
+                      minimum: 0
+                      default: 0
+            responses:
+                "200":
+                    description: List of saved screening filters
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SavedScreensResponse"
 
-    post:
-      tags:
-        - Saved Screens
-      summary: Save screening filter configuration
-      description: |
-        Save current screening filter configuration for future reuse
-        with optional name and description.
-      operationId: saveScreeningFilter
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveScreenRequest'
-      responses:
-        '201':
-          description: Screening filter saved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SavedScreenResponse'
-        '400':
-          description: Invalid save request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        post:
+            tags:
+                - Saved Screens
+            summary: Save screening filter configuration
+            description: |
+                Save current screening filter configuration for future reuse
+                with optional name and description.
+            operationId: saveScreeningFilter
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/SaveScreenRequest"
+            responses:
+                "201":
+                    description: Screening filter saved successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SavedScreenResponse"
+                "400":
+                    description: Invalid save request
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-  /screening/saved/{screen_id}:
-    get:
-      tags:
-        - Saved Screens
-      summary: Get specific saved screening filter
-      description: Retrieve a specific saved screening filter by ID
-      operationId: getSavedScreen
-      parameters:
-        - name: screen_id
-          in: path
-          description: Saved screen identifier
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Saved screening filter details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SavedScreenResponse'
-        '404':
-          description: Saved screen not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+    /screening/saved/{screen_id}:
+        get:
+            tags:
+                - Saved Screens
+            summary: Get specific saved screening filter
+            description: Retrieve a specific saved screening filter by ID
+            operationId: getSavedScreen
+            parameters:
+                - name: screen_id
+                  in: path
+                  description: Saved screen identifier
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+            responses:
+                "200":
+                    description: Saved screening filter details
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SavedScreenResponse"
+                "404":
+                    description: Saved screen not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-    put:
-      tags:
-        - Saved Screens
-      summary: Update saved screening filter
-      description: Update an existing saved screening filter configuration
-      operationId: updateSavedScreen
-      parameters:
-        - name: screen_id
-          in: path
-          description: Saved screen identifier
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SaveScreenRequest'
-      responses:
-        '200':
-          description: Saved screen updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SavedScreenResponse'
-        '404':
-          description: Saved screen not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        put:
+            tags:
+                - Saved Screens
+            summary: Update saved screening filter
+            description: Update an existing saved screening filter configuration
+            operationId: updateSavedScreen
+            parameters:
+                - name: screen_id
+                  in: path
+                  description: Saved screen identifier
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/SaveScreenRequest"
+            responses:
+                "200":
+                    description: Saved screen updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/SavedScreenResponse"
+                "404":
+                    description: Saved screen not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
-    delete:
-      tags:
-        - Saved Screens
-      summary: Delete saved screening filter
-      description: Remove a saved screening filter from user's collection
-      operationId: deleteSavedScreen
-      parameters:
-        - name: screen_id
-          in: path
-          description: Saved screen identifier
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Saved screen deleted successfully
-        '404':
-          description: Saved screen not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        delete:
+            tags:
+                - Saved Screens
+            summary: Delete saved screening filter
+            description: Remove a saved screening filter from user's collection
+            operationId: deleteSavedScreen
+            parameters:
+                - name: screen_id
+                  in: path
+                  description: Saved screen identifier
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+            responses:
+                "204":
+                    description: Saved screen deleted successfully
+                "404":
+                    description: Saved screen not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
 
 components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: API key for authentication
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token for user authentication
+    securitySchemes:
+        ApiKeyAuth:
+            type: apiKey
+            in: header
+            name: X-API-Key
+            description: API key for authentication
+        BearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: JWT token for user authentication
 
-  schemas:
-    FilterRequest:
-      type: object
-      properties:
-        filters:
-          type: object
-          description: Filtering criteria
-          properties:
-            # Sector and Industry Filters
-            sector:
-              type: string
-              enum: [energy, materials, industrials, consumer_discretionary, consumer_staples, 
-                     healthcare, financials, technology, communication, utilities, real_estate]
-              description: GICS sector classification
-            industry:
-              type: string
-              description: Specific industry within sector
-            
-            # Market Cap and Size Filters
-            market_cap:
-              type: object
-              properties:
-                min:
-                  type: number
-                  format: double
-                  minimum: 0
-                max:
-                  type: number
-                  format: double
-            
-            # Financial Ratio Filters
-            pe_ratio:
-              $ref: '#/components/schemas/RangeFilter'
-            pb_ratio:
-              $ref: '#/components/schemas/RangeFilter'
-            debt_to_equity:
-              $ref: '#/components/schemas/RangeFilter'
-            roe:
-              $ref: '#/components/schemas/RangeFilter'
-            roa:
-              $ref: '#/components/schemas/RangeFilter'
-            
-            # Growth Filters
-            revenue_growth:
-              $ref: '#/components/schemas/RangeFilter'
-            earnings_growth:
-              $ref: '#/components/schemas/RangeFilter'
-            
-            # Dividend Filters
-            dividend_yield:
-              $ref: '#/components/schemas/RangeFilter'
-            payout_ratio:
-              $ref: '#/components/schemas/RangeFilter'
-            
-            # Technical Filters
-            price_performance:
-              type: object
-              properties:
-                period:
-                  type: string
-                  enum: [1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y]
-                min_return:
-                  type: number
-                  format: double
-                max_return:
-                  type: number
-                  format: double
-            
-            volume:
-              type: object
-              properties:
-                min_avg_volume:
-                  type: number
-                  format: double
-                  minimum: 0
-                period_days:
-                  type: integer
-                  minimum: 1
-                  maximum: 252
-                  default: 30
-            
-            volatility:
-              $ref: '#/components/schemas/RangeFilter'
-            beta:
-              $ref: '#/components/schemas/RangeFilter'
-            
-            # Geographic Filters
-            geographic_region:
-              type: string
-              enum: [north_america, europe, asia_pacific, latin_america, africa, global]
-            country:
-              type: array
-              items:
-                type: string
-                pattern: '^[A-Z]{2}$'
-                description: ISO 3166-1 alpha-2 country codes
-            exchange:
-              type: array
-              items:
-                type: string
-                description: Exchange codes (NYSE, NASDAQ, LSE, etc.)
-            
-            # ESG Filters
-            esg_score:
-              $ref: '#/components/schemas/RangeFilter'
-            environmental_score:
-              $ref: '#/components/schemas/RangeFilter'
-            social_score:
-              $ref: '#/components/schemas/RangeFilter'
-            governance_score:
-              $ref: '#/components/schemas/RangeFilter'
-            
-            # Exclusion Filters
-            exclude_stocks:
-              type: array
-              items:
-                type: string
-                description: Stock symbols to exclude from results
-            exclude_sectors:
-              type: array
-              items:
-                type: string
-                enum: [energy, materials, industrials, consumer_discretionary, consumer_staples, 
-                       healthcare, financials, technology, communication, utilities, real_estate]
-            
-            # Advanced Filters
-            custom_formula:
-              type: string
-              description: Custom mathematical expression for filtering
-              example: "(roe > 0.15) and (debt_to_equity < 0.5) and (pe_ratio < 20)"
-            
-        # Sorting and Pagination
-        sort_by:
-          type: string
-          enum: [market_cap, pe_ratio, pb_ratio, dividend_yield, revenue_growth, 
-                 price_performance, volume, beta, symbol, company_name]
-          default: market_cap
-        sort_order:
-          type: string
-          enum: [asc, desc]
-          default: desc
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 1000
-          default: 100
-        offset:
-          type: integer
-          minimum: 0
-          default: 0
-        
-        # Response Options
-        include_metrics:
-          type: boolean
-          default: true
-          description: Include detailed financial metrics in response
-        include_technical:
-          type: boolean
-          default: false
-          description: Include technical analysis indicators
-        currency:
-          type: string
-          enum: [USD, EUR, GBP, JPY, CAD, AUD, CHF]
-          default: USD
-          description: Currency for financial data normalization
-
-    RangeFilter:
-      type: object
-      properties:
-        min:
-          type: number
-          format: double
-        max:
-          type: number
-          format: double
-        exclude_null:
-          type: boolean
-          default: true
-
-    FilterResponse:
-      type: object
-      properties:
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/StockSummary'
-        pagination:
-          $ref: '#/components/schemas/PaginationInfo'
-        filter_summary:
-          $ref: '#/components/schemas/FilterSummary'
-        execution_time_ms:
-          type: number
-          format: double
-        data_timestamp:
-          type: string
-          format: date-time
-
-    StockSummary:
-      type: object
-      properties:
-        symbol:
-          type: string
-          example: "AAPL"
-        company_name:
-          type: string
-          example: "Apple Inc."
-        exchange:
-          type: string
-          example: "NASDAQ"
-        sector:
-          type: string
-          example: "technology"
-        industry:
-          type: string
-          example: "Consumer Electronics"
-        country:
-          type: string
-          pattern: '^[A-Z]{2}$'
-          example: "US"
-        currency:
-          type: string
-          example: "USD"
-        
-        # Market Data
-        price_current:
-          type: number
-          format: double
-        market_cap:
-          type: number
-          format: double
-        volume_24h:
-          type: number
-          format: double
-        
-        # Financial Metrics (conditionally included)
-        financial_metrics:
-          type: object
-          properties:
-            pe_ratio:
-              type: number
-              format: double
-            pb_ratio:
-              type: number
-              format: double
-            debt_to_equity:
-              type: number
-              format: double
-            roe:
-              type: number
-              format: double
-            roa:
-              type: number
-              format: double
-            dividend_yield:
-              type: number
-              format: double
-            revenue_growth_ttm:
-              type: number
-              format: double
-            earnings_growth_ttm:
-              type: number
-              format: double
-        
-        # Technical Indicators (conditionally included)
-        technical_indicators:
-          type: object
-          properties:
-            beta:
-              type: number
-              format: double
-            volatility_30d:
-              type: number
-              format: double
-            price_performance:
-              type: object
-              additionalProperties:
-                type: number
-                format: double
-            moving_averages:
-              type: object
-              properties:
-                sma_20:
-                  type: number
-                  format: double
-                sma_50:
-                  type: number
-                  format: double
-                sma_200:
-                  type: number
-                  format: double
-        
-        # ESG Data (conditionally included)
-        esg_scores:
-          type: object
-          properties:
-            overall_score:
-              type: number
-              format: double
-              minimum: 0
-              maximum: 100
-            environmental_score:
-              type: number
-              format: double
-            social_score:
-              type: number
-              format: double
-            governance_score:
-              type: number
-              format: double
-        
-        data_quality_score:
-          type: number
-          format: double
-          minimum: 0
-          maximum: 1
-        last_updated:
-          type: string
-          format: date-time
-
-    StockAnalysisResponse:
-      type: object
-      properties:
-        stock:
-          $ref: '#/components/schemas/DetailedStockInfo'
-        peer_comparison:
-          type: array
-          items:
-            $ref: '#/components/schemas/StockSummary'
-        sector_analysis:
-          $ref: '#/components/schemas/SectorAnalysis'
-        risk_metrics:
-          $ref: '#/components/schemas/RiskMetrics'
-        historical_performance:
-          type: array
-          items:
-            $ref: '#/components/schemas/HistoricalDataPoint'
-
-    DetailedStockInfo:
-      allOf:
-        - $ref: '#/components/schemas/StockSummary'
-        - type: object
-          properties:
-            company_profile:
-              type: object
-              properties:
-                description:
-                  type: string
-                headquarters:
-                  type: string
-                employees:
-                  type: integer
-                founded_year:
-                  type: integer
-                website:
-                  type: string
-                  format: uri
-                ceo:
-                  type: string
-            fundamental_analysis:
-              type: object
-              properties:
-                valuation_metrics:
-                  type: object
-                profitability_metrics:
-                  type: object
-                liquidity_metrics:
-                  type: object
-                efficiency_metrics:
-                  type: object
-            analyst_consensus:
-              type: object
-              properties:
-                recommendation:
-                  type: string
-                  enum: [strong_buy, buy, hold, sell, strong_sell]
-                price_target:
-                  type: number
-                  format: double
-                analyst_count:
-                  type: integer
-
-    SectorAnalysis:
-      type: object
-      properties:
-        sector_name:
-          type: string
-        sector_performance:
-          type: object
-          additionalProperties:
-            type: number
-            format: double
-        sector_averages:
-          type: object
-          properties:
-            pe_ratio:
-              type: number
-              format: double
-            pb_ratio:
-              type: number
-              format: double
-            dividend_yield:
-              type: number
-              format: double
-        market_cap_distribution:
-          type: object
-          properties:
-            large_cap_percentage:
-              type: number
-              format: double
-            mid_cap_percentage:
-              type: number
-              format: double
-            small_cap_percentage:
-              type: number
-              format: double
-
-    RiskMetrics:
-      type: object
-      properties:
-        beta:
-          type: number
-          format: double
-        volatility:
-          type: object
-          properties:
-            daily:
-              type: number
-              format: double
-            monthly:
-              type: number
-              format: double
-            annual:
-              type: number
-              format: double
-        var:
-          type: object
-          properties:
-            var_95:
-              type: number
-              format: double
-            var_99:
-              type: number
-              format: double
-        correlation_sp500:
-          type: number
-          format: double
-        sharpe_ratio:
-          type: number
-          format: double
-
-    PaginationInfo:
-      type: object
-      properties:
-        total_count:
-          type: integer
-        page_count:
-          type: integer
-        current_page:
-          type: integer
-        page_size:
-          type: integer
-        has_next_page:
-          type: boolean
-        has_previous_page:
-          type: boolean
-
-    FilterSummary:
-      type: object
-      properties:
-        applied_filters:
-          type: object
-        results_count:
-          type: integer
-        filter_selectivity:
-          type: number
-          format: double
-          description: Percentage of total universe that passed filters
-        performance_stats:
-          type: object
-          properties:
-            query_time_ms:
-              type: number
-              format: double
-            cache_hit:
-              type: boolean
-            data_sources_used:
-              type: array
-              items:
-                type: string
-
-    SectorsResponse:
-      type: object
-      properties:
-        sectors:
-          type: array
-          items:
+    schemas:
+        FilterRequest:
             type: object
             properties:
-              code:
-                type: string
-              name:
-                type: string
-              gics_code:
-                type: integer
-              stock_count:
-                type: integer
-              market_cap_total:
-                type: number
-                format: double
-              average_pe_ratio:
-                type: number
-                format: double
-              performance_ytd:
-                type: number
-                format: double
-        metadata:
-          type: object
-          properties:
-            total_sectors:
-              type: integer
-            data_timestamp:
-              type: string
-              format: date-time
+                filters:
+                    type: object
+                    description: Filtering criteria
+                    properties:
+                        # Sector and Industry Filters
+                        sector:
+                            type: string
+                            enum:
+                                [
+                                    energy,
+                                    materials,
+                                    industrials,
+                                    consumer_discretionary,
+                                    consumer_staples,
+                                    healthcare,
+                                    financials,
+                                    technology,
+                                    communication,
+                                    utilities,
+                                    real_estate,
+                                ]
+                            description: GICS sector classification
+                        industry:
+                            type: string
+                            description: Specific industry within sector
 
-    PeerCompaniesResponse:
-      type: object
-      properties:
-        target_stock:
-          $ref: '#/components/schemas/StockSummary'
-        peers:
-          type: array
-          items:
-            allOf:
-              - $ref: '#/components/schemas/StockSummary'
-              - type: object
-                properties:
-                  similarity_score:
+                        # Market Cap and Size Filters
+                        market_cap:
+                            type: object
+                            properties:
+                                min:
+                                    type: number
+                                    format: double
+                                    minimum: 0
+                                max:
+                                    type: number
+                                    format: double
+
+                        # Financial Ratio Filters
+                        pe_ratio:
+                            $ref: "#/components/schemas/RangeFilter"
+                        pb_ratio:
+                            $ref: "#/components/schemas/RangeFilter"
+                        debt_to_equity:
+                            $ref: "#/components/schemas/RangeFilter"
+                        roe:
+                            $ref: "#/components/schemas/RangeFilter"
+                        roa:
+                            $ref: "#/components/schemas/RangeFilter"
+
+                        # Growth Filters
+                        revenue_growth:
+                            $ref: "#/components/schemas/RangeFilter"
+                        earnings_growth:
+                            $ref: "#/components/schemas/RangeFilter"
+
+                        # Dividend Filters
+                        dividend_yield:
+                            $ref: "#/components/schemas/RangeFilter"
+                        payout_ratio:
+                            $ref: "#/components/schemas/RangeFilter"
+
+                        # Technical Filters
+                        price_performance:
+                            type: object
+                            properties:
+                                period:
+                                    type: string
+                                    enum: [1d, 1w, 1m, 3m, 6m, 1y, 2y, 5y]
+                                min_return:
+                                    type: number
+                                    format: double
+                                max_return:
+                                    type: number
+                                    format: double
+
+                        volume:
+                            type: object
+                            properties:
+                                min_avg_volume:
+                                    type: number
+                                    format: double
+                                    minimum: 0
+                                period_days:
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 252
+                                    default: 30
+
+                        volatility:
+                            $ref: "#/components/schemas/RangeFilter"
+                        beta:
+                            $ref: "#/components/schemas/RangeFilter"
+
+                        # Geographic Filters
+                        geographic_region:
+                            type: string
+                            enum:
+                                [north_america, europe, asia_pacific, latin_america, africa, global]
+                        country:
+                            type: array
+                            items:
+                                type: string
+                                pattern: "^[A-Z]{2}$"
+                                description: ISO 3166-1 alpha-2 country codes
+                        exchange:
+                            type: array
+                            items:
+                                type: string
+                                description: Exchange codes (NYSE, NASDAQ, LSE, etc.)
+
+                        # ESG Filters
+                        esg_score:
+                            $ref: "#/components/schemas/RangeFilter"
+                        environmental_score:
+                            $ref: "#/components/schemas/RangeFilter"
+                        social_score:
+                            $ref: "#/components/schemas/RangeFilter"
+                        governance_score:
+                            $ref: "#/components/schemas/RangeFilter"
+
+                        # Exclusion Filters
+                        exclude_stocks:
+                            type: array
+                            items:
+                                type: string
+                                description: Stock symbols to exclude from results
+                        exclude_sectors:
+                            type: array
+                            items:
+                                type: string
+                                enum:
+                                    [
+                                        energy,
+                                        materials,
+                                        industrials,
+                                        consumer_discretionary,
+                                        consumer_staples,
+                                        healthcare,
+                                        financials,
+                                        technology,
+                                        communication,
+                                        utilities,
+                                        real_estate,
+                                    ]
+
+                        # Advanced Filters
+                        custom_formula:
+                            type: string
+                            description: Custom mathematical expression for filtering
+                            example: "(roe > 0.15) and (debt_to_equity < 0.5) and (pe_ratio < 20)"
+
+                # Sorting and Pagination
+                sort_by:
+                    type: string
+                    enum:
+                        [
+                            market_cap,
+                            pe_ratio,
+                            pb_ratio,
+                            dividend_yield,
+                            revenue_growth,
+                            price_performance,
+                            volume,
+                            beta,
+                            symbol,
+                            company_name,
+                        ]
+                    default: market_cap
+                sort_order:
+                    type: string
+                    enum: [asc, desc]
+                    default: desc
+                limit:
+                    type: integer
+                    minimum: 1
+                    maximum: 1000
+                    default: 100
+                offset:
+                    type: integer
+                    minimum: 0
+                    default: 0
+
+                # Response Options
+                include_metrics:
+                    type: boolean
+                    default: true
+                    description: Include detailed financial metrics in response
+                include_technical:
+                    type: boolean
+                    default: false
+                    description: Include technical analysis indicators
+                currency:
+                    type: string
+                    enum: [USD, EUR, GBP, JPY, CAD, AUD, CHF]
+                    default: USD
+                    description: Currency for financial data normalization
+
+        RangeFilter:
+            type: object
+            properties:
+                min:
+                    type: number
+                    format: double
+                max:
+                    type: number
+                    format: double
+                exclude_null:
+                    type: boolean
+                    default: true
+
+        FilterResponse:
+            type: object
+            properties:
+                results:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/StockSummary"
+                pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+                filter_summary:
+                    $ref: "#/components/schemas/FilterSummary"
+                execution_time_ms:
+                    type: number
+                    format: double
+                data_timestamp:
+                    type: string
+                    format: date-time
+
+        StockSummary:
+            type: object
+            properties:
+                symbol:
+                    type: string
+                    example: "AAPL"
+                company_name:
+                    type: string
+                    example: "Apple Inc."
+                exchange:
+                    type: string
+                    example: "NASDAQ"
+                sector:
+                    type: string
+                    example: "technology"
+                industry:
+                    type: string
+                    example: "Consumer Electronics"
+                country:
+                    type: string
+                    pattern: "^[A-Z]{2}$"
+                    example: "US"
+                currency:
+                    type: string
+                    example: "USD"
+
+                # Market Data
+                price_current:
+                    type: number
+                    format: double
+                market_cap:
+                    type: number
+                    format: double
+                volume_24h:
+                    type: number
+                    format: double
+
+                # Financial Metrics (conditionally included)
+                financial_metrics:
+                    type: object
+                    properties:
+                        pe_ratio:
+                            type: number
+                            format: double
+                        pb_ratio:
+                            type: number
+                            format: double
+                        debt_to_equity:
+                            type: number
+                            format: double
+                        roe:
+                            type: number
+                            format: double
+                        roa:
+                            type: number
+                            format: double
+                        dividend_yield:
+                            type: number
+                            format: double
+                        revenue_growth_ttm:
+                            type: number
+                            format: double
+                        earnings_growth_ttm:
+                            type: number
+                            format: double
+
+                # Technical Indicators (conditionally included)
+                technical_indicators:
+                    type: object
+                    properties:
+                        beta:
+                            type: number
+                            format: double
+                        volatility_30d:
+                            type: number
+                            format: double
+                        price_performance:
+                            type: object
+                            additionalProperties:
+                                type: number
+                                format: double
+                        moving_averages:
+                            type: object
+                            properties:
+                                sma_20:
+                                    type: number
+                                    format: double
+                                sma_50:
+                                    type: number
+                                    format: double
+                                sma_200:
+                                    type: number
+                                    format: double
+
+                # ESG Data (conditionally included)
+                esg_scores:
+                    type: object
+                    properties:
+                        overall_score:
+                            type: number
+                            format: double
+                            minimum: 0
+                            maximum: 100
+                        environmental_score:
+                            type: number
+                            format: double
+                        social_score:
+                            type: number
+                            format: double
+                        governance_score:
+                            type: number
+                            format: double
+
+                data_quality_score:
                     type: number
                     format: double
                     minimum: 0
                     maximum: 1
-                  similarity_factors:
-                    type: array
-                    items:
-                      type: string
-        comparison_metrics:
-          type: object
-          properties:
-            peer_group_averages:
-              type: object
-            target_vs_peers:
-              type: object
+                last_updated:
+                    type: string
+                    format: date-time
 
-    CustomScreeningRequest:
-      type: object
-      properties:
-        strategy_name:
-          type: string
-          maxLength: 100
-        description:
-          type: string
-          maxLength: 500
-        formula:
-          type: string
-          description: |
-            Mathematical expression using financial metrics. 
-            Available variables: pe_ratio, pb_ratio, roe, roa, debt_to_equity, 
-            revenue_growth, earnings_growth, dividend_yield, market_cap, beta
-          example: "(roe > 0.15 and debt_to_equity < 0.5) or (dividend_yield > 0.04 and pe_ratio < 15)"
-        weight_factors:
-          type: object
-          description: Optional weighting factors for scoring
-          additionalProperties:
-            type: number
-            format: double
-        filters:
-          $ref: '#/components/schemas/FilterRequest'
-        save_strategy:
-          type: boolean
-          default: false
-      required:
-        - formula
-
-    ScreeningStrategiesResponse:
-      type: object
-      properties:
-        strategies:
-          type: array
-          items:
+        StockAnalysisResponse:
             type: object
             properties:
-              id:
-                type: string
-                format: uuid
-              name:
-                type: string
-              category:
-                type: string
-                enum: [growth, value, income, quality, momentum, custom]
-              description:
-                type: string
-              filter_criteria:
-                type: object
-              performance_stats:
-                type: object
-                properties:
-                  backtested_returns:
+                stock:
+                    $ref: "#/components/schemas/DetailedStockInfo"
+                peer_comparison:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/StockSummary"
+                sector_analysis:
+                    $ref: "#/components/schemas/SectorAnalysis"
+                risk_metrics:
+                    $ref: "#/components/schemas/RiskMetrics"
+                historical_performance:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/HistoricalDataPoint"
+
+        DetailedStockInfo:
+            allOf:
+                - $ref: "#/components/schemas/StockSummary"
+                - type: object
+                  properties:
+                      company_profile:
+                          type: object
+                          properties:
+                              description:
+                                  type: string
+                              headquarters:
+                                  type: string
+                              employees:
+                                  type: integer
+                              founded_year:
+                                  type: integer
+                              website:
+                                  type: string
+                                  format: uri
+                              ceo:
+                                  type: string
+                      fundamental_analysis:
+                          type: object
+                          properties:
+                              valuation_metrics:
+                                  type: object
+                              profitability_metrics:
+                                  type: object
+                              liquidity_metrics:
+                                  type: object
+                              efficiency_metrics:
+                                  type: object
+                      analyst_consensus:
+                          type: object
+                          properties:
+                              recommendation:
+                                  type: string
+                                  enum: [strong_buy, buy, hold, sell, strong_sell]
+                              price_target:
+                                  type: number
+                                  format: double
+                              analyst_count:
+                                  type: integer
+
+        SectorAnalysis:
+            type: object
+            properties:
+                sector_name:
+                    type: string
+                sector_performance:
                     type: object
-                  success_rate:
+                    additionalProperties:
+                        type: number
+                        format: double
+                sector_averages:
+                    type: object
+                    properties:
+                        pe_ratio:
+                            type: number
+                            format: double
+                        pb_ratio:
+                            type: number
+                            format: double
+                        dividend_yield:
+                            type: number
+                            format: double
+                market_cap_distribution:
+                    type: object
+                    properties:
+                        large_cap_percentage:
+                            type: number
+                            format: double
+                        mid_cap_percentage:
+                            type: number
+                            format: double
+                        small_cap_percentage:
+                            type: number
+                            format: double
+
+        RiskMetrics:
+            type: object
+            properties:
+                beta:
                     type: number
                     format: double
-                  risk_metrics:
+                volatility:
                     type: object
-              popularity:
+                    properties:
+                        daily:
+                            type: number
+                            format: double
+                        monthly:
+                            type: number
+                            format: double
+                        annual:
+                            type: number
+                            format: double
+                var:
+                    type: object
+                    properties:
+                        var_95:
+                            type: number
+                            format: double
+                        var_99:
+                            type: number
+                            format: double
+                correlation_sp500:
+                    type: number
+                    format: double
+                sharpe_ratio:
+                    type: number
+                    format: double
+
+        PaginationInfo:
+            type: object
+            properties:
+                total_count:
+                    type: integer
+                page_count:
+                    type: integer
+                current_page:
+                    type: integer
+                page_size:
+                    type: integer
+                has_next_page:
+                    type: boolean
+                has_previous_page:
+                    type: boolean
+
+        FilterSummary:
+            type: object
+            properties:
+                applied_filters:
+                    type: object
+                results_count:
+                    type: integer
+                filter_selectivity:
+                    type: number
+                    format: double
+                    description: Percentage of total universe that passed filters
+                performance_stats:
+                    type: object
+                    properties:
+                        query_time_ms:
+                            type: number
+                            format: double
+                        cache_hit:
+                            type: boolean
+                        data_sources_used:
+                            type: array
+                            items:
+                                type: string
+
+        SectorsResponse:
+            type: object
+            properties:
+                sectors:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            code:
+                                type: string
+                            name:
+                                type: string
+                            gics_code:
+                                type: integer
+                            stock_count:
+                                type: integer
+                            market_cap_total:
+                                type: number
+                                format: double
+                            average_pe_ratio:
+                                type: number
+                                format: double
+                            performance_ytd:
+                                type: number
+                                format: double
+                metadata:
+                    type: object
+                    properties:
+                        total_sectors:
+                            type: integer
+                        data_timestamp:
+                            type: string
+                            format: date-time
+
+        PeerCompaniesResponse:
+            type: object
+            properties:
+                target_stock:
+                    $ref: "#/components/schemas/StockSummary"
+                peers:
+                    type: array
+                    items:
+                        allOf:
+                            - $ref: "#/components/schemas/StockSummary"
+                            - type: object
+                              properties:
+                                  similarity_score:
+                                      type: number
+                                      format: double
+                                      minimum: 0
+                                      maximum: 1
+                                  similarity_factors:
+                                      type: array
+                                      items:
+                                          type: string
+                comparison_metrics:
+                    type: object
+                    properties:
+                        peer_group_averages:
+                            type: object
+                        target_vs_peers:
+                            type: object
+
+        CustomScreeningRequest:
+            type: object
+            properties:
+                strategy_name:
+                    type: string
+                    maxLength: 100
+                description:
+                    type: string
+                    maxLength: 500
+                formula:
+                    type: string
+                    description: |
+                        Mathematical expression using financial metrics. 
+                        Available variables: pe_ratio, pb_ratio, roe, roa, debt_to_equity, 
+                        revenue_growth, earnings_growth, dividend_yield, market_cap, beta
+                    example: "(roe > 0.15 and debt_to_equity < 0.5) or (dividend_yield > 0.04 and pe_ratio < 15)"
+                weight_factors:
+                    type: object
+                    description: Optional weighting factors for scoring
+                    additionalProperties:
+                        type: number
+                        format: double
+                filters:
+                    $ref: "#/components/schemas/FilterRequest"
+                save_strategy:
+                    type: boolean
+                    default: false
+            required:
+                - formula
+
+        ScreeningStrategiesResponse:
+            type: object
+            properties:
+                strategies:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            id:
+                                type: string
+                                format: uuid
+                            name:
+                                type: string
+                            category:
+                                type: string
+                                enum: [growth, value, income, quality, momentum, custom]
+                            description:
+                                type: string
+                            filter_criteria:
+                                type: object
+                            performance_stats:
+                                type: object
+                                properties:
+                                    backtested_returns:
+                                        type: object
+                                    success_rate:
+                                        type: number
+                                        format: double
+                                    risk_metrics:
+                                        type: object
+                            popularity:
+                                type: integer
+                                description: Number of users using this strategy
+
+        RealtimeSubscriptionRequest:
+            type: object
+            properties:
+                filters:
+                    $ref: "#/components/schemas/FilterRequest"
+                update_frequency:
+                    type: string
+                    enum: [real_time, 1m, 5m, 15m, 1h]
+                    default: real_time
+                notification_preferences:
+                    type: object
+                    properties:
+                        new_matches:
+                            type: boolean
+                            default: true
+                        exits:
+                            type: boolean
+                            default: true
+                        significant_changes:
+                            type: boolean
+                            default: false
+                        threshold_percentage:
+                            type: number
+                            format: double
+                            default: 5.0
+                max_results:
+                    type: integer
+                    minimum: 1
+                    maximum: 500
+                    default: 100
+            required:
+                - filters
+
+        RealtimeSubscriptionResponse:
+            type: object
+            properties:
+                subscription_id:
+                    type: string
+                    format: uuid
+                websocket_url:
+                    type: string
+                    format: uri
+                status:
+                    type: string
+                    enum: [active, pending, failed]
+                filters_applied:
+                    type: object
+                estimated_update_frequency:
+                    type: string
+                expires_at:
+                    type: string
+                    format: date-time
+
+        SaveScreenRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                    maxLength: 100
+                description:
+                    type: string
+                    maxLength: 500
+                filters:
+                    $ref: "#/components/schemas/FilterRequest"
+                is_public:
+                    type: boolean
+                    default: false
+                tags:
+                    type: array
+                    items:
+                        type: string
+                        maxLength: 50
+            required:
+                - name
+                - filters
+
+        SavedScreensResponse:
+            type: object
+            properties:
+                saved_screens:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/SavedScreenResponse"
+                pagination:
+                    $ref: "#/components/schemas/PaginationInfo"
+
+        SavedScreenResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                description:
+                    type: string
+                filters:
+                    type: object
+                is_public:
+                    type: boolean
+                tags:
+                    type: array
+                    items:
+                        type: string
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+                last_used:
+                    type: string
+                    format: date-time
+                usage_count:
+                    type: integer
+                performance_stats:
+                    type: object
+                    properties:
+                        avg_execution_time_ms:
+                            type: number
+                            format: double
+                        avg_results_count:
+                            type: integer
+                        last_execution_time:
+                            type: string
+                            format: date-time
+
+        HistoricalDataPoint:
+            type: object
+            properties:
+                date:
+                    type: string
+                    format: date
+                price:
+                    type: number
+                    format: double
+                volume:
+                    type: number
+                    format: double
+                market_cap:
+                    type: number
+                    format: double
+                financial_metrics:
+                    type: object
+                    additionalProperties:
+                        type: number
+                        format: double
+
+        ErrorResponse:
+            type: object
+            properties:
+                error:
+                    type: object
+                    properties:
+                        code:
+                            type: string
+                            enum:
+                                [
+                                    INVALID_FILTER_CRITERIA,
+                                    SYMBOL_NOT_FOUND,
+                                    RATE_LIMIT_EXCEEDED,
+                                    INSUFFICIENT_PERMISSIONS,
+                                    DATA_UNAVAILABLE,
+                                    INTERNAL_SERVER_ERROR,
+                                    VALIDATION_ERROR,
+                                    SUBSCRIPTION_NOT_FOUND,
+                                    CUSTOM_FORMULA_ERROR,
+                                ]
+                        message:
+                            type: string
+                        details:
+                            type: object
+                        timestamp:
+                            type: string
+                            format: date-time
+                        request_id:
+                            type: string
+                            format: uuid
+            required:
+                - error
+
+    parameters:
+        LimitParam:
+            name: limit
+            in: query
+            description: Maximum number of results to return
+            required: false
+            schema:
                 type: integer
-                description: Number of users using this strategy
+                minimum: 1
+                maximum: 1000
+                default: 100
 
-    RealtimeSubscriptionRequest:
-      type: object
-      properties:
-        filters:
-          $ref: '#/components/schemas/FilterRequest'
-        update_frequency:
-          type: string
-          enum: [real_time, 1m, 5m, 15m, 1h]
-          default: real_time
-        notification_preferences:
-          type: object
-          properties:
-            new_matches:
-              type: boolean
-              default: true
-            exits:
-              type: boolean
-              default: true
-            significant_changes:
-              type: boolean
-              default: false
-            threshold_percentage:
-              type: number
-              format: double
-              default: 5.0
-        max_results:
-          type: integer
-          minimum: 1
-          maximum: 500
-          default: 100
-      required:
-        - filters
+        OffsetParam:
+            name: offset
+            in: query
+            description: Number of results to skip for pagination
+            required: false
+            schema:
+                type: integer
+                minimum: 0
+                default: 0
 
-    RealtimeSubscriptionResponse:
-      type: object
-      properties:
-        subscription_id:
-          type: string
-          format: uuid
-        websocket_url:
-          type: string
-          format: uri
-        status:
-          type: string
-          enum: [active, pending, failed]
-        filters_applied:
-          type: object
-        estimated_update_frequency:
-          type: string
-        expires_at:
-          type: string
-          format: date-time
+        SortByParam:
+            name: sort_by
+            in: query
+            description: Field to sort results by
+            required: false
+            schema:
+                type: string
+                enum:
+                    [
+                        market_cap,
+                        pe_ratio,
+                        pb_ratio,
+                        dividend_yield,
+                        revenue_growth,
+                        price_performance,
+                        volume,
+                        beta,
+                        symbol,
+                        company_name,
+                    ]
+                default: market_cap
 
-    SaveScreenRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          maxLength: 100
-        description:
-          type: string
-          maxLength: 500
-        filters:
-          $ref: '#/components/schemas/FilterRequest'
-        is_public:
-          type: boolean
-          default: false
-        tags:
-          type: array
-          items:
-            type: string
-            maxLength: 50
-      required:
-        - name
-        - filters
-
-    SavedScreensResponse:
-      type: object
-      properties:
-        saved_screens:
-          type: array
-          items:
-            $ref: '#/components/schemas/SavedScreenResponse'
-        pagination:
-          $ref: '#/components/schemas/PaginationInfo'
-
-    SavedScreenResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-        filters:
-          type: object
-        is_public:
-          type: boolean
-        tags:
-          type: array
-          items:
-            type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        last_used:
-          type: string
-          format: date-time
-        usage_count:
-          type: integer
-        performance_stats:
-          type: object
-          properties:
-            avg_execution_time_ms:
-              type: number
-              format: double
-            avg_results_count:
-              type: integer
-            last_execution_time:
-              type: string
-              format: date-time
-
-    HistoricalDataPoint:
-      type: object
-      properties:
-        date:
-          type: string
-          format: date
-        price:
-          type: number
-          format: double
-        volume:
-          type: number
-          format: double
-        market_cap:
-          type: number
-          format: double
-        financial_metrics:
-          type: object
-          additionalProperties:
-            type: number
-            format: double
-
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: object
-          properties:
-            code:
-              type: string
-              enum: [
-                INVALID_FILTER_CRITERIA,
-                SYMBOL_NOT_FOUND,
-                RATE_LIMIT_EXCEEDED,
-                INSUFFICIENT_PERMISSIONS,
-                DATA_UNAVAILABLE,
-                INTERNAL_SERVER_ERROR,
-                VALIDATION_ERROR,
-                SUBSCRIPTION_NOT_FOUND,
-                CUSTOM_FORMULA_ERROR
-              ]
-            message:
-              type: string
-            details:
-              type: object
-            timestamp:
-              type: string
-              format: date-time
-            request_id:
-              type: string
-              format: uuid
-      required:
-        - error
-
-  parameters:
-    LimitParam:
-      name: limit
-      in: query
-      description: Maximum number of results to return
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 1000
-        default: 100
-
-    OffsetParam:
-      name: offset
-      in: query
-      description: Number of results to skip for pagination
-      required: false
-      schema:
-        type: integer
-        minimum: 0
-        default: 0
-
-    SortByParam:
-      name: sort_by
-      in: query
-      description: Field to sort results by
-      required: false
-      schema:
-        type: string
-        enum: [market_cap, pe_ratio, pb_ratio, dividend_yield, revenue_growth, 
-               price_performance, volume, beta, symbol, company_name]
-        default: market_cap
-
-    SortOrderParam:
-      name: sort_order
-      in: query
-      description: Sort order for results
-      required: false
-      schema:
-        type: string
-        enum: [asc, desc]
-        default: desc
+        SortOrderParam:
+            name: sort_order
+            in: query
+            description: Sort order for results
+            required: false
+            schema:
+                type: string
+                enum: [asc, desc]
+                default: desc
 
 # Webhook specification for real-time updates
 webhooks:
-  realtimeFilterUpdate:
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subscription_id:
-                  type: string
-                  format: uuid
-                event_type:
-                  type: string
-                  enum: [new_match, exit, significant_change]
-                timestamp:
-                  type: string
-                  format: date-time
-                data:
-                  oneOf:
-                    - $ref: '#/components/schemas/StockSummary'
-                    - type: array
-                      items:
-                        $ref: '#/components/schemas/StockSummary'
-      responses:
-        '200':
-          description: Webhook received successfully
+    realtimeFilterUpdate:
+        post:
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                subscription_id:
+                                    type: string
+                                    format: uuid
+                                event_type:
+                                    type: string
+                                    enum: [new_match, exit, significant_change]
+                                timestamp:
+                                    type: string
+                                    format: date-time
+                                data:
+                                    oneOf:
+                                        - $ref: "#/components/schemas/StockSummary"
+                                        - type: array
+                                          items:
+                                              $ref: "#/components/schemas/StockSummary"
+            responses:
+                "200":
+                    description: Webhook received successfully

@@ -1,0 +1,63 @@
+{
+  "description": "Real multi-company financial comparison showing actual revenue, income, and calculated ratios for major technology companies",
+  "timestamp": "2025-09-07T01:12:20.595407",
+  "sample_data": {
+    "comparison_summary": {
+      "AAPL": {
+        "company_name": "Apple Inc.",
+        "cik": "320193",
+        "key_metrics": {
+          "revenue": 265595000000,
+          "net_income": 93736000000,
+          "total_assets": 364980000000,
+          "stockholders_equity": 56950000000
+        },
+        "key_ratios": {
+          "net_profit_margin": 35.29,
+          "return_on_equity": 164.59,
+          "return_on_assets": 25.68
+        },
+        "data_quality": "Complete"
+      },
+      "MSFT": {
+        "company_name": "MICROSOFT CORPORATION",
+        "cik": "789019",
+        "key_metrics": {
+          "revenue": 62484000000,
+          "net_income": 101832000000,
+          "total_assets": 619003000000,
+          "stockholders_equity": 343479000000
+        },
+        "key_ratios": {
+          "net_profit_margin": 162.97,
+          "return_on_equity": 29.65,
+          "return_on_assets": 16.45
+        },
+        "data_quality": "Complete"
+      },
+      "GOOGL": {
+        "company_name": "Alphabet Inc.",
+        "cik": "1652044",
+        "key_metrics": {
+          "revenue": 257637000000,
+          "net_income": 100118000000,
+          "total_assets": 450256000000,
+          "stockholders_equity": 325084000000
+        },
+        "key_ratios": {
+          "net_profit_margin": 38.86,
+          "return_on_equity": 30.8,
+          "return_on_assets": 22.24
+        },
+        "data_quality": "Complete"
+      }
+    },
+    "metadata": {
+      "comparison_date": "2025-09-07T01:12:19.266716",
+      "companies_analyzed": 3,
+      "source": "SEC EDGAR Multi-Company Analysis"
+    }
+  },
+  "data_type": "SEC EDGAR Financial Data",
+  "source": "U.S. Securities and Exchange Commission"
+}

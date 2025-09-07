@@ -1,9 +1,40 @@
 {
-  "name": "stock-picker-screenshots",
-  "version": "1.0.0",
-  "description": "Design iteration screenshots",
-  "main": "docs/project/screenshots/screenshot.js",
-  "dependencies": {
-    "playwright": "^1.40.0"
-  }
+	"name": "stock-picker-financial-platform",
+	"version": "1.0.0",
+	"description": "Cyberpunk-themed Financial Analysis & Stock Prediction Platform",
+	"main": "src/index.tsx",
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"type-check": "tsc --noEmit",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"dependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"next": "^14.0.0",
+		"d3": "^7.8.5",
+		"chart.js": "^4.4.0",
+		"react-chartjs-2": "^5.2.0",
+		"plotly.js": "^2.27.0",
+		"react-plotly.js": "^2.6.0",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.0",
+		"@types/d3": "^7.4.3",
+		"typescript": "^5.2.0",
+		"tailwindcss": "^3.3.0",
+		"autoprefixer": "^10.4.16",
+		"postcss": "^8.4.31",
+		"playwright": "^1.40.0"
+	},
+	"devDependencies": {
+		"eslint": "^8.52.0",
+		"eslint-config-next": "^14.0.0",
+		"@typescript-eslint/eslint-plugin": "^6.9.0",
+		"@typescript-eslint/parser": "^6.9.0",
+		"prettier": "^3.0.0"
+	}
 }

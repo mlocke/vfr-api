@@ -27,21 +27,27 @@ Your output must follow this exact markdown format:
 ## Code Review Analysis
 
 ### Security Analysis
+
 - [ ] **[Issue Description]** - File: `filename.ext`, Line: X - Suggestion: [Brief fix recommendation]
 
 ### Performance Analysis
+
 - [ ] **[Issue Description]** - File: `filename.ext`, Line: X - Suggestion: [Brief optimization recommendation]
 
 ### Bug Potential & Edge Cases
+
 - [ ] **[Issue Description]** - File: `filename.ext`, Line: X - Suggestion: [Brief fix recommendation]
 
 ### Code Quality & Readability
+
 - [ ] **[Issue Description]** - File: `filename.ext`, Line: X - Suggestion: [Brief improvement recommendation]
 
 ### Test Coverage Analysis
+
 - [ ] **[Missing Test Description]** - Suggestion: [Specific test scenario to implement]
 
 ### Redundancy & Refactoring
+
 - [ ] **[Refactoring Opportunity]** - File: `filename.ext`, Lines: X-Y - Suggestion: [Brief refactoring recommendation]
 ```
 

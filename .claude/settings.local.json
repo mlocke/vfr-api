@@ -1,34 +1,61 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(claude mcp add:*)",
-      "Bash(claude mcp:*)",
-      "Bash(claude config show)",
-      "Bash(npm search:*)",
-      "Bash(npx firecrawl-mcp:*)",
-      "Bash(claude config)",
-      "Bash(claude config list)",
-      "Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp)",
-      "Read(//Users/michaellocke/**)",
-      "Bash(npx @executeautomation/playwright-mcp:*)",
-      "Bash(npx @playwright/mcp:*)",
-      "Bash(timeout 5 npx better-playwright-mcp)",
-      "Bash(gtimeout 5 npx better-playwright-mcp)",
-      "Bash(npx playwright:*)",
-      "Bash(timeout 5s npx @playwright/mcp)",
-      "Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp scrape --url \"https://www.caffeinemarketing.com/blog/best-fintech-website-design-examples\" --formats markdown)",
-      "WebFetch(domain:www.caffeinemarketing.com)",
-      "WebSearch",
-      "Bash(npx create-next-app:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(pip --version)",
-      "Bash(pip3:*)",
-      "Bash(docker:*)",
-      "Bash(git --version)",
-      "Bash(npx prettier:*)"
-    ],
-    "deny": [],
-    "ask": []
-  }
+	"permissions": {
+		"allow": [
+			"Bash(claude mcp add:*)",
+			"Bash(claude mcp:*)",
+			"Bash(claude config show)",
+			"Bash(npm search:*)",
+			"Bash(npx firecrawl-mcp:*)",
+			"Bash(claude config)",
+			"Bash(claude config list)",
+			"Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp)",
+			"Read(//Users/michaellocke/**)",
+			"Bash(npx @executeautomation/playwright-mcp:*)",
+			"Bash(npx @playwright/mcp:*)",
+			"Bash(timeout 5 npx better-playwright-mcp)",
+			"Bash(gtimeout 5 npx better-playwright-mcp)",
+			"Bash(npx playwright:*)",
+			"Bash(timeout 5s npx @playwright/mcp)",
+			"Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp scrape --url \"https://www.caffeinemarketing.com/blog/best-fintech-website-design-examples\" --formats markdown)",
+			"WebFetch(domain:www.caffeinemarketing.com)",
+			"WebSearch",
+			"Bash(npx create-next-app:*)",
+			"Bash(git commit:*)",
+			"Bash(git push:*)",
+			"Bash(pip --version)",
+			"Bash(pip3:*)",
+			"Bash(docker:*)",
+			"Bash(git --version)",
+			"Bash(npx prettier:*)",
+			"Bash(python:*)"
+		],
+		"deny": [],
+		"ask": []
+	},
+	"enableAllProjectMcpServers": true,
+	"hooks": {
+      "Stop": [
+        {
+          "matcher": "",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "say 'Claude finished'"
+            }
+          ]
+
+        }
+      ],
+      "SubagentStop": [
+        {
+          "matcher": "",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "say 'Agent completed'"
+            }
+          ]
+        }
+      ]
+    }
 }

@@ -7,7 +7,7 @@ A comprehensive suite of modular data collectors for aggregating financial and e
 This module provides a standardized, plug-and-play architecture for collecting financial data from 80+ different sources. Each collector implements a consistent interface with built-in:
 
 - **Rate limiting** and API quota management
-- **Data validation** and quality checks  
+- **Data validation** and quality checks
 - **Error handling** with exponential backoff
 - **Caching** for performance optimization
 - **Comprehensive logging** and monitoring
@@ -59,26 +59,26 @@ economic_data = fred_collector.collect_batch(
 
 ### Government Sources (Free/Low-cost)
 
-| Collector | Description | API Key Required | Rate Limit |
-|-----------|-------------|------------------|------------|
-| **SEC EDGAR** | Public company filings, 10-K/10-Q reports | ❌ No | 10 req/sec |
-| **FRED** | 800K+ economic indicators from Federal Reserve | ✅ Free | 120 req/min |
-| **Treasury Direct** | US Treasury securities, bonds, auction data | ❌ No | 60 req/min |
+| Collector           | Description                                    | API Key Required | Rate Limit  |
+| ------------------- | ---------------------------------------------- | ---------------- | ----------- |
+| **SEC EDGAR**       | Public company filings, 10-K/10-Q reports      | ❌ No            | 10 req/sec  |
+| **FRED**            | 800K+ economic indicators from Federal Reserve | ✅ Free          | 120 req/min |
+| **Treasury Direct** | US Treasury securities, bonds, auction data    | ❌ No            | 60 req/min  |
 
 ### Market Data Sources (Paid)
 
-| Collector | Description | API Key Required | Rate Limit |
-|-----------|-------------|------------------|------------|
-| **Alpha Vantage** | Real-time stocks, forex, crypto | ✅ Paid | 5 req/min (free) |
-| **IEX Cloud** | Professional market data | ✅ Paid | Varies by plan |
-| **Polygon.io** | Comprehensive financial data | ✅ Paid | 5 req/min (free) |
+| Collector         | Description                     | API Key Required | Rate Limit       |
+| ----------------- | ------------------------------- | ---------------- | ---------------- |
+| **Alpha Vantage** | Real-time stocks, forex, crypto | ✅ Paid          | 5 req/min (free) |
+| **IEX Cloud**     | Professional market data        | ✅ Paid          | Varies by plan   |
+| **Polygon.io**    | Comprehensive financial data    | ✅ Paid          | 5 req/min (free) |
 
 ### News & Sentiment Sources
 
-| Collector | Description | API Key Required | Rate Limit |
-|-----------|-------------|------------------|------------|
-| **News API** | Financial news aggregation | ✅ Paid | 1000 req/day (free) |
-| **Reddit** | Social sentiment from r/investing | ✅ Free | 60 req/min |
+| Collector    | Description                       | API Key Required | Rate Limit          |
+| ------------ | --------------------------------- | ---------------- | ------------------- |
+| **News API** | Financial news aggregation        | ✅ Paid          | 1000 req/day (free) |
+| **Reddit**   | Social sentiment from r/investing | ✅ Free          | 60 req/min          |
 
 ## 🏗️ Architecture
 
@@ -131,7 +131,7 @@ Create a `.env` file with your API keys:
 # Government APIs (some require free registration)
 FRED_API_KEY=your_fred_api_key_here
 
-# Market Data APIs (require paid subscriptions)  
+# Market Data APIs (require paid subscriptions)
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here
 IEX_CLOUD_API_KEY=your_iex_cloud_key_here
 NEWS_API_KEY=your_news_api_key_here
@@ -154,7 +154,7 @@ config = CollectorConfig(
     log_level="INFO"
 )
 
-# Development configuration  
+# Development configuration
 dev_config = CollectorConfig(
     timeout=10,
     max_retries=1,
@@ -245,7 +245,7 @@ for maturity, yield_rate in current_curve.items():
 # Stream real-time data (where available)
 for data_point in collector.collect_realtime(symbols=["AAPL"]):
     print(f"Real-time update: {data_point}")
-    
+
     # Process data point
     if data_point['data_type'] == 'filing':
         print(f"New filing: {data_point['form_type']}")
@@ -335,7 +335,7 @@ Try the example demos:
 # Government collectors demo
 python examples/government_collectors_demo.py
 
-# Market data collectors demo  
+# Market data collectors demo
 python examples/market_data_demo.py
 
 # Combined analysis example
@@ -390,37 +390,38 @@ data2 = collector.collect_batch(symbols, date_range)  # From cache
 ### Free Government APIs
 
 1. **FRED API**: https://fred.stlouisfed.org/docs/api/api_key.html
-   - Free registration required
-   - Instant approval
-   - 120 requests/minute limit
+    - Free registration required
+    - Instant approval
+    - 120 requests/minute limit
 
 2. **SEC EDGAR**: No registration required
-   - Rate limited to 10 requests/second
-   - Must include User-Agent header
+    - Rate limited to 10 requests/second
+    - Must include User-Agent header
 
-3. **Treasury Direct**: No registration required  
-   - No explicit rate limits
-   - Be respectful with request frequency
+3. **Treasury Direct**: No registration required
+    - No explicit rate limits
+    - Be respectful with request frequency
 
 ### Paid Market Data APIs
 
 1. **Alpha Vantage**: https://www.alphavantage.co/support/#api-key
-   - Free tier: 5 calls/minute, 500 calls/day
-   - Paid plans available
+    - Free tier: 5 calls/minute, 500 calls/day
+    - Paid plans available
 
 2. **IEX Cloud**: https://iexcloud.io/
-   - Usage-based pricing
-   - Free tier available
+    - Usage-based pricing
+    - Free tier available
 
 3. **News API**: https://newsapi.org/
-   - 1000 requests/day free
-   - Paid plans for production use
+    - 1000 requests/day free
+    - Paid plans for production use
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 **Rate Limiting Errors**
+
 ```python
 # Check rate limit status
 status = collector.get_rate_limits()
@@ -429,7 +430,8 @@ if not status['can_proceed']:
     print(f"Rate limited. Wait {wait_time} seconds.")
 ```
 
-**Authentication Failures**  
+**Authentication Failures**
+
 ```python
 # Test authentication
 if not collector.authenticate():
@@ -439,6 +441,7 @@ if not collector.authenticate():
 ```
 
 **Data Validation Issues**
+
 ```python
 # Get detailed validation report
 report = validator.validate(data)

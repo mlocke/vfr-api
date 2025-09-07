@@ -1,9 +1,11 @@
 # Stock Picker Platform - Module Structure & Architecture
 
 ## Overview
+
 This document outlines the comprehensive module breakdown and directory structure for the Stock Picker Financial Analysis & Prediction Platform, designed to create a scalable, maintainable, and well-organized codebase.
 
 ## Current Documentation State
+
 ```
 /docs/
 ├── project/
@@ -15,6 +17,7 @@ This document outlines the comprehensive module breakdown and directory structur
 ## Proposed Complete Directory Structure
 
 ### `/docs` Organization
+
 ```
 /docs/
 ├── project/
@@ -105,31 +108,111 @@ This document outlines the comprehensive module breakdown and directory structur
 
 ## Core Application Modules
 
+## Filter-Driven Data Collection Architecture
+
+### Overview
+The Stock Picker platform uses a **filter-driven collector routing system** that intelligently selects optimal data sources based on request specificity and data requirements.
+
+**Key Principle**: Each collector only activates when it provides the best value for the specific request type, ensuring efficiency and optimal data quality.
+
+### Request Flow
+```
+User Request → Filter Analysis → Collector Selection → Data Collection → Response
+```
+
+### Collector Activation Rules
+
+#### SEC EDGAR Collector
+**Purpose**: Individual company deep-dive fundamental analysis
+**Optimal Use**: 1-20 specific companies
+
+**✅ ACTIVATES When**:
+- Specific company symbols requested (`['AAPL', 'MSFT']`)
+- Individual company analysis (1 company) 
+- Small comparison groups (2-20 companies)
+- Fundamental analysis requested
+
+**❌ SKIPS When**:
+- Broad sector requests (`sector: 'Technology'`)
+- Index-only requests (`index: 'S&P500'`)
+- Economic indicator requests (routes to FRED)
+- Large company lists (>20, routes to bulk APIs)
+
+**Priority**: 100 (highest) for single company, scales down by group size
+
+#### FRED Collector
+**Purpose**: Economic data and macroeconomic indicators  
+**Optimal Use**: Economic context and macro trends
+
+**✅ ACTIVATES When**:
+- Economic indicators requested (`fred_series: 'GDP'`)
+- Macroeconomic data analysis
+- Market context for investment decisions
+
+#### Market Data Collectors
+**Purpose**: Real-time pricing, technical analysis, sector screening
+**Optimal Use**: Broad market analysis and screening
+
+**✅ ACTIVATES When**:
+- Sector analysis (`sector: 'Technology'`)
+- Index requests (`index: 'S&P500'`)
+- Large company screening (>20 companies)
+- Technical analysis requests
+- Real-time price data
+
+### Implementation Example
+```python
+from backend.data_collectors.collector_router import route_data_request
+
+# Individual Company Analysis (SEC EDGAR activates)
+collectors = route_data_request({
+    'companies': ['AAPL'],
+    'analysis_type': 'fundamental'  
+})
+# Result: [SECEdgarCollector()] - comprehensive fundamental data
+
+# Sector Analysis (Market API activates)  
+collectors = route_data_request({
+    'sector': 'Technology',
+    'market_cap': 'Large'
+})
+# Result: [MarketScreenerCollector()] - sector companies list
+
+# Economic Data (FRED activates)
+collectors = route_data_request({
+    'fred_series': 'GDP',
+    'analysis_type': 'economic'
+})
+# Result: [FREDCollector()] - macroeconomic indicators
+```
+
 ### 1. Data Ingestion Module (`/modules/data-ingestion/`)
 
-**Purpose**: Aggregate data from multiple external sources
+**Purpose**: Aggregate data from multiple external sources with intelligent routing
 **Technologies**: Python, AsyncIO, API clients, WebSocket connections
 
 #### Sub-components:
+
 - **Government Data Connectors**
-  - SEC EDGAR API integration (10-K, 10-Q, 8-K reports)
-  - Federal Reserve (FRED API) economic data
-  - Treasury Direct API for bond/yield data
-  - Economic indicators and employment statistics
+    - SEC EDGAR API integration (10-K, 10-Q, 8-K reports)
+    - Federal Reserve (FRED API) economic data
+    - Treasury Direct API for bond/yield data
+    - Economic indicators and employment statistics
 
 - **Market Data APIs**
-  - Real-time stock prices (NYSE, NASDAQ, LSE, TSE)
-  - Historical price data and trading volumes
-  - Options data and volatility metrics
-  - Earnings reports and financial statements
-  - Alpha Vantage, IEX Cloud, Quandl, Yahoo Finance, Polygon.io
+    - Real-time stock prices (NYSE, NASDAQ, LSE, TSE)
+    - Historical price data and trading volumes
+    - Options data and volatility metrics
+    - Earnings reports and financial statements
+    - Alpha Vantage, IEX Cloud, Quandl, Yahoo Finance, Polygon.io
 
 - **News & Sentiment Sources**
-  - Financial news aggregation (News API)
-  - Social media sentiment (Twitter API, Reddit API)
-  - Press releases and analyst reports
+    - Financial news aggregation (News API)
+    - Social media sentiment (Twitter API, Reddit API)
+    - Press releases and analyst reports
 
 #### Key Features:
+
 - Rate limiting and API quota management
 - Data validation and error handling
 - Real-time streaming capabilities
@@ -141,23 +224,24 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Python, Pandas, NumPy, Apache Airflow, Redis
 
 #### Sub-components:
+
 - **ETL Pipelines**
-  - Data transformation and normalization
-  - Quality validation and cleansing
-  - Duplicate detection and handling
-  - Scheduled batch processing jobs
+    - Data transformation and normalization
+    - Quality validation and cleansing
+    - Duplicate detection and handling
+    - Scheduled batch processing jobs
 
 - **Storage Management**
-  - PostgreSQL for structured data
-  - InfluxDB for time-series data
-  - Redis for caching frequently accessed data
-  - Data archiving and retention policies
+    - PostgreSQL for structured data
+    - InfluxDB for time-series data
+    - Redis for caching frequently accessed data
+    - Data archiving and retention policies
 
 - **Performance Optimization**
-  - Query optimization strategies
-  - Index management
-  - Connection pooling
-  - Memory management for large datasets
+    - Query optimization strategies
+    - Index management
+    - Connection pooling
+    - Memory management for large datasets
 
 ### 3. Analysis Engine Module (`/modules/analysis-engine/`)
 
@@ -165,25 +249,26 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Python, NumPy, SciPy, TA-Lib, Pandas
 
 #### Sub-components:
+
 - **Technical Analysis**
-  - Moving averages (SMA, EMA, MACD)
-  - Momentum indicators (RSI, Stochastic)
-  - Support/resistance level identification
-  - Chart pattern recognition (Head & Shoulders, Triangles, etc.)
-  - Volume analysis and price action
+    - Moving averages (SMA, EMA, MACD)
+    - Momentum indicators (RSI, Stochastic)
+    - Support/resistance level identification
+    - Chart pattern recognition (Head & Shoulders, Triangles, etc.)
+    - Volume analysis and price action
 
 - **Fundamental Analysis**
-  - P/E ratio, debt-to-equity calculations
-  - Revenue growth and profit margin trends
-  - Sector comparison and peer analysis
-  - Financial health scoring
-  - Valuation metrics and ratios
+    - P/E ratio, debt-to-equity calculations
+    - Revenue growth and profit margin trends
+    - Sector comparison and peer analysis
+    - Financial health scoring
+    - Valuation metrics and ratios
 
 - **Custom Indicators**
-  - Proprietary scoring algorithms
-  - Multi-timeframe analysis
-  - Cross-asset correlations
-  - Market regime detection
+    - Proprietary scoring algorithms
+    - Multi-timeframe analysis
+    - Cross-asset correlations
+    - Market regime detection
 
 ### 4. Machine Learning & Prediction Module (`/modules/ml-prediction/`)
 
@@ -191,23 +276,24 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Python, scikit-learn, TensorFlow, PyTorch, NLTK
 
 #### Sub-components:
+
 - **Price Prediction Models**
-  - Time series forecasting (LSTM, ARIMA, Prophet)
-  - Regression models for price targets
-  - Ensemble methods for improved accuracy
-  - Model validation and backtesting
+    - Time series forecasting (LSTM, ARIMA, Prophet)
+    - Regression models for price targets
+    - Ensemble methods for improved accuracy
+    - Model validation and backtesting
 
 - **Sentiment Analysis**
-  - Natural language processing for news
-  - Social media sentiment scoring
-  - Market sentiment indicators
-  - Real-time sentiment tracking
+    - Natural language processing for news
+    - Social media sentiment scoring
+    - Market sentiment indicators
+    - Real-time sentiment tracking
 
 - **Risk Assessment**
-  - Volatility forecasting (GARCH models)
-  - Value at Risk (VaR) calculations
-  - Monte Carlo simulations
-  - Correlation analysis and risk metrics
+    - Volatility forecasting (GARCH models)
+    - Value at Risk (VaR) calculations
+    - Monte Carlo simulations
+    - Correlation analysis and risk metrics
 
 ### 5. Portfolio Optimization Module (`/modules/portfolio-optimization/`)
 
@@ -215,23 +301,24 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Python, SciPy, cvxpy, Pandas
 
 #### Sub-components:
+
 - **Stock Screening**
-  - Multi-criteria filtering systems
-  - Fundamental and technical screening
-  - Sector and market cap filters
-  - Custom scoring algorithms
+    - Multi-criteria filtering systems
+    - Fundamental and technical screening
+    - Sector and market cap filters
+    - Custom scoring algorithms
 
 - **Portfolio Construction**
-  - Modern Portfolio Theory implementation
-  - Risk-adjusted return calculations
-  - Asset allocation optimization
-  - Diversification analysis
+    - Modern Portfolio Theory implementation
+    - Risk-adjusted return calculations
+    - Asset allocation optimization
+    - Diversification analysis
 
 - **Risk Management**
-  - Position sizing algorithms
-  - Stop-loss and take-profit strategies
-  - Portfolio rebalancing alerts
-  - Performance attribution analysis
+    - Position sizing algorithms
+    - Stop-loss and take-profit strategies
+    - Portfolio rebalancing alerts
+    - Performance attribution analysis
 
 ### 6. API & Backend Services Module (`/modules/api-services/`)
 
@@ -239,23 +326,24 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Python, FastAPI/Flask, JWT, SQLAlchemy
 
 #### Sub-components:
+
 - **REST API Design**
-  - RESTful endpoint architecture
-  - OpenAPI/Swagger documentation
-  - Request/response validation
-  - Error handling and status codes
+    - RESTful endpoint architecture
+    - OpenAPI/Swagger documentation
+    - Request/response validation
+    - Error handling and status codes
 
 - **Authentication & Security**
-  - JWT token management
-  - Role-based access control
-  - API rate limiting
-  - Input validation and sanitization
+    - JWT token management
+    - Role-based access control
+    - API rate limiting
+    - Input validation and sanitization
 
 - **Background Services**
-  - Celery task queue management
-  - Scheduled data updates
-  - Email notifications
-  - Performance monitoring
+    - Celery task queue management
+    - Scheduled data updates
+    - Email notifications
+    - Performance monitoring
 
 ### 7. Frontend Dashboard Module (`/modules/frontend-dashboard/`)
 
@@ -263,23 +351,24 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: React/Next.js, D3.js, Chart.js, WebSocket
 
 #### Sub-components:
+
 - **Dashboard Components**
-  - Real-time market data displays
-  - Interactive charts and graphs
-  - Portfolio performance widgets
-  - News and alerts feed
+    - Real-time market data displays
+    - Interactive charts and graphs
+    - Portfolio performance widgets
+    - News and alerts feed
 
 - **Data Visualization**
-  - Candlestick charts
-  - Technical indicator overlays
-  - Heatmaps and treemaps
-  - Correlation matrices
+    - Candlestick charts
+    - Technical indicator overlays
+    - Heatmaps and treemaps
+    - Correlation matrices
 
 - **User Interface**
-  - Responsive design implementation
-  - Dark/light theme support
-  - Customizable layouts
-  - Mobile optimization
+    - Responsive design implementation
+    - Dark/light theme support
+    - Customizable layouts
+    - Mobile optimization
 
 ### 8. Infrastructure Module (`/modules/infrastructure/`)
 
@@ -287,45 +376,50 @@ This document outlines the comprehensive module breakdown and directory structur
 **Technologies**: Docker, Kubernetes, Prometheus, Grafana
 
 #### Sub-components:
+
 - **Containerization**
-  - Docker configurations
-  - Multi-stage builds
-  - Security scanning
-  - Image optimization
+    - Docker configurations
+    - Multi-stage builds
+    - Security scanning
+    - Image optimization
 
 - **Orchestration**
-  - Kubernetes manifests
-  - Helm chart templates
-  - Auto-scaling configurations
-  - Load balancing setup
+    - Kubernetes manifests
+    - Helm chart templates
+    - Auto-scaling configurations
+    - Load balancing setup
 
 - **Monitoring & Observability**
-  - Application performance monitoring
-  - Log aggregation and analysis
-  - Health checks and alerts
-  - Resource utilization tracking
+    - Application performance monitoring
+    - Log aggregation and analysis
+    - Health checks and alerts
+    - Resource utilization tracking
 
 ## Development Guidelines
 
 ### Module Independence
+
 - Each module should be independently deployable
 - Clear API contracts between modules
 - Minimal coupling and high cohesion
 - Standardized logging and error handling
 
 ### Technology Standards
+
 - Python 3.9+ for backend services
 - TypeScript for frontend development
 - PostgreSQL for primary data storage
 - Redis for caching and session management
 
 ### Testing Strategy
+
 - Unit tests for individual components
 - Integration tests for module interactions
 - End-to-end tests for user workflows
 - Performance testing for data processing
 
 ### Documentation Requirements
+
 - Technical specifications for each module
 - API documentation with examples
 - Deployment and configuration guides
@@ -334,21 +428,25 @@ This document outlines the comprehensive module breakdown and directory structur
 ## Implementation Priority
 
 ### Phase 1: Foundation
+
 1. Data Ingestion Module (basic API connections)
 2. Data Processing Module (core ETL pipelines)
 3. Basic Frontend Dashboard (market data display)
 
 ### Phase 2: Analysis
+
 1. Analysis Engine Module (technical indicators)
 2. ML Prediction Module (basic forecasting)
 3. Enhanced Frontend (interactive charts)
 
 ### Phase 3: Optimization
+
 1. Portfolio Optimization Module
 2. Advanced ML models
 3. Real-time streaming capabilities
 
 ### Phase 4: Production
+
 1. Infrastructure Module (full deployment)
 2. Monitoring and alerting
 3. Performance optimization

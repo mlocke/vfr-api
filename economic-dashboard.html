@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>FRED Economic Data Dashboard - Stock Picker</title>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<style>
+			:root {
+				/* Cyberpunk Color Palette */
+				--neon-cyan: #00ffff;
+				--neon-green: #00ff7f;
+				--electric-pink: #ff00ff;
+				--electric-blue: #0080ff;
+				--neon-yellow: #ffff00;
+				--hot-pink: #ff0080;
+				--deep-black: #000000;
+				--space-blue: #1a1a2e;
+				--cyber-gray: #16213e;
+
+				/* Sector Colors */
+				--employment-glow: #00ff7f;
+				--inflation-glow: #ff00ff;
+				--interest-glow: #00ffff;
+				--growth-glow: #0080ff;
+				--housing-glow: #ffff00;
+				--international-glow: #ff0080;
+
+				/* Glow Effects */
+				--glow-cyan: 0 0 20px rgba(0, 255, 255, 0.5);
+				--glow-green: 0 0 20px rgba(0, 255, 127, 0.5);
+				--glow-pink: 0 0 20px rgba(255, 0, 255, 0.5);
+				--cyber-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+			}
+
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #1a1a2e 100%);
+				font-family:
+					"Inter",
+					-apple-system,
+					BlinkMacSystemFont,
+					"Segoe UI",
+					sans-serif;
+				color: #ffffff;
+				min-height: 100vh;
+				overflow-x: hidden;
+			}
+
+			.container {
+				max-width: 1400px;
+				margin: 0 auto;
+				padding: 2rem 1rem;
+			}
+
+			/* Header */
+			.dashboard-header {
+				text-align: center;
+				margin-bottom: 3rem;
+			}
+
+			.dashboard-title {
+				font-size: 3.5rem;
+				font-weight: 700;
+				background: linear-gradient(
+					135deg,
+					var(--neon-cyan),
+					var(--electric-blue),
+					var(--electric-pink)
+				);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+				text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+				margin-bottom: 1rem;
+			}
+
+			.dashboard-subtitle {
+				font-size: 1.3rem;
+				color: rgba(255, 255, 255, 0.8);
+				font-weight: 300;
+			}
+
+			/* Overview Grid */
+			.overview-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+				gap: 2rem;
+				margin-bottom: 4rem;
+			}
+
+			/* Metric Cards */
+			.metric-card {
+				background: rgba(0, 0, 0, 0.8);
+				backdrop-filter: blur(15px);
+				border-radius: 20px;
+				border: 1px solid rgba(0, 255, 255, 0.4);
+				padding: 2rem;
+				text-align: center;
+				transition: all 0.3s ease;
+				position: relative;
+				overflow: hidden;
+				box-shadow: var(--cyber-shadow);
+			}
+
+			.metric-card:hover {
+				transform: translateY(-5px);
+				border-color: var(--neon-cyan);
+				box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+			}
+
+			.metric-card::after {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background: radial-gradient(
+					circle at 50% 50%,
+					rgba(0, 255, 255, 0.05) 0%,
+					transparent 70%
+				);
+				pointer-events: none;
+			}
+
+			.metric-title {
+				font-size: 0.9rem;
+				text-transform: uppercase;
+				letter-spacing: 1px;
+				color: var(--neon-cyan);
+				margin-bottom: 0.5rem;
+				font-weight: 600;
+			}
+
+			.metric-value {
+				font-family: "JetBrains Mono", monospace;
+				font-size: 2.5rem;
+				font-weight: 700;
+				color: #ffffff;
+				margin-bottom: 0.5rem;
+				text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+			}
+
+			.metric-label {
+				font-size: 1rem;
+				color: rgba(255, 255, 255, 0.7);
+				font-weight: 400;
+			}
+
+			.metric-date {
+				font-size: 0.8rem;
+				color: rgba(0, 255, 255, 0.6);
+				margin-top: 0.5rem;
+				font-family: "JetBrains Mono", monospace;
+			}
+
+			/* Sector Cards */
+			.sector-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+				gap: 2rem;
+				margin-top: 2rem;
+			}
+
+			.sector-card {
+				background: rgba(0, 0, 0, 0.8);
+				backdrop-filter: blur(15px);
+				border-radius: 20px;
+				border: 1px solid rgba(0, 255, 255, 0.4);
+				padding: 2rem;
+				transition: all 0.3s ease;
+				position: relative;
+				overflow: hidden;
+				box-shadow: var(--cyber-shadow);
+			}
+
+			.sector-card.employment {
+				border-color: var(--employment-glow);
+			}
+			.sector-card.inflation {
+				border-color: var(--inflation-glow);
+			}
+			.sector-card.interest {
+				border-color: var(--interest-glow);
+			}
+			.sector-card.growth {
+				border-color: var(--growth-glow);
+			}
+			.sector-card.housing {
+				border-color: var(--housing-glow);
+			}
+			.sector-card.international {
+				border-color: var(--international-glow);
+			}
+
+			.sector-card:hover {
+				transform: translateY(-5px);
+				box-shadow: 0 0 40px var(--sector-glow);
+			}
+
+			.sector-title {
+				font-size: 1.5rem;
+				font-weight: 600;
+				margin-bottom: 1.5rem;
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+			}
+
+			.sector-icon {
+				width: 40px;
+				height: 40px;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 1.2rem;
+			}
+
+			.sector-metrics {
+				display: grid;
+				gap: 1rem;
+			}
+
+			.sector-metric {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.75rem;
+				background: rgba(255, 255, 255, 0.05);
+				border-radius: 10px;
+				border-left: 3px solid var(--neon-cyan);
+			}
+
+			.sector-metric-name {
+				font-size: 0.9rem;
+				font-weight: 500;
+			}
+
+			.sector-metric-value {
+				font-family: "JetBrains Mono", monospace;
+				font-weight: 600;
+				color: var(--neon-cyan);
+			}
+
+			/* Chart Container */
+			.chart-container {
+				background: rgba(0, 0, 0, 0.8);
+				backdrop-filter: blur(15px);
+				border-radius: 20px;
+				border: 1px solid rgba(0, 255, 255, 0.4);
+				padding: 2rem;
+				margin: 2rem 0;
+				box-shadow: var(--cyber-shadow);
+			}
+
+			.chart-title {
+				font-size: 1.3rem;
+				font-weight: 600;
+				margin-bottom: 1.5rem;
+				color: var(--neon-cyan);
+				text-align: center;
+			}
+
+			/* Scanning Animation */
+			@keyframes scan {
+				0% {
+					left: -100%;
+					opacity: 0;
+				}
+				50% {
+					opacity: 1;
+				}
+				100% {
+					left: 100%;
+					opacity: 0;
+				}
+			}
+
+			.scanning-line {
+				position: absolute;
+				top: 0;
+				width: 2px;
+				height: 100%;
+				background: linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
+				animation: scan 3s infinite;
+				box-shadow: 0 0 10px var(--neon-cyan);
+			}
+
+			/* Responsive */
+			@media (max-width: 768px) {
+				.dashboard-title {
+					font-size: 2.5rem;
+				}
+				.dashboard-subtitle {
+					font-size: 1.1rem;
+				}
+				.overview-grid {
+					grid-template-columns: repeat(2, 1fr);
+					gap: 1rem;
+				}
+				.sector-grid {
+					grid-template-columns: 1fr;
+				}
+				.metric-card {
+					padding: 1.5rem;
+				}
+				.metric-value {
+					font-size: 2rem;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.overview-grid {
+					grid-template-columns: 1fr;
+				}
+				.metric-value {
+					font-size: 1.8rem;
+				}
+				.sector-card {
+					padding: 1.5rem;
+				}
+			}
+
+			/* Status Indicator */
+			.status-indicator {
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: rgba(0, 0, 0, 0.8);
+				backdrop-filter: blur(10px);
+				border-radius: 10px;
+				border: 1px solid var(--neon-green);
+				padding: 0.5rem 1rem;
+				font-size: 0.8rem;
+				color: var(--neon-green);
+				font-family: "JetBrains Mono", monospace;
+				z-index: 1000;
+			}
+
+			.pulse {
+				animation: pulse 2s infinite;
+			}
+
+			@keyframes pulse {
+				0%,
+				100% {
+					opacity: 1;
+					transform: scale(1);
+				}
+				50% {
+					opacity: 0.8;
+					transform: scale(1.05);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Status Indicator -->
+		<div class="status-indicator pulse">● LIVE DATA FEED ACTIVE</div>
+
+		<div class="container">
+			<!-- Header -->
+			<div class="dashboard-header">
+				<h1 class="dashboard-title">FRED Economic Command Center</h1>
+				<p class="dashboard-subtitle">Real-time Federal Reserve Economic Intelligence</p>
+			</div>
+
+			<!-- Key Metrics Overview -->
+			<div class="overview-grid">
+				<div class="metric-card">
+					<div class="scanning-line"></div>
+					<div class="metric-title">Unemployment Rate</div>
+					<div class="metric-value">4.3%</div>
+					<div class="metric-label">Labor Market Status</div>
+					<div class="metric-date">August 2025</div>
+				</div>
+
+				<div class="metric-card">
+					<div class="scanning-line" style="animation-delay: 0.5s"></div>
+					<div class="metric-title">Fed Funds Rate</div>
+					<div class="metric-value">4.33%</div>
+					<div class="metric-label">Monetary Policy</div>
+					<div class="metric-date">August 2025</div>
+				</div>
+
+				<div class="metric-card">
+					<div class="scanning-line" style="animation-delay: 1s"></div>
+					<div class="metric-title">GDP</div>
+					<div class="metric-value">$30.35T</div>
+					<div class="metric-label">Economic Output</div>
+					<div class="metric-date">Q2 2025</div>
+				</div>
+
+				<div class="metric-card">
+					<div class="scanning-line" style="animation-delay: 1.5s"></div>
+					<div class="metric-title">CPI</div>
+					<div class="metric-value">322.1</div>
+					<div class="metric-label">Inflation Index</div>
+					<div class="metric-date">July 2025</div>
+				</div>
+
+				<div class="metric-card">
+					<div class="scanning-line" style="animation-delay: 2s"></div>
+					<div class="metric-title">10-Year Treasury</div>
+					<div class="metric-value">4.17%</div>
+					<div class="metric-label">Long-term Rates</div>
+					<div class="metric-date">Sep 04, 2025</div>
+				</div>
+
+				<div class="metric-card">
+					<div class="scanning-line" style="animation-delay: 2.5s"></div>
+					<div class="metric-title">30-Year Mortgage</div>
+					<div class="metric-value">6.5%</div>
+					<div class="metric-label">Housing Finance</div>
+					<div class="metric-date">Sep 04, 2025</div>
+				</div>
+			</div>
+
+			<!-- Economic Trend Chart -->
+			<div class="chart-container">
+				<h2 class="chart-title">Economic Trends - Last 12 Months</h2>
+				<canvas id="economicChart" width="800" height="400"></canvas>
+			</div>
+
+			<!-- Sector Breakdown -->
+			<div class="sector-grid">
+				<!-- Employment Sector -->
+				<div class="sector-card employment">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--employment-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							📊
+						</div>
+						Employment
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">Unemployment Rate</span>
+							<span class="sector-metric-value">4.3%</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Nonfarm Payrolls</span>
+							<span class="sector-metric-value">159,540K</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Labor Participation</span>
+							<span class="sector-metric-value">62.3%</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Inflation Sector -->
+				<div class="sector-card inflation">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--inflation-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							💰
+						</div>
+						Inflation
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">Consumer Price Index</span>
+							<span class="sector-metric-value">322.132</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Core CPI</span>
+							<span class="sector-metric-value">328.656</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Producer Price Index</span>
+							<span class="sector-metric-value">149.671</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Interest Rates Sector -->
+				<div class="sector-card interest">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--interest-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							🏦
+						</div>
+						Interest Rates
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">Federal Funds Rate</span>
+							<span class="sector-metric-value">4.33%</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">10-Year Treasury</span>
+							<span class="sector-metric-value">4.17%</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">30-Year Treasury</span>
+							<span class="sector-metric-value">4.86%</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Economic Growth Sector -->
+				<div class="sector-card growth">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--growth-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							📈
+						</div>
+						Economic Growth
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">Gross Domestic Product</span>
+							<span class="sector-metric-value">$30.35T</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Industrial Production</span>
+							<span class="sector-metric-value">103.99</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">Retail Sales</span>
+							<span class="sector-metric-value">$726.3B</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Housing Sector -->
+				<div class="sector-card housing">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--housing-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							🏠
+						</div>
+						Housing
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">Housing Starts</span>
+							<span class="sector-metric-value">1,428K</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">30-Year Mortgage Rate</span>
+							<span class="sector-metric-value">6.5%</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- International Sector -->
+				<div class="sector-card international">
+					<div class="sector-title">
+						<div
+							class="sector-icon"
+							style="
+								background: linear-gradient(
+									135deg,
+									var(--international-glow),
+									transparent
+								);
+								color: #000;
+							"
+						>
+							🌍
+						</div>
+						International
+					</div>
+					<div class="sector-metrics">
+						<div class="sector-metric">
+							<span class="sector-metric-name">USD/EUR Exchange</span>
+							<span class="sector-metric-value">1.1695</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">USD/JPY Exchange</span>
+							<span class="sector-metric-value">146.9</span>
+						</div>
+						<div class="sector-metric">
+							<span class="sector-metric-name">USD/CNY Exchange</span>
+							<span class="sector-metric-value">7.1304</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			// Economic Trends Chart
+			const ctx = document.getElementById("economicChart").getContext("2d");
+
+			// Sample historical data for the last 12 months
+			const months = [
+				"Sep 24",
+				"Oct 24",
+				"Nov 24",
+				"Dec 24",
+				"Jan 25",
+				"Feb 25",
+				"Mar 25",
+				"Apr 25",
+				"May 25",
+				"Jun 25",
+				"Jul 25",
+				"Aug 25",
+			];
+
+			const unemploymentData = [3.7, 3.6, 3.7, 3.8, 3.9, 4.0, 4.2, 4.2, 4.2, 4.1, 4.2, 4.3];
+			const fedFundsData = [
+				5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 5.33, 4.33,
+			];
+			const tenYearData = [4.25, 4.35, 4.45, 4.3, 4.2, 4.1, 4.15, 4.2, 4.25, 4.3, 4.2, 4.17];
+
+			new Chart(ctx, {
+				type: "line",
+				data: {
+					labels: months,
+					datasets: [
+						{
+							label: "Unemployment Rate (%)",
+							data: unemploymentData,
+							borderColor: "#00FF7F",
+							backgroundColor: "rgba(0, 255, 127, 0.1)",
+							borderWidth: 3,
+							fill: true,
+							tension: 0.4,
+							pointBackgroundColor: "#00FF7F",
+							pointBorderColor: "#000000",
+							pointBorderWidth: 2,
+							pointRadius: 6,
+							pointHoverRadius: 8,
+							shadowColor: "rgba(0, 255, 127, 0.5)",
+							shadowBlur: 10,
+						},
+						{
+							label: "Fed Funds Rate (%)",
+							data: fedFundsData,
+							borderColor: "#00FFFF",
+							backgroundColor: "rgba(0, 255, 255, 0.1)",
+							borderWidth: 3,
+							fill: true,
+							tension: 0.4,
+							pointBackgroundColor: "#00FFFF",
+							pointBorderColor: "#000000",
+							pointBorderWidth: 2,
+							pointRadius: 6,
+							pointHoverRadius: 8,
+						},
+						{
+							label: "10-Year Treasury (%)",
+							data: tenYearData,
+							borderColor: "#FF00FF",
+							backgroundColor: "rgba(255, 0, 255, 0.1)",
+							borderWidth: 3,
+							fill: true,
+							tension: 0.4,
+							pointBackgroundColor: "#FF00FF",
+							pointBorderColor: "#000000",
+							pointBorderWidth: 2,
+							pointRadius: 6,
+							pointHoverRadius: 8,
+						},
+					],
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: {
+						legend: {
+							display: true,
+							position: "top",
+							labels: {
+								color: "#ffffff",
+								font: {
+									family: "JetBrains Mono",
+									size: 12,
+								},
+								usePointStyle: true,
+								padding: 20,
+							},
+						},
+						tooltip: {
+							backgroundColor: "rgba(0, 0, 0, 0.9)",
+							titleColor: "#00FFFF",
+							bodyColor: "#ffffff",
+							borderColor: "#00FFFF",
+							borderWidth: 1,
+							titleFont: {
+								family: "JetBrains Mono",
+								size: 14,
+							},
+							bodyFont: {
+								family: "JetBrains Mono",
+								size: 12,
+							},
+						},
+					},
+					scales: {
+						x: {
+							grid: {
+								color: "rgba(0, 255, 255, 0.1)",
+								drawBorder: false,
+							},
+							ticks: {
+								color: "#ffffff",
+								font: {
+									family: "JetBrains Mono",
+									size: 11,
+								},
+							},
+						},
+						y: {
+							grid: {
+								color: "rgba(0, 255, 255, 0.1)",
+								drawBorder: false,
+							},
+							ticks: {
+								color: "#ffffff",
+								font: {
+									family: "JetBrains Mono",
+									size: 11,
+								},
+								callback: function (value) {
+									return value + "%";
+								},
+							},
+						},
+					},
+					interaction: {
+						intersect: false,
+						mode: "index",
+					},
+					animation: {
+						duration: 2000,
+						easing: "easeInOutCubic",
+					},
+				},
+			});
+
+			// Add hover effects to cards
+			document.querySelectorAll(".metric-card, .sector-card").forEach(card => {
+				card.addEventListener("mouseenter", function () {
+					this.style.transform = "translateY(-8px) scale(1.02)";
+				});
+
+				card.addEventListener("mouseleave", function () {
+					this.style.transform = "translateY(-5px) scale(1)";
+				});
+			});
+
+			// Simulate live data updates
+			setInterval(() => {
+				const statusIndicator = document.querySelector(".status-indicator");
+				statusIndicator.style.opacity = "0.5";
+				setTimeout(() => {
+					statusIndicator.style.opacity = "1";
+				}, 100);
+			}, 5000);
+
+			console.log("🏛️ FRED Economic Dashboard Loaded Successfully");
+			console.log("📊 Real-time economic data visualization active");
+		</script>
+	</body>
+</html>

@@ -1,6 +1,7 @@
 # Stock Screening & Filtering Module
 
 ## Overview
+
 This module provides comprehensive filtering and screening capabilities for financial analysis, supporting both sector-based analysis and individual stock examination. The system enables users to limit analysis scope through multiple criteria including sector classification, market capitalization, geographic region, and custom financial metrics.
 
 ## Core Filtering Capabilities
@@ -8,9 +9,11 @@ This module provides comprehensive filtering and screening capabilities for fina
 ### 1. Sector-Based Filtering
 
 #### GICS Sector Classification (Primary)
+
 The system uses the Global Industry Classification Standard (GICS) for sector categorization:
 
 **11 Primary Sectors:**
+
 - **Energy** (`energy`) - Oil, gas, renewable energy companies
 - **Materials** (`materials`) - Basic materials, chemicals, mining
 - **Industrials** (`industrials`) - Manufacturing, transportation, aerospace
@@ -24,6 +27,7 @@ The system uses the Global Industry Classification Standard (GICS) for sector ca
 - **Real Estate** (`real_estate`) - REITs, real estate management
 
 #### Alternative Classification Systems
+
 - **SIC Codes** - Standard Industrial Classification (legacy support)
 - **NAICS Codes** - North American Industry Classification System
 - **Custom Sectors** - User-defined sector groupings
@@ -31,7 +35,9 @@ The system uses the Global Industry Classification Standard (GICS) for sector ca
 ### 2. Individual Stock Analysis
 
 #### Single Stock Focus Mode
+
 When analyzing individual stocks, the system provides:
+
 - **Comprehensive Company Profile** - Business description, key executives, headquarters
 - **Peer Comparison** - Automatic identification of industry peers
 - **Sector Context** - Stock performance relative to sector benchmarks
@@ -39,6 +45,7 @@ When analyzing individual stocks, the system provides:
 - **Risk Assessment** - Stock-specific risk metrics and volatility analysis
 
 #### Stock Identification Methods
+
 - **Symbol-Based** - Primary ticker symbols (AAPL, GOOGL, TSLA)
 - **Name-Based** - Company name search with fuzzy matching
 - **CUSIP/ISIN** - International securities identification
@@ -47,6 +54,7 @@ When analyzing individual stocks, the system provides:
 ### 3. Multi-Criteria Filtering System
 
 #### Financial Metrics Filters
+
 ```python
 # Example filtering criteria structure
 screening_criteria = {
@@ -75,6 +83,7 @@ screening_criteria = {
 ```
 
 #### Technical Analysis Filters
+
 - **Price Performance** - 1D, 1W, 1M, 3M, 6M, 1Y, 5Y returns
 - **Volume Analysis** - Average daily volume thresholds
 - **Volatility Metrics** - Standard deviation, beta, VIX correlation
@@ -82,6 +91,7 @@ screening_criteria = {
 - **Momentum Indicators** - RSI, MACD, Stochastic oscillator ranges
 
 #### ESG and Sustainability Filters
+
 - **ESG Scores** - Environmental, Social, Governance ratings
 - **Carbon Footprint** - CO2 emissions and sustainability metrics
 - **Compliance Ratings** - Regulatory compliance scores
@@ -92,28 +102,30 @@ screening_criteria = {
 ### 1. Filter Engine Core
 
 #### BaseFilter Interface
+
 ```python
 class BaseFilter:
     """Base class for all filtering operations"""
-    
+
     def apply_filter(self, dataset: pd.DataFrame, criteria: Dict) -> pd.DataFrame:
         """Apply filter to dataset and return filtered results"""
         pass
-    
+
     def validate_criteria(self, criteria: Dict) -> bool:
         """Validate filter criteria before application"""
         pass
-    
+
     def get_filter_summary(self, criteria: Dict) -> Dict:
         """Return summary of applied filters"""
         pass
 ```
 
 #### Sector Filter Implementation
+
 ```python
 class SectorFilter(BaseFilter):
     """Handles sector-based filtering using GICS classification"""
-    
+
     GICS_SECTORS = {
         "energy": 10,
         "materials": 15,
@@ -127,11 +139,11 @@ class SectorFilter(BaseFilter):
         "utilities": 55,
         "real_estate": 60
     }
-    
+
     def apply_filter(self, dataset: pd.DataFrame, sector: str) -> pd.DataFrame:
         if sector not in self.GICS_SECTORS:
             raise ValueError(f"Invalid sector: {sector}")
-        
+
         sector_code = self.GICS_SECTORS[sector]
         return dataset[dataset['gics_sector'] == sector_code]
 ```
@@ -139,6 +151,7 @@ class SectorFilter(BaseFilter):
 ### 2. Database Query Optimization
 
 #### Indexed Fields for Fast Filtering
+
 ```sql
 -- Essential indexes for screening performance
 CREATE INDEX idx_stocks_sector ON stocks(gics_sector);
@@ -152,6 +165,7 @@ CREATE INDEX idx_stocks_screening ON stocks(gics_sector, market_cap, pe_ratio, d
 ```
 
 #### Query Optimization Strategy
+
 - **Selective Indexing** - Indexes on commonly filtered columns
 - **Query Caching** - Redis cache for frequent screening queries
 - **Pagination Support** - Efficient handling of large result sets
@@ -160,6 +174,7 @@ CREATE INDEX idx_stocks_screening ON stocks(gics_sector, market_cap, pe_ratio, d
 ### 3. API Endpoint Design
 
 #### RESTful Filtering Endpoints
+
 ```
 POST /api/v1/screening/filter
 GET  /api/v1/screening/sectors
@@ -169,6 +184,7 @@ POST /api/v1/screening/custom
 ```
 
 #### Request/Response Examples
+
 ```json
 // Sector filtering request
 {
@@ -197,18 +213,21 @@ POST /api/v1/screening/custom
 ## Advanced Filtering Features
 
 ### 1. Dynamic Screening
+
 - **Real-time Updates** - Filters update as market data changes
 - **Alert System** - Notifications when stocks meet/exit criteria
 - **Backtesting** - Historical performance of screening criteria
 - **Machine Learning Enhancement** - AI-powered screening suggestions
 
 ### 2. Custom Screening Strategies
+
 - **Strategy Templates** - Pre-built screening strategies (Growth, Value, Income)
 - **User-Defined Formulas** - Custom mathematical expressions
 - **Multi-Factor Models** - Combine technical and fundamental factors
 - **Risk-Adjusted Screening** - Incorporate risk metrics into selection
 
 ### 3. Performance Analytics
+
 - **Screening Performance** - Track success rate of different criteria
 - **Attribution Analysis** - Which factors contributed most to returns
 - **Optimization Suggestions** - Recommend criteria adjustments
@@ -217,18 +236,21 @@ POST /api/v1/screening/custom
 ## Data Sources Integration
 
 ### 1. Fundamental Data Sources
+
 - **SEC EDGAR** - Official financial statements and ratios
 - **S&P Capital IQ** - Comprehensive fundamental data
 - **Morningstar** - Investment research and analysis
 - **FactSet** - Professional-grade financial data
 
 ### 2. Market Data Sources
+
 - **Real-time Prices** - Bloomberg, Refinitiv, IEX Cloud
 - **Historical Data** - Quandl, Alpha Vantage, Polygon.io
 - **Options Data** - CBOE, OPRA for derivatives analysis
 - **International Data** - Regional exchanges for global screening
 
 ### 3. Alternative Data Sources
+
 - **ESG Ratings** - MSCI, Sustainalytics, Bloomberg ESG
 - **Satellite Data** - Economic activity indicators
 - **Social Sentiment** - Social media and news sentiment analysis
@@ -237,18 +259,21 @@ POST /api/v1/screening/custom
 ## Error Handling and Validation
 
 ### 1. Input Validation
+
 - **Criteria Validation** - Ensure filter parameters are within valid ranges
 - **Symbol Validation** - Verify stock symbols exist and are active
 - **Date Range Validation** - Ensure historical analysis periods are valid
 - **Conflict Detection** - Identify contradictory filter criteria
 
 ### 2. Error Recovery
+
 - **Graceful Degradation** - Continue analysis with partial data if sources fail
 - **Fallback Data Sources** - Switch to alternative data providers
 - **Cache Utilization** - Use cached data when real-time sources are unavailable
 - **User Notification** - Inform users of data limitations or issues
 
 ### 3. Performance Monitoring
+
 - **Query Performance** - Monitor screening query execution times
 - **Resource Utilization** - Track memory and CPU usage during filtering
 - **Success Metrics** - Measure filtering accuracy and completeness
@@ -257,18 +282,21 @@ POST /api/v1/screening/custom
 ## Future Enhancements
 
 ### 1. Machine Learning Integration
+
 - **Predictive Screening** - ML models to predict which stocks will meet future criteria
 - **Pattern Recognition** - Identify successful screening patterns automatically
 - **Anomaly Detection** - Flag unusual market conditions affecting screening
 - **Recommendation Engine** - Suggest screening criteria based on user behavior
 
 ### 2. Advanced Analytics
+
 - **Factor Analysis** - Decompose returns into factor contributions
 - **Regime Detection** - Adjust screening based on market conditions
 - **Correlation Analysis** - Identify relationships between screening criteria
 - **Monte Carlo Simulation** - Test screening robustness under various scenarios
 
 ### 3. User Experience Improvements
+
 - **Visual Query Builder** - Drag-and-drop interface for creating filters
 - **Saved Screens** - Store and share custom screening criteria
 - **Mobile Optimization** - Native mobile app for screening on-the-go

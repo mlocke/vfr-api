@@ -1,0 +1,105 @@
+{
+	"description": "Comprehensive economic dashboard with key indicators by sector",
+	"timestamp": "2025-09-06T16:28:26.734509",
+	"sample_data": {
+		"Employment": {
+			"UNRATE": {
+				"value": "4.3",
+				"date": "2025-08-01",
+				"description": "Latest UNRATE data"
+			},
+			"PAYEMS": {
+				"value": "159540",
+				"date": "2025-08-01",
+				"description": "Latest PAYEMS data"
+			},
+			"CIVPART": {
+				"value": "62.3",
+				"date": "2025-08-01",
+				"description": "Latest CIVPART data"
+			}
+		},
+		"Inflation": {
+			"CPIAUCSL": {
+				"value": "322.132",
+				"date": "2025-07-01",
+				"description": "Latest CPIAUCSL data"
+			},
+			"CPILFESL": {
+				"value": "328.656",
+				"date": "2025-07-01",
+				"description": "Latest CPILFESL data"
+			},
+			"PPIFIS": {
+				"value": "149.671",
+				"date": "2025-07-01",
+				"description": "Latest PPIFIS data"
+			}
+		},
+		"Interest_Rates": {
+			"FEDFUNDS": {
+				"value": "4.33",
+				"date": "2025-08-01",
+				"description": "Latest FEDFUNDS data"
+			},
+			"DGS10": {
+				"value": "4.17",
+				"date": "2025-09-04",
+				"description": "Latest DGS10 data"
+			},
+			"DGS30": {
+				"value": "4.86",
+				"date": "2025-09-04",
+				"description": "Latest DGS30 data"
+			}
+		},
+		"Economic_Growth": {
+			"GDP": {
+				"value": "30353.902",
+				"date": "2025-04-01",
+				"description": "Latest GDP data"
+			},
+			"INDPRO": {
+				"value": "103.9867",
+				"date": "2025-07-01",
+				"description": "Latest INDPRO data"
+			},
+			"RSAFS": {
+				"value": "726283.0",
+				"date": "2025-07-01",
+				"description": "Latest RSAFS data"
+			}
+		},
+		"Housing": {
+			"HOUST": {
+				"value": "1428.0",
+				"date": "2025-07-01",
+				"description": "Latest HOUST data"
+			},
+			"MORTGAGE30US": {
+				"value": "6.5",
+				"date": "2025-09-04",
+				"description": "Latest MORTGAGE30US data"
+			}
+		},
+		"International": {
+			"DEXUSEU": {
+				"value": "1.1695",
+				"date": "2025-08-29",
+				"description": "Latest DEXUSEU data"
+			},
+			"DEXJPUS": {
+				"value": "146.9",
+				"date": "2025-08-29",
+				"description": "Latest DEXJPUS data"
+			},
+			"DEXCHUS": {
+				"value": "7.1304",
+				"date": "2025-08-29",
+				"description": "Latest DEXCHUS data"
+			}
+		}
+	},
+	"data_type": "FRED Economic Data",
+	"source": "Federal Reserve Bank of St. Louis"
+}
