@@ -32,6 +32,14 @@ from .government.eia_collector import EIACollector
 from .government.fdic_collector import FDICCollector
 # from .government.fred_collector import FREDCollector  # When implemented
 
+# Government MCP collector imports
+try:
+    from .government.mcp.data_gov_mcp_collector import DataGovMCPCollector
+    GOVERNMENT_MCP_AVAILABLE = True
+except ImportError:
+    DataGovMCPCollector = None
+    GOVERNMENT_MCP_AVAILABLE = False
+
 # Commercial collector imports
 try:
     from .commercial.base.commercial_collector_interface import CommercialCollectorInterface
@@ -400,9 +408,61 @@ class CollectorRouter:
             )
         }
         
+        # Add government MCP collectors if available
+        if GOVERNMENT_MCP_AVAILABLE:
+            registry.update(self._get_government_mcp_collector_registry())
+        
         # Add commercial collectors if available
         if COMMERCIAL_COLLECTORS_AVAILABLE:
             registry.update(self._get_commercial_collector_registry())
+        
+        return registry
+    
+    def _get_government_mcp_collector_registry(self) -> Dict[str, CollectorCapability]:
+        """Get government MCP collector registry entries including Data.gov MCP collector."""
+        registry = {}
+        
+        # Add Data.gov MCP collector if available
+        if DataGovMCPCollector:
+            registry['data_gov_mcp'] = CollectorCapability(
+                collector_class=DataGovMCPCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_MCP,
+                primary_use_cases=[
+                    RequestType.INDIVIDUAL_COMPANY,
+                    RequestType.COMPANY_COMPARISON,
+                    RequestType.ECONOMIC_DATA,
+                    RequestType.FISCAL_DATA
+                ],
+                strengths=[
+                    'SEC XBRL financial statements (15+ years historical data)',
+                    'Form 13F institutional holdings tracking',
+                    'Treasury yield curve and interest rate analysis',
+                    'Federal Reserve economic indicators',
+                    'Fund flow analysis (N-PORT mutual fund data)',
+                    'MCP protocol optimization for AI consumption',
+                    'Free government data with no API keys required',
+                    'AI-native tools for financial analysis',
+                    'Smart money tracking and institutional sentiment',
+                    'Comprehensive macroeconomic context integration'
+                ],
+                limitations=[
+                    'Requires local MCP server setup',
+                    'Quarterly data lag (45-90 days for SEC filings)',
+                    'US-focused data (limited international coverage)',
+                    'No real-time price data',
+                    'Complex data parsing requirements'
+                ],
+                max_companies=50,  # Reasonable limit for MCP processing
+                requires_specific_companies=False,  # Can do broad analysis
+                cost_per_request=0.0,  # Government data is free
+                monthly_quota=None,  # No limits on government data
+                rate_limit_per_second=1.0,  # Respectful usage
+                supports_mcp=True,  # This IS an MCP collector
+                protocol_preference=95,  # High preference for MCP protocol
+                data_freshness="quarterly",
+                reliability_score=96,  # Government data is very reliable
+                coverage_score=88   # Excellent coverage for government data
+            )
         
         return registry
         

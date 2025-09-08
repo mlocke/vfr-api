@@ -1,0 +1,38 @@
+# Data.gov MCP Server Requirements
+# Core dependencies for Data.gov MCP collector and server
+
+# MCP Protocol and HTTP Server
+aiohttp>=3.8.0
+aiohttp-cors>=0.7.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+lxml>=4.9.0
+beautifulsoup4>=4.11.0
+
+# HTTP Client for API calls
+httpx>=0.24.0
+requests>=2.30.0
+
+# XML Processing (for XBRL)
+xmltodict>=0.13.0
+
+# Date/Time utilities
+python-dateutil>=2.8.0
+
+# Logging and configuration
+pyyaml>=6.0
+
+# Testing (optional)
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+aioresponses>=0.7.0
+
+# Performance monitoring (optional)
+psutil>=5.9.0
+
+# Development dependencies (optional)
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
