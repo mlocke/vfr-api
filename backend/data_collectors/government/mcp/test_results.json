@@ -1,0 +1,48 @@
+{
+  "quarterly_financials_AAPL": {
+    "status": "PASS",
+    "quarters_retrieved": 2,
+    "available_metrics": [
+      "revenue",
+      "net_income",
+      "total_assets"
+    ]
+  },
+  "quarterly_financials_MSFT": {
+    "status": "PASS",
+    "quarters_retrieved": 2,
+    "available_metrics": [
+      "revenue",
+      "net_income",
+      "total_assets"
+    ]
+  },
+  "financial_trends_AAPL": {
+    "status": "PASS",
+    "metrics_analyzed": [
+      "revenue",
+      "net_income",
+      "total_assets"
+    ],
+    "trends_count": 3
+  },
+  "financial_trends_MSFT": {
+    "status": "PASS",
+    "metrics_analyzed": [
+      "revenue",
+      "net_income",
+      "total_assets"
+    ],
+    "trends_count": 3
+  },
+  "peer_comparison": {
+    "status": "PASS",
+    "companies_compared": 2,
+    "rankings_generated": 2
+  },
+  "xbrl_facts": {
+    "status": "PASS",
+    "fact_retrieved": "Revenues",
+    "has_units": true
+  }
+}

@@ -79,13 +79,21 @@ class SECDataExtractor:
     
     def __init__(self):
         self.sec_base_url = "https://www.sec.gov/Archives/edgar"
+        # SEC requires proper User-Agent with contact info
         self.session = aiohttp.ClientSession(
-            headers={'User-Agent': 'StockPicker-DataGov-MCP/1.0'}
+            headers={
+                'User-Agent': 'Stock Picker Platform hello@stockpicker.io',
+                'Accept': 'application/json'
+            },
+            timeout=aiohttp.ClientTimeout(total=30)
         )
     
     async def get_company_cik(self, ticker: str) -> Optional[str]:
         """Get CIK (Central Index Key) for a ticker symbol."""
         try:
+            # Add delay to respect SEC rate limits (10 requests per second max)
+            await asyncio.sleep(0.1)
+            
             # Use SEC company tickers JSON
             url = "https://www.sec.gov/files/company_tickers.json"
             
@@ -97,6 +105,14 @@ class SECDataExtractor:
                         if company_info.get('ticker', '').upper() == ticker.upper():
                             cik = str(company_info.get('cik_str', '')).zfill(10)
                             return cik
+                elif response.status == 429:  # Too Many Requests
+                    logger.warning(f"SEC rate limit exceeded, waiting...")
+                    await asyncio.sleep(1)
+                    return await self.get_company_cik(ticker)  # Retry once
+                else:
+                    logger.error(f"SEC request failed with status {response.status}")
+                    response_text = await response.text()
+                    logger.debug(f"Response: {response_text[:200]}")
             
             return None
             
@@ -104,56 +120,116 @@ class SECDataExtractor:
             logger.error(f"Failed to get CIK for {ticker}: {e}")
             return None
     
-    async def get_quarterly_filings(self, cik: str, quarters: int = 4) -> List[Dict[str, Any]]:
-        """Get recent quarterly filings for a company."""
+    async def get_company_facts(self, cik: str) -> Dict[str, Any]:
+        """Get company facts data which includes recent XBRL filings data."""
         try:
-            url = f"{self.sec_base_url}/data/{cik}/CIK{cik}.json"
+            # Add delay to respect SEC rate limits
+            await asyncio.sleep(0.1)
+            
+            url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+            logger.debug(f"Requesting SEC company facts URL: {url}")
             
             async with self.session.get(url) as response:
+                logger.debug(f"SEC API response status: {response.status}")
                 if response.status == 200:
                     data = await response.json()
-                    filings = data.get('filings', {}).get('recent', {})
-                    
-                    quarterly_filings = []
-                    forms = filings.get('form', [])
-                    dates = filings.get('filingDate', [])
-                    accession_numbers = filings.get('accessionNumber', [])
-                    
-                    for i, form in enumerate(forms):
-                        if form in ['10-Q', '10-K'] and len(quarterly_filings) < quarters:
-                            quarterly_filings.append({
-                                'form': form,
-                                'filing_date': dates[i],
-                                'accession_number': accession_numbers[i],
-                                'period_type': 'quarterly' if form == '10-Q' else 'annual'
-                            })
-                    
-                    return quarterly_filings[:quarters]
-            
-            return []
-            
-        except Exception as e:
-            logger.error(f"Failed to get filings for CIK {cik}: {e}")
-            return []
-    
-    async def extract_xbrl_data(self, cik: str, accession_number: str) -> Dict[str, Any]:
-        """Extract XBRL financial data from a filing."""
-        try:
-            # Clean accession number for URL
-            clean_accession = accession_number.replace('-', '')
-            
-            # XBRL facts URL
-            facts_url = f"{self.sec_base_url}/data/{cik}/CIK{cik}.json"
-            
-            async with self.session.get(facts_url) as response:
-                if response.status == 200:
-                    facts_data = await response.json()
-                    return self._process_xbrl_facts(facts_data)
+                    logger.debug(f"Successfully retrieved company facts data for CIK {cik}")
+                    return data
+                elif response.status == 429:  # Too Many Requests
+                    logger.warning(f"SEC rate limit exceeded for CIK {cik}, waiting...")
+                    await asyncio.sleep(1)
+                    return await self.get_company_facts(cik)  # Retry once
+                else:
+                    logger.error(f"SEC request failed with status {response.status} for CIK {cik}")
+                    response_text = await response.text()
+                    logger.error(f"Response body: {response_text[:500]}")
             
             return {}
             
         except Exception as e:
-            logger.error(f"Failed to extract XBRL data: {e}")
+            logger.error(f"Failed to get company facts for CIK {cik}: {e}")
+            return {}
+    
+    def extract_recent_financials(self, facts_data: Dict[str, Any], quarters: int = 4) -> List[Dict[str, Any]]:
+        """Extract recent financial data from company facts."""
+        try:
+            us_gaap = facts_data.get('facts', {}).get('us-gaap', {})
+            
+            # Get recent quarterly data from key financial metrics
+            quarterly_data = []
+            
+            # Find revenue data points to use as the basis for quarters
+            revenue_data = None
+            for tag in ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet']:
+                if tag in us_gaap and 'units' in us_gaap[tag] and 'USD' in us_gaap[tag]['units']:
+                    revenue_data = us_gaap[tag]['units']['USD']
+                    break
+            
+            if not revenue_data:
+                return []
+            
+            # Sort by end date (most recent first) and get quarterly filings
+            sorted_data = sorted(revenue_data, key=lambda x: x.get('end', ''), reverse=True)
+            
+            # Extract recent quarters (filter for quarterly data)
+            for item in sorted_data[:quarters*2]:  # Get extra to filter
+                if len(quarterly_data) >= quarters:
+                    break
+                    
+                # Look for quarterly filings (10-Q) or annual (10-K)
+                form = item.get('form', '')
+                if form in ['10-Q', '10-K']:
+                    quarter_financials = self._extract_quarter_financials(us_gaap, item.get('end'))
+                    if quarter_financials:
+                        quarterly_data.append({
+                            'period_end': item.get('end'),
+                            'filing_date': item.get('filed'),
+                            'form': form,
+                            'period_type': 'quarterly' if form == '10-Q' else 'annual',
+                            **quarter_financials
+                        })
+            
+            return quarterly_data[:quarters]
+            
+        except Exception as e:
+            logger.error(f"Failed to extract recent financials: {e}")
+            return []
+    
+    def _extract_quarter_financials(self, us_gaap: Dict[str, Any], period_end: str) -> Dict[str, Any]:
+        """Extract financial metrics for a specific quarter."""
+        try:
+            financial_data = {}
+            
+            # Define metric mappings
+            metric_mappings = {
+                'revenue': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet'],
+                'net_income': ['NetIncomeLoss'],
+                'total_assets': ['Assets'],
+                'total_liabilities': ['Liabilities'],
+                'shareholders_equity': ['StockholdersEquity'],
+                'cash_and_equivalents': ['CashAndCashEquivalentsAtCarryingValue']
+            }
+            
+            # Extract each metric for the specific period
+            for metric_name, possible_tags in metric_mappings.items():
+                value = None
+                for tag in possible_tags:
+                    if tag in us_gaap:
+                        usd_data = us_gaap[tag].get('units', {}).get('USD', [])
+                        # Find exact match for period end
+                        for item in usd_data:
+                            if item.get('end') == period_end and item.get('val'):
+                                value = float(item['val'])
+                                break
+                        if value is not None:
+                            break
+                
+                financial_data[metric_name] = value
+            
+            return financial_data
+            
+        except Exception as e:
+            logger.debug(f"Failed to extract quarter financials for {period_end}: {e}")
             return {}
     
     def _process_xbrl_facts(self, facts_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -247,44 +323,49 @@ async def get_quarterly_financials(ticker: str, quarters: int = 4) -> Dict[str, 
                 'ticker': ticker
             }
         
-        # Get quarterly filings
-        filings = await extractor.get_quarterly_filings(cik, quarters)
-        if not filings:
+        # Get company facts (includes all XBRL data)
+        facts_data = await extractor.get_company_facts(cik)
+        if not facts_data:
             return {
                 'success': False,
-                'error': f'No quarterly filings found for {ticker}',
+                'error': f'No company facts found for {ticker}',
                 'ticker': ticker,
                 'cik': cik
             }
         
-        # Extract financial data from each filing
-        quarterly_data = []
+        # Extract recent quarterly financials
+        quarterly_data = extractor.extract_recent_financials(facts_data, quarters)
+        if not quarterly_data:
+            return {
+                'success': False,
+                'error': f'No quarterly financial data found for {ticker}',
+                'ticker': ticker,
+                'cik': cik
+            }
         
-        for filing in filings:
-            try:
-                xbrl_data = await extractor.extract_xbrl_data(cik, filing['accession_number'])
-                
-                financial_statement = CompanyFinancials(
-                    ticker=ticker,
-                    company_name="",  # Could be extracted from company facts
-                    filing_date=filing['filing_date'],
-                    period_end=filing['filing_date'],  # Approximation
-                    period_type=filing['period_type'],
-                    **xbrl_data
-                )
-                
-                quarterly_data.append(financial_statement.__dict__)
-                
-            except Exception as e:
-                logger.warning(f"Failed to process filing {filing['accession_number']}: {e}")
-                continue
+        # Convert to CompanyFinancials objects
+        processed_data = []
+        company_name = facts_data.get('entityName', '')
+        
+        for quarter in quarterly_data:
+            financial_statement = CompanyFinancials(
+                ticker=ticker,
+                company_name=company_name,
+                filing_date=quarter.get('filing_date', ''),
+                period_end=quarter.get('period_end', ''),
+                period_type=quarter.get('period_type', 'quarterly'),
+                **{k: v for k, v in quarter.items() if k not in ['filing_date', 'period_end', 'period_type', 'form']}
+            )
+            
+            processed_data.append(financial_statement.__dict__)
         
         return {
             'success': True,
             'ticker': ticker,
             'cik': cik,
-            'quarters_retrieved': len(quarterly_data),
-            'data': quarterly_data,
+            'company_name': company_name,
+            'quarters_retrieved': len(processed_data),
+            'data': processed_data,
             'metadata': {
                 'source': 'SEC EDGAR via data.gov',
                 'extraction_time': datetime.now().isoformat(),
@@ -492,42 +573,39 @@ async def get_xbrl_facts(ticker: str, fact_name: str) -> Dict[str, Any]:
             }
         
         # Get company facts
-        facts_url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+        facts_data = await extractor.get_company_facts(cik)
+        if not facts_data:
+            return {
+                'success': False,
+                'error': f'No company facts found for {ticker}',
+                'ticker': ticker,
+                'cik': cik
+            }
         
-        async with extractor.session.get(facts_url) as response:
-            if response.status == 200:
-                facts_data = await response.json()
-                
-                # Extract specific fact
-                us_gaap = facts_data.get('facts', {}).get('us-gaap', {})
-                
-                if fact_name in us_gaap:
-                    fact_data = us_gaap[fact_name]
-                    
-                    return {
-                        'success': True,
-                        'ticker': ticker,
-                        'cik': cik,
-                        'fact_name': fact_name,
-                        'fact_data': fact_data,
-                        'metadata': {
-                            'source': 'SEC EDGAR API',
-                            'extraction_time': datetime.now().isoformat()
-                        }
-                    }
-                else:
-                    return {
-                        'success': False,
-                        'error': f'XBRL fact {fact_name} not found',
-                        'ticker': ticker,
-                        'available_facts': list(us_gaap.keys())[:20]  # Show first 20
-                    }
-            else:
-                return {
-                    'success': False,
-                    'error': f'Failed to retrieve company facts (HTTP {response.status})',
-                    'ticker': ticker
+        # Extract specific fact
+        us_gaap = facts_data.get('facts', {}).get('us-gaap', {})
+        
+        if fact_name in us_gaap:
+            fact_data = us_gaap[fact_name]
+            
+            return {
+                'success': True,
+                'ticker': ticker,
+                'cik': cik,
+                'fact_name': fact_name,
+                'fact_data': fact_data,
+                'metadata': {
+                    'source': 'SEC EDGAR API',
+                    'extraction_time': datetime.now().isoformat()
                 }
+            }
+        else:
+            return {
+                'success': False,
+                'error': f'XBRL fact {fact_name} not found',
+                'ticker': ticker,
+                'available_facts': list(us_gaap.keys())[:20]  # Show first 20
+            }
                 
     except Exception as e:
         logger.error(f"get_xbrl_facts failed for {ticker}: {e}")
