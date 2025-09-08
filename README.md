@@ -505,6 +505,7 @@ All data collector integration guides are centralized in `/docs/project/modules/
 
 - **Formatting**: Always run `prettier --write .` before committing
 - **Testing**: 80%+ code coverage requirement
+- **IMPORTANT**: All test output must be written to `/docs/project/test_output/`
 - **Documentation**: Update relevant docs with code changes
 - **Commits**: Use conventional commit format
 

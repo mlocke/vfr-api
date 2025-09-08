@@ -35,9 +35,11 @@ from .government.fdic_collector import FDICCollector
 # Government MCP collector imports
 try:
     from .government.mcp.data_gov_mcp_collector import DataGovMCPCollector
+    from .government.mcp.sec_edgar_mcp_collector import SECEdgarMCPCollector
     GOVERNMENT_MCP_AVAILABLE = True
 except ImportError:
     DataGovMCPCollector = None
+    SECEdgarMCPCollector = None
     GOVERNMENT_MCP_AVAILABLE = False
 
 # Commercial collector imports
@@ -89,6 +91,8 @@ class RequestType(Enum):
     ENERGY_DATA = "energy_data"
     COMMODITY_DATA = "commodity_data"
     BANKING_DATA = "banking_data"
+    SEC_FILINGS = "sec_filings"
+    INSIDER_TRADING = "insider_trading"
     
     # Commercial data (paid sources)
     REAL_TIME_PRICES = "real_time_prices"
@@ -464,6 +468,48 @@ class CollectorRouter:
                 data_freshness="quarterly",
                 reliability_score=96,  # Government data is very reliable
                 coverage_score=88   # Excellent coverage for government data
+            )
+        
+        # Add SEC EDGAR MCP collector if available
+        if SECEdgarMCPCollector:
+            registry['sec_edgar_mcp'] = CollectorCapability(
+                collector_class=SECEdgarMCPCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_MCP,
+                primary_use_cases=[
+                    RequestType.INDIVIDUAL_COMPANY,
+                    RequestType.COMPANY_COMPARISON,
+                    RequestType.SEC_FILINGS,
+                    RequestType.INSIDER_TRADING
+                ],
+                strengths=[
+                    'Official SEC EDGAR filing data with XBRL precision',
+                    'Complete company fundamentals and financial statements',
+                    'Real-time insider trading activity (Forms 3/4/5)',
+                    'Historical filing analysis (10-K, 10-Q, 8-K)',
+                    'MCP protocol optimized for AI-native access',
+                    'No authentication required - public data',
+                    'Hybrid MCP/REST API fallback architecture',
+                    'SEC compliance with 10 req/sec rate limiting',
+                    'Exact financial precision from XBRL parsing',
+                    'Comprehensive filing metadata and document analysis'
+                ],
+                limitations=[
+                    'Requires valid User-Agent with email contact',
+                    'US public companies only (no international)',
+                    'No real-time stock prices or market data',
+                    'Filing lag (typically 1-4 business days)',
+                    'Limited to 1-20 companies for optimal performance'
+                ],
+                max_companies=20,  # SEC EDGAR MCP optimized for specific analysis
+                requires_specific_companies=True,  # Activation follows filtering guidelines
+                cost_per_request=0.0,  # SEC data is free
+                monthly_quota=None,  # No limits on SEC data
+                rate_limit_per_second=10.0,  # SEC guideline compliance
+                supports_mcp=True,  # Primary MCP collector
+                protocol_preference=100,  # Highest preference for SEC filing requests
+                data_freshness="daily",  # Filings updated daily
+                reliability_score=98,  # Official SEC data source
+                coverage_score=95   # Excellent coverage for SEC filing data
             )
         
         return registry

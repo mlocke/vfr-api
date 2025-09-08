@@ -1,0 +1,114 @@
+/Users/michaellocke/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Cannot instantiate DataGovMCPCollector for activation check
+Cannot instantiate AlphaVantageMCPCollector for activation check
+Cannot instantiate PolygonMCPCollector for activation check
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+Cannot instantiate DataGovMCPCollector for activation check
+Cannot instantiate AlphaVantageMCPCollector for activation check
+Cannot instantiate PolygonMCPCollector for activation check
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+No capable collectors found for request
+Cannot instantiate DataGovMCPCollector for activation check
+Cannot instantiate AlphaVantageMCPCollector for activation check
+Cannot instantiate PolygonMCPCollector for activation check
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+Exception ignored in: <function PolygonMCPCollector.__del__ at 0x10654a8b0>
+Traceback (most recent call last):
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 810, in __del__
+    self.cleanup()
+  File "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/backend/data_collectors/commercial/mcp/polygon_mcp_collector.py", line 802, in cleanup
+    if self._mcp_process:
+AttributeError: 'PolygonMCPCollector' object has no attribute '_mcp_process'
+============================================================
+SEC EDGAR MCP COLLECTOR - INTEGRATION TEST RESULTS
+============================================================
+
+✅ Router Initialization: SUCCESS
+Total collectors registered: 11
+
+📋 All Registered Collectors:
+ 1. sec_edgar
+ 2. treasury_fiscal
+ 3. treasury_direct
+ 4. bea
+ 5. bls
+ 6. eia
+ 7. fdic
+ 8. data_gov_mcp
+ 9. sec_edgar_mcp
+10. alpha_vantage_mcp
+11. polygon_mcp
+
+✅ SEC EDGAR MCP Registration: SUCCESS
+   Quadrant: CollectorQuadrant.GOVERNMENT_MCP
+   Primary use cases: ['individual_company', 'company_comparison', 'sec_filings', 'insider_trading']
+   Max companies: 20
+   MCP support: True
+   Protocol preference: 100
+   Rate limit: 10.0 req/sec
+   Cost per request: $0.0
+   Reliability score: 98%
+
+🧪 ROUTING TESTS:
+----------------------------------------
+
+📝 Test 1 - SEC Filings Request:
+   Request: {'symbols': ['AAPL'], 'data_types': ['filings']}
+   Selected: ['SECEdgarCollector', 'SECEdgarMCPCollector']
+   ✅ SEC EDGAR MCP selected: SUCCESS
+   ✅ Hybrid architecture: Both MCP + API collectors selected
+
+📊 Test 2 - Company Analysis Request:
+   Request: {'symbols': ['AAPL', 'MSFT'], 'data_types': ['fundamentals']}
+   Selected: ['SECEdgarCollector', 'SECEdgarMCPCollector']
+   ✅ SEC EDGAR MCP selected: SUCCESS
+
+🚫 Test 3 - Broad Screening (Should NOT activate SEC MCP):
+   Request: {'sector': 'Technology', 'data_types': ['screening']}
+   Selected: []
+   ✅ Filtering guidelines respected: SUCCESS
+   ✅ SEC MCP correctly avoided broad screening request
+
+🏢 Test 4 - Insider Trading Request:
+   Request: {'symbols': ['AAPL'], 'data_types': ['insider_trading']}
+   Selected: ['SECEdgarCollector', 'SECEdgarMCPCollector']
+   ✅ SEC EDGAR MCP selected: SUCCESS
+   ✅ Insider trading use case supported
+
+============================================================
+INTEGRATION TEST COMPLETE
+All tests passed - SEC EDGAR MCP integration validated!
+============================================================
