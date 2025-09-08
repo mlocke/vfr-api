@@ -28,7 +28,12 @@
       "Bash(git --version)",
       "Bash(npx prettier:*)",
       "Bash(python:*)",
-      "mcp__firecrawl__firecrawl_scrape"
+      "mcp__firecrawl__firecrawl_scrape",
+      "WebFetch(domain:mcp.alphavantage.co)",
+      "WebFetch(domain:www.alphavantage.co)",
+      "mcp__firecrawl__firecrawl_search",
+      "mcp__github__search_repositories",
+      "mcp__github__get_file_contents"
     ],
     "deny": [],
     "ask": []

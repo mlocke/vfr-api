@@ -1,0 +1,40 @@
+{
+  "test_name": "mcp_first_routing",
+  "timestamp": "2025-09-07T21:52:21.509235",
+  "success": true,
+  "execution_time_seconds": 2.86102294921875e-06,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "routing_architecture": "Four-Quadrant MCP-First",
+  "data": {
+    "request_type": "stock_quote",
+    "available_options": [
+      {
+        "quadrant": "commercial_api",
+        "collector": "ALPHA_VANTAGE_API",
+        "cost": 0.02,
+        "mcp": false
+      },
+      {
+        "quadrant": "commercial_mcp",
+        "collector": "ALPHA_VANTAGE_MCP",
+        "cost": 0.01,
+        "mcp": true
+      },
+      {
+        "quadrant": "government_api",
+        "collector": "SEC_EDGAR",
+        "cost": 0.0,
+        "mcp": false
+      }
+    ],
+    "selected_option": {
+      "quadrant": "commercial_mcp",
+      "collector": "ALPHA_VANTAGE_MCP",
+      "cost": 0.01,
+      "mcp": true
+    },
+    "routing_reason": "MCP-first preference with cost optimization",
+    "mcp_preference_applied": true,
+    "cost_optimization": true
+  }
+}

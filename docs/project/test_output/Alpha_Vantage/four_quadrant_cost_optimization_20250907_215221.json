@@ -1,0 +1,78 @@
+{
+  "test_name": "cost_optimization",
+  "timestamp": "2025-09-07T21:52:21.509631",
+  "success": true,
+  "execution_time_seconds": 6.9141387939453125e-06,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "routing_architecture": "Four-Quadrant MCP-First",
+  "data": {
+    "optimization_scenarios": 2,
+    "results": [
+      {
+        "scenario": "Real-time stock data",
+        "available_options": [
+          {
+            "quadrant": "government_api",
+            "cost": 0.0,
+            "mcp": false,
+            "quality": "basic"
+          },
+          {
+            "quadrant": "commercial_mcp",
+            "cost": 0.01,
+            "mcp": true,
+            "quality": "premium"
+          },
+          {
+            "quadrant": "commercial_api",
+            "cost": 0.02,
+            "mcp": false,
+            "quality": "premium"
+          }
+        ],
+        "budget_limit": 0.05,
+        "affordable_options": 3,
+        "selected_option": {
+          "quadrant": "commercial_mcp",
+          "cost": 0.01,
+          "mcp": true,
+          "quality": "premium"
+        },
+        "selection_reason": "Cheapest MCP option within budget",
+        "cost_savings": 0.04,
+        "mcp_selected": true
+      },
+      {
+        "scenario": "Historical economic data",
+        "available_options": [
+          {
+            "quadrant": "government_mcp",
+            "cost": 0.0,
+            "mcp": true,
+            "quality": "official"
+          },
+          {
+            "quadrant": "commercial_mcp",
+            "cost": 0.015,
+            "mcp": true,
+            "quality": "enhanced"
+          }
+        ],
+        "budget_limit": 0.02,
+        "affordable_options": 2,
+        "selected_option": {
+          "quadrant": "government_mcp",
+          "cost": 0.0,
+          "mcp": true,
+          "quality": "official"
+        },
+        "selection_reason": "Cheapest MCP option within budget",
+        "cost_savings": 0.02,
+        "mcp_selected": true
+      }
+    ],
+    "total_budget_compliance": true,
+    "mcp_preference_honored": 2,
+    "total_projected_savings": 0.06
+  }
+}

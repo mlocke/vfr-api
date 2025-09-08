@@ -127,12 +127,30 @@ This document outlines the comprehensive module breakdown and directory structur
 
 ## Core Application Modules
 
-## Filter-Driven Data Collection Architecture
+## MCP-Forward Four-Quadrant Data Collection Architecture
 
 ### Overview
-The Stock Picker platform uses a **filter-driven collector routing system** that intelligently selects optimal data sources based on request specificity and data requirements.
+The Stock Picker platform uses a **revolutionary MCP-first four-quadrant collector routing system** that intelligently selects optimal data sources from both traditional APIs and AI-native MCP servers based on request specificity and data requirements.
 
-**Key Principle**: Each collector only activates when it provides the best value for the specific request type, ensuring efficiency and optimal data quality.
+**Key Innovation**: First financial platform designed with MCP-native architecture, seamlessly integrating traditional APIs with AI-optimized MCP servers through a unified four-quadrant system.
+
+### Four-Quadrant System
+```
+Data Collection Architecture:
+├── Government Data Sources
+│   ├── API Collectors (Current): SEC, FRED, BEA, Treasury, BLS, EIA, FDIC
+│   └── MCP Collectors (Future): SEC MCP, Fed MCP, Treasury MCP
+├── Commercial Data Sources  
+│   ├── API Collectors: IEX Cloud, Polygon.io, Yahoo Finance
+│   └── MCP Collectors: Alpha Vantage MCP, Financial Modeling Prep MCP
+└── Unified Client Interface (Seamless experience regardless of protocol)
+```
+
+**Strategic Positioning**:
+- **MCP-Native Platform**: First financial analysis platform designed for MCP ecosystem
+- **Protocol Agnostic**: Seamlessly uses both traditional APIs and MCP servers
+- **Future-Ready**: Prepared for MCP adoption by government agencies and commercial providers
+- **AI-Optimized**: Leverages MCP's AI-native design for enhanced analysis capabilities
 
 ### Request Flow
 ```
@@ -378,12 +396,11 @@ validation = interface.validate_filter_combination(translated)
     - **Filter Validation**: Combination checking and suggestions
     - **Predefined Presets**: 6 common-use filter combinations
 
-- **Market Data APIs** (Planned)
-    - Real-time stock prices (NYSE, NASDAQ, LSE, TSE)
-    - Historical price data and trading volumes
-    - Options data and volatility metrics
-    - Earnings reports and financial statements
-    - Alpha Vantage, IEX Cloud, Quandl, Yahoo Finance, Polygon.io
+- **Commercial Market Data** (MCP-First Strategy)
+    - **MCP Collectors (Priority)**: Alpha Vantage MCP (79 AI-optimized tools), Financial Modeling Prep MCP
+    - **API Collectors (Fallback)**: IEX Cloud, Polygon.io, Yahoo Finance, Quandl
+    - Real-time stock prices, historical data, options, technical indicators
+    - AI-enhanced sentiment analysis and earnings intelligence via MCP tools
 
 - **News & Sentiment Sources** (Planned)
     - Financial news aggregation (News API)

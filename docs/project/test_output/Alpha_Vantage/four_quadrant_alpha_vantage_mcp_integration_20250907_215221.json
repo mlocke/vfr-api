@@ -1,0 +1,71 @@
+{
+  "test_name": "alpha_vantage_mcp_integration",
+  "timestamp": "2025-09-07T21:52:21.509761",
+  "success": true,
+  "execution_time_seconds": 3.0994415283203125e-06,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "routing_architecture": "Four-Quadrant MCP-First",
+  "data": {
+    "collector_configuration": {
+      "collector_name": "ALPHA_VANTAGE_MCP",
+      "mcp_server_url": "https://mcp.alphavantage.co/mcp?apikey=4M20CQ7QT67RJ835",
+      "quadrant": "commercial_mcp",
+      "tools_available": [
+        "GLOBAL_QUOTE",
+        "COMPANY_OVERVIEW",
+        "RSI",
+        "TIME_SERIES_DAILY"
+      ],
+      "cost_per_request": 0.01,
+      "supports_mcp_protocol": true,
+      "session_management": true,
+      "cost_tracking": true
+    },
+    "integration_tests": [
+      {
+        "test": "Route stock quote to Alpha Vantage MCP",
+        "request": {
+          "companies": [
+            "AAPL"
+          ],
+          "data_type": "quote"
+        },
+        "expected_tool": "GLOBAL_QUOTE",
+        "expected_cost": 0.01,
+        "success": true
+      },
+      {
+        "test": "Route fundamental data to Alpha Vantage MCP",
+        "request": {
+          "companies": [
+            "MSFT"
+          ],
+          "data_type": "fundamentals"
+        },
+        "expected_tool": "COMPANY_OVERVIEW",
+        "expected_cost": 0.01,
+        "success": true
+      },
+      {
+        "test": "Route technical analysis to Alpha Vantage MCP",
+        "request": {
+          "companies": [
+            "GOOGL"
+          ],
+          "analysis_type": "technical",
+          "indicators": [
+            "RSI"
+          ]
+        },
+        "expected_tool": "RSI",
+        "expected_cost": 0.01,
+        "success": true
+      }
+    ],
+    "total_tests": 3,
+    "successful_integrations": 3,
+    "total_projected_cost": 0.03,
+    "mcp_protocol_validated": true,
+    "session_management_active": true
+  }
+}

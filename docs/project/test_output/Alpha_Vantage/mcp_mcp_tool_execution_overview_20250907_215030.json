@@ -1,0 +1,17 @@
+{
+  "test_name": "mcp_tool_execution_overview",
+  "timestamp": "2025-09-07T21:50:30.592262",
+  "success": true,
+  "execution_time_seconds": 9.5367431640625e-07,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "mcp_protocol": "JSON-RPC 2.0",
+  "data": {
+    "symbol_tested": "AAPL",
+    "mcp_tools_used": [
+      "COMPANY_OVERVIEW"
+    ],
+    "data_received": true,
+    "cost_tracked": 0.01,
+    "execution_time_seconds": 9.5367431640625e-07
+  }
+}

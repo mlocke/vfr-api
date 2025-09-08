@@ -1,18 +1,24 @@
 """
-Collector Router System - Smart Data Source Selection
+Collector Router System - MCP-Native Four-Quadrant Smart Routing
 
-This module implements intelligent routing of data requests to the most appropriate
-collectors based on filter criteria specificity and data source strengths.
+This module implements intelligent routing of data requests across the four-quadrant
+architecture: Government API, Government MCP, Commercial API, and Commercial MCP.
+
+MCP-First Philosophy:
+1. Protocol Selection: Prefers MCP over traditional API when available
+2. Cost Optimization: Routes to free government sources before commercial
+3. Quality Prioritization: Balances cost vs data quality and completeness
+4. Smart Fallback: Graceful degradation when preferred sources unavailable
 
 Architecture:
 - Filter Analysis: Determines request type and specificity
-- Collector Selection: Routes to optimal data sources  
-- Priority Management: Handles overlapping capabilities
+- Four-Quadrant Routing: Government/Commercial × API/MCP selection
+- Cost-Aware Selection: Optimizes commercial API usage
 - Performance Optimization: Avoids unnecessary API calls
 """
 
 import logging
-from typing import Dict, List, Any, Optional, Type
+from typing import Dict, List, Any, Optional, Type, Union
 from dataclasses import dataclass
 from enum import Enum
 
@@ -25,16 +31,47 @@ from .government.bls_collector import BLSCollector
 from .government.eia_collector import EIACollector
 from .government.fdic_collector import FDICCollector
 # from .government.fred_collector import FREDCollector  # When implemented
-# from .market.alpha_vantage_collector import AlphaVantageCollector  # When implemented
+
+# Commercial collector imports
+try:
+    from .commercial.base.commercial_collector_interface import CommercialCollectorInterface
+    from .commercial.base.mcp_collector_base import MCPCollectorBase
+    from .commercial.mcp.alpha_vantage_mcp_collector import AlphaVantageMCPCollector
+    COMMERCIAL_COLLECTORS_AVAILABLE = True
+except ImportError:
+    CommercialCollectorInterface = None
+    MCPCollectorBase = None
+    AlphaVantageMCPCollector = None
+    COMMERCIAL_COLLECTORS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
+
+class DataSourceType(Enum):
+    """Data source classification for four-quadrant routing."""
+    GOVERNMENT_API = "government_api"
+    GOVERNMENT_MCP = "government_mcp"  # Future expansion
+    COMMERCIAL_API = "commercial_api"
+    COMMERCIAL_MCP = "commercial_mcp"
+
+
+class CollectorQuadrant(Enum):
+    """Four-quadrant collector classification."""
+    GOVERNMENT_FREE = "government_free"  # Government APIs (free)
+    GOVERNMENT_MCP = "government_mcp"    # Government MCP servers (future)
+    COMMERCIAL_API = "commercial_api"    # Commercial REST APIs
+    COMMERCIAL_MCP = "commercial_mcp"    # Commercial MCP servers (preferred)
+
+
 class RequestType(Enum):
     """Types of data requests that can be made."""
+    # Core company analysis
     INDIVIDUAL_COMPANY = "individual_company"
     COMPANY_COMPARISON = "company_comparison"
     SECTOR_ANALYSIS = "sector_analysis"
     INDEX_ANALYSIS = "index_analysis"
+    
+    # Government data (free sources)
     ECONOMIC_DATA = "economic_data"
     FISCAL_DATA = "fiscal_data"
     EMPLOYMENT_DATA = "employment_data"
@@ -42,38 +79,89 @@ class RequestType(Enum):
     ENERGY_DATA = "energy_data"
     COMMODITY_DATA = "commodity_data"
     BANKING_DATA = "banking_data"
-    MARKET_SCREENING = "market_screening"
+    
+    # Commercial data (paid sources)
+    REAL_TIME_PRICES = "real_time_prices"
+    INTRADAY_DATA = "intraday_data"
     TECHNICAL_ANALYSIS = "technical_analysis"
+    MARKET_SENTIMENT = "market_sentiment"
+    NEWS_ANALYSIS = "news_analysis"
+    EARNINGS_ESTIMATES = "earnings_estimates"
+    ANALYST_RATINGS = "analyst_ratings"
+    OPTIONS_DATA = "options_data"
+    FOREX_DATA = "forex_data"
+    CRYPTO_DATA = "crypto_data"
+    
+    # Screening and discovery
+    MARKET_SCREENING = "market_screening"
+    STOCK_SCREENING = "stock_screening"
 
 @dataclass
 class CollectorCapability:
-    """Defines a collector's capabilities and optimal use cases."""
+    """Defines a collector's capabilities and optimal use cases for four-quadrant routing."""
     collector_class: Type[DataCollectorInterface]
+    quadrant: CollectorQuadrant
     primary_use_cases: List[RequestType]
     strengths: List[str]
     limitations: List[str]
     max_companies: Optional[int] = None
     requires_specific_companies: bool = False
+    
+    # Cost and performance metrics
+    cost_per_request: float = 0.0  # USD per request
+    monthly_quota: Optional[int] = None
+    rate_limit_per_second: Optional[float] = None
+    
+    # Protocol information
+    supports_mcp: bool = False
+    mcp_tool_count: Optional[int] = None
+    protocol_preference: int = 50  # 0-100, higher = more preferred
+    
+    # Quality and reliability metrics
+    data_freshness: str = "unknown"  # "real_time", "daily", "weekly", "monthly"
+    reliability_score: int = 95  # 0-100, based on uptime and consistency
+    coverage_score: int = 80  # 0-100, based on data breadth and depth
 
 class CollectorRouter:
     """
-    Smart router that selects the most appropriate data collectors based on request filters.
+    MCP-Native Four-Quadrant Smart Router for financial data collection.
     
-    Routing Philosophy:
-    1. Specificity First: More specific requests get priority collectors
-    2. Strength Matching: Route requests to collector strengths  
-    3. Efficiency: Avoid unnecessary API calls and over-fetching
-    4. Fallback Strategy: Handle cases when primary collectors fail
+    Four-Quadrant Routing Philosophy:
+    1. MCP Preference: Prefer MCP protocol over traditional APIs when available
+    2. Cost Optimization: Route to free government sources before commercial
+    3. Quality Balance: Optimize for data quality vs cost tradeoffs
+    4. Smart Fallback: Graceful degradation across quadrants when needed
+    
+    Quadrant Priority (highest to lowest):
+    1. Government Free (SEC, FRED, BEA, etc.) - Cost: $0, Quality: High
+    2. Commercial MCP (Alpha Vantage MCP) - Cost: Variable, Quality: Premium
+    3. Commercial API (Traditional REST) - Cost: Variable, Quality: Standard
+    4. Government MCP (Future) - Cost: $0, Quality: Enhanced
+    
+    Selection Factors:
+    - Request specificity and data requirements
+    - User budget constraints and cost limits
+    - Data freshness requirements (real-time vs historical)
+    - Protocol availability and performance
     """
     
-    def __init__(self):
+    def __init__(self, budget_limit: float = 0.0):
+        """
+        Initialize the router.
+        
+        Args:
+            budget_limit: Monthly budget limit for commercial APIs (USD)
+        """
+        self.budget_limit = budget_limit
         self.collector_registry = self._initialize_collector_registry()
         
     def _initialize_collector_registry(self) -> Dict[str, CollectorCapability]:
-        """Initialize the registry of available collectors and their capabilities."""
-        return {
+        """Initialize the registry of available collectors with four-quadrant classification."""
+        registry = {
+            # QUADRANT 1: Government Free APIs (Highest Priority)
             'sec_edgar': CollectorCapability(
                 collector_class=SECEdgarCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.INDIVIDUAL_COMPANY,
                     RequestType.COMPANY_COMPARISON
@@ -93,11 +181,20 @@ class CollectorRouter:
                     'No technical analysis data'
                 ],
                 max_companies=20,
-                requires_specific_companies=True
+                requires_specific_companies=True,
+                cost_per_request=0.0,
+                monthly_quota=None,
+                rate_limit_per_second=10.0,
+                supports_mcp=False,
+                protocol_preference=85,
+                data_freshness="daily",
+                reliability_score=98,
+                coverage_score=95
             ),
             
             'treasury_fiscal': CollectorCapability(
                 collector_class=TreasuryFiscalCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.FISCAL_DATA,
                     RequestType.ECONOMIC_DATA
@@ -117,11 +214,52 @@ class CollectorRouter:
                     'Some endpoints may be unavailable'
                 ],
                 max_companies=None,
-                requires_specific_companies=False
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=None,
+                rate_limit_per_second=5.0,
+                supports_mcp=False,
+                protocol_preference=90,
+                data_freshness="daily",
+                reliability_score=96,
+                coverage_score=85
+            ),
+            
+            'treasury_direct': CollectorCapability(
+                collector_class=TreasuryDirectCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
+                primary_use_cases=[
+                    RequestType.FISCAL_DATA
+                ],
+                strengths=[
+                    'Treasury securities data (Bills, Notes, Bonds, TIPS)',
+                    'Yield curve analysis and interest rate data',
+                    'Treasury auction results and schedules',
+                    'Real-time Treasury market data',
+                    'Free access with no API keys required',
+                    'Comprehensive maturity range coverage (1Mo-30Yr)'
+                ],
+                limitations=[
+                    'No company-specific data',
+                    'Limited to US Treasury securities only',
+                    'Conservative rate limiting (1 req/sec)',
+                    'No equity or corporate bond data'
+                ],
+                max_companies=None,
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=None,
+                rate_limit_per_second=1.0,
+                supports_mcp=False,
+                protocol_preference=88,
+                data_freshness="real_time",
+                reliability_score=97,
+                coverage_score=82
             ),
             
             'bea': CollectorCapability(
                 collector_class=BEACollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.ECONOMIC_DATA
                 ],
@@ -141,34 +279,20 @@ class CollectorRouter:
                     'Complex data structure requiring processing'
                 ],
                 max_companies=None,
-                requires_specific_companies=False
-            ),
-            
-            'treasury_direct': CollectorCapability(
-                collector_class=TreasuryDirectCollector,
-                primary_use_cases=[
-                    RequestType.FISCAL_DATA
-                ],
-                strengths=[
-                    'Treasury securities data (Bills, Notes, Bonds, TIPS)',
-                    'Yield curve analysis and interest rate data',
-                    'Treasury auction results and schedules',
-                    'Real-time Treasury market data',
-                    'Free access with no API keys required',
-                    'Comprehensive maturity range coverage (1Mo-30Yr)'
-                ],
-                limitations=[
-                    'No company-specific data',
-                    'Limited to US Treasury securities only',
-                    'Conservative rate limiting (1 req/sec)',
-                    'No equity or corporate bond data'
-                ],
-                max_companies=None,
-                requires_specific_companies=False
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=1000,
+                rate_limit_per_second=2.0,
+                supports_mcp=False,
+                protocol_preference=92,
+                data_freshness="monthly",
+                reliability_score=99,
+                coverage_score=98
             ),
             
             'bls': CollectorCapability(
                 collector_class=BLSCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.EMPLOYMENT_DATA,
                     RequestType.INFLATION_DATA,
@@ -191,11 +315,20 @@ class CollectorRouter:
                     'No financial market or stock data'
                 ],
                 max_companies=None,
-                requires_specific_companies=False
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=500,
+                rate_limit_per_second=0.1,  # 500 per month ≈ 0.2 per sec
+                supports_mcp=False,
+                protocol_preference=89,
+                data_freshness="monthly",
+                reliability_score=99,
+                coverage_score=93
             ),
             
             'eia': CollectorCapability(
                 collector_class=EIACollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.ENERGY_DATA,
                     RequestType.COMMODITY_DATA,
@@ -219,11 +352,20 @@ class CollectorRouter:
                     'Energy market focus (not broader economic data)'
                 ],
                 max_companies=None,
-                requires_specific_companies=False
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=5000,
+                rate_limit_per_second=1.0,
+                supports_mcp=False,
+                protocol_preference=87,
+                data_freshness="daily",
+                reliability_score=98,
+                coverage_score=88
             ),
             
             'fdic': CollectorCapability(
                 collector_class=FDICCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_FREE,
                 primary_use_cases=[
                     RequestType.BANKING_DATA,
                     RequestType.SECTOR_ANALYSIS  # Banking sector
@@ -246,44 +388,102 @@ class CollectorRouter:
                     'Limited international banking data'
                 ],
                 max_companies=None,  # Can analyze entire banking sector
-                requires_specific_companies=False
-            ),
-            
-            # Future collectors to be added:
-            # 'fred': CollectorCapability(...),
-            # 'alpha_vantage': CollectorCapability(...),
-            # 'sector_screener': CollectorCapability(...),
+                requires_specific_companies=False,
+                cost_per_request=0.0,
+                monthly_quota=None,
+                rate_limit_per_second=2.0,
+                supports_mcp=False,
+                protocol_preference=86,
+                data_freshness="monthly",
+                reliability_score=97,
+                coverage_score=91
+            )
         }
+        
+        # Add commercial collectors if available
+        if COMMERCIAL_COLLECTORS_AVAILABLE:
+            registry.update(self._get_commercial_collector_registry())
+        
+        return registry
+        
+    def _get_commercial_collector_registry(self) -> Dict[str, CollectorCapability]:
+        """Get commercial collector registry entries including Alpha Vantage MCP collector."""
+        registry = {}
+        
+        # Add Alpha Vantage MCP collector if available
+        if AlphaVantageMCPCollector:
+            registry['alpha_vantage_mcp'] = CollectorCapability(
+                collector_class=AlphaVantageMCPCollector,
+                quadrant=CollectorQuadrant.COMMERCIAL_MCP,
+                primary_use_cases=[
+                    RequestType.REAL_TIME_PRICES,
+                    RequestType.TECHNICAL_ANALYSIS,
+                    RequestType.INTRADAY_DATA,
+                    RequestType.INDIVIDUAL_COMPANY,
+                    RequestType.COMPANY_COMPARISON,
+                    RequestType.FOREX_DATA,
+                    RequestType.CRYPTO_DATA,
+                    RequestType.MARKET_SENTIMENT,
+                    RequestType.NEWS_ANALYSIS,
+                    RequestType.EARNINGS_ESTIMATES
+                ],
+                strengths=[
+                    '79 AI-optimized MCP tools for financial analysis',
+                    'Real-time and historical market data',
+                    'Advanced technical indicators and overlays',
+                    'Global market coverage (stocks, forex, crypto)',
+                    'MCP protocol optimization for AI consumption',
+                    'Comprehensive fundamental data integration',
+                    'News sentiment analysis and market intelligence',
+                    'Premium earnings and analyst data',
+                    'High-frequency intraday data support'
+                ],
+                limitations=[
+                    'Requires paid subscription for full access',
+                    'Rate limits based on subscription tier',
+                    'Higher cost for premium features',
+                    'API key required for authentication'
+                ],
+                max_companies=None,  # No hard limit
+                requires_specific_companies=True,
+                cost_per_request=0.01,  # Base rate $0.01 per request
+                monthly_quota=25000,    # Premium tier limit
+                rate_limit_per_second=5.0,
+                supports_mcp=True,
+                mcp_tool_count=79,
+                protocol_preference=95,  # MCP strongly preferred
+                data_freshness="real_time",
+                reliability_score=95,
+                coverage_score=99
+            )
+        
+        return registry
     
     def route_request(self, filter_criteria: Dict[str, Any]) -> List[DataCollectorInterface]:
         """
-        Route a data request to the most appropriate collectors.
+        Route a data request to the most appropriate collectors using four-quadrant logic.
+        
+        Four-Quadrant Priority:
+        1. Government Free APIs: Always preferred when applicable (cost = $0)
+        2. Commercial MCP: Premium quality when budget allows
+        3. Commercial API: Standard quality fallback
+        4. Government MCP: Future enhanced free sources
         
         Args:
             filter_criteria: Dictionary containing request parameters
             
         Returns:
             List of instantiated collectors that should handle this request
-            
-        Example filter_criteria:
-            {
-                'companies': ['AAPL', 'MSFT', 'GOOGL'],
-                'analysis_type': 'fundamental',
-                'time_period': '5y'
-            }
         """
-        logger.info(f"Routing request with filters: {filter_criteria}")
+        logger.info(f"Four-quadrant routing for: {filter_criteria}")
         
         # Step 1: Analyze request type and requirements
         request_analysis = self._analyze_request(filter_criteria)
         
-        # Step 2: Find capable collectors
-        capable_collectors = self._find_capable_collectors(filter_criteria, request_analysis)
+        # Step 2: Apply four-quadrant selection logic
+        selected_collectors = self._select_four_quadrant_collectors(filter_criteria, request_analysis)
         
-        # Step 3: Select optimal collectors based on priority
-        selected_collectors = self._select_optimal_collectors(capable_collectors, filter_criteria)
-        
-        # Step 4: Instantiate and return collectors
+        # Step 3: Instantiate and return collectors
         active_collectors = []
         for capability in selected_collectors:
             try:
@@ -300,79 +500,192 @@ class CollectorRouter:
                     logger.error(f"Failed to instantiate {capability.collector_class.__name__} with None config: {e2}")
                     # Skip this collector if both methods fail
         
-        logger.info(f"Selected {len(active_collectors)} collectors: {[c.__class__.__name__ for c in active_collectors]}")
+        quadrant_summary = {}
+        for collector in active_collectors:
+            collector_name = collector.__class__.__name__
+            capability = self._get_capability_for_collector(collector.__class__)
+            if capability:
+                quadrant = capability.quadrant.value
+                if quadrant not in quadrant_summary:
+                    quadrant_summary[quadrant] = []
+                quadrant_summary[quadrant].append(collector_name)
+        
+        logger.info(f"Selected {len(active_collectors)} collectors across quadrants: {quadrant_summary}")
         return active_collectors
     
-    def _analyze_request(self, filter_criteria: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze the request to determine type and requirements."""
-        analysis = {
-            'request_type': None,
-            'specificity_level': 'unknown',
-            'data_requirements': [],
-            'performance_considerations': {}
+    def _select_four_quadrant_collectors(
+        self, 
+        filter_criteria: Dict[str, Any], 
+        request_analysis: Dict[str, Any]
+    ) -> List[CollectorCapability]:
+        """
+        Select collectors using four-quadrant priority logic.
+        
+        Priority Order:
+        1. Government Free (cost=$0, quality=high)
+        2. Commercial MCP (cost=variable, quality=premium, protocol=MCP)
+        3. Commercial API (cost=variable, quality=standard, protocol=REST)
+        4. Government MCP (future: cost=$0, quality=enhanced, protocol=MCP)
+        """
+        # Find all capable collectors
+        capable_collectors = self._find_capable_collectors(filter_criteria, request_analysis)
+        
+        if not capable_collectors:
+            logger.warning("No capable collectors found for request")
+            return []
+        
+        # Group collectors by quadrant
+        quadrant_groups = {
+            CollectorQuadrant.GOVERNMENT_FREE: [],
+            CollectorQuadrant.COMMERCIAL_MCP: [],
+            CollectorQuadrant.COMMERCIAL_API: [],
+            CollectorQuadrant.GOVERNMENT_MCP: []
         }
         
-        # Determine request type based on filters
-        companies = self._get_specific_companies(filter_criteria)
+        for capability in capable_collectors:
+            quadrant_groups[capability.quadrant].append(capability)
         
-        if len(companies) == 1:
-            analysis['request_type'] = RequestType.INDIVIDUAL_COMPANY
-            analysis['specificity_level'] = 'very_high'
-        elif 2 <= len(companies) <= 20:
-            analysis['request_type'] = RequestType.COMPANY_COMPARISON
-            analysis['specificity_level'] = 'high'
-        elif filter_criteria.get('sector') and not companies:
-            analysis['request_type'] = RequestType.SECTOR_ANALYSIS
-            analysis['specificity_level'] = 'medium'
-        elif filter_criteria.get('index') and not companies:
-            analysis['request_type'] = RequestType.INDEX_ANALYSIS
-            analysis['specificity_level'] = 'medium'
-        elif filter_criteria.get('economic_indicator') or filter_criteria.get('fred_series'):
-            analysis['request_type'] = RequestType.ECONOMIC_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['treasury_series', 'fiscal_data', 'debt_data', 'government_spending']):
-            analysis['request_type'] = RequestType.FISCAL_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['gdp', 'nipa', 'regional', 'industry_gdp', 'personal_income', 'bea_data']):
-            analysis['request_type'] = RequestType.ECONOMIC_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['employment', 'unemployment', 'labor_force', 'jobs', 'jolts', 'bls_series']):
-            analysis['request_type'] = RequestType.EMPLOYMENT_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['cpi', 'ppi', 'inflation', 'consumer_price', 'producer_price']):
-            analysis['request_type'] = RequestType.INFLATION_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['energy', 'oil', 'gas', 'petroleum', 'crude', 'electricity', 'eia_series', 'energy_sector']):
-            analysis['request_type'] = RequestType.ENERGY_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['commodities', 'commodity', 'wti', 'henry_hub', 'natural_gas', 'renewable']):
-            analysis['request_type'] = RequestType.COMMODITY_DATA
-            analysis['specificity_level'] = 'high'
-        elif any(key in filter_criteria for key in ['banking_sector', 'bank_health', 'banking', 'banks', 'financial_institutions', 'fdic', 'institution_analysis', 'banking_market']):
-            analysis['request_type'] = RequestType.BANKING_DATA
-            analysis['specificity_level'] = 'high'
-        else:
-            analysis['request_type'] = RequestType.MARKET_SCREENING
-            analysis['specificity_level'] = 'low'
+        # Apply four-quadrant selection logic
+        selected_collectors = []
         
-        # Determine data requirements
-        if filter_criteria.get('analysis_type') == 'fundamental':
-            analysis['data_requirements'].append('financial_statements')
-            analysis['data_requirements'].append('calculated_ratios')
+        # PRIORITY 1: Government Free APIs (always preferred when applicable)
+        government_free = quadrant_groups[CollectorQuadrant.GOVERNMENT_FREE]
+        if government_free:
+            # Sort by protocol preference and reliability
+            government_free.sort(key=lambda c: (c.protocol_preference, c.reliability_score), reverse=True)
+            selected_collectors.extend(government_free)
+            logger.info(f"Selected {len(government_free)} government free collectors")
+            
+            # Check if government sources satisfy the request
+            if self._government_sources_sufficient(filter_criteria, government_free):
+                logger.info("Government sources sufficient, skipping commercial sources")
+                return selected_collectors
         
+        # PRIORITY 2: Commercial MCP (if budget allows and data needed)
+        if self.budget_limit > 0:
+            commercial_mcp = quadrant_groups[CollectorQuadrant.COMMERCIAL_MCP]
+            if commercial_mcp and self._requires_commercial_data(filter_criteria):
+                # Sort by protocol preference and coverage
+                commercial_mcp.sort(key=lambda c: (c.protocol_preference, c.coverage_score), reverse=True)
+                
+                # Select based on budget
+                for capability in commercial_mcp:
+                    estimated_cost = self._estimate_monthly_cost(capability, filter_criteria)
+                    if estimated_cost <= self.budget_limit:
+                        selected_collectors.append(capability)
+                        logger.info(f"Selected commercial MCP: {capability.collector_class.__name__} (est. ${estimated_cost:.2f}/month)")
+                        break
+        
+        # PRIORITY 3: Commercial API (fallback if MCP not available)
+        if not any(c.quadrant == CollectorQuadrant.COMMERCIAL_MCP for c in selected_collectors):
+            if self.budget_limit > 0:
+                commercial_api = quadrant_groups[CollectorQuadrant.COMMERCIAL_API]
+                if commercial_api and self._requires_commercial_data(filter_criteria):
+                    # Sort by cost-effectiveness (quality per dollar)
+                    commercial_api.sort(key=lambda c: c.coverage_score / max(c.cost_per_request * 100, 1), reverse=True)
+                    
+                    for capability in commercial_api:
+                        estimated_cost = self._estimate_monthly_cost(capability, filter_criteria)
+                        if estimated_cost <= self.budget_limit:
+                            selected_collectors.append(capability)
+                            logger.info(f"Selected commercial API: {capability.collector_class.__name__} (est. ${estimated_cost:.2f}/month)")
+                            break
+        
+        # PRIORITY 4: Government MCP (future - enhanced free sources)
+        government_mcp = quadrant_groups[CollectorQuadrant.GOVERNMENT_MCP]
+        if government_mcp:
+            government_mcp.sort(key=lambda c: (c.protocol_preference, c.coverage_score), reverse=True)
+            selected_collectors.extend(government_mcp)
+            logger.info(f"Selected {len(government_mcp)} government MCP collectors")
+        
+        return selected_collectors
+    
+    def _government_sources_sufficient(
+        self, 
+        filter_criteria: Dict[str, Any], 
+        government_collectors: List[CollectorCapability]
+    ) -> bool:
+        """Check if government sources can satisfy the request without commercial data."""
+        # Real-time data requirements need commercial sources
+        if filter_criteria.get('real_time', False):
+            return False
+            
+        # Technical analysis requires commercial sources
         if filter_criteria.get('analysis_type') == 'technical':
-            analysis['data_requirements'].append('price_data')
-            analysis['data_requirements'].append('volume_data')
+            return False
+            
+        # Intraday data requires commercial sources
+        if any(keyword in str(filter_criteria).lower() for keyword in [
+            'intraday', 'minute', 'hourly', 'real-time', 'live'
+        ]):
+            return False
+            
+        # Check if request types can be handled by government sources
+        government_request_types = set()
+        for capability in government_collectors:
+            government_request_types.update(capability.primary_use_cases)
         
-        # Performance considerations
-        analysis['performance_considerations'] = {
-            'company_count': len(companies),
-            'time_sensitivity': filter_criteria.get('real_time', False),
-            'data_depth': filter_criteria.get('analysis_depth', 'standard')
-        }
+        # Basic company fundamentals can be handled by SEC
+        company_requests = [RequestType.INDIVIDUAL_COMPANY, RequestType.COMPANY_COMPARISON]
+        if any(rt in government_request_types for rt in company_requests):
+            if filter_criteria.get('companies') or filter_criteria.get('analysis_type') == 'fundamental':
+                return True
         
-        logger.debug(f"Request analysis: {analysis}")
-        return analysis
+        # Economic data can be fully handled by government sources
+        econ_requests = [
+            RequestType.ECONOMIC_DATA, RequestType.FISCAL_DATA, 
+            RequestType.EMPLOYMENT_DATA, RequestType.ENERGY_DATA,
+            RequestType.BANKING_DATA, RequestType.COMMODITY_DATA
+        ]
+        if any(rt in government_request_types for rt in econ_requests):
+            return True
+            
+        return False
+    
+    def _requires_commercial_data(self, filter_criteria: Dict[str, Any]) -> bool:
+        """Check if request requires commercial data sources."""
+        # Real-time requirements
+        if filter_criteria.get('real_time', False):
+            return True
+            
+        # Technical analysis
+        if filter_criteria.get('analysis_type') == 'technical':
+            return True
+            
+        # Specific commercial data types
+        commercial_keywords = [
+            'intraday', 'minute', 'sentiment', 'news', 'analyst', 
+            'earnings_estimate', 'options', 'forex', 'crypto'
+        ]
+        
+        filter_str = str(filter_criteria).lower()
+        return any(keyword in filter_str for keyword in commercial_keywords)
+    
+    def _estimate_monthly_cost(
+        self, 
+        capability: CollectorCapability, 
+        filter_criteria: Dict[str, Any]
+    ) -> float:
+        """Estimate monthly cost for using a commercial collector."""
+        # Base cost per request
+        base_cost = capability.cost_per_request
+        
+        # Estimate requests per month based on usage pattern
+        companies = self._get_specific_companies(filter_criteria)
+        company_count = max(len(companies), 1)
+        
+        # Estimate frequency based on analysis type
+        if filter_criteria.get('real_time'):
+            daily_requests = company_count * 10  # 10 requests per company per day
+        elif filter_criteria.get('analysis_type') == 'technical':
+            daily_requests = company_count * 5   # 5 requests per company per day  
+        else:
+            daily_requests = company_count * 1   # 1 request per company per day
+        
+        monthly_requests = daily_requests * 30
+        monthly_cost = monthly_requests * base_cost
+        
+        return min(monthly_cost, capability.monthly_quota * base_cost if capability.monthly_quota else monthly_cost)
     
     def _find_capable_collectors(self, filter_criteria: Dict[str, Any], 
                                request_analysis: Dict[str, Any]) -> List[CollectorCapability]:
@@ -406,45 +719,104 @@ class CollectorRouter:
         
         return capable_collectors
     
-    def _select_optimal_collectors(self, capable_collectors: List[CollectorCapability],
-                                 filter_criteria: Dict[str, Any]) -> List[CollectorCapability]:
-        """Select the optimal collectors from those capable of handling the request."""
-        if not capable_collectors:
-            logger.warning("No capable collectors found for request")
-            return []
+    def _get_capability_for_collector(self, collector_class: Type[DataCollectorInterface]) -> Optional[CollectorCapability]:
+        """Get capability info for a collector class."""
+        for capability in self.collector_registry.values():
+            if capability.collector_class == collector_class:
+                return capability
+        return None
         
-        # Calculate priority scores for each collector
-        collector_scores = []
+    def _analyze_request(self, filter_criteria: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze the request to determine type and requirements."""
+        analysis = {
+            'request_type': None,
+            'specificity_level': 'unknown',
+            'data_requirements': [],
+            'performance_considerations': {},
+            'commercial_data_needed': False
+        }
         
-        for capability in capable_collectors:
-            try:
-                collector_instance = capability.collector_class()
-            except Exception:
-                try:
-                    collector_instance = capability.collector_class(config=None)
-                except Exception:
-                    logger.warning(f"Cannot instantiate {capability.collector_class.__name__} for priority check")
-                    continue
-            
-            if hasattr(collector_instance, 'get_activation_priority'):
-                priority = collector_instance.get_activation_priority(filter_criteria)
-            else:
-                # Default priority based on use case match
-                priority = 50  # Medium priority
-            
-            collector_scores.append((capability, priority))
-            logger.debug(f"{capability.collector_class.__name__} priority: {priority}")
+        # Determine request type based on filters
+        companies = self._get_specific_companies(filter_criteria)
         
-        # Sort by priority (highest first)
-        collector_scores.sort(key=lambda x: x[1], reverse=True)
+        # Check for commercial-only data requirements
+        analysis['commercial_data_needed'] = self._requires_commercial_data(filter_criteria)
         
-        # For now, return only the highest priority collector
-        # Future: Could return multiple collectors for data enrichment
-        if collector_scores[0][1] > 0:
-            return [collector_scores[0][0]]
+        if len(companies) == 1:
+            analysis['request_type'] = RequestType.INDIVIDUAL_COMPANY
+            analysis['specificity_level'] = 'very_high'
+        elif 2 <= len(companies) <= 20:
+            analysis['request_type'] = RequestType.COMPANY_COMPARISON
+            analysis['specificity_level'] = 'high'
+        elif filter_criteria.get('sector') and not companies:
+            analysis['request_type'] = RequestType.SECTOR_ANALYSIS
+            analysis['specificity_level'] = 'medium'
+        elif filter_criteria.get('index') and not companies:
+            analysis['request_type'] = RequestType.INDEX_ANALYSIS
+            analysis['specificity_level'] = 'medium'
+        elif filter_criteria.get('real_time') or 'intraday' in str(filter_criteria).lower():
+            analysis['request_type'] = RequestType.REAL_TIME_PRICES
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif filter_criteria.get('analysis_type') == 'technical':
+            analysis['request_type'] = RequestType.TECHNICAL_ANALYSIS
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif filter_criteria.get('economic_indicator') or filter_criteria.get('fred_series'):
+            analysis['request_type'] = RequestType.ECONOMIC_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['treasury_series', 'fiscal_data', 'debt_data', 'government_spending']):
+            analysis['request_type'] = RequestType.FISCAL_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['gdp', 'nipa', 'regional', 'industry_gdp', 'personal_income', 'bea_data']):
+            analysis['request_type'] = RequestType.ECONOMIC_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['employment', 'unemployment', 'labor_force', 'jobs', 'jolts', 'bls_series']):
+            analysis['request_type'] = RequestType.EMPLOYMENT_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['cpi', 'ppi', 'inflation', 'consumer_price', 'producer_price']):
+            analysis['request_type'] = RequestType.INFLATION_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['energy', 'oil', 'gas', 'petroleum', 'crude', 'electricity', 'eia_series', 'energy_sector']):
+            analysis['request_type'] = RequestType.ENERGY_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['commodities', 'commodity', 'wti', 'henry_hub', 'natural_gas', 'renewable']):
+            analysis['request_type'] = RequestType.COMMODITY_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['banking_sector', 'bank_health', 'banking', 'banks', 'financial_institutions', 'fdic', 'institution_analysis', 'banking_market']):
+            analysis['request_type'] = RequestType.BANKING_DATA
+            analysis['specificity_level'] = 'high'
+        elif any(key in filter_criteria for key in ['forex', 'currency', 'fx']):
+            analysis['request_type'] = RequestType.FOREX_DATA
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif any(key in filter_criteria for key in ['crypto', 'bitcoin', 'ethereum', 'cryptocurrency']):
+            analysis['request_type'] = RequestType.CRYPTO_DATA
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
         else:
-            logger.warning("No collectors willing to handle request")
-            return []
+            analysis['request_type'] = RequestType.MARKET_SCREENING
+            analysis['specificity_level'] = 'low'
+        
+        # Determine data requirements
+        if filter_criteria.get('analysis_type') == 'fundamental':
+            analysis['data_requirements'].append('financial_statements')
+            analysis['data_requirements'].append('calculated_ratios')
+        
+        if filter_criteria.get('analysis_type') == 'technical':
+            analysis['data_requirements'].append('price_data')
+            analysis['data_requirements'].append('volume_data')
+            analysis['commercial_data_needed'] = True
+        
+        # Performance considerations
+        analysis['performance_considerations'] = {
+            'company_count': len(companies),
+            'time_sensitivity': filter_criteria.get('real_time', False),
+            'data_depth': filter_criteria.get('analysis_depth', 'standard')
+        }
+        
+        logger.debug(f"Request analysis: {analysis}")
+        return analysis
     
     def _get_specific_companies(self, filter_criteria: Dict[str, Any]) -> List[str]:
         """Extract all specific company identifiers from filter criteria."""
@@ -460,73 +832,137 @@ class CollectorRouter:
         
         return list(set(companies))  # Remove duplicates
     
+    def get_quadrant_summary(self) -> Dict[str, Dict[str, Any]]:
+        """Get summary of collectors by quadrant."""
+        quadrant_summary = {}
+        
+        for quadrant in CollectorQuadrant:
+            collectors = [
+                (name, capability) for name, capability in self.collector_registry.items()
+                if capability.quadrant == quadrant
+            ]
+            
+            if collectors:
+                quadrant_summary[quadrant.value] = {
+                    'count': len(collectors),
+                    'collectors': [name for name, _ in collectors],
+                    'total_tools': sum(
+                        capability.mcp_tool_count or 0 
+                        for _, capability in collectors
+                    ),
+                    'avg_cost_per_request': sum(
+                        capability.cost_per_request 
+                        for _, capability in collectors
+                    ) / len(collectors),
+                    'avg_reliability': sum(
+                        capability.reliability_score 
+                        for _, capability in collectors
+                    ) / len(collectors)
+                }
+        
+        return quadrant_summary
+    
     def get_collector_info(self) -> Dict[str, Dict[str, Any]]:
-        """Get information about all registered collectors."""
+        """Get information about all registered collectors with quadrant details."""
         info = {}
         
         for collector_name, capability in self.collector_registry.items():
             info[collector_name] = {
                 'class_name': capability.collector_class.__name__,
+                'quadrant': capability.quadrant.value,
                 'primary_use_cases': [uc.value for uc in capability.primary_use_cases],
                 'strengths': capability.strengths,
                 'limitations': capability.limitations,
                 'max_companies': capability.max_companies,
-                'requires_specific_companies': capability.requires_specific_companies
+                'requires_specific_companies': capability.requires_specific_companies,
+                'cost_per_request': capability.cost_per_request,
+                'monthly_quota': capability.monthly_quota,
+                'rate_limit_per_second': capability.rate_limit_per_second,
+                'supports_mcp': capability.supports_mcp,
+                'mcp_tool_count': capability.mcp_tool_count,
+                'protocol_preference': capability.protocol_preference,
+                'data_freshness': capability.data_freshness,
+                'reliability_score': capability.reliability_score,
+                'coverage_score': capability.coverage_score
             }
         
         return info
     
     def validate_request(self, filter_criteria: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate a request and provide guidance on optimal filtering.
+        Validate a request and provide guidance on optimal filtering with quadrant insights.
         
         Returns:
-            Dictionary with validation results and recommendations
+            Dictionary with validation results and four-quadrant recommendations
         """
         validation = {
             'is_valid': True,
             'warnings': [],
             'recommendations': [],
-            'expected_collectors': []
+            'expected_collectors': [],
+            'quadrant_analysis': {},
+            'cost_estimate': 0.0
         }
         
         # Get expected routing
         try:
             collectors = self.route_request(filter_criteria)
             validation['expected_collectors'] = [c.__class__.__name__ for c in collectors]
+            
+            # Analyze by quadrant
+            quadrant_counts = {}
+            total_cost = 0.0
+            
+            for collector in collectors:
+                capability = self._get_capability_for_collector(collector.__class__)
+                if capability:
+                    quadrant = capability.quadrant.value
+                    quadrant_counts[quadrant] = quadrant_counts.get(quadrant, 0) + 1
+                    total_cost += self._estimate_monthly_cost(capability, filter_criteria)
+            
+            validation['quadrant_analysis'] = quadrant_counts
+            validation['cost_estimate'] = total_cost
+            
         except Exception as e:
             validation['is_valid'] = False
             validation['warnings'].append(f"Routing failed: {e}")
         
-        # Check for common issues
-        companies = self._get_specific_companies(filter_criteria)
+        # Four-quadrant specific recommendations
+        if validation['cost_estimate'] > self.budget_limit > 0:
+            validation['warnings'].append(f"Estimated cost ${validation['cost_estimate']:.2f} exceeds budget ${self.budget_limit:.2f}")
+            validation['recommendations'].append("Consider increasing budget or using only government sources")
         
-        if len(companies) > 50:
-            validation['warnings'].append(f"Large company count ({len(companies)}) may be slow")
-            validation['recommendations'].append("Consider breaking into smaller batches")
-        
-        if not companies and not filter_criteria.get('sector') and not filter_criteria.get('index'):
-            validation['warnings'].append("No specific companies or sectors specified")
-            validation['recommendations'].append("Add 'companies', 'sector', or 'index' filters")
+        # Check for optimal quadrant usage
+        if 'government_free' not in validation['quadrant_analysis'] and not self._requires_commercial_data(filter_criteria):
+            validation['recommendations'].append("Consider using free government sources for cost optimization")
         
         return validation
 
+
 # Convenience function for easy integration
-def route_data_request(filter_criteria: Dict[str, Any]) -> List[DataCollectorInterface]:
+def route_data_request(filter_criteria: Dict[str, Any], budget_limit: float = 0.0) -> List[DataCollectorInterface]:
     """
-    Convenience function to route a data request.
+    Convenience function to route a data request with four-quadrant logic.
     
     Args:
         filter_criteria: Dictionary containing request parameters
+        budget_limit: Monthly budget limit for commercial APIs (USD)
         
     Returns:
         List of instantiated collectors to handle the request
         
     Example:
+        # Route with budget for commercial sources
         collectors = route_data_request({
             'companies': ['AAPL', 'MSFT'],
+            'real_time': True
+        }, budget_limit=50.0)
+        
+        # Route using only free government sources  
+        collectors = route_data_request({
+            'companies': ['AAPL'],
             'analysis_type': 'fundamental'
         })
     """
-    router = CollectorRouter()
+    router = CollectorRouter(budget_limit=budget_limit)
     return router.route_request(filter_criteria)
