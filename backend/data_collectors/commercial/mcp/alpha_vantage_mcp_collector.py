@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 try:
-    from .mcp_client import MCPClient, MCPClientError, MCPConnectionError, MCPToolError
+    from .mcp_client import MCPClient, MCPClientError, MCPConnectionError
     from ..base.mcp_collector_base import MCPCollectorBase
     from ..base.commercial_collector_interface import SubscriptionTier
     from base.collector_interface import CollectorConfig
@@ -38,8 +38,12 @@ except ImportError:
     # Handle import errors gracefully for testing
     import sys
     import os
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-    from mcp_client import MCPClient, MCPClientError, MCPConnectionError, MCPToolError
+    current_dir = os.path.dirname(__file__)
+    parent_dir = os.path.join(current_dir, '..', '..')
+    sys.path.insert(0, parent_dir)
+    
+    # Import from correct paths
+    from commercial.mcp.mcp_client import MCPClient, MCPClientError, MCPConnectionError
     from commercial.base.mcp_collector_base import MCPCollectorBase
     from commercial.base.commercial_collector_interface import SubscriptionTier
     from base.collector_interface import CollectorConfig
