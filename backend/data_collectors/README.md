@@ -65,13 +65,13 @@ economic_data = fred_collector.collect_batch(
 | **FRED**            | 800K+ economic indicators from Federal Reserve | ✅ Free          | 120 req/min |
 | **Treasury Direct** | US Treasury securities, bonds, auction data    | ❌ No            | 60 req/min  |
 
-### Market Data Sources (Paid)
+### Market Data Sources (Commercial MCP & API)
 
-| Collector         | Description                     | API Key Required | Rate Limit       |
-| ----------------- | ------------------------------- | ---------------- | ---------------- |
-| **Alpha Vantage** | Real-time stocks, forex, crypto | ✅ Paid          | 5 req/min (free) |
-| **IEX Cloud**     | Professional market data        | ✅ Paid          | Varies by plan   |
-| **Polygon.io**    | Comprehensive financial data    | ✅ Paid          | 5 req/min (free) |
+| Collector             | Type    | Description                                | API Key Required | Rate Limit       | Status |
+| --------------------- | ------- | ------------------------------------------ | ---------------- | ---------------- | ------ |
+| **Alpha Vantage MCP** | MCP     | 79 AI-optimized financial analysis tools  | ✅ Paid          | 5 req/min (free) | ✅ Operational |
+| **Polygon.io MCP**    | MCP     | 40+ institutional-grade MCP tools         | ✅ Paid          | 5 req/min (free) | ✅ **Refactored** |
+| **IEX Cloud**         | API     | Professional market data                   | ✅ Paid          | Varies by plan   | Planned |
 
 ### News & Sentiment Sources
 
@@ -82,10 +82,24 @@ economic_data = fred_collector.collect_batch(
 
 ## 🏗️ Architecture
 
-### Base Interface
+### MCP-First Four-Quadrant Design
 
-All collectors implement the `DataCollectorInterface`:
+The collectors are organized into a revolutionary four-quadrant architecture:
 
+```
+Data Sources Architecture:
+├── Government Data
+│   ├── API Collectors: SEC, FRED, BEA, Treasury, BLS, EIA, FDIC
+│   └── MCP Collectors: Data.gov MCP (operational)
+├── Commercial Data  
+│   ├── MCP Collectors: Alpha Vantage MCP, Polygon.io MCP ⭐
+│   └── API Collectors: IEX Cloud (fallback)
+└── Unified Client Interface (protocol-agnostic)
+```
+
+### Base Interfaces
+
+**Standard API Collectors** implement `DataCollectorInterface`:
 ```python
 class DataCollectorInterface(ABC):
     def authenticate() -> bool
@@ -97,28 +111,48 @@ class DataCollectorInterface(ABC):
     def test_connection() -> Dict
 ```
 
+**MCP Collectors** inherit from `MCPCollectorBase` with additional capabilities:
+```python
+class MCPCollectorBase(CommercialCollectorInterface):
+    def get_tool_cost_map() -> Dict[str, float]
+    def call_mcp_tool(tool_name: str, arguments: Dict) -> Dict
+    def get_available_tools() -> List[Dict]
+    def batch_call_tools(tool_calls: List[Dict]) -> List[Dict]
+    # Plus all standard DataCollectorInterface methods
+```
+
 ### Directory Structure
 
 ```
 backend/data_collectors/
-├── base/                    # Core interfaces and utilities
-│   ├── collector_interface.py    # Standard collector interface
-│   ├── rate_limiter.py           # Rate limiting utilities
-│   ├── data_validator.py         # Data quality validation
-│   └── error_handler.py          # Error handling & retry logic
-├── government/              # Government data sources
-│   ├── sec_edgar_collector.py    # SEC EDGAR filings
-│   ├── fred_collector.py         # Federal Reserve data
-│   └── treasury_direct_collector.py  # Treasury securities
-├── market_data/            # Commercial market data
-│   ├── alpha_vantage_collector.py
-│   ├── iex_cloud_collector.py
-│   └── polygon_collector.py
-├── news_sentiment/         # News and sentiment data
-│   ├── news_api_collector.py
-│   └── reddit_collector.py
-├── examples/               # Usage examples and demos
-└── tests/                  # Comprehensive test suite
+├── base/                         # Core interfaces and utilities
+│   ├── collector_interface.py        # Standard collector interface
+│   ├── rate_limiter.py               # Rate limiting utilities
+│   ├── data_validator.py             # Data quality validation
+│   └── error_handler.py              # Error handling & retry logic
+├── government/                   # Government data sources (API-based)
+│   ├── sec_edgar_collector.py        # SEC EDGAR filings
+│   ├── fred_collector.py             # Federal Reserve data
+│   ├── treasury_direct_collector.py  # Treasury securities
+│   ├── bea_collector.py              # Bureau of Economic Analysis
+│   ├── bls_collector.py              # Bureau of Labor Statistics
+│   ├── eia_collector.py              # Energy Information Administration
+│   ├── fdic_collector.py             # FDIC banking data
+│   └── mcp/                          # Government MCP collectors
+│       └── data_gov_mcp_collector.py # Data.gov MCP server ✅
+├── commercial/                   # Commercial data sources
+│   ├── base/                         # Commercial collector interfaces
+│   │   ├── commercial_collector_interface.py
+│   │   ├── mcp_collector_base.py     # MCP protocol base class
+│   │   └── cost_tracker.py           # Usage and cost tracking
+│   ├── mcp/                          # MCP-based collectors (preferred)
+│   │   ├── alpha_vantage_mcp_collector.py  # Alpha Vantage MCP ✅
+│   │   └── polygon_mcp_collector.py        # Polygon.io MCP ⭐ REFACTORED
+│   └── api/                          # Traditional API collectors (fallback)
+│       └── iex_cloud_collector.py    # IEX Cloud API
+├── collector_router.py           # Four-quadrant smart routing system ✅
+├── examples/                     # Usage examples and demos
+└── tests/                        # Comprehensive test suite
 ```
 
 ## 🔧 Configuration
@@ -131,8 +165,11 @@ Create a `.env` file with your API keys:
 # Government APIs (some require free registration)
 FRED_API_KEY=your_fred_api_key_here
 
-# Market Data APIs (require paid subscriptions)
+# Commercial MCP Servers (require paid subscriptions)  
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here
+POLYGON_API_KEY=your_polygon_api_key_here
+
+# Traditional APIs (fallback/supplement)
 IEX_CLOUD_API_KEY=your_iex_cloud_key_here
 NEWS_API_KEY=your_news_api_key_here
 ```

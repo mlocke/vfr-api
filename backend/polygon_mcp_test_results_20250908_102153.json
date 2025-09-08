@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-09-08T10:21:52.485828",
+  "server_info": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "experimental": {},
+      "prompts": {
+        "listChanged": false
+      },
+      "resources": {
+        "subscribe": false,
+        "listChanged": false
+      },
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "Polygon",
+      "version": "1.13.1"
+    }
+  },
+  "tools": [],
+  "tool_count": 0,
+  "test_status": "failed"
+}

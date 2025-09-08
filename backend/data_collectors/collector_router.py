@@ -45,11 +45,13 @@ try:
     from .commercial.base.commercial_collector_interface import CommercialCollectorInterface
     from .commercial.base.mcp_collector_base import MCPCollectorBase
     from .commercial.mcp.alpha_vantage_mcp_collector import AlphaVantageMCPCollector
+    from .commercial.mcp.polygon_mcp_collector import PolygonMCPCollector
     COMMERCIAL_COLLECTORS_AVAILABLE = True
 except ImportError:
     CommercialCollectorInterface = None
     MCPCollectorBase = None
     AlphaVantageMCPCollector = None
+    PolygonMCPCollector = None
     COMMERCIAL_COLLECTORS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -515,6 +517,52 @@ class CollectorRouter:
                 data_freshness="real_time",
                 reliability_score=95,
                 coverage_score=99
+            )
+        
+        # Add Polygon.io MCP collector if available
+        if PolygonMCPCollector:
+            registry['polygon_mcp'] = CollectorCapability(
+                collector_class=PolygonMCPCollector,
+                quadrant=CollectorQuadrant.COMMERCIAL_MCP,
+                primary_use_cases=[
+                    RequestType.REAL_TIME_PRICES,
+                    RequestType.INTRADAY_DATA,
+                    RequestType.INDIVIDUAL_COMPANY,
+                    RequestType.COMPANY_COMPARISON,
+                    RequestType.OPTIONS_DATA,
+                    RequestType.FOREX_DATA,
+                    RequestType.CRYPTO_DATA,
+                    RequestType.MARKET_SENTIMENT,
+                    RequestType.NEWS_ANALYSIS
+                ],
+                strengths=[
+                    '40+ MCP tools for institutional-grade financial data',
+                    'Real-time stock quotes and historical market data',
+                    'Complete options chains and derivatives data',
+                    'Forex and cryptocurrency market coverage',
+                    'Futures contracts and commodities data',
+                    'News integration via Benzinga partnership',
+                    'Market status and reference data',
+                    'Automatic subscription tier detection',
+                    'Direct API fallback for reliability'
+                ],
+                limitations=[
+                    'Free tier limited to 5 requests/minute',
+                    'Real-time data requires paid subscription',
+                    'Historical data depth varies by tier',
+                    'API key required for authentication'
+                ],
+                max_companies=None,  # No hard limit
+                requires_specific_companies=True,
+                cost_per_request=0.0,   # Free tier default
+                monthly_quota=1000,     # Free tier practical limit
+                rate_limit_per_second=0.083,  # 5 requests per minute
+                supports_mcp=True,
+                mcp_tool_count=40,
+                protocol_preference=90,  # MCP preferred
+                data_freshness="real_time_paid",  # Real-time for paid tiers
+                reliability_score=92,
+                coverage_score=95
             )
         
         return registry
