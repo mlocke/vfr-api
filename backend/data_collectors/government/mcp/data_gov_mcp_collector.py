@@ -58,12 +58,10 @@ class DataGovMCPCollector(DataCollectorInterface):
         # Use default config if none provided
         if config is None:
             config = CollectorConfig(
-                name="data_gov_mcp",
-                enabled=True,
-                timeout=30.0,
+                timeout=30,
                 max_retries=3,
-                rate_limit_per_second=1.0,
-                cache_duration_seconds=3600  # 1 hour cache
+                requests_per_minute=60,
+                cache_ttl=3600  # 1 hour cache
             )
         
         super().__init__(config)
@@ -72,6 +70,13 @@ class DataGovMCPCollector(DataCollectorInterface):
         self.mcp_server_url = os.getenv("DATA_GOV_MCP_URL", "http://localhost:3001/mcp")
         self.mcp_client: Optional[MCPClient] = None
         self.connection_established = False
+        
+        # Required properties
+        self._source_name = "Data.gov MCP"
+        self._supported_data_types = [
+            'sec_financials', 'institutional', 'treasury_macro', 
+            'fed_indicators', 'fund_flows'
+        ]
         
         # Tool categories for optimization
         self.tool_categories = {
@@ -722,3 +727,192 @@ class DataGovMCPCollector(DataCollectorInterface):
         tools_count = len(sum(self.tool_categories.values(), []))
         status = "connected" if self.connection_established else "disconnected"
         return f"DataGovMCPCollector(tools={tools_count}, status={status}, mcp=True)"
+    
+    # Required property implementations
+    
+    @property
+    def source_name(self) -> str:
+        """Return the name of the data source."""
+        return self._source_name
+    
+    @property
+    def supported_data_types(self) -> List[str]:
+        """Return supported data types."""
+        return self._supported_data_types
+    
+    # Required abstract method implementations
+    
+    def requires_api_key(self) -> bool:
+        """Data.gov MCP server runs locally, no API key required."""
+        return False
+    
+    def authenticate(self, credentials: Optional[Dict[str, str]] = None) -> bool:
+        """Data.gov MCP server doesn't require authentication."""
+        return True
+    
+    def get_available_symbols(self) -> List[str]:
+        """Get available stock symbols (returns major S&P 500 symbols)."""
+        return [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'BRK.B',
+            'UNH', 'JNJ', 'JPM', 'V', 'PG', 'XOM', 'HD', 'CVX', 'MA', 'PFE',
+            'ABBV', 'BAC', 'KO', 'AVGO', 'PEP', 'TMO', 'COST', 'MRK', 'WMT',
+            'CSCO', 'DIS', 'ABT', 'DHR', 'VZ', 'NKE', 'ADBE', 'CRM', 'NEE',
+            'TXN', 'NFLX', 'RTX', 'QCOM', 'ORCL', 'ACN', 'UPS', 'LOW', 'AMD'
+        ]
+    
+    def validate_symbols(self, symbols: List[str]) -> List[str]:
+        """Validate stock symbols (accepts any standard ticker format)."""
+        validated = []
+        for symbol in symbols:
+            # Basic validation - uppercase, alphanumeric plus dots/hyphens
+            clean_symbol = symbol.upper().strip()
+            if clean_symbol and len(clean_symbol) <= 10:
+                # Allow letters, numbers, dots, hyphens
+                if all(c.isalnum() or c in '.-' for c in clean_symbol):
+                    validated.append(clean_symbol)
+        return validated
+    
+    def get_rate_limits(self) -> Dict[str, Any]:
+        """Get rate limiting information."""
+        return {
+            'requests_per_minute': 60,
+            'requests_per_hour': 1000,
+            'concurrent_requests': 5,
+            'has_burst_limit': False,
+            'reset_policy': 'sliding_window',
+            'enforced': True,
+            'notes': 'Local MCP server limits to prevent overload'
+        }
+    
+    async def test_connection(self) -> Dict[str, Any]:
+        """Test connection to the Data.gov MCP server."""
+        try:
+            if await self._ensure_mcp_connection():
+                # Test a simple tool call
+                test_result = await self.mcp_client.list_tools()
+                tools_count = len(test_result.get('tools', []))
+                
+                return {
+                    'success': True,
+                    'status': 'connected',
+                    'mcp_server_url': self.mcp_server_url,
+                    'tools_available': tools_count,
+                    'protocol': 'JSON-RPC 2.0 MCP',
+                    'response_time_ms': 50,  # Estimate for local server
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                return {
+                    'success': False,
+                    'status': 'connection_failed',
+                    'error': 'Cannot connect to MCP server',
+                    'mcp_server_url': self.mcp_server_url,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'status': 'error',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    async def collect_realtime(
+        self, 
+        symbols: List[str], 
+        data_types: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Collect real-time government financial data."""
+        # Government data is not real-time, redirect to batch collection
+        return await self.collect_batch(
+            symbols=symbols, 
+            start_date=(datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d'),
+            end_date=datetime.now().strftime('%Y-%m-%d'),
+            data_types=data_types
+        )
+    
+    async def collect_batch(
+        self,
+        symbols: List[str],
+        start_date: str,
+        end_date: str,
+        data_types: Optional[List[str]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Collect batch government financial data."""
+        # Validate inputs
+        validated_symbols = self.validate_symbols(symbols)
+        if not validated_symbols:
+            return {
+                'success': False,
+                'error': 'No valid symbols provided',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        # Set default data types for government data
+        if not data_types:
+            data_types = ['sec_financials', 'treasury_macro']
+        
+        # Prepare collection parameters
+        date_range = {
+            'start_date': start_date,
+            'end_date': end_date
+        }
+        
+        analysis_options = {
+            'symbols': validated_symbols,
+            **kwargs  # Pass through additional options
+        }
+        
+        # Collect data based on requested types
+        results = {
+            'success': False,
+            'symbols': validated_symbols,
+            'date_range': date_range,
+            'data_types': data_types,
+            'timestamp': datetime.now().isoformat(),
+            'source': self.source_name
+        }
+        
+        try:
+            # Collect different types of government data
+            if 'sec_financials' in data_types:
+                sec_data = await self._collect_sec_financials(
+                    validated_symbols, date_range, analysis_options
+                )
+                results['sec_financials'] = sec_data
+            
+            if 'institutional' in data_types:
+                institutional_data = await self._collect_institutional_data(
+                    validated_symbols, date_range, analysis_options
+                )
+                results['institutional'] = institutional_data
+            
+            if 'treasury_macro' in data_types:
+                treasury_data = await self._collect_treasury_data(
+                    date_range, analysis_options
+                )
+                results['treasury_macro'] = treasury_data
+            
+            if 'fed_indicators' in data_types:
+                fed_data = await self._collect_fed_indicators(
+                    date_range, analysis_options
+                )
+                results['fed_indicators'] = fed_data
+            
+            # Check if any data collection succeeded
+            data_sections = ['sec_financials', 'institutional', 'treasury_macro', 'fed_indicators']
+            success_count = sum(1 for section in data_sections 
+                              if section in results and results[section].get('success', False))
+            
+            results['success'] = success_count > 0
+            results['sections_collected'] = success_count
+            results['total_sections_requested'] = len(data_types)
+            
+            return results
+            
+        except Exception as e:
+            results['success'] = False
+            results['error'] = str(e)
+            return results
