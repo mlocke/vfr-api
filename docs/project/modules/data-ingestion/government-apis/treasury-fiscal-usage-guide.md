@@ -4,6 +4,8 @@
 
 The Treasury Fiscal Data Collector is a production-ready module that extracts comprehensive government fiscal data from the U.S. Treasury Fiscal Data API. It specializes in federal debt, spending, and fiscal operations analysis and only activates for specific treasury/fiscal data requests.
 
+**🆕 NEW FEATURE**: **Treasury Yield Curve Analysis** - Advanced macroeconomic analysis with recession indicators and investment implications. Provides comprehensive yield curve shape classification, recession probability calculations, and economic outlook assessments.
+
 ## Quick Start
 
 ### Basic Usage

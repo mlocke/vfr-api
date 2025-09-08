@@ -49,6 +49,7 @@ This document outlines specialized scripts/agents for retrieving financial data 
 - **eia_collector.py** - Energy Information Administration (energy data)
 - **fred_bonds_collector.py** - FRED Bonds & Interest Rates
 - **treasury_direct_collector.py** - US Treasury Direct (treasury securities)
+- **treasury_yield_curve_collector.py** - Treasury Yield Curve Analysis (recession indicators, economic implications) ⭐ **NEW**
 
 ## 2. Economic Indicators & Government Data
 

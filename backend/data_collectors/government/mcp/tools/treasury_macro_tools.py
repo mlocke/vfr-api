@@ -15,6 +15,7 @@ Tools:
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
@@ -48,9 +49,13 @@ class TreasuryDataProcessor:
     """Processor for Treasury and macroeconomic data."""
     
     def __init__(self):
-        self.treasury_base_url = "https://api.fiscaldata.treasury.gov/services/api/v2"
+        self.treasury_base_url = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2"
+        # Treasury Fiscal Data API does not require authentication
         self.session = aiohttp.ClientSession(
-            headers={'User-Agent': 'StockPicker-DataGov-MCP/1.0'}
+            headers={
+                'User-Agent': 'StockPicker-DataGov-MCP/1.0',
+                'Accept': 'application/json'
+            }
         )
         
         # Treasury security maturity mapping
@@ -255,6 +260,177 @@ async def get_yield_curve(date: Optional[str] = None) -> Dict[str, Any]:
             'success': False,
             'error': str(e),
             'date': date
+        }
+    
+    finally:
+        await processor.cleanup()
+
+
+async def get_yield_curve_analysis(date: Optional[str] = None) -> Dict[str, Any]:
+    """
+    MCP Tool: Comprehensive yield curve analysis with economic implications.
+    
+    Args:
+        date: Optional specific date (YYYY-MM-DD), defaults to latest
+        
+    Returns:
+        Dictionary containing comprehensive yield curve analysis
+    """
+    processor = TreasuryDataProcessor()
+    
+    try:
+        # Get Treasury rate data
+        rate_data = await processor.get_daily_treasury_rates(date_range="30")
+        
+        if not rate_data:
+            return {
+                'success': False,
+                'error': 'No Treasury yield curve data available',
+                'date': date
+            }
+        
+        # Use latest data if no specific date requested
+        target_data = rate_data[0]
+        if date:
+            for data_point in rate_data:
+                if data_point.get('record_date') == date:
+                    target_data = data_point
+                    break
+        
+        # Build comprehensive yield curve with all available points
+        yield_curve_points = []
+        
+        # Extract available yield points with proper field mapping
+        for maturity, info in processor.maturity_mapping.items():
+            rate = processor._extract_rate(target_data, maturity)
+            if rate is not None:
+                yield_curve_points.append(YieldCurvePoint(
+                    maturity=info['name'],
+                    yield_percent=rate,
+                    date=target_data.get('record_date'),
+                    duration_years=info['years']
+                ).__dict__)
+        
+        # Sort by duration for analysis
+        yield_curve_points.sort(key=lambda x: x['duration_years'])
+        
+        if len(yield_curve_points) < 3:
+            return {
+                'success': False,
+                'error': 'Insufficient yield curve data points for comprehensive analysis',
+                'available_points': len(yield_curve_points)
+            }
+        
+        # Advanced curve shape analysis
+        short_term = yield_curve_points[0]  # Shortest maturity
+        medium_term = yield_curve_points[len(yield_curve_points)//2]  # Middle maturity
+        long_term = yield_curve_points[-1]  # Longest maturity
+        
+        # Calculate key spreads
+        short_to_long_spread = long_term['yield_percent'] - short_term['yield_percent']
+        short_to_medium_spread = medium_term['yield_percent'] - short_term['yield_percent']
+        medium_to_long_spread = long_term['yield_percent'] - medium_term['yield_percent']
+        
+        # Detailed curve shape classification
+        if short_to_long_spread > 1.0:
+            curve_shape = 'steep_normal'
+            curve_description = 'Steep upward sloping - Strong growth expectations'
+        elif short_to_long_spread > 0.25:
+            curve_shape = 'normal'
+            curve_description = 'Normal upward sloping - Healthy growth outlook'
+        elif short_to_long_spread > -0.1:
+            curve_shape = 'flat'
+            curve_description = 'Flat - Economic uncertainty'
+        elif short_to_long_spread > -0.5:
+            curve_shape = 'mildly_inverted'
+            curve_description = 'Mildly inverted - Potential recession warning'
+        else:
+            curve_shape = 'deeply_inverted'
+            curve_description = 'Deeply inverted - Strong recession signal'
+        
+        # Recession probability calculation
+        recession_probability = _calculate_advanced_recession_probability(
+            short_to_long_spread, short_to_medium_spread, medium_to_long_spread
+        )
+        
+        # Economic implications analysis
+        economic_implications = _analyze_economic_implications(
+            curve_shape, short_to_long_spread, yield_curve_points
+        )
+        
+        # Historical context (compare with recent data)
+        historical_context = {}
+        if len(rate_data) > 7:
+            historical_context = _calculate_historical_context(rate_data[:30], processor)
+        
+        # Steepness and curvature metrics
+        curve_metrics = {
+            'steepness': short_to_long_spread,
+            'short_to_medium_steepness': short_to_medium_spread,
+            'medium_to_long_steepness': medium_to_long_spread,
+            'curvature': _calculate_curve_curvature(yield_curve_points),
+            'overall_level': sum(p['yield_percent'] for p in yield_curve_points) / len(yield_curve_points)
+        }
+        
+        # Investment implications
+        investment_implications = _generate_investment_implications(
+            curve_shape, curve_metrics, recession_probability
+        )
+        
+        return {
+            'success': True,
+            'analysis_date': target_data.get('record_date'),
+            'yield_curve_data': {
+                'curve_points': yield_curve_points,
+                'key_rates': {
+                    'short_term': {
+                        'maturity': short_term['maturity'],
+                        'rate': short_term['yield_percent']
+                    },
+                    'medium_term': {
+                        'maturity': medium_term['maturity'],
+                        'rate': medium_term['yield_percent']
+                    },
+                    'long_term': {
+                        'maturity': long_term['maturity'],
+                        'rate': long_term['yield_percent']
+                    }
+                }
+            },
+            'curve_analysis': {
+                'shape_classification': curve_shape,
+                'shape_description': curve_description,
+                'key_spreads': {
+                    'short_to_long_spread_bps': round(short_to_long_spread * 100),
+                    'short_to_medium_spread_bps': round(short_to_medium_spread * 100),
+                    'medium_to_long_spread_bps': round(medium_to_long_spread * 100)
+                },
+                'curve_metrics': curve_metrics,
+                'data_points_used': len(yield_curve_points)
+            },
+            'recession_analysis': {
+                'probability_percent': recession_probability,
+                'signal_strength': _classify_recession_signal(recession_probability),
+                'key_indicators': _get_recession_indicators(short_to_long_spread, curve_shape)
+            },
+            'economic_implications': economic_implications,
+            'investment_implications': investment_implications,
+            'historical_context': historical_context,
+            'metadata': {
+                'source': 'Treasury Direct via data.gov',
+                'analysis_time': datetime.now().isoformat(),
+                'analysis_type': 'comprehensive_yield_curve_analysis',
+                'note': 'Advanced yield curve analysis with recession indicators'
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"get_yield_curve_analysis failed: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'date': date,
+            'tool': 'get_yield_curve_analysis'
         }
     
     finally:
@@ -671,9 +847,214 @@ def _interpret_health_score(score: float) -> str:
         return 'Critical'
 
 
+def _calculate_advanced_recession_probability(short_to_long_spread: float, 
+                                            short_to_medium_spread: float, 
+                                            medium_to_long_spread: float) -> float:
+    """Calculate advanced recession probability using multiple yield spreads."""
+    # Base probability from 10yr-2yr or equivalent spread
+    base_prob = _calculate_recession_probability(short_to_long_spread)
+    
+    # Adjust based on curve shape complexity
+    if short_to_long_spread < -0.25:  # Inverted
+        if short_to_medium_spread < 0 and medium_to_long_spread > 0:
+            # Classic inversion pattern
+            base_prob = min(base_prob + 15, 85)
+        elif short_to_medium_spread < 0 and medium_to_long_spread < 0:
+            # Deep inversion
+            base_prob = min(base_prob + 25, 90)
+    elif short_to_long_spread > 0.5:  # Steep normal
+        # Reduce recession probability for steep curves
+        base_prob = max(base_prob - 10, 5)
+    
+    return round(base_prob, 1)
+
+
+def _analyze_economic_implications(curve_shape: str, spread: float, yield_points: List[Dict]) -> Dict[str, Any]:
+    """Analyze economic implications of yield curve shape."""
+    implications = {
+        'growth_outlook': '',
+        'inflation_expectations': '',
+        'monetary_policy_stance': '',
+        'market_sentiment': '',
+        'key_risks': []
+    }
+    
+    avg_rate = sum(p['yield_percent'] for p in yield_points) / len(yield_points)
+    
+    if curve_shape in ['steep_normal', 'normal']:
+        implications['growth_outlook'] = 'Positive - Market expects sustained economic growth'
+        implications['inflation_expectations'] = 'Moderate - Healthy inflation expectations'
+        implications['monetary_policy_stance'] = 'Accommodative to neutral - Supporting growth'
+        implications['market_sentiment'] = 'Optimistic about long-term prospects'
+        implications['key_risks'] = ['Overheating if growth too rapid', 'Inflation acceleration']
+        
+    elif curve_shape == 'flat':
+        implications['growth_outlook'] = 'Uncertain - Mixed signals about future growth'
+        implications['inflation_expectations'] = 'Stable - Limited inflation pressure'
+        implications['monetary_policy_stance'] = 'Transitional - Policy uncertainty'
+        implications['market_sentiment'] = 'Cautious - Wait-and-see approach'
+        implications['key_risks'] = ['Economic stagnation', 'Policy error risk']
+        
+    elif curve_shape in ['mildly_inverted', 'deeply_inverted']:
+        implications['growth_outlook'] = 'Negative - Market expects economic slowdown'
+        implications['inflation_expectations'] = 'Declining - Deflationary pressures possible'
+        implications['monetary_policy_stance'] = 'Expected to ease - Rate cuts likely'
+        implications['market_sentiment'] = 'Pessimistic - Recession concerns'
+        implications['key_risks'] = ['Recession within 12-18 months', 'Credit tightening', 'Asset price deflation']
+    
+    # Adjust for rate levels
+    if avg_rate > 5:
+        implications['additional_note'] = 'High absolute rate levels may constrain growth regardless of curve shape'
+    elif avg_rate < 2:
+        implications['additional_note'] = 'Low absolute rate levels provide limited policy flexibility'
+    
+    return implications
+
+
+def _calculate_curve_curvature(yield_points: List[Dict]) -> float:
+    """Calculate yield curve curvature (butterfly spread)."""
+    if len(yield_points) < 3:
+        return 0.0
+    
+    # Sort by duration
+    sorted_points = sorted(yield_points, key=lambda x: x['duration_years'])
+    
+    # Calculate butterfly spread using short, medium, long rates
+    short_rate = sorted_points[0]['yield_percent']
+    long_rate = sorted_points[-1]['yield_percent']
+    
+    # Find middle point closest to actual middle duration
+    mid_duration = (sorted_points[0]['duration_years'] + sorted_points[-1]['duration_years']) / 2
+    mid_point = min(sorted_points, key=lambda x: abs(x['duration_years'] - mid_duration))
+    mid_rate = mid_point['yield_percent']
+    
+    # Butterfly spread: middle - (short + long) / 2
+    curvature = mid_rate - (short_rate + long_rate) / 2
+    return round(curvature, 4)
+
+
+def _calculate_historical_context(rate_data: List[Dict], processor) -> Dict[str, Any]:
+    """Calculate historical context for yield curve."""
+    context = {
+        'recent_trend': '',
+        'volatility': 0,
+        'percentile_ranking': 0,
+        'days_analyzed': len(rate_data)
+    }
+    
+    try:
+        # Extract 10yr rates for trend analysis
+        rates_10yr = []
+        for data_point in rate_data:
+            rate = processor._extract_rate(data_point, '10yr')
+            if rate is not None:
+                rates_10yr.append(rate)
+        
+        if len(rates_10yr) >= 5:
+            # Calculate trend
+            recent_avg = sum(rates_10yr[:5]) / 5  # Last 5 days
+            older_avg = sum(rates_10yr[-5:]) / 5  # 5 days ago
+            
+            rate_change = recent_avg - older_avg
+            if rate_change > 0.1:
+                context['recent_trend'] = 'Rising rates trend'
+            elif rate_change < -0.1:
+                context['recent_trend'] = 'Falling rates trend'
+            else:
+                context['recent_trend'] = 'Stable rates trend'
+            
+            # Calculate volatility
+            context['volatility'] = _calculate_volatility(rates_10yr)
+            
+            # Simple percentile ranking (current vs historical)
+            current_rate = rates_10yr[0]
+            higher_count = sum(1 for r in rates_10yr if r > current_rate)
+            context['percentile_ranking'] = round((higher_count / len(rates_10yr)) * 100, 1)
+        
+    except Exception as e:
+        logger.debug(f"Historical context calculation error: {e}")
+    
+    return context
+
+
+def _generate_investment_implications(curve_shape: str, curve_metrics: Dict, recession_prob: float) -> Dict[str, Any]:
+    """Generate investment implications based on yield curve analysis."""
+    implications = {
+        'bond_strategy': '',
+        'equity_outlook': '',
+        'sector_recommendations': [],
+        'duration_positioning': '',
+        'risk_assessment': ''
+    }
+    
+    if curve_shape in ['steep_normal', 'normal']:
+        implications['bond_strategy'] = 'Favor shorter durations, expect rising rates'
+        implications['equity_outlook'] = 'Positive for growth stocks and cyclicals'
+        implications['sector_recommendations'] = ['Technology', 'Consumer Discretionary', 'Industrials']
+        implications['duration_positioning'] = 'Short to medium duration bias'
+        implications['risk_assessment'] = 'Moderate risk - Growth supportive environment'
+        
+    elif curve_shape == 'flat':
+        implications['bond_strategy'] = 'Neutral positioning, await direction'
+        implications['equity_outlook'] = 'Mixed - favor quality and dividends'
+        implications['sector_recommendations'] = ['Utilities', 'Consumer Staples', 'Healthcare']
+        implications['duration_positioning'] = 'Neutral duration positioning'
+        implications['risk_assessment'] = 'Elevated uncertainty - Defensive positioning'
+        
+    elif curve_shape in ['mildly_inverted', 'deeply_inverted']:
+        implications['bond_strategy'] = 'Extend duration, expect rate cuts'
+        implications['equity_outlook'] = 'Negative - defensive sectors preferred'
+        implications['sector_recommendations'] = ['Utilities', 'REITs', 'Consumer Staples']
+        implications['duration_positioning'] = 'Long duration bias'
+        implications['risk_assessment'] = 'High risk - Prepare for downturn'
+    
+    # Adjust based on recession probability
+    if recession_prob > 60:
+        implications['additional_guidance'] = 'High recession risk - Consider defensive allocation'
+    elif recession_prob < 25:
+        implications['additional_guidance'] = 'Low recession risk - Growth positioning appropriate'
+    
+    return implications
+
+
+def _classify_recession_signal(probability: float) -> str:
+    """Classify recession signal strength."""
+    if probability >= 70:
+        return 'Strong'
+    elif probability >= 50:
+        return 'Moderate'
+    elif probability >= 30:
+        return 'Weak'
+    else:
+        return 'Minimal'
+
+
+def _get_recession_indicators(spread: float, curve_shape: str) -> List[str]:
+    """Get key recession indicators from yield curve."""
+    indicators = []
+    
+    if spread < -0.25:
+        indicators.append('Yield curve inversion detected')
+    
+    if curve_shape == 'deeply_inverted':
+        indicators.append('Deep inversion - historically strong recession predictor')
+    
+    if spread < -0.5:
+        indicators.append('Severe inversion - recession typically within 6-18 months')
+    
+    if curve_shape == 'flat':
+        indicators.append('Flattening curve - early recession warning')
+    
+    if not indicators:
+        indicators.append('No significant recession signals from yield curve')
+    
+    return indicators
+
+
 # Tool registry for MCP server
 MCP_TREASURY_MACRO_TOOLS = {
     'get_yield_curve': get_yield_curve,
+    'get_yield_curve_analysis': get_yield_curve_analysis,
     'analyze_interest_rate_trends': analyze_interest_rate_trends,
     'get_federal_debt_analysis': get_federal_debt_analysis,
     'calculate_economic_indicators': calculate_economic_indicators

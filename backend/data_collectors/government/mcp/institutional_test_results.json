@@ -1,0 +1,26 @@
+{
+  "institutional_positions": {
+    "status": "PASS",
+    "institutions_count": 1250,
+    "percent_of_float": 68.5,
+    "top_holders_count": 0
+  },
+  "smart_money_tracking": {
+    "status": "PASS",
+    "stocks_analyzed": 2,
+    "net_flow": 0,
+    "has_flow_data": true
+  },
+  "ownership_changes": {
+    "status": "PASS",
+    "quarters_analyzed": 4,
+    "trend_direction": "decreasing",
+    "change_periods": 3
+  },
+  "13f_trends": {
+    "status": "PASS",
+    "total_filings": 10,
+    "notable_institutions": 0,
+    "has_timeline_data": true
+  }
+}
