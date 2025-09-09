@@ -1,8 +1,17 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import StockHoverPopup from './StockHoverPopup'
 
 export default function StockTicker() {
+  const [popupState, setPopupState] = useState({
+    visible: false,
+    symbol: '',
+    exchange: '',
+    name: '',
+    x: 0,
+    y: 0
+  })
   useEffect(() => {
     // Real-time Stock Ticker Integration
     let stockDataCache = new Map()
@@ -64,6 +73,72 @@ export default function StockTicker() {
       }
     }
 
+    // Set up hover detection for stock symbols
+    const setupHoverDetection = () => {
+      let hoverTimer: NodeJS.Timeout
+      let lastSymbol = ''
+      
+      // Listen for mouse events on the ticker area
+      const tickerContainer = document.querySelector('.stock-ticker')
+      if (tickerContainer) {
+        tickerContainer.addEventListener('mousemove', (e) => {
+          clearTimeout(hoverTimer)
+          
+          // Extract symbol from hover position with improved accuracy
+          const rect = tickerContainer.getBoundingClientRect()
+          const relativeX = e.clientX - rect.left
+          
+          // Define symbols in the exact order they appear in the ticker
+          const symbolData = [
+            { symbol: 'AAPL', exchange: 'NASDAQ', name: 'Apple Inc.' },
+            { symbol: 'MSFT', exchange: 'NASDAQ', name: 'Microsoft Corporation' },
+            { symbol: 'GOOGL', exchange: 'NASDAQ', name: 'Alphabet Inc.' },
+            { symbol: 'AMZN', exchange: 'NASDAQ', name: 'Amazon.com Inc.' },
+            { symbol: 'TSLA', exchange: 'NASDAQ', name: 'Tesla Inc.' },
+            { symbol: 'META', exchange: 'NASDAQ', name: 'Meta Platforms Inc.' },
+            { symbol: 'NVDA', exchange: 'NASDAQ', name: 'NVIDIA Corporation' },
+            { symbol: 'SPY', exchange: 'AMEX', name: 'SPDR S&P 500 ETF Trust' },
+            { symbol: 'QQQ', exchange: 'NASDAQ', name: 'Invesco QQQ Trust' },
+            { symbol: 'IWM', exchange: 'NYSE', name: 'iShares Russell 2000 ETF' }
+          ]
+          
+          // More precise symbol detection
+          // The ticker typically shows about 4-6 symbols at once, so we need to account for scrolling
+          const visibleWidth = rect.width
+          const estimatedSymbolWidth = visibleWidth / 5 // Assume 5 visible symbols at once
+          
+          // Get the symbol based on position, accounting for the scrolling nature of the ticker
+          const currentTime = Date.now()
+          const scrollOffset = (currentTime / 50) % (symbolData.length * estimatedSymbolWidth) // Simulate scroll
+          const adjustedPosition = (relativeX + scrollOffset) % (symbolData.length * estimatedSymbolWidth)
+          const symbolIndex = Math.floor(adjustedPosition / estimatedSymbolWidth) % symbolData.length
+          
+          const symbolInfo = symbolData[symbolIndex]
+          
+          if (symbolInfo && symbolInfo.symbol !== lastSymbol) {
+            lastSymbol = symbolInfo.symbol
+            
+            hoverTimer = setTimeout(() => {
+              setPopupState({
+                visible: true,
+                symbol: symbolInfo.symbol,
+                exchange: symbolInfo.exchange,
+                name: symbolInfo.name,
+                x: Math.min(e.clientX + 15, window.innerWidth - 500),
+                y: Math.max(e.clientY - 400, 100) // Position above the ticker
+              })
+            }, 200) // Quick response
+          }
+        })
+        
+        tickerContainer.addEventListener('mouseleave', () => {
+          clearTimeout(hoverTimer)
+          lastSymbol = ''
+          setPopupState(prev => ({ ...prev, visible: false }))
+        })
+      }
+    }
+
     // Set up TradingView widget monitoring
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
@@ -80,6 +155,9 @@ export default function StockTicker() {
                 loadingElement.style.display = 'none'
               }, 300)
             }
+            
+            // Set up hover detection after iframe loads
+            setTimeout(setupHoverDetection, 1000)
             
             observer.disconnect()
           }
@@ -185,6 +263,16 @@ export default function StockTicker() {
       <div className="ticker-loading" id="ticker-loading">
         Loading real-time market data...
       </div>
+
+      {/* Hover Popup for Stock Charts */}
+      <StockHoverPopup 
+        symbol={popupState.symbol}
+        exchange={popupState.exchange}
+        name={popupState.name}
+        visible={popupState.visible}
+        x={popupState.x}
+        y={popupState.y}
+      />
     </>
   )
 }
