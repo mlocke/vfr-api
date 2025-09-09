@@ -1,4 +1,4 @@
-# Financial Analysis & Stock Prediction Platform - Claude Context
+# Veritak Financial Research LLC - Financial Analysis & Stock Prediction Platform - Claude Context
 
 ## Project Overview
 

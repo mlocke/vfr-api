@@ -1,7 +1,7 @@
 {
 	"name": "stock-picker-financial-platform",
 	"version": "1.0.0",
-	"description": "Cyberpunk-themed Financial Analysis & Stock Prediction Platform",
+	"description": "Veritak Financial Research LLC - Cyberpunk-themed Financial Analysis & Stock Prediction Platform",
 	"main": "src/index.tsx",
 	"scripts": {
 		"dev": "next dev",

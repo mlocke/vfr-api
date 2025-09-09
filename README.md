@@ -1,4 +1,4 @@
-# Stock Picker - MCP-Native Financial Analysis Platform
+# Veritak Financial Research LLC - Stock Picker - MCP-Native Financial Analysis Platform
 
 **🚀 First MCP-Native Financial Intelligence Platform with AI-Powered Analysis**
 
