@@ -14,6 +14,16 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, Any, Optional
 
+# Import centralized configuration
+try:
+    from backend.config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +42,7 @@ class SimplePolygonCollector:
     
     def __init__(self, api_key: Optional[str] = None):
         """Initialize the collector with API key"""
-        self.api_key = api_key or os.getenv('POLYGON_API_KEY')
+        self.api_key = api_key or Config.get_api_key('polygon')
         if not self.api_key:
             raise ValueError("API key required. Set POLYGON_API_KEY or provide api_key parameter.")
         

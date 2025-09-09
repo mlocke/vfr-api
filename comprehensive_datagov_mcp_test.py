@@ -27,6 +27,16 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import traceback
+# Load environment variables through centralized config
+try:
+    from backend.config.env_loader import Config
+except ImportError:
+    from dotenv import load_dotenv
+    load_dotenv()
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
 
 # Add backend path for imports
 sys.path.append(str(Path(__file__).parent / "backend"))
@@ -362,8 +372,8 @@ class DataGovMCPTestSuite:
             try:
                 logger.info("Testing rate sensitivity analysis")
                 sensitivity = await calculate_rate_sensitivity(
-                    ticker='AAPL',
-                    rate_change=100  # 1% rate change
+                    securities=['AAPL'],
+                    rate_change_bps=100  # 1% rate change
                 )
                 results['rate_sensitivity'] = sensitivity
             except Exception as e:

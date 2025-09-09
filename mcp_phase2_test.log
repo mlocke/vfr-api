@@ -1,0 +1,20 @@
+2025-09-09 12:42:04,410 - __main__ - INFO - 🚀 Starting MCP Phase 2 Comprehensive Test Suite
+2025-09-09 12:42:04,410 - __main__ - INFO - 🔧 Validating test infrastructure...
+2025-09-09 12:42:04,410 - __main__ - INFO - ✅ alpha_vantage MCP server: Available
+2025-09-09 12:42:04,410 - __main__ - INFO - ✅ polygon MCP server: Available
+2025-09-09 12:42:04,410 - __main__ - INFO - ✅ github MCP server: Available
+2025-09-09 12:42:04,410 - __main__ - INFO - ✅ firecrawl MCP server: Available
+2025-09-09 12:42:04,410 - __main__ - INFO - ✅ playwright MCP server: Available
+2025-09-09 12:42:04,411 - __main__ - INFO - 📊 Starting Alpha Vantage MCP Comprehensive Testing (79 tools)
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_quote(AAPL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_quote(MSFT): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_quote(GOOGL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_daily_prices(AAPL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_daily_prices(MSFT): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_daily_prices(GOOGL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_intraday_prices(AAPL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_intraday_prices(MSFT): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_intraday_prices(GOOGL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_weekly_prices(AAPL): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_weekly_prices(MSFT): Success
+2025-09-09 12:42:04,411 - __main__ - INFO - ✅ get_weekly_prices(GOOGL): Success

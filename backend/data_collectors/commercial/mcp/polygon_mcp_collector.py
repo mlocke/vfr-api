@@ -29,6 +29,16 @@ from typing import Dict, List, Any, Optional, Union
 from datetime import datetime, timedelta
 from enum import Enum
 
+# Import centralized configuration
+try:
+    from ....config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 # Import base classes (with fallback imports for testing)
 try:
     from ..base.mcp_collector_base import MCPCollectorBase
@@ -129,7 +139,7 @@ class PolygonMCPCollector(MCPCollectorBase):
         # Set default config
         if config is None:
             config = CollectorConfig(
-                api_key=api_key or os.getenv('POLYGON_API_KEY'),
+                api_key=api_key or Config.get_api_key('polygon'),
                 base_url="https://api.polygon.io",
                 timeout=30,
                 requests_per_minute=5,  # Free tier default
@@ -137,7 +147,7 @@ class PolygonMCPCollector(MCPCollectorBase):
             )
         
         # Polygon.io API key (required)
-        self.polygon_api_key = api_key or os.getenv('POLYGON_API_KEY')
+        self.polygon_api_key = api_key or Config.get_api_key('polygon')
         if not self.polygon_api_key:
             raise ValueError("Polygon.io API key is required. Set POLYGON_API_KEY environment variable or provide api_key parameter.")
         

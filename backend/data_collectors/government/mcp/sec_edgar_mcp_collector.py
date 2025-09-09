@@ -27,6 +27,14 @@ from typing import Dict, List, Any, Optional, Union
 from datetime import datetime, timedelta
 from enum import Enum
 
+# Import centralized configuration
+try:
+    from ....config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        SEC_EDGAR_USER_AGENT = os.getenv('SEC_EDGAR_USER_AGENT', 'Stock-Picker Financial Analysis Platform (contact@stockpicker.com)')
+
 # Import base classes and existing SEC collector for fallback
 try:
     from ..sec_edgar_collector import SECEdgarCollector, SAMPLE_COMPANIES
@@ -77,7 +85,7 @@ class SECEdgarMCPCollector(DataCollectorInterface):
             )
         
         # SEC requires User-Agent header for all requests
-        self.user_agent = user_agent or os.getenv('SEC_EDGAR_USER_AGENT') or 'Stock-Picker Financial Analysis Platform (contact@stockpicker.com)'
+        self.user_agent = user_agent or Config.SEC_EDGAR_USER_AGENT
         if not self.user_agent or '@' not in self.user_agent:
             raise ValueError("SEC EDGAR requires a valid User-Agent with email contact. Set SEC_EDGAR_USER_AGENT environment variable.")
         

@@ -8,8 +8,12 @@ import requests
 import json
 from datetime import datetime
 
-# Your FRED API key (if available)
-FRED_API_KEY = os.getenv("FRED_API_KEY", "your_api_key_here")
+# Import centralized configuration
+try:
+    from backend.config.env_loader import Config
+    FRED_API_KEY = Config.get_api_key('fred') or "your_api_key_here"
+except ImportError:
+    FRED_API_KEY = os.getenv("FRED_API_KEY", "your_api_key_here")
 
 def test_fred_api():
     """Test FRED API and show real economic data"""

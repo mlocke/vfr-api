@@ -5,10 +5,16 @@ Test script for the refactored Polygon MCP collector
 
 import sys
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables through centralized config
+try:
+    from config.env_loader import Config
+except ImportError:
+    from dotenv import load_dotenv
+    load_dotenv()
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
 sys.path.append('.')
 
 def test_polygon_collector():

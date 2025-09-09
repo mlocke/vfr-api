@@ -14,12 +14,23 @@ Tools:
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 import aiohttp
 import pandas as pd
 from collections import defaultdict
+
+# Import centralized configuration
+try:
+    from .....config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +119,7 @@ class EconomicDataProcessor:
                 'seriesid': [series_id],
                 'startyear': str(start_year),
                 'endyear': str(end_year),
-                'registrationkey': 'YOUR_BLS_API_KEY'  # Would need actual API key
+                'registrationkey': Config.get_api_key('bls') or 'YOUR_BLS_API_KEY'
             }
             
             async with self.session.post(self.bls_base_url, json=payload) as response:
@@ -164,7 +175,7 @@ class EconomicDataProcessor:
         try:
             params = {
                 'series_id': series_id,
-                'api_key': 'YOUR_FRED_API_KEY',  # Would need actual API key
+                'api_key': Config.get_api_key('fred') or 'YOUR_FRED_API_KEY',
                 'file_type': 'json',
                 'limit': limit,
                 'sort_order': 'desc'

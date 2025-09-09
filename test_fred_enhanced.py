@@ -10,9 +10,14 @@ from datetime import date, timedelta
 # Add the backend directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+# Load environment variables through centralized config
+try:
+    from backend.config.env_loader import Config
+    api_key = Config.get_api_key('fred')
+except ImportError:
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv('FRED_API_KEY')
 
 from data_collectors.government import FREDCollector
 from data_collectors.base import CollectorConfig
@@ -21,9 +26,6 @@ def test_fred_enhanced():
     """Test the enhanced FRED collector."""
     print("🚀 Testing Enhanced FRED Collector")
     print("=" * 50)
-    
-    # Get API key from environment
-    api_key = os.getenv('FRED_API_KEY')
     if not api_key:
         print("❌ FRED_API_KEY not found in environment")
         return False

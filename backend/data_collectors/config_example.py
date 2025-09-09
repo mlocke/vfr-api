@@ -9,6 +9,16 @@ import os
 from datetime import date, timedelta
 from .base import CollectorConfig, DateRange, DataFrequency
 
+# Import centralized configuration
+try:
+    from ..config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 # Environment variables for API keys
 # Copy these to your .env file with actual values
 
@@ -46,7 +56,7 @@ GOVERNMENT_CONFIGS = {
     ),
     
     "fred": CollectorConfig(
-        api_key=os.getenv("FRED_API_KEY"),  # Free API key required
+        api_key=Config.get_api_key("fred"),  # Free API key required
         base_url="https://api.stlouisfed.org/fred/",
         timeout=30,
         max_retries=3,
@@ -72,7 +82,7 @@ GOVERNMENT_CONFIGS = {
 # Market Data Collectors (Paid services)
 MARKET_DATA_CONFIGS = {
     "alpha_vantage": CollectorConfig(
-        api_key=os.getenv("ALPHA_VANTAGE_API_KEY"),
+        api_key=Config.get_api_key("alpha_vantage"),
         base_url="https://www.alphavantage.co/query",
         timeout=30,
         max_retries=3,
@@ -83,7 +93,7 @@ MARKET_DATA_CONFIGS = {
     ),
     
     "iex_cloud": CollectorConfig(
-        api_key=os.getenv("IEX_CLOUD_API_KEY"),
+        api_key=Config.get_api_key("iex_cloud"),
         base_url="https://cloud.iexapis.com/stable/",
         timeout=30,
         max_retries=3,
@@ -94,7 +104,7 @@ MARKET_DATA_CONFIGS = {
     ),
     
     "polygon": CollectorConfig(
-        api_key=os.getenv("POLYGON_API_KEY"),
+        api_key=Config.get_api_key("polygon"),
         base_url="https://api.polygon.io/",
         timeout=30,
         max_retries=3,
@@ -108,7 +118,7 @@ MARKET_DATA_CONFIGS = {
 # News and Sentiment Collectors
 NEWS_CONFIGS = {
     "news_api": CollectorConfig(
-        api_key=os.getenv("NEWS_API_KEY"),
+        api_key=Config.get_api_key("news_api"),
         base_url="https://newsapi.org/v2/",
         timeout=30,
         max_retries=3,

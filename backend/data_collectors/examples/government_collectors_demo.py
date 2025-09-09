@@ -18,6 +18,16 @@ import pandas as pd
 from datetime import date, timedelta
 import logging
 
+# Import centralized configuration
+try:
+    from ...config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 # Add parent directories to path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -110,7 +120,7 @@ def demo_fred_collector():
     print("="*60)
     
     # Check if API key is available
-    api_key = os.getenv("FRED_API_KEY")
+    api_key = Config.get_api_key("fred")
     if not api_key:
         print("❌ FRED_API_KEY not found in environment variables")
         print("   Get a free API key at: https://fred.stlouisfed.org/docs/api/api_key.html")

@@ -21,6 +21,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+# Import centralized configuration
+try:
+    from backend.config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 # Setup paths
 project_root = Path(__file__).parent
 backend_path = project_root / "backend" / "data_collectors"
@@ -74,7 +84,7 @@ class MCPRegressionTester:
             from commercial.mcp.alpha_vantage_mcp_collector import AlphaVantageMCPCollector
             
             # Initialize collector
-            config = {"api_key": os.getenv("ALPHA_VANTAGE_API_KEY", "demo")}
+            config = {"api_key": Config.get_api_key('alpha_vantage') or 'demo'}
             collector = AlphaVantageMCPCollector(config)
             
             # Test core stock data tools
@@ -292,7 +302,7 @@ class MCPRegressionTester:
         
         try:
             # Test using the available Polygon MCP tools
-            polygon_api_key = os.getenv("POLYGON_API_KEY")
+            polygon_api_key = Config.get_api_key('polygon')
             if not polygon_api_key:
                 logger.warning("⚠️ POLYGON_API_KEY not found, using demo mode")
                 polygon_api_key = "demo"

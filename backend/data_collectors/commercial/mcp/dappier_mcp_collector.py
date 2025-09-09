@@ -38,6 +38,16 @@ from pathlib import Path
 from enum import Enum
 from dataclasses import dataclass
 
+# Import centralized configuration
+try:
+    from ....config.env_loader import Config
+except ImportError:
+    # Fallback for testing
+    class Config:
+        @classmethod
+        def get_api_key(cls, service):
+            return os.getenv(f'{service.upper()}_API_KEY')
+
 # Add path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -129,7 +139,7 @@ class DappierMCPCollector(MCPCollectorBase):
             config: Optional collector configuration
         """
         # Dappier-specific configuration
-        api_key = os.getenv('DAPPIER_API_KEY')
+        api_key = Config.get_api_key('dappier')
         if not api_key:
             raise ValueError("DAPPIER_API_KEY environment variable is required")
         
