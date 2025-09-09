@@ -1,0 +1,216 @@
+{
+  "test_timestamp": "2025-09-09T12:19:08.284420",
+  "test_summary": {
+    "total_collectors": 6,
+    "tested_collectors": 3,
+    "passed_collectors": 3,
+    "failed_collectors": 0,
+    "warning_collectors": 0
+  },
+  "collector_results": {
+    "commercial": {
+      "Alpha Vantage MCP": {
+        "collector_name": "Alpha Vantage MCP",
+        "expected_tools": 79,
+        "test_timestamp": "2025-09-09T12:19:08.284444",
+        "tests": {
+          "import": {
+            "status": "PASS",
+            "message": "\u2713 AlphaVantageMCPCollector imported successfully"
+          },
+          "initialization": {
+            "status": "PASS",
+            "message": "\u2713 Alpha Vantage MCP initialized successfully"
+          },
+          "methods": {
+            "get_available_tools": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            },
+            "should_activate": {
+              "status": "\u2713 PASS",
+              "result_type": "bool",
+              "result_length": 1
+            },
+            "get_activation_priority": {
+              "status": "\u2713 PASS",
+              "result_type": "int",
+              "result_length": 1
+            },
+            "get_supported_request_types": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            }
+          },
+          "mcp_functionality": {
+            "router_compliance": {
+              "status": "\u26a0 PARTIAL (2/3)",
+              "compliance_score": "2/3",
+              "details": "Implements 2 of 3 required router methods"
+            }
+          }
+        },
+        "overall_status": "PASS",
+        "test_duration": 0.3
+      },
+      "Polygon.io MCP": {
+        "collector_name": "Polygon.io MCP",
+        "expected_tools": 40,
+        "test_timestamp": "2025-09-09T12:19:08.588771",
+        "tests": {
+          "import": {
+            "status": "PASS",
+            "message": "\u2713 PolygonMCPCollector imported successfully"
+          },
+          "initialization": {
+            "status": "PASS",
+            "message": "\u2713 Polygon.io MCP initialized successfully"
+          },
+          "methods": {
+            "get_available_tools": {
+              "status": "\u2713 PASS",
+              "result_type": "coroutine",
+              "result_length": 1
+            },
+            "should_activate": {
+              "status": "\u2713 PASS",
+              "result_type": "bool",
+              "result_length": 1
+            },
+            "get_activation_priority": {
+              "status": "\u2713 PASS",
+              "result_type": "int",
+              "result_length": 1
+            },
+            "get_supported_request_types": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            }
+          },
+          "mcp_functionality": {
+            "mcp_connection": {
+              "status": "\u2713 CONNECTION AVAILABLE",
+              "details": "MCP server connection method exists"
+            },
+            "tool_discovery": {
+              "status": "\u274c TOOL DISCOVERY FAILED: object of type 'coroutine' has no len()",
+              "tool_count": 0,
+              "details": "Could not retrieve tool list"
+            },
+            "router_compliance": {
+              "status": "\u26a0 PARTIAL (2/3)",
+              "compliance_score": "2/3",
+              "details": "Implements 2 of 3 required router methods"
+            }
+          }
+        },
+        "overall_status": "PASS",
+        "test_duration": 0.19
+      },
+      "Yahoo Finance MCP": {
+        "collector_name": "Yahoo Finance MCP",
+        "expected_tools": 10,
+        "test_timestamp": "2025-09-09T12:19:08.775771",
+        "tests": {
+          "import": {
+            "status": "PASS",
+            "message": "\u2713 YahooFinanceMCPCollector imported successfully"
+          },
+          "initialization": {
+            "status": "PASS",
+            "message": "\u2713 Yahoo Finance MCP initialized successfully"
+          },
+          "methods": {
+            "get_available_tools": {
+              "status": "\u2713 PASS",
+              "result_type": "list",
+              "result_length": 0
+            },
+            "should_activate": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            },
+            "get_activation_priority": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            },
+            "get_supported_request_types": {
+              "status": "\u26a0 NOT IMPLEMENTED",
+              "result_type": "N/A",
+              "result_length": 0
+            }
+          },
+          "mcp_functionality": {
+            "mcp_connection": {
+              "status": "\u2713 CONNECTION AVAILABLE",
+              "details": "MCP server connection method exists"
+            },
+            "tool_discovery": {
+              "status": "\u2713 TOOLS DISCOVERED",
+              "tool_count": 9,
+              "details": "Found 9 available tools"
+            },
+            "router_compliance": {
+              "status": "\u26a0 PARTIAL (0/3)",
+              "compliance_score": "0/3",
+              "details": "Implements 0 of 3 required router methods"
+            }
+          }
+        },
+        "overall_status": "PASS",
+        "test_duration": 0.0
+      },
+      "Dappier MCP": {
+        "collector_name": "Dappier MCP",
+        "expected_tools": 2,
+        "test_timestamp": "2025-09-09T12:19:08.778547",
+        "tests": {
+          "import": {
+            "status": "PASS",
+            "message": "\u2713 DappierMCPCollector imported successfully"
+          },
+          "initialization": {
+            "status": "FAIL",
+            "message": "\u274c Initialization failed: __init__() got an unexpected keyword argument 'api_key'"
+          }
+        },
+        "overall_status": "FAIL - Initialization Failed",
+        "test_duration": 0
+      }
+    },
+    "government": {
+      "Data.gov MCP": {
+        "collector_name": "Data.gov MCP",
+        "expected_tools": 5,
+        "test_timestamp": "2025-09-09T12:19:08.784531",
+        "tests": {
+          "import": {
+            "status": "FAIL",
+            "message": "\u274c Import failed: attempted relative import beyond top-level package"
+          }
+        },
+        "overall_status": "FAIL - Import Failed",
+        "test_duration": 0
+      },
+      "SEC EDGAR MCP": {
+        "collector_name": "SEC EDGAR MCP",
+        "expected_tools": 8,
+        "test_timestamp": "2025-09-09T12:19:08.785378",
+        "tests": {
+          "import": {
+            "status": "FAIL",
+            "message": "\u274c Import failed: attempted relative import beyond top-level package"
+          }
+        },
+        "overall_status": "FAIL - Import Failed",
+        "test_duration": 0
+      }
+    }
+  },
+  "test_duration": 0.5
+}
