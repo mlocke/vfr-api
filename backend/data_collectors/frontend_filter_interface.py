@@ -39,6 +39,9 @@ class FilterType(Enum):
     TIME_PERIOD = "time_period"
     ANALYSIS_TYPE = "analysis_type"
     FINANCIAL_METRICS = "financial_metrics"
+    STOCK_DATA_TYPE = "stock_data_type"
+    OPTIONS_ANALYSIS = "options_analysis"
+    NEWS_SENTIMENT = "news_sentiment"
 
 
 @dataclass
@@ -374,6 +377,109 @@ class FrontendFilterInterface:
             )
         ])
         
+        # Stock data type filters (Yahoo Finance MCP)
+        filters[FilterType.STOCK_DATA_TYPE].extend([
+            FilterOption(
+                value="historical_prices",
+                label="Historical Price Data",
+                description="Historical open, high, low, close, and volume data",
+                category=FilterType.STOCK_DATA_TYPE,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Price trend analysis and technical chart creation"
+            ),
+            FilterOption(
+                value="stock_info",
+                label="Company Information", 
+                description="Company profile, market cap, PE ratio, and key metrics",
+                category=FilterType.STOCK_DATA_TYPE,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Company overview and quick financial snapshot"
+            ),
+            FilterOption(
+                value="financial_statements",
+                label="Financial Statements",
+                description="Income statement, balance sheet, and cash flow data",
+                category=FilterType.STOCK_DATA_TYPE,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Fundamental analysis and financial health assessment"
+            ),
+            FilterOption(
+                value="news",
+                label="Company News",
+                description="Latest news and press releases for selected companies",
+                category=FilterType.STOCK_DATA_TYPE,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Market sentiment analysis and event impact assessment"
+            )
+        ])
+        
+        # Options analysis filters (Yahoo Finance MCP)  
+        filters[FilterType.OPTIONS_ANALYSIS].extend([
+            FilterOption(
+                value="option_expiration_dates",
+                label="Option Expiration Dates",
+                description="Available expiration dates for options contracts",
+                category=FilterType.OPTIONS_ANALYSIS,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Options trading strategy planning"
+            ),
+            FilterOption(
+                value="option_chain_calls",
+                label="Call Options Chain",
+                description="Call options with strike prices, premiums, and Greeks",
+                category=FilterType.OPTIONS_ANALYSIS,
+                applicable_collectors=["yahoo_finance_mcp"],
+                requires_additional_params=True,
+                example_usage="Bullish options strategies and volatility analysis"
+            ),
+            FilterOption(
+                value="option_chain_puts",
+                label="Put Options Chain", 
+                description="Put options with strike prices, premiums, and Greeks",
+                category=FilterType.OPTIONS_ANALYSIS,
+                applicable_collectors=["yahoo_finance_mcp"],
+                requires_additional_params=True,
+                example_usage="Bearish options strategies and downside protection"
+            )
+        ])
+        
+        # News sentiment filters (Yahoo Finance MCP)
+        filters[FilterType.NEWS_SENTIMENT].extend([
+            FilterOption(
+                value="recommendations",
+                label="Analyst Recommendations",
+                description="Buy/hold/sell recommendations from financial analysts",
+                category=FilterType.NEWS_SENTIMENT,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Analyst sentiment analysis and consensus tracking"
+            ),
+            FilterOption(
+                value="upgrades_downgrades",
+                label="Upgrades & Downgrades",
+                description="Recent analyst upgrades and downgrades with historical data",
+                category=FilterType.NEWS_SENTIMENT,
+                applicable_collectors=["yahoo_finance_mcp"],
+                requires_additional_params=True,
+                example_usage="Analyst sentiment changes and market momentum indicators"
+            ),
+            FilterOption(
+                value="holder_info_institutional",
+                label="Institutional Holdings",
+                description="Major institutional holders and their positions",
+                category=FilterType.NEWS_SENTIMENT,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Smart money tracking and institutional sentiment analysis"
+            ),
+            FilterOption(
+                value="holder_info_major",
+                label="Major Shareholders",
+                description="Top shareholders including insiders and institutional investors",
+                category=FilterType.NEWS_SENTIMENT,
+                applicable_collectors=["yahoo_finance_mcp"],
+                example_usage="Ownership structure analysis and insider sentiment"
+            )
+        ])
+        
         return filters
     
     def get_available_filter_options(self, filter_type: Optional[FilterType] = None) -> Dict[str, List[Dict[str, Any]]]:
@@ -546,6 +652,52 @@ class FrontendFilterInterface:
                         except ValueError:
                             translated_filters[key] = value
         
+        # Handle Yahoo Finance MCP specific filters
+        if "stock_data_type" in frontend_filters:
+            stock_data_type = frontend_filters["stock_data_type"]
+            translated_filters["data_type"] = stock_data_type
+            # Add specific Yahoo Finance parameters
+            if stock_data_type == "historical_prices":
+                translated_filters["yahoo_mcp_tool"] = "get_historical_stock_prices"
+            elif stock_data_type == "stock_info":
+                translated_filters["yahoo_mcp_tool"] = "get_stock_info"
+            elif stock_data_type == "financial_statements":
+                translated_filters["yahoo_mcp_tool"] = "get_financial_statement"
+            elif stock_data_type == "news":
+                translated_filters["yahoo_mcp_tool"] = "get_yahoo_finance_news"
+        
+        # Handle options analysis filters (Yahoo Finance MCP)
+        if "options_analysis" in frontend_filters:
+            options_type = frontend_filters["options_analysis"]
+            translated_filters["data_type"] = "options"
+            if options_type == "option_expiration_dates":
+                translated_filters["yahoo_mcp_tool"] = "get_option_expiration_dates"
+            elif options_type == "option_chain_calls":
+                translated_filters["yahoo_mcp_tool"] = "get_option_chain"
+                translated_filters["option_type"] = "calls"
+            elif options_type == "option_chain_puts":
+                translated_filters["yahoo_mcp_tool"] = "get_option_chain"
+                translated_filters["option_type"] = "puts"
+        
+        # Handle news sentiment filters (Yahoo Finance MCP)
+        if "news_sentiment" in frontend_filters:
+            sentiment_type = frontend_filters["news_sentiment"]
+            if sentiment_type == "recommendations":
+                translated_filters["data_type"] = "recommendations"
+                translated_filters["yahoo_mcp_tool"] = "get_recommendations"
+                translated_filters["recommendation_type"] = "recommendations"
+            elif sentiment_type == "upgrades_downgrades":
+                translated_filters["data_type"] = "recommendations"
+                translated_filters["yahoo_mcp_tool"] = "get_recommendations"
+                translated_filters["recommendation_type"] = "upgrades_downgrades"
+            elif sentiment_type.startswith("holder_info"):
+                translated_filters["data_type"] = "holder_info"
+                translated_filters["yahoo_mcp_tool"] = "get_holder_info"
+                if sentiment_type == "holder_info_institutional":
+                    translated_filters["holder_type"] = "institutional_holders"
+                elif sentiment_type == "holder_info_major":
+                    translated_filters["holder_type"] = "major_holders"
+        
         # Add metadata
         translated_filters["frontend_translation"] = {
             "timestamp": datetime.now().isoformat(),
@@ -581,7 +733,10 @@ class FrontendFilterInterface:
                 len(filters.get("fred_series", [])),
                 len(filters.get("sic_codes", [])),
                 1 if filters.get("date_range") else 0,
-                1 if any(k.startswith("min_") or k.startswith("max_") for k in filters.keys()) else 0
+                1 if any(k.startswith("min_") or k.startswith("max_") for k in filters.keys()) else 0,
+                1 if filters.get("yahoo_mcp_tool") else 0,  # Yahoo Finance MCP tool complexity
+                1 if filters.get("option_type") else 0,      # Options data complexity
+                1 if filters.get("holder_type") else 0       # Holder info complexity
             ]
             
             total_complexity = sum(complexity_factors)
@@ -597,6 +752,8 @@ class FrontendFilterInterface:
                 result.data_availability = "high"  # SEC data is comprehensive
             elif any(collector in result.expected_collectors for collector in ["fred", "bea", "treasury_fiscal"]):
                 result.data_availability = "high"  # Government data is reliable
+            elif "yahoo_finance_mcp" in result.expected_collectors:
+                result.data_availability = "high"  # Yahoo Finance provides comprehensive market data
             else:
                 result.data_availability = "medium"
         

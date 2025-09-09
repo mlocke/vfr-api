@@ -50,12 +50,14 @@ try:
     from .commercial.base.mcp_collector_base import MCPCollectorBase
     from .commercial.mcp.alpha_vantage_mcp_collector import AlphaVantageMCPCollector
     from .commercial.mcp.polygon_mcp_collector import PolygonMCPCollector
+    from .commercial.mcp.yahoo_finance_mcp_collector import YahooFinanceMCPCollector
     COMMERCIAL_COLLECTORS_AVAILABLE = True
 except ImportError:
     CommercialCollectorInterface = None
     MCPCollectorBase = None
     AlphaVantageMCPCollector = None
     PolygonMCPCollector = None
+    YahooFinanceMCPCollector = None
     COMMERCIAL_COLLECTORS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -658,6 +660,52 @@ class CollectorRouter:
                 coverage_score=95
             )
         
+        # Add Yahoo Finance MCP collector if available (FREE tier!)
+        if YahooFinanceMCPCollector:
+            registry['yahoo_finance_mcp'] = CollectorCapability(
+                collector_class=YahooFinanceMCPCollector,
+                quadrant=CollectorQuadrant.COMMERCIAL_MCP,
+                primary_use_cases=[
+                    RequestType.INDIVIDUAL_COMPANY,
+                    RequestType.COMPANY_COMPARISON,
+                    RequestType.REAL_TIME_PRICES,
+                    RequestType.OPTIONS_DATA,
+                    RequestType.NEWS_ANALYSIS,
+                    RequestType.ANALYST_RATINGS,
+                    RequestType.MARKET_SENTIMENT,
+                    RequestType.STOCK_SCREENING
+                ],
+                strengths=[
+                    '10 core MCP tools - COMPLETELY FREE',
+                    'No API key required - zero authentication',
+                    'No rate limits or quotas - unlimited requests',
+                    'Comprehensive options chain data with Greeks',
+                    'Detailed institutional and insider holder information',
+                    'Financial statements (annual and quarterly)',
+                    'Analyst recommendations and rating changes',
+                    'Dividend and split history',
+                    'Real-time news coverage',
+                    'Perfect fallback when premium APIs hit quotas'
+                ],
+                limitations=[
+                    'Limited to 10 core tools (vs 79 for Alpha Vantage)',
+                    'No advanced technical indicators',
+                    'Less granular intraday data',
+                    'Limited to major exchanges'
+                ],
+                max_companies=None,  # No limit
+                requires_specific_companies=True,
+                cost_per_request=0.0,  # COMPLETELY FREE!
+                monthly_quota=None,    # NO QUOTA LIMITS
+                rate_limit_per_second=None,  # NO RATE LIMITS
+                supports_mcp=True,
+                mcp_tool_count=10,
+                protocol_preference=100,  # Highest preference - it's FREE!
+                data_freshness="real_time",
+                reliability_score=90,  # Slightly lower due to local server
+                coverage_score=85  # Good coverage for core data
+            )
+        
         return registry
     
     def route_request(self, filter_criteria: Dict[str, Any]) -> List[DataCollectorInterface]:
@@ -762,19 +810,38 @@ class CollectorRouter:
                 logger.info("Government sources sufficient, skipping commercial sources")
                 return selected_collectors
         
-        # PRIORITY 2: Commercial MCP (if budget allows and data needed)
+        # PRIORITY 2: Free Commercial MCP (Yahoo Finance - always try first!)
+        commercial_mcp = quadrant_groups[CollectorQuadrant.COMMERCIAL_MCP]
+        if commercial_mcp and self._requires_commercial_data(filter_criteria):
+            # First, try FREE Yahoo Finance MCP
+            yahoo_finance = None
+            for capability in commercial_mcp:
+                if capability.cost_per_request == 0.0 and 'yahoo' in capability.collector_class.__name__.lower():
+                    yahoo_finance = capability
+                    break
+            
+            if yahoo_finance:
+                selected_collectors.append(yahoo_finance)
+                logger.info(f"Selected FREE commercial MCP: Yahoo Finance (cost: $0.00)")
+                
+                # Check if Yahoo Finance satisfies the request
+                if self._yahoo_finance_sufficient(filter_criteria):
+                    logger.info("Yahoo Finance sufficient for request")
+                    return selected_collectors
+        
+        # PRIORITY 3: Paid Commercial MCP (if budget allows and data needed)
         if self.budget_limit > 0:
-            commercial_mcp = quadrant_groups[CollectorQuadrant.COMMERCIAL_MCP]
-            if commercial_mcp and self._requires_commercial_data(filter_criteria):
-                # Sort by protocol preference and coverage
-                commercial_mcp.sort(key=lambda c: (c.protocol_preference, c.coverage_score), reverse=True)
+            if commercial_mcp and self._requires_advanced_commercial_data(filter_criteria):
+                # Sort by protocol preference and coverage (excluding Yahoo which we already added)
+                paid_mcp = [c for c in commercial_mcp if c.cost_per_request > 0]
+                paid_mcp.sort(key=lambda c: (c.protocol_preference, c.coverage_score), reverse=True)
                 
                 # Select based on budget
-                for capability in commercial_mcp:
+                for capability in paid_mcp:
                     estimated_cost = self._estimate_monthly_cost(capability, filter_criteria)
                     if estimated_cost <= self.budget_limit:
                         selected_collectors.append(capability)
-                        logger.info(f"Selected commercial MCP: {capability.collector_class.__name__} (est. ${estimated_cost:.2f}/month)")
+                        logger.info(f"Selected paid commercial MCP: {capability.collector_class.__name__} (est. ${estimated_cost:.2f}/month)")
                         break
         
         # PRIORITY 3: Commercial API (fallback if MCP not available)
@@ -843,6 +910,30 @@ class CollectorRouter:
             
         return False
     
+    def _yahoo_finance_sufficient(self, filter_criteria: Dict[str, Any]) -> bool:
+        """Check if Yahoo Finance can satisfy the request without paid sources."""
+        # Yahoo Finance can handle basic stock data, options, and news
+        request_type = filter_criteria.get('data_type', '')
+        
+        # Yahoo Finance is good for these data types
+        yahoo_supported = [
+            'stock_info', 'historical_prices', 'options', 'news',
+            'financial_statements', 'holders', 'recommendations',
+            'dividends', 'splits'
+        ]
+        
+        if any(supported in str(request_type).lower() for supported in yahoo_supported):
+            # Check if advanced technical indicators are needed (Yahoo doesn't have these)
+            if 'technical' in str(filter_criteria).lower():
+                indicators = filter_criteria.get('indicators', [])
+                # Yahoo only has basic price data, not advanced indicators
+                advanced_indicators = ['rsi', 'macd', 'bbands', 'sma', 'ema', 'stoch']
+                if any(ind in str(indicators).lower() for ind in advanced_indicators):
+                    return False
+            return True
+        
+        return False
+    
     def _requires_commercial_data(self, filter_criteria: Dict[str, Any]) -> bool:
         """Check if request requires commercial data sources."""
         # Real-time requirements
@@ -852,6 +943,29 @@ class CollectorRouter:
         # Technical analysis
         if filter_criteria.get('analysis_type') == 'technical':
             return True
+    
+    def _requires_advanced_commercial_data(self, filter_criteria: Dict[str, Any]) -> bool:
+        """Check if request requires PAID commercial data (beyond Yahoo Finance capabilities)."""
+        # Advanced technical indicators
+        if 'technical' in str(filter_criteria).lower():
+            indicators = filter_criteria.get('indicators', [])
+            advanced_indicators = ['rsi', 'macd', 'bbands', 'sma', 'ema', 'stoch', 'adx', 'cci']
+            if any(ind in str(indicators).lower() for ind in advanced_indicators):
+                return True
+        
+        # High-frequency intraday data
+        if any(keyword in str(filter_criteria).lower() for keyword in ['1m', '5m', '15m', 'tick']):
+            return True
+        
+        # Forex or crypto (Yahoo has limited coverage)
+        if filter_criteria.get('market_type') in ['forex', 'crypto']:
+            return True
+        
+        # Advanced market data (Level 2, order book, etc.)
+        if any(keyword in str(filter_criteria).lower() for keyword in ['level2', 'order_book', 'depth']):
+            return True
+        
+        return False
             
         # Specific commercial data types
         commercial_keywords = [

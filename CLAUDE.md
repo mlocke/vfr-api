@@ -37,8 +37,8 @@ This is a comprehensive financial analysis tool that aggregates data from public
 - **MCP Collectors (Future)**: SEC MCP, Fed MCP, Treasury MCP (when available)
 
 **Commercial Data Sources:**
-- **MCP Collectors (Priority)**: Alpha Vantage MCP, Financial Modeling Prep MCP
-- **API Collectors (Fallback)**: IEX Cloud, Polygon.io, Yahoo Finance, Quandl
+- **MCP Collectors (Priority)**: Alpha Vantage MCP, Polygon.io MCP, Yahoo Finance MCP (FREE)
+- **API Collectors (Fallback)**: IEX Cloud, Quandl
 
 **News/Sentiment**: News API, Twitter API, Reddit API
 
