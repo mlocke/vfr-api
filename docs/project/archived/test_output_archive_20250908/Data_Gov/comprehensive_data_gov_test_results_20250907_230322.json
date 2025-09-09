@@ -1,0 +1,231 @@
+{
+  "test_metadata": {
+    "timestamp": "2025-09-07T23:03:14.759421",
+    "test_type": "comprehensive_data_gov_mcp_readiness",
+    "purpose": "Validate real-time data access for MCP integration"
+  },
+  "SEC Company Facts (Detailed)": {
+    "Apple Inc.": {
+      "success": true,
+      "cik": 320193,
+      "entity_name": "Apple Inc.",
+      "sic": null,
+      "sic_description": null,
+      "total_facts": 500,
+      "financial_metrics": {
+        "Total Assets": {
+          "value": 331495000000,
+          "date": "2025-06-28",
+          "label": "Assets"
+        },
+        "Total Revenues": {
+          "value": 62900000000,
+          "date": "2018-09-29",
+          "label": "Revenues"
+        },
+        "Net Income": {
+          "value": 23434000000,
+          "date": "2025-06-28",
+          "label": "Net Income (Loss) Attributable to Parent"
+        },
+        "Cash and Cash Equivalents": {
+          "value": 36269000000,
+          "date": "2025-06-28",
+          "label": "Cash and Cash Equivalents, at Carrying Value"
+        },
+        "Shareholders Equity": {
+          "value": 65830000000,
+          "date": "2025-06-28",
+          "label": "Stockholders' Equity Attributable to Parent"
+        },
+        "Total Liabilities": {
+          "value": 265665000000,
+          "date": "2025-06-28",
+          "label": "Liabilities"
+        }
+      },
+      "data_freshness": "Quarterly SEC filings"
+    },
+    "Microsoft Corp.": {
+      "success": true,
+      "cik": 789019,
+      "entity_name": "MICROSOFT CORPORATION",
+      "sic": null,
+      "sic_description": null,
+      "total_facts": 541,
+      "financial_metrics": {
+        "Total Assets": {
+          "value": 619003000000,
+          "date": "2025-06-30",
+          "label": "Assets"
+        },
+        "Total Revenues": {
+          "value": 19953000000,
+          "date": "2010-12-31",
+          "label": "Revenues"
+        },
+        "Net Income": {
+          "value": 101832000000,
+          "date": "2025-06-30",
+          "label": "Net Income (Loss) Attributable to Parent"
+        },
+        "Cash and Cash Equivalents": {
+          "value": 30242000000,
+          "date": "2025-06-30",
+          "label": "Cash and Cash Equivalents, at Carrying Value"
+        },
+        "Shareholders Equity": {
+          "value": 343479000000,
+          "date": "2025-06-30",
+          "label": "Stockholders' Equity Attributable to Parent"
+        },
+        "Total Liabilities": {
+          "value": 275524000000,
+          "date": "2025-06-30",
+          "label": "Liabilities"
+        }
+      },
+      "data_freshness": "Quarterly SEC filings"
+    },
+    "Tesla Inc.": {
+      "success": true,
+      "cik": 1318605,
+      "entity_name": "Tesla, Inc.",
+      "sic": null,
+      "sic_description": null,
+      "total_facts": 616,
+      "financial_metrics": {
+        "Total Assets": {
+          "value": 128567000000,
+          "date": "2025-06-30",
+          "label": "Assets"
+        },
+        "Total Revenues": {
+          "value": 22496000000,
+          "date": "2025-06-30",
+          "label": "Revenues"
+        },
+        "Net Income": {
+          "value": 1172000000,
+          "date": "2025-06-30",
+          "label": "Net Income (Loss) Attributable to Parent"
+        },
+        "Cash and Cash Equivalents": {
+          "value": 15587000000,
+          "date": "2025-06-30",
+          "label": "Cash and Cash Equivalents, at Carrying Value"
+        },
+        "Shareholders Equity": {
+          "value": 77314000000,
+          "date": "2025-06-30",
+          "label": "Stockholders' Equity Attributable to Parent"
+        },
+        "Total Liabilities": {
+          "value": 50495000000,
+          "date": "2025-06-30",
+          "label": "Liabilities"
+        }
+      },
+      "data_freshness": "Quarterly SEC filings"
+    }
+  },
+  "SEC Submissions Data": {
+    "success": true,
+    "company": "Apple Inc.",
+    "cik": "0000320193",
+    "sic": "3571",
+    "total_filings": 1000,
+    "recent_quarterly_filings": [
+      {
+        "form": "10-Q",
+        "filing_date": "2025-08-01",
+        "accession_number": "0000320193-25-000073"
+      },
+      {
+        "form": "10-Q",
+        "filing_date": "2025-05-02",
+        "accession_number": "0000320193-25-000057"
+      }
+    ],
+    "data_freshness": "Real-time filing updates"
+  },
+  "SEC Frames Data": {
+    "success": true,
+    "taxonomy": "us-gaap",
+    "tag": "Revenues",
+    "year": "2023",
+    "total_companies": 2572,
+    "top_companies_by_revenue": [
+      {
+        "entity_name": "WALMART INC.",
+        "cik": 104169,
+        "revenue": 648125000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "UnitedHealth Group Incorporated",
+        "cik": 731766,
+        "revenue": 371622000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "BERKSHIRE HATHAWAY INC",
+        "cik": 1067983,
+        "revenue": 364482000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "CVS HEALTH CORPORATION",
+        "cik": 64803,
+        "revenue": 357776000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "Exxon Mobil Corporation",
+        "cik": 34088,
+        "revenue": 344582000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "CENCORA, INC.",
+        "cik": 1140859,
+        "revenue": 262173411000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "COSTCO WHOLESALE CORP /NEW",
+        "cik": 909832,
+        "revenue": 242290000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "Cardinal Health, Inc.",
+        "cik": 721371,
+        "revenue": 204979000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "Chevron Corp",
+        "cik": 93410,
+        "revenue": 200949000000,
+        "filed_date": null
+      },
+      {
+        "entity_name": "The Cigna Group",
+        "cik": 1739940,
+        "revenue": 195265000000,
+        "filed_date": null
+      }
+    ],
+    "data_freshness": "Annual aggregated data"
+  },
+  "Alternative Treasury API": {
+    "success": false,
+    "error": "HTTP Error 404: Not Found"
+  },
+  "performance_metrics": {
+    "total_duration_seconds": 8.16,
+    "average_api_response_time": 2.04,
+    "test_completion_time": "2025-09-07T23:03:22.918359"
+  }
+}

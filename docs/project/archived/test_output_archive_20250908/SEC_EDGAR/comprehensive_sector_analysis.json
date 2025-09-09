@@ -1,0 +1,244 @@
+{
+  "description": "Detailed sector analysis showing financial performance by industry",
+  "timestamp": "2025-09-07T14:40:15.426049",
+  "sample_data": {
+    "Technology": {
+      "company_count": 5,
+      "companies": [
+        {
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "MSFT",
+          "name": "MICROSOFT CORPORATION",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "GOOGL",
+          "name": "Alphabet Inc.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "META",
+          "name": "Meta Platforms, Inc.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "NVDA",
+          "name": "NVIDIA CORP",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "AAPL ($0)",
+        "roe_leader": "AAPL (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Financial Services": {
+      "company_count": 2,
+      "companies": [
+        {
+          "symbol": "JPM",
+          "name": "JPMorgan Chase & Co",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "BAC",
+          "name": "Bank of America Corporation",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "JPM ($0)",
+        "roe_leader": "JPM (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Healthcare": {
+      "company_count": 2,
+      "companies": [
+        {
+          "symbol": "JNJ",
+          "name": "Johnson & Johnson",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        },
+        {
+          "symbol": "PFE",
+          "name": "PFIZER INC",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "JNJ ($0)",
+        "roe_leader": "JNJ (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Consumer Discretionary": {
+      "company_count": 1,
+      "companies": [
+        {
+          "symbol": "AMZN",
+          "name": "AMAZON.COM, INC.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "AMZN ($0)",
+        "roe_leader": "AMZN (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Consumer Staples": {
+      "company_count": 1,
+      "companies": [
+        {
+          "symbol": "WMT",
+          "name": "Walmart Inc.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "WMT ($0)",
+        "roe_leader": "WMT (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Energy": {
+      "company_count": 1,
+      "companies": [
+        {
+          "symbol": "XOM",
+          "name": "Exxon Mobil Corporation",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "XOM ($0)",
+        "roe_leader": "XOM (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    },
+    "Automotive": {
+      "company_count": 1,
+      "companies": [
+        {
+          "symbol": "TSLA",
+          "name": "Tesla, Inc.",
+          "revenue": 0,
+          "roe": 0,
+          "profit_margin": 0,
+          "debt_to_equity": 0,
+          "data_quality": "Limited"
+        }
+      ],
+      "sector_averages": {
+        "average_revenue": 0,
+        "average_roe": 0,
+        "average_profit_margin": 0,
+        "average_debt_equity": 0
+      },
+      "sector_leaders": {
+        "revenue_leader": "TSLA ($0)",
+        "roe_leader": "TSLA (0.0%)",
+        "total_sector_revenue": 0
+      },
+      "sector_summary": {}
+    }
+  },
+  "data_type": "SEC EDGAR Sector Analysis",
+  "source": "U.S. Securities and Exchange Commission"
+}

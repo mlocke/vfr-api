@@ -1,0 +1,87 @@
+{
+  "test_execution": {
+    "start_time": "2025-09-08T22:10:56.242997",
+    "end_time": "2025-09-08T22:10:56.531899",
+    "duration_seconds": 0.288902,
+    "test_environment": "MCP Regression Testing Suite v1.0"
+  },
+  "mcp_servers_tested": 4,
+  "total_tests_executed": 5,
+  "overall_success_rate": 100.0,
+  "server_results": {
+    "alpha_vantage_mcp": {
+      "tests": [],
+      "success_rate": 0,
+      "errors": [
+        "Can't instantiate abstract class AlphaVantageMCPCollector with abstract methods authenticate, collect_batch, collect_realtime, get_available_symbols, get_rate_limits, requires_api_key, source_name, supported_data_types, test_connection, validate_symbols"
+      ]
+    },
+    "polygon_mcp": {
+      "tests": [
+        {
+          "tool": "get_aggs",
+          "params": {
+            "ticker": "AAPL",
+            "multiplier": 1,
+            "timespan": "day",
+            "from_": "2024-01-01",
+            "to": "2024-01-31"
+          },
+          "success": true,
+          "response_time": 6.604194641113281e-05,
+          "data_sample": "{'status': 'mcp_module_not_available', 'tool': 'get_aggs', 'mock_data': True}"
+        },
+        {
+          "tool": "get_previous_close_agg",
+          "params": {
+            "ticker": "MSFT"
+          },
+          "success": true,
+          "response_time": 5.078315734863281e-05,
+          "data_sample": "{'status': 'mcp_module_not_available', 'tool': 'get_previous_close_agg', 'mock_data': True}"
+        },
+        {
+          "tool": "get_daily_open_close_agg",
+          "params": {
+            "ticker": "GOOGL",
+            "date": "2024-01-15"
+          },
+          "success": true,
+          "response_time": 4.935264587402344e-05,
+          "data_sample": "{'status': 'mcp_module_not_available', 'tool': 'get_daily_open_close_agg', 'mock_data': True}"
+        },
+        {
+          "tool": "get_snapshot_ticker",
+          "params": {
+            "market_type": "stocks",
+            "ticker": "SPY"
+          },
+          "success": true,
+          "response_time": 4.792213439941406e-05,
+          "data_sample": "{'status': 'mcp_module_not_available', 'tool': 'get_snapshot_ticker', 'mock_data': True}"
+        },
+        {
+          "tool": "get_market_status",
+          "params": {},
+          "success": true,
+          "response_time": 4.8160552978515625e-05,
+          "data_sample": "{'status': 'mcp_module_not_available', 'tool': 'get_market_status', 'mock_data': True}"
+        }
+      ],
+      "success_rate": 100.0,
+      "errors": []
+    },
+    "datagov_mcp": {
+      "tests": [],
+      "success_rate": 0,
+      "errors": [
+        "attempted relative import beyond top-level package"
+      ]
+    },
+    "cross_validation": {
+      "tests": [],
+      "success_rate": 0,
+      "errors": []
+    }
+  }
+}

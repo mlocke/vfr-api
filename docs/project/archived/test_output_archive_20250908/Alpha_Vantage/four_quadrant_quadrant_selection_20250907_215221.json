@@ -1,0 +1,129 @@
+{
+  "test_name": "quadrant_selection",
+  "timestamp": "2025-09-07T21:52:21.509451",
+  "success": false,
+  "execution_time_seconds": 3.814697265625e-06,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "routing_architecture": "Four-Quadrant MCP-First",
+  "data": {
+    "total_scenarios": 4,
+    "selection_results": [
+      {
+        "scenario": {
+          "request": {
+            "data_type": "stock_quote",
+            "source": "commercial"
+          },
+          "expected_quadrant": "commercial_mcp",
+          "reason": "Commercial data with MCP preference"
+        },
+        "selected_quadrant": "commercial_mcp",
+        "matches_expected": true,
+        "quadrant_info": {
+          "collectors": [
+            "ALPHA_VANTAGE_MCP",
+            "BLOOMBERG_MCP"
+          ],
+          "cost_per_request": 0.01,
+          "supports_mcp": true
+        }
+      },
+      {
+        "scenario": {
+          "request": {
+            "data_type": "economic_indicators",
+            "source": "government"
+          },
+          "expected_quadrant": "government_mcp",
+          "reason": "Government data with MCP preference"
+        },
+        "selected_quadrant": "government_mcp",
+        "matches_expected": true,
+        "quadrant_info": {
+          "collectors": [
+            "TREASURY_MCP",
+            "CENSUS_MCP"
+          ],
+          "cost_per_request": 0.0,
+          "supports_mcp": true
+        }
+      },
+      {
+        "scenario": {
+          "request": {
+            "data_type": "sec_filings",
+            "source": "government"
+          },
+          "expected_quadrant": "government_api",
+          "reason": "Government data, API-only available"
+        },
+        "selected_quadrant": "government_mcp",
+        "matches_expected": false,
+        "quadrant_info": {
+          "collectors": [
+            "TREASURY_MCP",
+            "CENSUS_MCP"
+          ],
+          "cost_per_request": 0.0,
+          "supports_mcp": true
+        }
+      },
+      {
+        "scenario": {
+          "request": {
+            "data_type": "premium_analytics",
+            "source": "commercial"
+          },
+          "expected_quadrant": "commercial_mcp",
+          "reason": "Premium commercial with MCP optimization"
+        },
+        "selected_quadrant": "commercial_mcp",
+        "matches_expected": true,
+        "quadrant_info": {
+          "collectors": [
+            "ALPHA_VANTAGE_MCP",
+            "BLOOMBERG_MCP"
+          ],
+          "cost_per_request": 0.01,
+          "supports_mcp": true
+        }
+      }
+    ],
+    "correct_selections": 3,
+    "quadrant_architecture": {
+      "government_api": {
+        "collectors": [
+          "SEC_EDGAR",
+          "FRED_API",
+          "BEA_API"
+        ],
+        "cost_per_request": 0.0,
+        "supports_mcp": false
+      },
+      "government_mcp": {
+        "collectors": [
+          "TREASURY_MCP",
+          "CENSUS_MCP"
+        ],
+        "cost_per_request": 0.0,
+        "supports_mcp": true
+      },
+      "commercial_api": {
+        "collectors": [
+          "ALPHA_VANTAGE_API",
+          "IEX_CLOUD"
+        ],
+        "cost_per_request": 0.02,
+        "supports_mcp": false
+      },
+      "commercial_mcp": {
+        "collectors": [
+          "ALPHA_VANTAGE_MCP",
+          "BLOOMBERG_MCP"
+        ],
+        "cost_per_request": 0.01,
+        "supports_mcp": true
+      }
+    }
+  }
+}

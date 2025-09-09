@@ -1,0 +1,956 @@
+{
+  "description": "Comprehensive SEC EDGAR financial data for major US companies across all sectors",
+  "timestamp": "2025-09-07T14:40:15.424083",
+  "sample_data": {
+    "AAPL": {
+      "company_info": {
+        "name": "Apple Inc.",
+        "cik": "320193",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 3,
+          "144": 2,
+          "10-Q": 1,
+          "8-K": 2,
+          "SCHEDULE 13G/A": 1,
+          "3": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-27"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-12"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-08"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-08-01"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-07-31"
+          },
+          {
+            "form": "SCHEDULE 13G/A",
+            "filing_date": "2025-07-29"
+          },
+          {
+            "form": "3",
+            "filing_date": "2025-07-25"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-07-25"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:05.605646"
+    },
+    "MSFT": {
+      "company_info": {
+        "name": "MICROSOFT CORPORATION",
+        "cik": "789019",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 9,
+          "144": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-03"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:06.364109"
+    },
+    "GOOGL": {
+      "company_info": {
+        "name": "Alphabet Inc.",
+        "cik": "1652044",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 3,
+          "8-K": 2,
+          "144": 3,
+          "4/A": 1,
+          "N-PX": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4/A",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "N-PX",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-26"
+          }
+        ],
+        "total_recent_filings": 1008
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:07.028408"
+    },
+    "META": {
+      "company_info": {
+        "name": "Meta Platforms, Inc.",
+        "cik": "1326801",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 6,
+          "144": 4
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-02"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-02"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-27"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-26"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-19"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:07.674576"
+    },
+    "NVDA": {
+      "company_info": {
+        "name": "NVIDIA CORP",
+        "cik": "1045810",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "144": 5,
+          "4": 5
+        },
+        "recent_filings": [
+          {
+            "form": "144",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-02"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:08.254961"
+    },
+    "JPM": {
+      "company_info": {
+        "name": "JPMorgan Chase & Co",
+        "cik": "19617",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "424B2": 9,
+          "424B3": 1
+        },
+        "recent_filings": [
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B3",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          }
+        ],
+        "total_recent_filings": 20983
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:09.604017"
+    },
+    "BAC": {
+      "company_info": {
+        "name": "Bank of America Corporation",
+        "cik": "70858",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "424B2": 9,
+          "FWP": 1
+        },
+        "recent_filings": [
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "FWP",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "424B2",
+            "filing_date": "2025-09-05"
+          }
+        ],
+        "total_recent_filings": 8685
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:10.397641"
+    },
+    "JNJ": {
+      "company_info": {
+        "name": "Johnson & Johnson",
+        "cik": "200406",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 4,
+          "144": 4,
+          "N-PX": 1,
+          "10-Q": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "N-PX",
+            "filing_date": "2025-08-26"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-22"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-18"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-15"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-07-24"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:11.177960"
+    },
+    "PFE": {
+      "company_info": {
+        "name": "PFIZER INC",
+        "cik": "78003",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 7,
+          "13F-HR": 1,
+          "10-Q": 1,
+          "8-K": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-19"
+          },
+          {
+            "form": "13F-HR",
+            "filing_date": "2025-08-11"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-08-05"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-08-05"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-07-16"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-07-02"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-07-02"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-07-02"
+          }
+        ],
+        "total_recent_filings": 1001
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:12.012872"
+    },
+    "AMZN": {
+      "company_info": {
+        "name": "AMAZON.COM, INC.",
+        "cik": "1018724",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 8,
+          "N-PX": 1,
+          "144": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-09-04"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-02"
+          },
+          {
+            "form": "N-PX",
+            "filing_date": "2025-08-27"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-22"
+          }
+        ],
+        "total_recent_filings": 1006
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:12.698525"
+    },
+    "WMT": {
+      "company_info": {
+        "name": "Walmart Inc.",
+        "cik": "104169",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "8-K": 1,
+          "4": 3,
+          "144": 3,
+          "N-PX": 1,
+          "IRANNOTICE": 1,
+          "10-Q": 1
+        },
+        "recent_filings": [
+          {
+            "form": "8-K",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-03"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-09-02"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-09-02"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "N-PX",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "IRANNOTICE",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-08-29"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-28"
+          }
+        ],
+        "total_recent_filings": 1003
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:13.462935"
+    },
+    "XOM": {
+      "company_info": {
+        "name": "Exxon Mobil Corporation",
+        "cik": "34088",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "4": 1,
+          "10-Q": 1,
+          "8-K": 3,
+          "11-K": 1,
+          "3/A": 1,
+          "DEFA14A": 2,
+          "SD": 1
+        },
+        "recent_filings": [
+          {
+            "form": "4",
+            "filing_date": "2025-08-25"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-08-04"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-08-01"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-07-07"
+          },
+          {
+            "form": "11-K",
+            "filing_date": "2025-06-12"
+          },
+          {
+            "form": "3/A",
+            "filing_date": "2025-06-03"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-05-30"
+          },
+          {
+            "form": "DEFA14A",
+            "filing_date": "2025-05-20"
+          },
+          {
+            "form": "DEFA14A",
+            "filing_date": "2025-05-20"
+          },
+          {
+            "form": "SD",
+            "filing_date": "2025-05-15"
+          }
+        ],
+        "total_recent_filings": 1005
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:14.758347"
+    },
+    "TSLA": {
+      "company_info": {
+        "name": "Tesla, Inc.",
+        "cik": "1318605",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {},
+      "calculated_ratios": {},
+      "filing_summary": {
+        "form_counts": {
+          "DEFA14A": 1,
+          "8-K": 3,
+          "PRE 14A": 1,
+          "4": 3,
+          "144": 1,
+          "10-Q": 1
+        },
+        "recent_filings": [
+          {
+            "form": "DEFA14A",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "PRE 14A",
+            "filing_date": "2025-09-05"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-28"
+          },
+          {
+            "form": "144",
+            "filing_date": "2025-08-26"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-08-04"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-08-04"
+          },
+          {
+            "form": "10-Q",
+            "filing_date": "2025-07-24"
+          },
+          {
+            "form": "8-K",
+            "filing_date": "2025-07-23"
+          },
+          {
+            "form": "4",
+            "filing_date": "2025-07-15"
+          }
+        ],
+        "total_recent_filings": 1000
+      },
+      "data_quality": {
+        "total_metrics_available": 0,
+        "complete_metrics": 0,
+        "completeness_percentage": 0,
+        "key_metrics_complete": 0,
+        "key_completeness_percentage": 0.0,
+        "quality_rating": "Limited",
+        "data_recency": "Unknown"
+      },
+      "extraction_timestamp": "2025-09-07T14:40:15.419320"
+    }
+  },
+  "data_type": "SEC EDGAR Comprehensive Company Data",
+  "source": "U.S. Securities and Exchange Commission"
+}

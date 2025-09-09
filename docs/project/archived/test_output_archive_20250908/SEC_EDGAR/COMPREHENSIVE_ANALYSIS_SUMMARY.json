@@ -1,0 +1,93 @@
+{
+  "description": "FRED-style comprehensive analysis summary of SEC EDGAR financial data",
+  "timestamp": "2025-09-07T14:40:15.426779",
+  "sample_data": {
+    "analysis_overview": {
+      "total_companies_analyzed": 13,
+      "successful_data_extractions": 13,
+      "success_rate_percentage": 100.0,
+      "analysis_timestamp": "2025-09-07T14:40:15.422936",
+      "data_source": "SEC EDGAR API (data.sec.gov)"
+    },
+    "market_aggregates": {
+      "total_revenue_analyzed": 0,
+      "total_assets_analyzed": 0,
+      "average_company_revenue": 0.0,
+      "average_company_assets": 0.0
+    },
+    "performance_leaders": {
+      "highest_revenue_company": null,
+      "highest_roe_company": null
+    },
+    "sector_insights": {
+      "sectors_analyzed": [
+        "Technology",
+        "Financial Services",
+        "Healthcare",
+        "Consumer Discretionary",
+        "Consumer Staples",
+        "Energy",
+        "Automotive"
+      ],
+      "most_companies_sector": "Technology",
+      "sector_performance_summary": {
+        "Technology": {
+          "companies": 5,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Financial Services": {
+          "companies": 2,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Healthcare": {
+          "companies": 2,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Consumer Discretionary": {
+          "companies": 1,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Consumer Staples": {
+          "companies": 1,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Energy": {
+          "companies": 1,
+          "avg_roe": 0,
+          "total_revenue": 0
+        },
+        "Automotive": {
+          "companies": 1,
+          "avg_roe": 0,
+          "total_revenue": 0
+        }
+      }
+    },
+    "data_quality_assessment": {
+      "quality_distribution": {
+        "Limited": 13
+      },
+      "high_quality_companies": 0,
+      "data_reliability": "Moderate"
+    },
+    "key_insights": [
+      "Technology sector dominates analysis with 5 companies",
+      "Technology sector shows strongest profitability with 0.0% average ROE",
+      "Data quality is strong: 0% of companies have excellent or good data completeness"
+    ],
+    "methodology": {
+      "data_source": "SEC EDGAR Company Facts API",
+      "rate_limiting": "10 requests per second (SEC compliance)",
+      "authentication": "None required (public data)",
+      "data_freshness": "Real-time SEC filings",
+      "financial_concepts": "US-GAAP XBRL taxonomy"
+    }
+  },
+  "data_type": "SEC EDGAR Comprehensive Summary",
+  "source": "U.S. Securities and Exchange Commission"
+}

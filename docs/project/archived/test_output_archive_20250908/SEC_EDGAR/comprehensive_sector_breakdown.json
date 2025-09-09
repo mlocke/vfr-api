@@ -1,0 +1,52 @@
+{
+  "description": "SEC EDGAR sector analysis with performance comparisons and industry insights",
+  "timestamp": "2025-09-07T00:46:42.310200",
+  "sample_data": {
+    "Technology": {
+      "company_count": 3,
+      "companies": [
+        {
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
+          "revenue": 0,
+          "roe": 0
+        },
+        {
+          "symbol": "MSFT",
+          "name": "MICROSOFT CORPORATION",
+          "revenue": 0,
+          "roe": 0
+        },
+        {
+          "symbol": "GOOGL",
+          "name": "Alphabet Inc.",
+          "revenue": 0,
+          "roe": 0
+        }
+      ],
+      "averages": {
+        "revenue": 0,
+        "roe": 0
+      },
+      "leaders": {
+        "revenue": {
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
+          "revenue": 0,
+          "roe": 0
+        },
+        "roe": {
+          "symbol": "AAPL",
+          "name": "Apple Inc.",
+          "revenue": 0,
+          "roe": 0
+        }
+      },
+      "totals": {
+        "sector_revenue": 0
+      }
+    }
+  },
+  "data_type": "SEC EDGAR Sector Analysis",
+  "source": "U.S. Securities and Exchange Commission"
+}

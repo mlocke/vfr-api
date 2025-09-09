@@ -1,0 +1,131 @@
+{
+	"description": "Search results for popular economic topics in FRED database",
+	"timestamp": "2025-09-06T16:28:15.275617",
+	"sample_data": {
+		"unemployment": {
+			"search_term": "unemployment",
+			"total_found": 53096,
+			"sample_results": [
+				{
+					"id": "UNRATE",
+					"title": "Unemployment Rate",
+					"frequency": "Monthly",
+					"units": "Percent",
+					"seasonal_adjustment": "Seasonally Adjusted"
+				},
+				{
+					"id": "UNRATENSA",
+					"title": "Unemployment Rate",
+					"frequency": "Monthly",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "UNEMPLOY",
+					"title": "Unemployment Level",
+					"frequency": "Monthly",
+					"units": "Thousands of Persons",
+					"seasonal_adjustment": "Seasonally Adjusted"
+				},
+				{
+					"id": "CCSA",
+					"title": "Continued Claims (Insured Unemployment)",
+					"frequency": "Weekly, Ending Saturday",
+					"units": "Number",
+					"seasonal_adjustment": "Seasonally Adjusted"
+				},
+				{
+					"id": "CCNSA",
+					"title": "Continued Claims (Insured Unemployment)",
+					"frequency": "Weekly, Ending Saturday",
+					"units": "Number",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				}
+			]
+		},
+		"housing": {
+			"search_term": "housing",
+			"total_found": 195086,
+			"sample_results": [
+				{
+					"id": "CSUSHPINSA",
+					"title": "S&P CoreLogic Case-Shiller U.S. National Home Price Index",
+					"frequency": "Monthly",
+					"units": "Index Jan 2000=100",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "MSPUS",
+					"title": "Median Sales Price of Houses Sold for the United States",
+					"frequency": "Quarterly",
+					"units": "Dollars",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "CSUSHPISA",
+					"title": "S&P CoreLogic Case-Shiller U.S. National Home Price Index",
+					"frequency": "Monthly",
+					"units": "Index Jan 2000=100",
+					"seasonal_adjustment": "Seasonally Adjusted"
+				},
+				{
+					"id": "HOUST",
+					"title": "New Privately-Owned Housing Units Started: Total Units",
+					"frequency": "Monthly",
+					"units": "Thousands of Units",
+					"seasonal_adjustment": "Seasonally Adjusted Annual Rate"
+				},
+				{
+					"id": "HOUSTNSA",
+					"title": "New Privately-Owned Housing Units Started: Total Units",
+					"frequency": "Monthly",
+					"units": "Thousands of Units",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				}
+			]
+		},
+		"inflation": {
+			"search_term": "inflation",
+			"total_found": 17525,
+			"sample_results": [
+				{
+					"id": "DFII10",
+					"title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis, Inflation-Indexed",
+					"frequency": "Daily",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "FII10",
+					"title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis, Inflation-Indexed",
+					"frequency": "Monthly",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "WFII10",
+					"title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis, Inflation-Indexed",
+					"frequency": "Weekly, Ending Friday",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "RIFLGFCY10XIINA",
+					"title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis, Inflation-Indexed",
+					"frequency": "Annual",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				},
+				{
+					"id": "T10YIE",
+					"title": "10-Year Breakeven Inflation Rate",
+					"frequency": "Daily",
+					"units": "Percent",
+					"seasonal_adjustment": "Not Seasonally Adjusted"
+				}
+			]
+		}
+	},
+	"data_type": "FRED Economic Data",
+	"source": "Federal Reserve Bank of St. Louis"
+}

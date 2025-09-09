@@ -1,0 +1,158 @@
+{
+  "data_type": "Treasury Debt to the Penny",
+  "source": "U.S. Treasury Fiscal Data",
+  "timestamp": "2025-09-07T14:40:25.293310",
+  "latest_debt": {
+    "amount": 37430128115822.76,
+    "date": "2025-09-04",
+    "formatted_amount": "$37,430,128,115,823",
+    "amount_trillions": "$37.43T"
+  },
+  "trend_analysis": {
+    "period_change": 708597082219.7891,
+    "period_change_percent": 1.93,
+    "period_change_formatted": "$708,597,082,220",
+    "direction": "increasing",
+    "daily_average_change": 23619902740.659634
+  },
+  "records_count": 30,
+  "raw_data": [
+    {
+      "record_date": "2025-09-04",
+      "debt_held_public_amt": "30121675356508.43",
+      "intragov_hold_amt": "7308452759314.33",
+      "tot_pub_debt_out_amt": "37430128115822.76",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "09",
+      "record_calendar_day": "04"
+    },
+    {
+      "record_date": "2025-09-03",
+      "debt_held_public_amt": "30106522172043.14",
+      "intragov_hold_amt": "7306157791837.03",
+      "tot_pub_debt_out_amt": "37412679963880.17",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "09",
+      "record_calendar_day": "03"
+    },
+    {
+      "record_date": "2025-09-02",
+      "debt_held_public_amt": "30105889987086.45",
+      "intragov_hold_amt": "7307648440429.74",
+      "tot_pub_debt_out_amt": "37413538427516.19",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "09",
+      "record_calendar_day": "02"
+    },
+    {
+      "record_date": "2025-08-29",
+      "debt_held_public_amt": "29968531307467.56",
+      "intragov_hold_amt": "7305734610439.47",
+      "tot_pub_debt_out_amt": "37274265917907.03",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "29"
+    },
+    {
+      "record_date": "2025-08-28",
+      "debt_held_public_amt": "29931514784077.08",
+      "intragov_hold_amt": "7378639186133.68",
+      "tot_pub_debt_out_amt": "37310153970210.76",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "28"
+    },
+    {
+      "record_date": "2025-08-27",
+      "debt_held_public_amt": "29904188921878.34",
+      "intragov_hold_amt": "7379779979565.20",
+      "tot_pub_debt_out_amt": "37283968901443.54",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "27"
+    },
+    {
+      "record_date": "2025-08-26",
+      "debt_held_public_amt": "29905784737041.34",
+      "intragov_hold_amt": "7299101761212.05",
+      "tot_pub_debt_out_amt": "37204886498253.39",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "26"
+    },
+    {
+      "record_date": "2025-08-25",
+      "debt_held_public_amt": "29858744380962.86",
+      "intragov_hold_amt": "7395478523758.11",
+      "tot_pub_debt_out_amt": "37254222904720.97",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "25"
+    },
+    {
+      "record_date": "2025-08-22",
+      "debt_held_public_amt": "29858032327748.39",
+      "intragov_hold_amt": "7376033821530.57",
+      "tot_pub_debt_out_amt": "37234066149278.96",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "22"
+    },
+    {
+      "record_date": "2025-08-21",
+      "debt_held_public_amt": "29860626144050.13",
+      "intragov_hold_amt": "7371662517973.78",
+      "tot_pub_debt_out_amt": "37232288662023.91",
+      "src_line_nbr": "1",
+      "record_fiscal_year": "2025",
+      "record_fiscal_quarter": "4",
+      "record_calendar_year": "2025",
+      "record_calendar_quarter": "3",
+      "record_calendar_month": "08",
+      "record_calendar_day": "21"
+    }
+  ],
+  "metadata": {
+    "query_params": {
+      "page[size]": 30,
+      "sort": "-record_date"
+    },
+    "total_records_available": 30
+  }
+}

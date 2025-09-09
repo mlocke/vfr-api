@@ -1,0 +1,21 @@
+{
+  "description": "Structured company financial facts for Apple Inc. with key metrics extracted and organized for financial analysis",
+  "timestamp": "2025-09-07T00:14:49.119378",
+  "sample_data": {
+    "company_info": {
+      "name": "Apple Inc.",
+      "cik": 320193,
+      "sic": null,
+      "sicDescription": null,
+      "tickers": [],
+      "exchanges": []
+    },
+    "financial_metrics": {},
+    "metadata": {
+      "concepts_available": 500,
+      "data_retrieved": "2025-09-07T00:14:49.119347"
+    }
+  },
+  "data_type": "SEC EDGAR Financial Data",
+  "source": "U.S. Securities and Exchange Commission"
+}

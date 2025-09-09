@@ -1,0 +1,46 @@
+{
+	"description": "Recently updated economic series from FRED database",
+	"timestamp": "2025-09-06T16:28:00.499634",
+	"sample_data": {
+		"total_updates": 10,
+		"recent_updates": [
+			{
+				"id": "DFEDTARU",
+				"title": "Federal Funds Target Range - Upper Limit",
+				"last_updated": "2025-09-06 07:30:02-05",
+				"frequency": "Daily, 7-Day",
+				"units": "Percent"
+			},
+			{
+				"id": "DFEDTARL",
+				"title": "Federal Funds Target Range - Lower Limit",
+				"last_updated": "2025-09-06 07:30:01-05",
+				"frequency": "Daily, 7-Day",
+				"units": "Percent"
+			},
+			{
+				"id": "NASDAQSX50GI",
+				"title": "OMX Stockholm Industrials GI",
+				"last_updated": "2025-09-05 23:41:51-05",
+				"frequency": "Daily",
+				"units": "Index"
+			},
+			{
+				"id": "NASDAQSX402040GI",
+				"title": "OMX Stockholm Personal Goods GI",
+				"last_updated": "2025-09-05 23:41:50-05",
+				"frequency": "Daily",
+				"units": "Index"
+			},
+			{
+				"id": "NASDAQSX5020PI",
+				"title": "OMX Stockholm Industrial Goods and Services PI",
+				"last_updated": "2025-09-05 23:41:50-05",
+				"frequency": "Daily",
+				"units": "Index"
+			}
+		]
+	},
+	"data_type": "FRED Economic Data",
+	"source": "Federal Reserve Bank of St. Louis"
+}

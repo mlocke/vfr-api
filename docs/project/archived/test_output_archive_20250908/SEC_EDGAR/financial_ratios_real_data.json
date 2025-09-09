@@ -1,0 +1,72 @@
+{
+  "description": "Real calculated financial ratios for Apple Inc. including liquidity, leverage, and profitability metrics",
+  "timestamp": "2025-09-07T01:12:19.266516",
+  "sample_data": {
+    "company_info": {
+      "name": "Apple Inc.",
+      "cik": 320193,
+      "sic": null,
+      "sicDescription": null,
+      "tickers": [],
+      "exchanges": []
+    },
+    "raw_financial_values": {
+      "revenue": 265595000000,
+      "net_income": 93736000000,
+      "total_assets": 364980000000,
+      "total_liabilities": 308030000000,
+      "stockholders_equity": 56950000000,
+      "current_assets": 152987000000,
+      "current_liabilities": 176392000000,
+      "operating_income": 123216000000,
+      "gross_profit": 180683000000
+    },
+    "calculated_ratios": {
+      "current_ratio": {
+        "value": 0.87,
+        "description": "Current Assets / Current Liabilities",
+        "category": "Liquidity"
+      },
+      "debt_to_assets": {
+        "value": 0.844,
+        "description": "Total Liabilities / Total Assets",
+        "category": "Leverage"
+      },
+      "debt_to_equity": {
+        "value": 5.41,
+        "description": "Total Liabilities / Stockholders Equity",
+        "category": "Leverage"
+      },
+      "net_profit_margin": {
+        "value": 35.29,
+        "description": "(Net Income / Revenue) \u00d7 100",
+        "category": "Profitability",
+        "unit": "percentage"
+      },
+      "gross_profit_margin": {
+        "value": 68.03,
+        "description": "(Gross Profit / Revenue) \u00d7 100",
+        "category": "Profitability",
+        "unit": "percentage"
+      },
+      "return_on_equity": {
+        "value": 164.59,
+        "description": "(Net Income / Stockholders Equity) \u00d7 100",
+        "category": "Profitability",
+        "unit": "percentage"
+      },
+      "return_on_assets": {
+        "value": 25.68,
+        "description": "(Net Income / Total Assets) \u00d7 100",
+        "category": "Profitability",
+        "unit": "percentage"
+      }
+    },
+    "metadata": {
+      "calculation_date": "2025-09-07T01:12:19.266488",
+      "data_source": "SEC EDGAR Company Facts"
+    }
+  },
+  "data_type": "SEC EDGAR Financial Data",
+  "source": "U.S. Securities and Exchange Commission"
+}

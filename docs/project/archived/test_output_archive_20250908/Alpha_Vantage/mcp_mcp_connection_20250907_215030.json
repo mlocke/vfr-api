@@ -1,0 +1,12 @@
+{
+  "test_name": "mcp_connection",
+  "timestamp": "2025-09-07T21:50:30.591561",
+  "success": false,
+  "execution_time_seconds": 1.9073486328125e-06,
+  "api_key_used": "4M20CQ7QT67RJ835",
+  "mcp_protocol": "JSON-RPC 2.0",
+  "data": {
+    "error_details": "MCP client not available"
+  },
+  "error": "MCP client not available"
+}

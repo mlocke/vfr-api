@@ -1,0 +1,218 @@
+{
+  "description": "Detailed SEC EDGAR company financial data with metrics, ratios, and quality assessment",
+  "timestamp": "2025-09-07T00:46:42.309832",
+  "sample_data": {
+    "AAPL": {
+      "company_info": {
+        "name": "Apple Inc.",
+        "cik": "320193",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {
+        "Revenue": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "NetIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Assets": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Liabilities": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "StockholdersEquity": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "AssetsCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "LiabilitiesCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Cash": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "OperatingIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "GrossProfit": {
+          "value": null,
+          "date": null,
+          "filed": null
+        }
+      },
+      "calculated_ratios": {},
+      "data_quality": {
+        "total_metrics": 10,
+        "complete_metrics": 0,
+        "completeness_percentage": 0.0,
+        "quality_rating": "Limited"
+      },
+      "extraction_timestamp": "2025-09-07T00:46:41.593619"
+    },
+    "MSFT": {
+      "company_info": {
+        "name": "MICROSOFT CORPORATION",
+        "cik": "789019",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {
+        "Revenue": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "NetIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Assets": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Liabilities": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "StockholdersEquity": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "AssetsCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "LiabilitiesCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Cash": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "OperatingIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "GrossProfit": {
+          "value": null,
+          "date": null,
+          "filed": null
+        }
+      },
+      "calculated_ratios": {},
+      "data_quality": {
+        "total_metrics": 10,
+        "complete_metrics": 0,
+        "completeness_percentage": 0.0,
+        "quality_rating": "Limited"
+      },
+      "extraction_timestamp": "2025-09-07T00:46:41.970069"
+    },
+    "GOOGL": {
+      "company_info": {
+        "name": "Alphabet Inc.",
+        "cik": "1652044",
+        "sic": null,
+        "sicDescription": null,
+        "tickers": [],
+        "exchanges": []
+      },
+      "financial_metrics": {
+        "Revenue": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "NetIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Assets": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Liabilities": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "StockholdersEquity": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "AssetsCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "LiabilitiesCurrent": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "Cash": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "OperatingIncome": {
+          "value": null,
+          "date": null,
+          "filed": null
+        },
+        "GrossProfit": {
+          "value": null,
+          "date": null,
+          "filed": null
+        }
+      },
+      "calculated_ratios": {},
+      "data_quality": {
+        "total_metrics": 10,
+        "complete_metrics": 0,
+        "completeness_percentage": 0.0,
+        "quality_rating": "Limited"
+      },
+      "extraction_timestamp": "2025-09-07T00:46:42.306156"
+    }
+  },
+  "data_type": "SEC EDGAR Company Details",
+  "source": "U.S. Securities and Exchange Commission"
+}
