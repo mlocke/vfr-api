@@ -228,7 +228,9 @@ Data Collection Architecture:
 - **🚀 Data.gov MCP Server** - LIVE: World's first government financial data MCP collector ⭐ **VALIDATED & PRODUCTION READY**
   - **SEC XBRL Data**: Real-time quarterly financials for 2,500+ public companies
   - **Institutional Holdings**: Form 13F tracking of smart money positions  
-  - **🆕 Treasury Yield Curve Analysis**: Advanced macroeconomic analysis with recession indicators ⭐ **NEW**
+  - **🆕 Treasury Yield Curve Analysis**: Advanced macroeconomic analysis with recession indicators ⭐
+  - **🆕 Interest Rate Sensitivity Analysis**: Duration, convexity, and portfolio risk metrics ⭐
+  - **🔥 Rate Impact Prediction**: Multi-scenario forward-looking analysis with investment recommendations ⭐ **NEW**
   - **Financial Analysis Tools**: AI-native SEC data processing with MCP protocol
   - **Test Results**: 75% API success rate, 500+ financial facts per company
   - **Status**: Production deployment ready with comprehensive test validation

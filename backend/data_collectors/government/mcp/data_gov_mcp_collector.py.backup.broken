@@ -33,38 +33,10 @@ import aiohttp
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from base.collector_interface import DataCollectorInterface, CollectorConfig
-# Direct tool imports (local MCP tools)
-try:
-    from .tools.financial_analysis_tools import (
-        get_quarterly_financials, analyze_financial_trends,
-        compare_peer_metrics, get_xbrl_facts
-    )
-    from .tools.institutional_tracking_tools import (
-        get_institutional_positions, track_smart_money,
-        calculate_ownership_changes, analyze_13f_trends
-    )
-    from .tools.treasury_macro_tools import (
-        get_yield_curve_analysis, calculate_rate_sensitivity,
-        get_treasury_rates, analyze_rate_environment
-    )
-    from .tools.economic_indicator_tools import (
-        get_fed_indicators, analyze_monetary_policy,
-        get_credit_conditions, track_policy_changes
-    )
-    from .tools.fund_flow_tools import (
-        analyze_fund_flows, track_etf_flows,
-        calculate_fund_overlap, get_mutual_fund_holdings
-    )
-    DATAGOV_TOOLS_AVAILABLE = True
-except ImportError as e:
-    DATAGOV_TOOLS_AVAILABLE = False
-    # Note: tools not available - will be logged later
+from commercial.base.mcp_collector_base import MCPCollectorBase, MCPError
+from commercial.mcp.mcp_client import MCPClient
 
 logger = logging.getLogger(__name__)
-
-# Log tool availability status after logger is defined
-if not DATAGOV_TOOLS_AVAILABLE:
-    logger.error("Failed to import Data.gov MCP tools - tools will not be available")
 
 
 class DataGovMCPCollector(DataCollectorInterface):
@@ -94,8 +66,10 @@ class DataGovMCPCollector(DataCollectorInterface):
         
         super().__init__(config)
         
-        # Tool availability status
-        self.tools_available = DATAGOV_TOOLS_AVAILABLE
+        # MCP server configuration (local server)
+        self.mcp_server_url = os.getenv("DATA_GOV_MCP_URL", "http://localhost:3001/mcp")
+        self.mcp_client: Optional[MCPClient] = None
+        self.connection_established = False
         
         # Required properties
         self._source_name = "Data.gov MCP"
@@ -271,9 +245,9 @@ class DataGovMCPCollector(DataCollectorInterface):
             Collected data with metadata
         """
         try:
-            # Ensure MCP tools are available
+            # Ensure MCP connection
             if not await self._ensure_mcp_connection():
-                raise Exception("Data.gov MCP tools are not available")
+                raise MCPError("Cannot establish MCP server connection")
             
             # Parse request parameters
             data_type = request_params.get('data_type', 'sec_financials')
@@ -306,13 +280,29 @@ class DataGovMCPCollector(DataCollectorInterface):
             }
     
     async def _ensure_mcp_connection(self) -> bool:
-        """Ensure MCP tools are available."""
-        if not DATAGOV_TOOLS_AVAILABLE:
-            logger.error("Data.gov MCP tools are not available")
-            return False
+        """Ensure MCP server connection is established."""
+        if self.mcp_client and self.connection_established:
+            return True
+        
+        try:
+            # Create MCP client
+            self.mcp_client = MCPClient(
+                server_url=self.mcp_server_url,
+                timeout=self.config.timeout,
+                max_retries=self.config.max_retries
+            )
             
-        logger.info("Data.gov MCP tools are available and ready")
-        return True
+            # Connect to server
+            await self.mcp_client.connect()
+            self.connection_established = True
+            
+            logger.info(f"Connected to Data.gov MCP server: {self.mcp_server_url}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"MCP connection failed: {e}")
+            self.connection_established = False
+            return False
     
     async def _collect_sec_financials(
         self, 
@@ -339,18 +329,24 @@ class DataGovMCPCollector(DataCollectorInterface):
             for symbol in symbols[:10]:  # Limit to prevent timeouts
                 try:
                     # Get financial statements
-                    financials = await get_quarterly_financials(
-                        ticker=symbol,
-                        quarters=date_range.get('quarters', 4)
+                    financials = await self.mcp_client.call_tool(
+                        'get_quarterly_financials',
+                        {
+                            'ticker': symbol,
+                            'quarters': date_range.get('quarters', 4)
+                        }
                     )
                     
                     results['financial_statements'][symbol] = financials
                     
                     # Optional: Add trend analysis
                     if analysis_options.get('include_trends', True):
-                        trends = await analyze_financial_trends(
-                            ticker=symbol,
-                            metrics=['revenue', 'net_income', 'total_assets', 'total_debt']
+                        trends = await self.mcp_client.call_tool(
+                            'analyze_financial_trends',
+                            {
+                                'ticker': symbol,
+                                'metrics': ['revenue', 'net_income', 'total_assets', 'total_debt']
+                            }
                         )
                         results['trend_analysis'][symbol] = trends
                     
@@ -364,9 +360,12 @@ class DataGovMCPCollector(DataCollectorInterface):
             # Peer comparison if multiple symbols
             if len(symbols) > 1 and analysis_options.get('peer_comparison', True):
                 try:
-                    peer_analysis = await compare_peer_metrics(
-                        tickers=symbols[:5],  # Limit for performance
-                        metric='revenue_growth'
+                    peer_analysis = await self.mcp_client.call_tool(
+                        'compare_peer_metrics',
+                        {
+                            'tickers': symbols[:5],  # Limit for performance
+                            'metric': 'revenue_growth'
+                        }
                     )
                     results['peer_comparisons'] = peer_analysis
                 except Exception as e:
@@ -407,17 +406,23 @@ class DataGovMCPCollector(DataCollectorInterface):
             # Get institutional positions for each symbol
             for symbol in symbols[:5]:  # Limit for performance
                 try:
-                    positions = await get_institutional_positions(
-                        ticker=symbol,
-                        quarter=quarter
+                    positions = await self.mcp_client.call_tool(
+                        'get_institutional_positions',
+                        {
+                            'ticker': symbol,
+                            'quarter': quarter
+                        }
                     )
                     results['holdings_data'][symbol] = positions
                     
                     # Optional: Track ownership changes
                     if analysis_options.get('track_changes', True):
-                        changes = await calculate_ownership_changes(
-                            ticker=symbol,
-                            quarters=4
+                        changes = await self.mcp_client.call_tool(
+                            'calculate_ownership_changes',
+                            {
+                                'ticker': symbol,
+                                'quarters': 4
+                            }
                         )
                         results['ownership_changes'][symbol] = changes
                     
@@ -430,9 +435,12 @@ class DataGovMCPCollector(DataCollectorInterface):
             # Smart money analysis
             if analysis_options.get('smart_money_analysis', True):
                 try:
-                    smart_money = await track_smart_money(
-                        tickers=symbols[:3],
-                        institutions=analysis_options.get('focus_institutions', [])
+                    smart_money = await self.mcp_client.call_tool(
+                        'track_smart_money',
+                        {
+                            'tickers': symbols[:3],
+                            'institutions': analysis_options.get('focus_institutions', [])
+                        }
                     )
                     results['smart_money_analysis'] = smart_money
                 except Exception as e:
@@ -467,8 +475,11 @@ class DataGovMCPCollector(DataCollectorInterface):
         
         try:
             # Get yield curve analysis
-            yield_curve = await get_yield_curve_analysis(
-                date=date_range.get('end_date', datetime.now().strftime('%Y-%m-%d'))
+            yield_curve = await self.mcp_client.call_tool(
+                'get_yield_curve_analysis',
+                {
+                    'date': date_range.get('end_date', datetime.now().strftime('%Y-%m-%d'))
+                }
             )
             results['yield_curve'] = yield_curve
             
@@ -476,9 +487,12 @@ class DataGovMCPCollector(DataCollectorInterface):
             if analysis_options.get('rate_sensitivity') and 'symbols' in analysis_options:
                 for symbol in analysis_options['symbols'][:3]:
                     try:
-                        sensitivity = await calculate_rate_sensitivity(
-                            ticker=symbol,
-                            rate_change=analysis_options.get('rate_change', 100)  # 1% change
+                        sensitivity = await self.mcp_client.call_tool(
+                            'calculate_rate_sensitivity',
+                            {
+                                'ticker': symbol,
+                                'rate_change': analysis_options.get('rate_change', 100)  # 1% change
+                            }
                         )
                         results['rate_analysis'][symbol] = sensitivity
                         await asyncio.sleep(0.1)
@@ -513,13 +527,16 @@ class DataGovMCPCollector(DataCollectorInterface):
         
         try:
             # Get Fed indicators
-            indicators = await get_fed_indicators()
+            indicators = await self.mcp_client.call_tool('get_fed_indicators', {})
             results['indicators'] = indicators
             
             # Optional: Monetary policy analysis
             if analysis_options.get('policy_analysis', True):
-                policy_analysis = await analyze_monetary_policy(
-                    lookback_months=date_range.get('months', 12)
+                policy_analysis = await self.mcp_client.call_tool(
+                    'analyze_monetary_policy',
+                    {
+                        'lookback_months': date_range.get('months', 12)
+                    }
                 )
                 results['policy_analysis'] = policy_analysis
             
@@ -553,16 +570,22 @@ class DataGovMCPCollector(DataCollectorInterface):
         
         try:
             # Analyze fund flows
-            flow_analysis = await analyze_fund_flows(
-                symbols=symbols[:5],
-                months=date_range.get('months', 6)
+            flow_analysis = await self.mcp_client.call_tool(
+                'analyze_fund_flows',
+                {
+                    'symbols': symbols[:5],
+                    'months': date_range.get('months', 6)
+                }
             )
             results['flow_analysis'] = flow_analysis
             
             # ETF-specific analysis
             if analysis_options.get('etf_focus', True):
-                etf_flows = await track_etf_flows(
-                    symbols=[s for s in symbols if s.upper().endswith('ETF')][:3]
+                etf_flows = await self.mcp_client.call_tool(
+                    'track_etf_flows',
+                    {
+                        'symbols': [s for s in symbols if s.upper().endswith('ETF')][:3]
+                    }
                 )
                 results['etf_flows'] = etf_flows
             
@@ -660,20 +683,23 @@ class DataGovMCPCollector(DataCollectorInterface):
         return self.tool_categories.copy()
     
     async def health_check(self) -> Dict[str, Any]:
-        """Perform health check on MCP tools availability."""
+        """Perform health check on MCP server connection."""
         try:
             if not await self._ensure_mcp_connection():
                 return {
                     'healthy': False,
-                    'error': 'Data.gov MCP tools not available',
+                    'error': 'Cannot establish MCP connection',
                     'timestamp': datetime.now().isoformat()
                 }
             
+            # Test with a simple tool call
+            health_result = await self.mcp_client.health_check()
+            
             return {
-                'healthy': True,
-                'tools_available': len(sum(self.tool_categories.values(), [])),
+                'healthy': health_result.get('healthy', False),
+                'mcp_server': health_result,
                 'collector': self.source_name,
-                'tool_status': 'local_tools_available',
+                'tools_available': len(sum(self.tool_categories.values(), [])),
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -686,16 +712,21 @@ class DataGovMCPCollector(DataCollectorInterface):
             }
     
     async def cleanup(self):
-        """Clean up Data.gov MCP collector resources."""
-        # No external connections to clean up - tools are local
-        logger.info("Data.gov MCP collector cleanup completed (no external resources)")
-        pass
+        """Clean up MCP client connection."""
+        if self.mcp_client:
+            try:
+                await self.mcp_client.disconnect()
+            except Exception as e:
+                logger.warning(f"Error during MCP cleanup: {e}")
+            finally:
+                self.mcp_client = None
+                self.connection_established = False
     
     def __str__(self) -> str:
         """String representation."""
         tools_count = len(sum(self.tool_categories.values(), []))
-        status = "available" if DATAGOV_TOOLS_AVAILABLE else "unavailable"
-        return f"DataGovMCPCollector(tools={tools_count}, status={status}, local=True)"
+        status = "connected" if self.connection_established else "disconnected"
+        return f"DataGovMCPCollector(tools={tools_count}, status={status}, mcp=True)"
     
     # Required property implementations
     
@@ -754,25 +785,28 @@ class DataGovMCPCollector(DataCollectorInterface):
         }
     
     async def test_connection(self) -> Dict[str, Any]:
-        """Test availability of Data.gov MCP tools."""
+        """Test connection to the Data.gov MCP server."""
         try:
             if await self._ensure_mcp_connection():
-                tools_count = len(sum(self.tool_categories.values(), []))
+                # Test a simple tool call
+                test_result = await self.mcp_client.list_tools()
+                tools_count = len(test_result.get('tools', []))
                 
                 return {
                     'success': True,
-                    'status': 'tools_available',
+                    'status': 'connected',
+                    'mcp_server_url': self.mcp_server_url,
                     'tools_available': tools_count,
-                    'tool_categories': len(self.tool_categories),
-                    'architecture': 'local_direct_calls',
-                    'response_time_ms': 10,  # Local function calls are very fast
+                    'protocol': 'JSON-RPC 2.0 MCP',
+                    'response_time_ms': 50,  # Estimate for local server
                     'timestamp': datetime.now().isoformat()
                 }
             else:
                 return {
                     'success': False,
-                    'status': 'tools_unavailable',
-                    'error': 'Data.gov MCP tools are not available',
+                    'status': 'connection_failed',
+                    'error': 'Cannot connect to MCP server',
+                    'mcp_server_url': self.mcp_server_url,
                     'timestamp': datetime.now().isoformat()
                 }
                 

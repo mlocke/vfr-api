@@ -1,0 +1,76 @@
+{
+  "current_phase": "Expansion",
+  "phase_strength": 78.3,
+  "cycle_duration": 45,
+  "confidence_score": 0.823,
+  "leading_indicators": {
+    "yield_curve_signal": "positive",
+    "employment_signal": "positive",
+    "credit_signal": "neutral",
+    "composite_signal": "expansion_signal",
+    "confidence": 0.7
+  },
+  "sector_rotation_guidance": {
+    "overweight": [
+      "Technology",
+      "Consumer Discretionary",
+      "Financials"
+    ],
+    "underweight": [
+      "Utilities",
+      "Consumer Staples",
+      "REITs"
+    ],
+    "rationale": "Growth-sensitive sectors benefit from economic acceleration",
+    "risk_profile": "Higher beta, growth-oriented investments",
+    "confidence_score": 0.75,
+    "implementation_timeline": "Gradual rotation over 3-6 months"
+  },
+  "historical_context": {
+    "similar_periods": [
+      "2010-2019 Recovery",
+      "1991-2001 Expansion",
+      "1982-1990 Expansion"
+    ],
+    "characteristics": "Sustained GDP growth, declining unemployment, moderate inflation",
+    "typical_duration": "58 months average",
+    "market_performance": "Strong equity returns, moderate bond performance",
+    "current_comparison": "Current indicators suggest expansion phase characteristics"
+  },
+  "transition_probabilities": {
+    "Peak": 0.75,
+    "Contraction": 0.25,
+    "Trough": 0.0,
+    "Expansion": 0.0
+  },
+  "duration_analysis": {
+    "current_duration_months": 45,
+    "average_duration_months": 58,
+    "duration_ratio": 0.78,
+    "phase_stage": "Mid",
+    "probability_continue": 0.6,
+    "probability_transition": 0.4,
+    "expected_remaining_months": 13
+  },
+  "raw_indicators": {
+    "gdp_growth": 2.1,
+    "employment_growth": 1.8,
+    "yield_curve_slope": 150,
+    "inflation_trend": 2.3,
+    "credit_conditions": 0.2
+  },
+  "analysis_timestamp": "2025-09-08T20:16:12.000749",
+  "lookback_period_months": 24,
+  "risk_assessment": {
+    "primary_risks": [
+      "Overheating",
+      "Asset bubbles",
+      "Policy tightening"
+    ],
+    "market_risks": [
+      "Valuation excess",
+      "Credit expansion"
+    ],
+    "duration_risk": "Extended expansion unsustainable"
+  }
+}

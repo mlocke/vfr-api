@@ -36,10 +36,12 @@ from .government.fdic_collector import FDICCollector
 try:
     from .government.mcp.data_gov_mcp_collector import DataGovMCPCollector
     from .government.mcp.sec_edgar_mcp_collector import SECEdgarMCPCollector
+    from .government.mcp.treasury_mcp_collector import TreasuryMCPCollector
     GOVERNMENT_MCP_AVAILABLE = True
 except ImportError:
     DataGovMCPCollector = None
     SECEdgarMCPCollector = None
+    TreasuryMCPCollector = None
     GOVERNMENT_MCP_AVAILABLE = False
 
 # Commercial collector imports
@@ -93,6 +95,9 @@ class RequestType(Enum):
     BANKING_DATA = "banking_data"
     SEC_FILINGS = "sec_filings"
     INSIDER_TRADING = "insider_trading"
+    MACROECONOMIC_ANALYSIS = "macroeconomic_analysis"
+    INTEREST_RATES = "interest_rates"
+    RECESSION_INDICATORS = "recession_indicators"
     
     # Commercial data (paid sources)
     REAL_TIME_PRICES = "real_time_prices"
@@ -510,6 +515,48 @@ class CollectorRouter:
                 data_freshness="daily",  # Filings updated daily
                 reliability_score=98,  # Official SEC data source
                 coverage_score=95   # Excellent coverage for SEC filing data
+            )
+        
+        # Add Treasury MCP collector if available
+        if TreasuryMCPCollector:
+            registry['treasury_mcp'] = CollectorCapability(
+                collector_class=TreasuryMCPCollector,
+                quadrant=CollectorQuadrant.GOVERNMENT_MCP,
+                primary_use_cases=[
+                    RequestType.ECONOMIC_DATA,
+                    RequestType.FISCAL_DATA,
+                    RequestType.MACROECONOMIC_ANALYSIS,
+                    RequestType.INTEREST_RATES,
+                    RequestType.RECESSION_INDICATORS
+                ],
+                strengths=[
+                    'Economic cycle detection and analysis (NBER-quality)',
+                    'Treasury yield curve analysis with recession signals',
+                    'Interest rate sensitivity calculations for portfolios',
+                    'Rate impact predictions across asset classes',
+                    'Federal debt analysis and fiscal health indicators',
+                    'AI-optimized MCP tools for macroeconomic analysis',
+                    'Official Treasury data sources (no API keys required)',
+                    'Professional-grade investment timing intelligence',
+                    'Sector rotation guidance based on economic cycles',
+                    'Real-time economic phase classification'
+                ],
+                limitations=[
+                    'US-focused macroeconomic data only',
+                    'No international economic indicators',
+                    'Limited to government economic data sources',
+                    'Economic cycle detection requires historical context'
+                ],
+                max_companies=None,  # Macroeconomic analysis not company-specific
+                requires_specific_companies=False,  # Broad economic analysis
+                cost_per_request=0.0,  # Government Treasury data is free
+                monthly_quota=None,  # No limits on Treasury data
+                rate_limit_per_second=1.0,  # Respectful usage of government APIs
+                supports_mcp=True,  # Native MCP tool integration
+                protocol_preference=90,  # High preference for Treasury analysis
+                data_freshness="daily",  # Treasury data updated daily
+                reliability_score=97,  # Official Treasury data sources
+                coverage_score=85   # Excellent coverage for US macroeconomic data
             )
         
         return registry

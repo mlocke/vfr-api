@@ -109,8 +109,8 @@ What
 
 - [ ] **Create macroeconomic analysis MCP tools**
   - [x] ✅ Implement `get_yield_curve_analysis()` MCP tool **COMPLETED** ⭐
-  - [ ] Implement `calculate_rate_sensitivity()` MCP tool
-  - [ ] Implement `predict_rate_impact()` MCP tool
+  - [x] ✅ Implement `calculate_rate_sensitivity()` MCP tool **COMPLETED** ⭐
+  - [x] ✅ Implement `predict_rate_impact()` MCP tool **COMPLETED** ⭐ **NEW**
   - [ ] Add economic cycle detection and analysis
 
 ### **2.3 Data Quality & Validation** 🔍 **RELIABILITY**
