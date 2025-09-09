@@ -51,6 +51,7 @@ try:
     from .commercial.mcp.alpha_vantage_mcp_collector import AlphaVantageMCPCollector
     from .commercial.mcp.polygon_mcp_collector import PolygonMCPCollector
     from .commercial.mcp.yahoo_finance_mcp_collector import YahooFinanceMCPCollector
+    from .commercial.mcp.dappier_mcp_collector import DappierMCPCollector
     COMMERCIAL_COLLECTORS_AVAILABLE = True
 except ImportError:
     CommercialCollectorInterface = None
@@ -58,6 +59,7 @@ except ImportError:
     AlphaVantageMCPCollector = None
     PolygonMCPCollector = None
     YahooFinanceMCPCollector = None
+    DappierMCPCollector = None
     COMMERCIAL_COLLECTORS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -116,6 +118,13 @@ class RequestType(Enum):
     # Screening and discovery
     MARKET_SCREENING = "market_screening"
     STOCK_SCREENING = "stock_screening"
+    
+    # Web Intelligence (Dappier MCP)
+    REAL_TIME_WEB_SEARCH = "real_time_web_search"
+    MARKET_SENTIMENT_ANALYSIS = "market_sentiment_analysis"
+    AI_CONTENT_RECOMMENDATIONS = "ai_content_recommendations"
+    PREMIUM_MEDIA_ACCESS = "premium_media_access"
+    WEB_INTELLIGENCE_ENHANCEMENT = "web_intelligence_enhancement"
 
 @dataclass
 class CollectorCapability:
@@ -706,6 +715,52 @@ class CollectorRouter:
                 coverage_score=85  # Good coverage for core data
             )
         
+        # Add Dappier MCP collector if available (Web Intelligence)
+        if DappierMCPCollector:
+            registry['dappier_mcp'] = CollectorCapability(
+                collector_class=DappierMCPCollector,
+                quadrant=CollectorQuadrant.COMMERCIAL_MCP,
+                primary_use_cases=[
+                    RequestType.REAL_TIME_WEB_SEARCH,
+                    RequestType.MARKET_SENTIMENT_ANALYSIS,
+                    RequestType.AI_CONTENT_RECOMMENDATIONS,
+                    RequestType.PREMIUM_MEDIA_ACCESS,
+                    RequestType.WEB_INTELLIGENCE_ENHANCEMENT,
+                    RequestType.NEWS_ANALYSIS
+                ],
+                strengths=[
+                    'Real-time web search via Google index',
+                    'AI-powered content recommendations from premium brands',
+                    'Enhanced market sentiment analysis with web context',
+                    'Premium media access (Sportsnaut, iHeartDogs, WISH-TV)',
+                    'Breaking news and current events intelligence',
+                    'Complementary enhancement of existing financial analysis',
+                    'Multiple AI models (web search + market-specific)',
+                    '6 specialized content models for diverse coverage',
+                    'Advanced search algorithms (semantic, trending, recent)',
+                    'Web intelligence layer for comprehensive market context'
+                ],
+                limitations=[
+                    'API costs per request (not free like government sources)',
+                    'Requires Dappier API key and active subscription',
+                    'Web content quality varies by source',
+                    'Not suitable for core financial data (complementary only)',
+                    'Potential latency due to real-time web crawling',
+                    'Limited to web-accessible information only'
+                ],
+                max_companies=None,  # No company limits
+                requires_specific_companies=False,  # Can handle general queries
+                cost_per_request=0.01,  # Conservative estimate
+                monthly_quota=None,    # Cost-limited rather than quota-limited
+                rate_limit_per_second=1.0,  # Conservative to manage costs
+                supports_mcp=True,
+                mcp_tool_count=2,  # dappier_real_time_search + dappier_ai_recommendations
+                protocol_preference=85,  # High preference for web intelligence
+                data_freshness="real_time",  # Real-time web data
+                reliability_score=80,  # Web sources can be variable
+                coverage_score=95   # Excellent coverage for web intelligence
+            )
+        
         return registry
     
     def route_request(self, filter_criteria: Dict[str, Any]) -> List[DataCollectorInterface]:
@@ -810,7 +865,24 @@ class CollectorRouter:
                 logger.info("Government sources sufficient, skipping commercial sources")
                 return selected_collectors
         
-        # PRIORITY 2: Free Commercial MCP (Yahoo Finance - always try first!)
+        # PRIORITY 2A: Web Intelligence (Dappier MCP - check first for web-based queries)
+        if self._requires_web_intelligence(filter_criteria):
+            dappier = None
+            for capability in commercial_mcp:
+                if 'dappier' in capability.collector_class.__name__.lower():
+                    dappier = capability
+                    break
+            
+            if dappier:
+                selected_collectors.append(dappier)
+                logger.info(f"Selected Web Intelligence: Dappier MCP (specialized for web search and content discovery)")
+                
+                # For pure web intelligence requests, Dappier may be sufficient
+                if self._dappier_sufficient(filter_criteria):
+                    logger.info("Dappier sufficient for web intelligence request")
+                    return selected_collectors
+        
+        # PRIORITY 2B: Free Commercial MCP (Yahoo Finance - always try first for financial data!)
         commercial_mcp = quadrant_groups[CollectorQuadrant.COMMERCIAL_MCP]
         if commercial_mcp and self._requires_commercial_data(filter_criteria):
             # First, try FREE Yahoo Finance MCP
@@ -975,6 +1047,85 @@ class CollectorRouter:
         
         filter_str = str(filter_criteria).lower()
         return any(keyword in filter_str for keyword in commercial_keywords)
+    
+    def _requires_web_intelligence(self, filter_criteria: Dict[str, Any]) -> bool:
+        """
+        Check if request requires web intelligence capabilities (Dappier MCP).
+        
+        Web intelligence is needed for:
+        - Real-time web search requests
+        - Market sentiment analysis requiring web context
+        - Content discovery from premium media brands  
+        - Breaking news and current events
+        - Web-enhanced financial intelligence
+        """
+        query = filter_criteria.get('query', '').lower()
+        search_type = filter_criteria.get('web_search_type', '')
+        content_discovery = filter_criteria.get('content_discovery', '')
+        data_freshness = filter_criteria.get('data_freshness', '')
+        
+        # High priority web intelligence triggers
+        web_intelligence_keywords = [
+            'breaking', 'news', 'current', 'latest', 'real-time web', 
+            'sentiment', 'market mood', 'web search', 'content discovery'
+        ]
+        
+        if any(keyword in query for keyword in web_intelligence_keywords):
+            return True
+        
+        # Content discovery requests
+        content_keywords = [
+            'sports', 'lifestyle', 'sustainability', 'pets', 'dogs', 'cats',
+            'local news', 'politics', 'multicultural', 'premium media'
+        ]
+        
+        if any(keyword in query for keyword in content_keywords):
+            return True
+        
+        # Explicit web intelligence filters
+        if search_type in ['web_search', 'market_intelligence']:
+            return True
+        
+        if content_discovery in ['sports', 'lifestyle', 'sustainability', 'local_news']:
+            return True
+        
+        # Real-time data freshness requirements
+        if data_freshness == 'real_time':
+            return True
+        
+        return False
+    
+    def _dappier_sufficient(self, filter_criteria: Dict[str, Any]) -> bool:
+        """
+        Check if Dappier alone can satisfy the request.
+        
+        Dappier is sufficient for pure web intelligence requests but not
+        for core financial data requirements.
+        """
+        query = filter_criteria.get('query', '').lower()
+        
+        # Pure web intelligence requests where Dappier is sufficient
+        pure_web_keywords = [
+            'breaking news', 'current events', 'web search', 'content discovery',
+            'sports news', 'lifestyle content', 'sustainability news',
+            'premium media', 'local news', 'politics news'
+        ]
+        
+        if any(keyword in query for keyword in pure_web_keywords):
+            return True
+        
+        # Check for financial data requirements that Dappier cannot handle
+        financial_keywords = [
+            'stock price', 'earnings', 'balance sheet', 'sec filing',
+            'fed funds', 'unemployment rate', 'gdp', 'treasury yield',
+            'technical indicator', 'moving average', 'rsi', 'macd'
+        ]
+        
+        if any(keyword in query for keyword in financial_keywords):
+            return False  # Need traditional financial collectors
+        
+        # Default: assume complementary enhancement is needed
+        return False
     
     def _estimate_monthly_cost(
         self, 

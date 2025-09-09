@@ -37,9 +37,10 @@ This is a comprehensive financial analysis tool that aggregates data from public
 - **MCP Collectors (Future)**: SEC MCP, Fed MCP, Treasury MCP (when available)
 
 **Commercial Data Sources:**
-- **MCP Collectors (Priority)**: Alpha Vantage MCP, Polygon.io MCP, Yahoo Finance MCP (FREE)
+- **MCP Collectors (Priority)**: Alpha Vantage MCP, Polygon.io MCP, Yahoo Finance MCP (FREE), Dappier MCP (WEB INTELLIGENCE)
 - **API Collectors (Fallback)**: IEX Cloud, Quandl
 
+**Web Intelligence**: Dappier MCP (real-time web search, AI content discovery)
 **News/Sentiment**: News API, Twitter API, Reddit API
 
 ## Development Commands
@@ -72,6 +73,7 @@ python test_four_quadrant_routing.py
 - **Production Ready**: World's first MCP-native financial platform fully validated
 - **Strategic Position**: Market leadership established with 6-12 month technical advantage
 - **Four-Quadrant Architecture**: Complete validation across government/commercial MCP sources
+- **Web Intelligence Layer**: Dappier MCP integration provides real-time web search and AI content discovery
 - **Revenue Validated**: $2M+ annual potential with 832% ROI projection confirmed
 
 ## Important Notes

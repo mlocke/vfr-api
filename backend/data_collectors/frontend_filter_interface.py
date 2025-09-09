@@ -42,6 +42,14 @@ class FilterType(Enum):
     STOCK_DATA_TYPE = "stock_data_type"
     OPTIONS_ANALYSIS = "options_analysis"
     NEWS_SENTIMENT = "news_sentiment"
+    
+    # Web Intelligence Filters (Dappier MCP)
+    WEB_SEARCH_TYPE = "web_search_type"
+    CONTENT_DISCOVERY = "content_discovery"
+    SEARCH_ALGORITHM = "search_algorithm"
+    DATA_FRESHNESS = "data_freshness"
+    CONTENT_SOURCE = "content_source"
+    PREMIUM_MEDIA = "premium_media"
 
 
 @dataclass
