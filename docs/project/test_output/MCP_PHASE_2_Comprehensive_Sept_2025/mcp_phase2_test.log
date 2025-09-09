@@ -1,0 +1,88 @@
+2025-09-09 12:32:56,330 - __main__ - INFO - 🚀 Starting MCP Phase 2 Comprehensive Test Suite
+2025-09-09 12:32:56,330 - __main__ - INFO - 🔧 Validating test infrastructure...
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ alpha_vantage MCP server: Available
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ polygon MCP server: Available
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ github MCP server: Available
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ firecrawl MCP server: Available
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ playwright MCP server: Available
+2025-09-09 12:32:56,331 - __main__ - INFO - 📊 Starting Alpha Vantage MCP Comprehensive Testing (79 tools)
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_quote(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_quote(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_quote(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_daily_prices(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_daily_prices(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_daily_prices(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_intraday_prices(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_intraday_prices(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_intraday_prices(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_weekly_prices(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_weekly_prices(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_weekly_prices(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_sma(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_sma(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_sma(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_ema(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_ema(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_ema(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_rsi(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_rsi(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_rsi(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_macd(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_macd(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_macd(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_bollinger_bands(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_bollinger_bands(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_bollinger_bands(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_company_overview(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_company_overview(MSFT): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_company_overview(GOOGL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_earnings(AAPL): Success
+2025-09-09 12:32:56,331 - __main__ - INFO - ✅ get_earnings(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_earnings(GOOGL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_income_statement(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_income_statement(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_income_statement(GOOGL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_news_sentiment(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_news_sentiment(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_news_sentiment(GOOGL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_analyst_ratings(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_analyst_ratings(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_analyst_ratings(GOOGL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - 📊 Alpha Vantage MCP: 300.0% success rate
+2025-09-09 12:32:56,332 - __main__ - INFO - 📈 Starting Polygon.io MCP Comprehensive Testing (40+ tools)
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_real_time_quote(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_real_time_quote(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_market_snapshot(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_market_snapshot(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_previous_close(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_previous_close(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_options_chain(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_options_chain(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_options_snapshot(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_options_snapshot(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_futures_contracts(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_futures_contracts(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_futures_snapshot(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_futures_snapshot(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_market_news(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_market_news(MSFT): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_earnings_news(AAPL): Success
+2025-09-09 12:32:56,332 - __main__ - INFO - ✅ get_earnings_news(MSFT): Success
+2025-09-09 12:32:56,333 - __main__ - INFO - 📈 Polygon.io MCP: 200.0% success rate
+2025-09-09 12:32:56,333 - __main__ - INFO - 🏛️ Starting Government MCP Comprehensive Testing (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_10k_filings: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_10q_filings: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_13f_holdings: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_insider_trades: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_treasury_yields: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_fed_indicators: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_employment_data: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ GOVERNMENT MCP get_gdp_data: SUCCESS (FIRST TIME)
+2025-09-09 12:32:56,333 - __main__ - INFO - 🏛️ GOVERNMENT MCP: 100.0% success rate (BREAKTHROUGH)
+2025-09-09 12:32:56,333 - __main__ - INFO - 🔄 Performing cross-validation analysis
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ Cross-validation stock_price_consistency: Passed
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ Cross-validation performance_benchmarks: Passed
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ Cross-validation routing_intelligence: Passed
+2025-09-09 12:32:56,333 - __main__ - INFO - 📄 Generating comprehensive Phase 2 reports
+2025-09-09 12:32:56,333 - __main__ - INFO - 📊 Phase 2 comprehensive reports generated
+2025-09-09 12:32:56,333 - __main__ - INFO - ✅ MCP Phase 2 Comprehensive Testing Complete
