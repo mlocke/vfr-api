@@ -177,20 +177,37 @@ Complete TODO list for implementing Polygon.io MCP collector as a premium commer
   - [ ] Create error reporting dashboards
   - [ ] Set up error notification system
 
-### **🔄 Four-Quadrant Router Integration**
+### **🔄 Four-Quadrant Router Integration** ⚠️ **CRITICAL FOR COMPLIANCE**
+
+- [ ] **Implement required router interface methods in PolygonMCPCollector**
+  - [ ] Add `should_activate(filter_criteria: Dict[str, Any]) -> bool` method
+  - [ ] Add `get_activation_priority(filter_criteria: Dict[str, Any]) -> int` method
+  - [ ] Add `get_supported_request_types() -> List[RequestType]` method
+  - [ ] Implement filter criteria processing logic
+  - [ ] Test router interface compliance with existing collectors
+
+- [ ] **Add Polygon-specific activation logic**
+  - [ ] Activate for `REAL_TIME_MARKET_DATA` requests (priority 95)
+  - [ ] Activate for `OPTIONS_DATA` requests (priority 100 - exclusive)
+  - [ ] Activate for `FUTURES_DATA` requests (priority 100 - exclusive)
+  - [ ] Activate for `CRYPTO_DATA` requests (priority 90)
+  - [ ] Activate for `FOREX_DATA` requests (priority 85)
+  - [ ] Skip activation for `ECONOMIC_DATA` (government collector territory)
+  - [ ] Skip activation for single company fundamental analysis (SEC EDGAR territory)
 
 - [ ] **Update CollectorRouter for Polygon routing**
+  - [ ] Add `POLYGON_MCP_COLLECTOR` to router registry
+  - [ ] Update `RequestType` enum to include options/futures/crypto types
   - [ ] Add Polygon routing conditions to router logic
-  - [ ] Implement real-time data routing preferences
-  - [ ] Add options-specific routing rules
-  - [ ] Create futures market routing logic
-  - [ ] Add subscription tier-aware routing
+  - [ ] Implement subscription tier-aware routing priorities
+  - [ ] Add real-time data routing preferences
   - [ ] Test routing with various query types
 
 - [ ] **Implement smart routing logic**
   - [ ] Route real-time requests to Polygon (if subscription allows)
   - [ ] Route options queries exclusively to Polygon
   - [ ] Route futures queries exclusively to Polygon
+  - [ ] Route crypto requests to Polygon (vs Alpha Vantage)
   - [ ] Keep international stocks with Alpha Vantage
   - [ ] Route economic indicators to government collectors
   - [ ] Add routing performance metrics
@@ -210,6 +227,14 @@ Complete TODO list for implementing Polygon.io MCP collector as a premium commer
   - [ ] Add routing decision logging
   - [ ] Build routing optimization algorithms
   - [ ] Test all fallback scenarios
+
+- [ ] **Router compliance testing**
+  - [ ] Create `test_polygon_router_integration.py`
+  - [ ] Test activation logic for each request type
+  - [ ] Test priority scoring accuracy
+  - [ ] Test filter criteria processing
+  - [ ] Test integration with existing government collectors
+  - [ ] Validate no conflicts with Alpha Vantage MCP routing
 
 ## 📅 **WEEK 3: Advanced Features (Sep 22-29, 2025)**
 
@@ -501,6 +526,13 @@ Complete TODO list for implementing Polygon.io MCP collector as a premium commer
   - [ ] Prepare invalid key error handling
   - [ ] Create key usage monitoring
 
+- [ ] **Router integration risks** ⚠️ **NEW**
+  - [ ] Ensure no conflicts with existing government collector priorities
+  - [ ] Test router fallback when Polygon MCP server unavailable
+  - [ ] Validate proper territory separation (options/futures = Polygon, economic = government)
+  - [ ] Test subscription tier changes don't break routing logic
+  - [ ] Ensure proper error handling when router methods fail
+
 ## 📊 **Success Metrics Tracking TODOs**
 
 - [ ] **Set up technical metrics collection**
@@ -518,9 +550,34 @@ Complete TODO list for implementing Polygon.io MCP collector as a premium commer
 ---
 
 **🎯 IMMEDIATE NEXT ACTIONS (Start Today)**:
-1. Install UV package manager
-2. Sign up for Polygon.io free account
-3. Install and test Polygon.io MCP server
-4. Create development branch: `feature/polygon-mcp-integration`
+1. **Router Compliance (CRITICAL)**: Implement `should_activate()` and `get_activation_priority()` methods in PolygonMCPCollector
+2. Install UV package manager
+3. Sign up for Polygon.io free account
+4. Install and test Polygon.io MCP server
+5. Create development branch: `feature/polygon-mcp-integration`
+6. Update CollectorRouter enum to include OPTIONS_DATA, FUTURES_DATA, CRYPTO_DATA request types
 
-**🎉 END GOAL**: Production-ready Polygon.io MCP collector providing institutional-grade financial data as a complementary premium feature alongside Alpha Vantage MCP, maintaining the Stock Picker platform's MCP-first architecture.
+**🎉 END GOAL**: Production-ready Polygon.io MCP collector providing institutional-grade financial data as a complementary premium feature alongside Alpha Vantage MCP, maintaining the Stock Picker platform's MCP-first architecture **and full compliance with the existing Four-Quadrant Collector Router system**.
+
+---
+
+## ⚠️ **CRITICAL UPDATE - Router Compliance Required**
+
+**Date**: September 9, 2025  
+**Status**: Polygon MCP collector exists but lacks router integration compliance
+
+**Key Finding**: The existing PolygonMCPCollector implementation focuses on MCP data collection but is missing the required router interface methods needed for integration with the Four-Quadrant Collector Router system.
+
+**Router Compliance Gap**:
+- Missing `should_activate(filter_criteria)` method
+- Missing `get_activation_priority(filter_criteria)` method  
+- Missing filter criteria processing logic
+- No integration with RequestType enum system
+
+**Priority Adjustment**: Router integration moved to **Week 1 Critical Tasks** to ensure the Polygon collector can participate in the intelligent routing system alongside government collectors.
+
+**Territory Definition**: 
+- **Polygon Territory**: Real-time data, options chains, futures, crypto, forex
+- **Government Territory**: Economic indicators, fiscal data, employment data
+- **SEC EDGAR Territory**: Individual company fundamental analysis
+- **Alpha Vantage Territory**: International stocks, backup market data

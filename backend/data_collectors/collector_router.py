@@ -904,8 +904,15 @@ class CollectorRouter:
                     try:
                         collector_instance = capability.collector_class(config=None)
                     except Exception:
-                        logger.warning(f"Cannot instantiate {capability.collector_class.__name__} for activation check")
-                        continue
+                        try:
+                            # Handle MCP collectors that need API keys
+                            if 'MCP' in capability.collector_class.__name__:
+                                collector_instance = capability.collector_class(api_key="test_key_for_routing")
+                            else:
+                                collector_instance = capability.collector_class(api_key="test_key_for_routing")
+                        except Exception:
+                            logger.warning(f"Cannot instantiate {capability.collector_class.__name__} for activation check")
+                            continue
                 
                 if hasattr(collector_instance, 'should_activate'):
                     if collector_instance.should_activate(filter_criteria):
@@ -943,7 +950,35 @@ class CollectorRouter:
         # Check for commercial-only data requirements
         analysis['commercial_data_needed'] = self._requires_commercial_data(filter_criteria)
         
-        if len(companies) == 1:
+        # PRIORITY 1: Commercial-specific data types override company analysis
+        if filter_criteria.get('real_time') or 'intraday' in str(filter_criteria).lower():
+            analysis['request_type'] = RequestType.REAL_TIME_PRICES
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif any(key in filter_criteria for key in ['options', 'derivatives', 'options_chain', 'options_data']):
+            analysis['request_type'] = RequestType.OPTIONS_DATA
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif any(key in filter_criteria for key in ['forex', 'currency', 'fx']):
+            analysis['request_type'] = RequestType.FOREX_DATA
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif any(key in filter_criteria for key in ['crypto', 'bitcoin', 'ethereum', 'cryptocurrency']):
+            analysis['request_type'] = RequestType.CRYPTO_DATA
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif filter_criteria.get('analysis_type') == 'technical':
+            analysis['request_type'] = RequestType.TECHNICAL_ANALYSIS
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        elif filter_criteria.get('include_sentiment', False) or any(
+            key in filter_criteria for key in ['news_analysis', 'sentiment', 'benzinga']
+        ):
+            analysis['request_type'] = RequestType.NEWS_ANALYSIS
+            analysis['specificity_level'] = 'high'
+            analysis['commercial_data_needed'] = True
+        # PRIORITY 2: Company-specific analysis for fundamental data
+        elif len(companies) == 1:
             analysis['request_type'] = RequestType.INDIVIDUAL_COMPANY
             analysis['specificity_level'] = 'very_high'
         elif 2 <= len(companies) <= 20:
@@ -955,14 +990,6 @@ class CollectorRouter:
         elif filter_criteria.get('index') and not companies:
             analysis['request_type'] = RequestType.INDEX_ANALYSIS
             analysis['specificity_level'] = 'medium'
-        elif filter_criteria.get('real_time') or 'intraday' in str(filter_criteria).lower():
-            analysis['request_type'] = RequestType.REAL_TIME_PRICES
-            analysis['specificity_level'] = 'high'
-            analysis['commercial_data_needed'] = True
-        elif filter_criteria.get('analysis_type') == 'technical':
-            analysis['request_type'] = RequestType.TECHNICAL_ANALYSIS
-            analysis['specificity_level'] = 'high'
-            analysis['commercial_data_needed'] = True
         elif filter_criteria.get('economic_indicator') or filter_criteria.get('fred_series'):
             analysis['request_type'] = RequestType.ECONOMIC_DATA
             analysis['specificity_level'] = 'high'

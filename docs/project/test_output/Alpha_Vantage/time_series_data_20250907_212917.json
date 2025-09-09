@@ -1,9 +1,0 @@
-{
-  "test_name": "time_series_data",
-  "timestamp": "2025-09-07T21:29:17.155504",
-  "success": false,
-  "api_key_used": "4M20CQ7QT67RJ835",
-  "data": {
-    "Information": "Thank you for using Alpha Vantage! This is a premium endpoint. You may subscribe to any of the premium plans at https://www.alphavantage.co/premium/ to instantly unlock all premium endpoints"
-  }
-}
