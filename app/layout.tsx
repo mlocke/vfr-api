@@ -21,6 +21,6 @@ export default function RootLayout({
 }
 
 export const metadata = {
-  title: 'Stock Picker - Financial Analysis & Prediction Platform',
-  description: 'Advanced Financial Analysis & Stock Prediction Platform',
+  title: 'Veritak Financial Research LLC - Advanced Financial Analysis Platform',
+  description: 'Veritak Financial Research LLC - Comprehensive financial analysis, market intelligence, and investment research platform powered by real-time data and AI insights.',
 }

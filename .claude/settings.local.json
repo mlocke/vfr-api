@@ -33,7 +33,15 @@
       "WebFetch(domain:www.alphavantage.co)",
       "mcp__firecrawl__firecrawl_search",
       "mcp__github__search_repositories",
-      "mcp__github__get_file_contents"
+      "mcp__github__get_file_contents",
+      "Bash(lsof:*)",
+      "Bash(httpd:*)",
+      "Read(//private/etc/**)",
+      "Read(//private/var/log/**)",
+      "Bash(sudo apachectl:*)",
+      "Bash(nginx:*)",
+      "Read(//opt/homebrew/etc/nginx/**)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
