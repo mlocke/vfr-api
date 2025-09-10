@@ -1,8 +1,36 @@
 'use client'
 
+import { useState } from 'react'
 import StockTicker from './components/StockTicker'
+import SectorDropdown, { SectorOption } from './components/SectorDropdown'
+
+interface SymbolData {
+  proName: string
+  title: string
+}
 
 export default function Home() {
+  const [currentSector, setCurrentSector] = useState<SectorOption | undefined>()
+  const [symbols, setSymbols] = useState<SymbolData[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const handleSectorChange = async (sector: SectorOption) => {
+    setCurrentSector(sector)
+    setLoading(true)
+    
+    try {
+      const response = await fetch(`/api/stocks/by-sector?sector=${sector.id}`)
+      const data = await response.json()
+      
+      if (data.success && data.symbols) {
+        setSymbols(data.symbols)
+      }
+    } catch (error) {
+      console.log('Using default symbols due to API error')
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <>
       {/* Background Animation */}
@@ -18,10 +46,31 @@ export default function Home() {
         <div className="particle"></div>
       </div>
 
-      {/* Stock Ticker Component */}
-      <StockTicker />
+      {/* Sector Selection - Positioned below ticker with proper spacing */}
+      <div 
+        className="sector-selection-container" 
+        style={{
+          position: 'fixed',
+          top: '65px',
+          left: '20px',
+          right: '20px',
+          zIndex: 1100,
+          backgroundColor: 'transparent'
+        }}
+      >
+        <div className="max-w-md mx-auto px-4">
+          <SectorDropdown 
+            onSectorChange={handleSectorChange}
+            loading={loading}
+            currentSector={currentSector}
+          />
+        </div>
+      </div>
 
-      <div className="main-container">
+      {/* Stock Ticker Component */}
+      <StockTicker symbols={symbols} />
+
+      <div className="main-container" style={{marginTop: '120px'}}>
         <header className="header">
           <div className="logo">
             <div className="logo-icon">📈</div>
