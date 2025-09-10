@@ -29,6 +29,7 @@ dist/
 build/
 .next/
 out/
+.next/
 
 # IDE/Editor files
 .vscode/
