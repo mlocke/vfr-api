@@ -27,6 +27,8 @@ coverage/
 # Build outputs
 dist/
 build/
+.next/
+out/
 
 # IDE/Editor files
 .vscode/
