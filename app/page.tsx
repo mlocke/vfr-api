@@ -73,10 +73,13 @@ export default function Home() {
       <div className="main-container" style={{marginTop: '120px'}}>
         <header className="header">
           <div className="logo">
-            <div className="logo-icon">📈</div>
-            <div className="logo-text">Stock Picker</div>
+            <img src="/veritak_logo_transparent.png" alt="Veritak Financial Research LLC" className="logo-image prominent-logo" style={{height: '120px', width: 'auto', marginRight: '20px', filter: 'drop-shadow(0 4px 12px rgba(0, 200, 83, 0.3))'}} />
+            <div className="logo-text-container">
+              <div className="logo-text prominent-logo-text">Veritak Financial Research LLC</div>
+              <div className="company-tagline">Select. Analyze. Decide.</div>
+            </div>
           </div>
-          <p className="tagline">Advanced Financial Analysis & Stock Prediction Platform</p>
+          <p className="tagline">Comprehensive Financial Analysis & Market Intelligence Platform</p>
         </header>
 
         <main className="hero">
@@ -85,9 +88,9 @@ export default function Home() {
               <h1 className="hero-title">Intelligent Market Analysis</h1>
               <p className="hero-subtitle">
                 Harness the power of real-time data, advanced analytics, and machine
-                learning to make informed investment decisions. Our platform aggregates
-                data from government sources and market APIs to deliver comprehensive
-                financial insights.
+                learning to make informed investment decisions. Veritak's platform aggregates
+                data from government sources, commercial APIs, and web intelligence to deliver 
+                comprehensive financial research and market intelligence.
               </p>
               <a href="#features" className="cta-button">
                 <span>🚀</span>
@@ -192,10 +195,10 @@ export default function Home() {
         </section>
 
         <footer className="footer">
-          <p>© 2025 Stock Picker Platform | Educational & Informational Use Only</p>
+          <p>© 2025 Veritak Financial Research LLC | Educational & Informational Use Only</p>
           <p>✨ Transparency First • 🔒 Government Data Sources • 📚 Educational Focus</p>
           <p style={{marginTop: '1rem', fontSize: '0.85rem', opacity: 0.8}}>
-            This platform provides analysis tools for educational purposes. All investment
+            Veritak Financial Research LLC provides analysis tools for educational purposes. All investment
             decisions should be made in consultation with qualified financial advisors. Past
             performance does not guarantee future results.
           </p>
