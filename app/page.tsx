@@ -246,8 +246,8 @@ export default function Home() {
             className="logo-modal-content"
             style={{
               position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
+              maxWidth: '95vw',
+              maxHeight: '95vh',
               animation: 'scaleIn 0.3s ease'
             }}
             onClick={(e) => e.stopPropagation()}
@@ -258,7 +258,7 @@ export default function Home() {
               style={{
                 width: '100%',
                 height: 'auto',
-                maxWidth: '600px',
+                maxWidth: '800px',
                 filter: 'drop-shadow(0 8px 24px rgba(0, 200, 83, 0.4))'
               }}
             />
