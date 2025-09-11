@@ -75,7 +75,7 @@ export default function Home() {
         <header className="header">
           <div className="logo">
             <img 
-              src="/veritak_logo_transparent.png" 
+              src="/assets/images/veritak_logo.png"
               alt="Veritak Financial Research LLC" 
               className="logo-image prominent-logo" 
               style={{
@@ -253,7 +253,7 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             <img 
-              src="/veritak_logo_transparent.png" 
+              src="/assets/images/veritak_logo_trans.png"
               alt="Veritak Financial Research LLC" 
               style={{
                 width: '100%',
