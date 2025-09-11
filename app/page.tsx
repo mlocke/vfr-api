@@ -13,6 +13,7 @@ export default function Home() {
   const [currentSector, setCurrentSector] = useState<SectorOption | undefined>()
   const [symbols, setSymbols] = useState<SymbolData[]>([])
   const [loading, setLoading] = useState(false)
+  const [showLogoModal, setShowLogoModal] = useState(false)
 
   const handleSectorChange = async (sector: SectorOption) => {
     setCurrentSector(sector)
@@ -73,7 +74,22 @@ export default function Home() {
       <div className="main-container" style={{marginTop: '120px'}}>
         <header className="header">
           <div className="logo">
-            <img src="/veritak_logo_transparent.png" alt="Veritak Financial Research LLC" className="logo-image prominent-logo" style={{height: '120px', width: 'auto', marginRight: '20px', filter: 'drop-shadow(0 4px 12px rgba(0, 200, 83, 0.3))'}} />
+            <img 
+              src="/veritak_logo_transparent.png" 
+              alt="Veritak Financial Research LLC" 
+              className="logo-image prominent-logo" 
+              style={{
+                height: '120px', 
+                width: 'auto', 
+                marginRight: '20px', 
+                filter: 'drop-shadow(0 4px 12px rgba(0, 200, 83, 0.3))',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setShowLogoModal(true)}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            />
             <div className="logo-text-container">
               <div className="logo-text prominent-logo-text">Veritak Financial Research LLC</div>
               <div className="company-tagline">Select. Analyze. Decide.</div>
@@ -204,6 +220,94 @@ export default function Home() {
           </p>
         </footer>
       </div>
+
+      {/* Logo Modal */}
+      {showLogoModal && (
+        <div 
+          className="logo-modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+            cursor: 'pointer',
+            backdropFilter: 'blur(5px)',
+            animation: 'fadeIn 0.3s ease'
+          }}
+          onClick={() => setShowLogoModal(false)}
+        >
+          <div 
+            className="logo-modal-content"
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              animation: 'scaleIn 0.3s ease'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src="/veritak_logo_transparent.png" 
+              alt="Veritak Financial Research LLC" 
+              style={{
+                width: '100%',
+                height: 'auto',
+                maxWidth: '600px',
+                filter: 'drop-shadow(0 8px 24px rgba(0, 200, 83, 0.4))'
+              }}
+            />
+            <button
+              style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '0',
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: 'white',
+                fontSize: '32px',
+                cursor: 'pointer',
+                padding: '8px',
+                lineHeight: '1',
+                fontWeight: '300',
+                transition: 'transform 0.2s ease'
+              }}
+              onClick={() => setShowLogoModal(false)}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes scaleIn {
+          from {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </>
   )
 }
