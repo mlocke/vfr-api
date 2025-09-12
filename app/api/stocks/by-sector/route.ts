@@ -364,6 +364,69 @@ async function getEnhancedSectorStocks(sector: string): Promise<SymbolData[]> {
       // Multi-utilities
       { proName: 'NYSE:WEC', title: 'WEC Energy Group - Multi-Utility' },
       { proName: 'NYSE:ETR', title: 'Entergy Corporation - Electric Utility' }
+    ],
+    'materials': [
+      // Mining & metals
+      { proName: 'NYSE:NEM', title: 'Newmont Corporation - Gold Mining' },
+      { proName: 'NYSE:FCX', title: 'Freeport-McMoRan - Copper & Gold Mining' },
+      { proName: 'NYSE:AA', title: 'Alcoa Corporation - Aluminum' },
+      { proName: 'NYSE:X', title: 'United States Steel - Steel Production' },
+      { proName: 'NYSE:NUE', title: 'Nucor Corporation - Steel Production' },
+      
+      // Chemicals
+      { proName: 'NYSE:DD', title: 'DuPont de Nemours - Specialty Chemicals' },
+      { proName: 'NYSE:DOW', title: 'Dow Inc. - Chemical Manufacturing' },
+      { proName: 'NYSE:LYB', title: 'LyondellBasell - Petrochemicals' },
+      { proName: 'NYSE:PPG', title: 'PPG Industries - Paints & Coatings' },
+      { proName: 'NYSE:SHW', title: 'Sherwin-Williams - Paints & Coatings' },
+      
+      // Forest products
+      { proName: 'NYSE:IP', title: 'International Paper - Forest Products' },
+      { proName: 'NYSE:WY', title: 'Weyerhaeuser Company - Forest Products' },
+      
+      // Construction materials
+      { proName: 'NYSE:VMC', title: 'Vulcan Materials - Construction Aggregates' },
+      { proName: 'NYSE:MLM', title: 'Martin Marietta Materials - Construction Materials' }
+    ],
+    'real-estate': [
+      // REITs - Residential
+      { proName: 'NYSE:AMT', title: 'American Tower Corporation - Cell Tower REIT' },
+      { proName: 'NYSE:PLD', title: 'Prologis Inc. - Industrial REIT' },
+      { proName: 'NYSE:CCI', title: 'Crown Castle International - Infrastructure REIT' },
+      { proName: 'NYSE:EQIX', title: 'Equinix Inc. - Data Center REIT' },
+      { proName: 'NYSE:WELL', title: 'Welltower Inc. - Healthcare REIT' },
+      
+      // REITs - Commercial
+      { proName: 'NYSE:SPG', title: 'Simon Property Group - Retail REIT' },
+      { proName: 'NYSE:O', title: 'Realty Income Corporation - Retail REIT' },
+      { proName: 'NYSE:VICI', title: 'VICI Properties - Gaming & Leisure REIT' },
+      { proName: 'NYSE:VTR', title: 'Ventas Inc. - Healthcare REIT' },
+      
+      // REITs - Specialty
+      { proName: 'NYSE:PSA', title: 'Public Storage - Self Storage REIT' },
+      { proName: 'NYSE:AVB', title: 'AvalonBay Communities - Residential REIT' },
+      { proName: 'NYSE:EQR', title: 'Equity Residential - Residential REIT' }
+    ],
+    'communication': [
+      // Telecom services
+      { proName: 'NYSE:VZ', title: 'Verizon Communications - Wireless Telecom' },
+      { proName: 'NYSE:T', title: 'AT&T Inc. - Telecommunications' },
+      { proName: 'NASDAQ:TMUS', title: 'T-Mobile US - Wireless Communications' },
+      
+      // Media & entertainment
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc. - Streaming Entertainment' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company - Media & Entertainment' },
+      { proName: 'NASDAQ:CMCSA', title: 'Comcast Corporation - Media & Telecommunications' },
+      { proName: 'NYSE:WBD', title: 'Warner Bros. Discovery - Media & Entertainment' },
+      
+      // Internet & digital media
+      { proName: 'NASDAQ:META', title: 'Meta Platforms - Social Media' },
+      { proName: 'NASDAQ:GOOGL', title: 'Alphabet Inc. - Internet Services' },
+      { proName: 'NYSE:CHTR', title: 'Charter Communications - Cable & Internet' },
+      
+      // Gaming & interactive media
+      { proName: 'NASDAQ:EA', title: 'Electronic Arts - Gaming Software' },
+      { proName: 'NASDAQ:TTWO', title: 'Take-Two Interactive - Gaming Software' }
     ]
   }
   
@@ -473,6 +536,42 @@ async function getCuratedSectorStocks(sector: string): Promise<SymbolData[]> {
       { proName: 'NYSE:PEG', title: 'Public Service Enterprise Group' },
       { proName: 'NYSE:ED', title: 'Consolidated Edison Inc.' },
       { proName: 'NYSE:AWK', title: 'American Water Works Company Inc.' }
+    ],
+    'materials': [
+      { proName: 'NYSE:NEM', title: 'Newmont Corporation' },
+      { proName: 'NYSE:FCX', title: 'Freeport-McMoRan Inc.' },
+      { proName: 'NYSE:AA', title: 'Alcoa Corporation' },
+      { proName: 'NYSE:X', title: 'United States Steel Corporation' },
+      { proName: 'NYSE:NUE', title: 'Nucor Corporation' },
+      { proName: 'NYSE:DD', title: 'DuPont de Nemours Inc.' },
+      { proName: 'NYSE:DOW', title: 'Dow Inc.' },
+      { proName: 'NYSE:LYB', title: 'LyondellBasell Industries N.V.' },
+      { proName: 'NYSE:PPG', title: 'PPG Industries Inc.' },
+      { proName: 'NYSE:SHW', title: 'Sherwin-Williams Company' }
+    ],
+    'real-estate': [
+      { proName: 'NYSE:AMT', title: 'American Tower Corporation' },
+      { proName: 'NYSE:PLD', title: 'Prologis Inc.' },
+      { proName: 'NYSE:CCI', title: 'Crown Castle International Corp.' },
+      { proName: 'NYSE:EQIX', title: 'Equinix Inc.' },
+      { proName: 'NYSE:WELL', title: 'Welltower Inc.' },
+      { proName: 'NYSE:SPG', title: 'Simon Property Group Inc.' },
+      { proName: 'NYSE:O', title: 'Realty Income Corporation' },
+      { proName: 'NYSE:PSA', title: 'Public Storage' },
+      { proName: 'NYSE:AVB', title: 'AvalonBay Communities Inc.' },
+      { proName: 'NYSE:EQR', title: 'Equity Residential' }
+    ],
+    'communication': [
+      { proName: 'NYSE:VZ', title: 'Verizon Communications Inc.' },
+      { proName: 'NYSE:T', title: 'AT&T Inc.' },
+      { proName: 'NASDAQ:TMUS', title: 'T-Mobile US Inc.' },
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc.' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company' },
+      { proName: 'NASDAQ:CMCSA', title: 'Comcast Corporation' },
+      { proName: 'NASDAQ:META', title: 'Meta Platforms Inc.' },
+      { proName: 'NASDAQ:GOOGL', title: 'Alphabet Inc.' },
+      { proName: 'NYSE:CHTR', title: 'Charter Communications Inc.' },
+      { proName: 'NASDAQ:EA', title: 'Electronic Arts Inc.' }
     ]
   }
 
