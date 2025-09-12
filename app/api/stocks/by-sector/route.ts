@@ -276,6 +276,52 @@ async function getEnhancedSectorStocks(sector: string): Promise<SymbolData[]> {
       // Renewables & utilities
       { proName: 'NYSE:NEE', title: 'NextEra Energy - Renewable Power' },
       { proName: 'NYSE:DUK', title: 'Duke Energy - Electric Utility' }
+    ],
+    'consumer-discretionary': [
+      // Retail giants
+      { proName: 'NYSE:WMT', title: 'Walmart Inc. - Retail' },
+      { proName: 'NASDAQ:AMZN', title: 'Amazon.com - E-commerce' },
+      { proName: 'NYSE:HD', title: 'Home Depot - Home Improvement' },
+      { proName: 'NYSE:LOW', title: 'Lowe\'s Companies - Home Improvement' },
+      { proName: 'NYSE:TGT', title: 'Target Corp. - Retail' },
+      
+      // Automotive
+      { proName: 'NYSE:F', title: 'Ford Motor Company - Automotive' },
+      { proName: 'NYSE:GM', title: 'General Motors - Automotive' },
+      { proName: 'NASDAQ:TSLA', title: 'Tesla Inc. - Electric Vehicles' },
+      
+      // Apparel & luxury
+      { proName: 'NYSE:NKE', title: 'Nike Inc. - Athletic Apparel' },
+      { proName: 'NYSE:TJX', title: 'TJX Companies - Discount Retail' },
+      
+      // Entertainment & media
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company - Entertainment' },
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc. - Streaming' },
+      
+      // Restaurants
+      { proName: 'NYSE:MCD', title: 'McDonald\'s Corp. - Fast Food' },
+      { proName: 'NYSE:SBUX', title: 'Starbucks Corp. - Coffee Retail' }
+    ],
+    'consumer-staples': [
+      // Food & beverage giants
+      { proName: 'NYSE:KO', title: 'Coca-Cola Company - Beverages' },
+      { proName: 'NASDAQ:PEP', title: 'PepsiCo Inc. - Food & Beverages' },
+      { proName: 'NYSE:PG', title: 'Procter & Gamble - Consumer Products' },
+      { proName: 'NYSE:UL', title: 'Unilever PLC - Consumer Goods' },
+      
+      // Food producers
+      { proName: 'NYSE:KHC', title: 'Kraft Heinz Company - Food Products' },
+      { proName: 'NYSE:GIS', title: 'General Mills - Food Products' },
+      { proName: 'NYSE:K', title: 'Kellogg Company - Breakfast Foods' },
+      { proName: 'NYSE:CPB', title: 'Campbell Soup Company - Food Products' },
+      
+      // Household products
+      { proName: 'NYSE:CL', title: 'Colgate-Palmolive - Household Products' },
+      { proName: 'NYSE:KMB', title: 'Kimberly-Clark - Paper Products' },
+      
+      // Retail staples
+      { proName: 'NYSE:WMT', title: 'Walmart Inc. - Staples Retail' },
+      { proName: 'NYSE:COST', title: 'Costco Wholesale - Membership Retail' }
     ]
   }
   
@@ -337,6 +383,30 @@ async function getCuratedSectorStocks(sector: string): Promise<SymbolData[]> {
       { proName: 'NYSE:OXY', title: 'Occidental Petroleum' },
       { proName: 'NYSE:HAL', title: 'Halliburton Company' },
       { proName: 'NYSE:BKR', title: 'Baker Hughes Company' }
+    ],
+    'consumer-discretionary': [
+      { proName: 'NYSE:WMT', title: 'Walmart Inc.' },
+      { proName: 'NASDAQ:AMZN', title: 'Amazon.com Inc.' },
+      { proName: 'NYSE:HD', title: 'Home Depot Inc.' },
+      { proName: 'NYSE:LOW', title: 'Lowe\'s Companies Inc.' },
+      { proName: 'NYSE:TGT', title: 'Target Corporation' },
+      { proName: 'NYSE:F', title: 'Ford Motor Company' },
+      { proName: 'NYSE:GM', title: 'General Motors Company' },
+      { proName: 'NASDAQ:TSLA', title: 'Tesla Inc.' },
+      { proName: 'NYSE:NKE', title: 'Nike Inc.' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company' }
+    ],
+    'consumer-staples': [
+      { proName: 'NYSE:KO', title: 'Coca-Cola Company' },
+      { proName: 'NASDAQ:PEP', title: 'PepsiCo Inc.' },
+      { proName: 'NYSE:PG', title: 'Procter & Gamble Co.' },
+      { proName: 'NYSE:UL', title: 'Unilever PLC' },
+      { proName: 'NYSE:KHC', title: 'Kraft Heinz Company' },
+      { proName: 'NYSE:GIS', title: 'General Mills Inc.' },
+      { proName: 'NYSE:K', title: 'Kellogg Company' },
+      { proName: 'NYSE:CL', title: 'Colgate-Palmolive Company' },
+      { proName: 'NYSE:KMB', title: 'Kimberly-Clark Corporation' },
+      { proName: 'NYSE:COST', title: 'Costco Wholesale Corporation' }
     ]
   }
 
