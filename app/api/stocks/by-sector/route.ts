@@ -66,9 +66,9 @@ const SECTOR_MAPPINGS = {
     limit: 6
   },
   'nasdaq100': {
-    symbols: ['QQQ', 'TQQQ', 'SQQQ', 'QQQM', 'PSQ'],
-    exchanges: ['NASDAQ', 'AMEX'],
-    limit: 5
+    symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'AVGO', 'ASML', 'COST', 'NFLX', 'AMD', 'PEP', 'ADBE', 'CSCO'],
+    exchanges: ['NASDAQ'],
+    limit: 15
   },
   'dow30': {
     symbols: ['DIA', 'UDOW', 'SDOW', 'DDM', 'DJP'],
@@ -79,6 +79,13 @@ const SECTOR_MAPPINGS = {
     symbols: ['IWM', 'TNA', 'TZA', 'VTWO', 'UWM'],
     exchanges: ['AMEX', 'NASDAQ'],
     limit: 5
+  },
+  
+  // Exchange Traded Funds
+  'etfs': {
+    symbols: ['SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'VTI', 'SPXL', 'SPXS', 'TNA', 'TZA', 'UVXY', 'SOXL', 'ARKK'],
+    exchanges: ['AMEX', 'NASDAQ', 'NYSE'],
+    limit: 13
   }
 }
 

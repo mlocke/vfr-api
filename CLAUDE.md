@@ -101,3 +101,38 @@ python test_four_quadrant_routing.py
 ├── package.json       # Frontend dependencies
 └── .env              # API keys and MCP server configuration
 ```
+- 🎯 Recommended MCP Strategy
+
+  Primary: Polygon MCP (✅ Tested & Confirmed Working)
+
+  - ✅ mcp__polygon__list_tickers - Perfect for sector stock discovery
+  - ✅ mcp__polygon__get_ticker_details - Provides market cap for top 20 ranking
+  - Strategy: Use these two tools to get top 20 stocks by market cap per sector
+
+  Secondary: Yahoo Finance MCP (✅ FREE & Unlimited)
+
+  - Best for volatility detection - no API limits
+  - Free historical/real-time data for calculating daily % changes
+  - Strategy: Use for the "volatile 3" stocks detection
+
+  Tertiary: Alpha Vantage MCP (✅ 79 Tools Available)
+
+  - Advanced intelligence layer for sophisticated analysis
+  - Technical indicators when needed
+  - Sector performance analysis
+
+  Enhanced: Your Government MCPs
+
+  - SEC EDGAR MCP: Institutional "smart money" tracking
+  - Data.gov MCP: Economic indicators affecting sectors
+
+  🚀 Implementation Approach
+
+  The beauty of your existing infrastructure is that you can:
+
+  1. Leverage working tools immediately - Polygon MCP is tested and functional
+  2. Use free unlimited data - Yahoo Finance MCP for frequent volatility updates
+  3. Scale intelligently - Add Alpha Vantage for advanced features
+  4. Government intelligence - Unique competitive advantage with your custom MCPs
+
+  This strategy maximizes your existing investment in MCP infrastructure while providing a clear path to the "20 + 3" intelligent stock selection system!
