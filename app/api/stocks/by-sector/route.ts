@@ -322,6 +322,48 @@ async function getEnhancedSectorStocks(sector: string): Promise<SymbolData[]> {
       // Retail staples
       { proName: 'NYSE:WMT', title: 'Walmart Inc. - Staples Retail' },
       { proName: 'NYSE:COST', title: 'Costco Wholesale - Membership Retail' }
+    ],
+    'industrials': [
+      // Aerospace & defense
+      { proName: 'NYSE:BA', title: 'Boeing Company - Aerospace' },
+      { proName: 'NYSE:LMT', title: 'Lockheed Martin - Defense' },
+      { proName: 'NYSE:RTX', title: 'Raytheon Technologies - Aerospace & Defense' },
+      { proName: 'NYSE:NOC', title: 'Northrop Grumman - Defense' },
+      { proName: 'NYSE:GD', title: 'General Dynamics - Defense' },
+      
+      // Industrial conglomerates
+      { proName: 'NYSE:GE', title: 'General Electric - Industrial Conglomerate' },
+      { proName: 'NYSE:HON', title: 'Honeywell International - Diversified Technology' },
+      { proName: 'NYSE:MMM', title: '3M Company - Diversified Industrial' },
+      { proName: 'NYSE:CAT', title: 'Caterpillar Inc. - Heavy Machinery' },
+      { proName: 'NYSE:DE', title: 'Deere & Company - Agricultural Equipment' },
+      
+      // Transportation
+      { proName: 'NYSE:UPS', title: 'United Parcel Service - Package Delivery' },
+      { proName: 'NYSE:FDX', title: 'FedEx Corporation - Express Transportation' },
+      { proName: 'NYSE:UAL', title: 'United Airlines - Aviation' },
+      { proName: 'NYSE:DAL', title: 'Delta Air Lines - Aviation' }
+    ],
+    'utilities': [
+      // Electric utilities
+      { proName: 'NYSE:NEE', title: 'NextEra Energy - Renewable Energy' },
+      { proName: 'NYSE:DUK', title: 'Duke Energy - Electric Utility' },
+      { proName: 'NYSE:SO', title: 'Southern Company - Electric Utility' },
+      { proName: 'NYSE:AEP', title: 'American Electric Power - Electric Utility' },
+      { proName: 'NYSE:EXC', title: 'Exelon Corporation - Electric Utility' },
+      { proName: 'NYSE:XEL', title: 'Xcel Energy - Electric & Gas Utility' },
+      
+      // Gas utilities
+      { proName: 'NYSE:SRE', title: 'Sempra Energy - Gas & Electric Utility' },
+      { proName: 'NYSE:PEG', title: 'Public Service Enterprise Group - Gas & Electric' },
+      { proName: 'NYSE:ED', title: 'Consolidated Edison - Electric & Gas Utility' },
+      
+      // Water utilities
+      { proName: 'NYSE:AWK', title: 'American Water Works - Water Utility' },
+      
+      // Multi-utilities
+      { proName: 'NYSE:WEC', title: 'WEC Energy Group - Multi-Utility' },
+      { proName: 'NYSE:ETR', title: 'Entergy Corporation - Electric Utility' }
     ]
   }
   
@@ -407,6 +449,30 @@ async function getCuratedSectorStocks(sector: string): Promise<SymbolData[]> {
       { proName: 'NYSE:CL', title: 'Colgate-Palmolive Company' },
       { proName: 'NYSE:KMB', title: 'Kimberly-Clark Corporation' },
       { proName: 'NYSE:COST', title: 'Costco Wholesale Corporation' }
+    ],
+    'industrials': [
+      { proName: 'NYSE:BA', title: 'Boeing Company' },
+      { proName: 'NYSE:LMT', title: 'Lockheed Martin Corporation' },
+      { proName: 'NYSE:RTX', title: 'Raytheon Technologies Corporation' },
+      { proName: 'NYSE:GE', title: 'General Electric Company' },
+      { proName: 'NYSE:HON', title: 'Honeywell International Inc.' },
+      { proName: 'NYSE:MMM', title: '3M Company' },
+      { proName: 'NYSE:CAT', title: 'Caterpillar Inc.' },
+      { proName: 'NYSE:DE', title: 'Deere & Company' },
+      { proName: 'NYSE:UPS', title: 'United Parcel Service Inc.' },
+      { proName: 'NYSE:FDX', title: 'FedEx Corporation' }
+    ],
+    'utilities': [
+      { proName: 'NYSE:NEE', title: 'NextEra Energy Inc.' },
+      { proName: 'NYSE:DUK', title: 'Duke Energy Corporation' },
+      { proName: 'NYSE:SO', title: 'Southern Company' },
+      { proName: 'NYSE:AEP', title: 'American Electric Power Company' },
+      { proName: 'NYSE:EXC', title: 'Exelon Corporation' },
+      { proName: 'NYSE:XEL', title: 'Xcel Energy Inc.' },
+      { proName: 'NYSE:SRE', title: 'Sempra Energy' },
+      { proName: 'NYSE:PEG', title: 'Public Service Enterprise Group' },
+      { proName: 'NYSE:ED', title: 'Consolidated Edison Inc.' },
+      { proName: 'NYSE:AWK', title: 'American Water Works Company Inc.' }
     ]
   }
 
