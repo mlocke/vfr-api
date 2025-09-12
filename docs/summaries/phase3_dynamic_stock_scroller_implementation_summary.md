@@ -43,7 +43,7 @@ Phase 3 implementation successfully delivered a comprehensive dynamic stock scro
 - selectOptimalStocks() - Intelligent portfolio construction
 - calculateOverallSentiment() - News sentiment aggregation
 ```
-
+to 
 ### 4. News Sentiment Analysis
 - **Data Sources**: Financial news aggregation via Firecrawl MCP
 - **Sentiment Engine**: Keyword-based analysis with confidence scoring

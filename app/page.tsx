@@ -62,18 +62,15 @@ export default function Home() {
           position: 'fixed',
           top: '65px',
           left: '20px',
-          right: '20px',
           zIndex: 1100,
           backgroundColor: 'transparent'
         }}
       >
-        <div className="max-w-md mx-auto px-4">
-          <SectorDropdown 
-            onSectorChange={handleSectorChange}
-            loading={loading}
-            currentSector={currentSector}
-          />
-        </div>
+        <SectorDropdown 
+          onSectorChange={handleSectorChange}
+          loading={loading}
+          currentSector={currentSector}
+        />
       </div>
 
       {/* Stock Ticker Component */}
