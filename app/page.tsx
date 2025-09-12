@@ -16,6 +16,7 @@ export default function Home() {
   const [showLogoModal, setShowLogoModal] = useState(false)
 
   const handleSectorChange = async (sector: SectorOption) => {
+    console.log('🔄 Sector changed to:', sector.label, '(', sector.id, ')')
     setCurrentSector(sector)
     setLoading(true)
     
@@ -23,10 +24,17 @@ export default function Home() {
       const response = await fetch(`/api/stocks/by-sector?sector=${sector.id}`)
       const data = await response.json()
       
+      console.log('📈 API Response:', data)
+      
       if (data.success && data.symbols) {
+        console.log('✅ Setting', data.symbols.length, 'symbols:', 
+          data.symbols.map(s => s.proName).join(', '))
         setSymbols(data.symbols)
+      } else {
+        console.error('❌ API error:', data.error)
       }
     } catch (error) {
+      console.error('❌ Fetch error:', error)
       console.log('Using default symbols due to API error')
     } finally {
       setLoading(false)
