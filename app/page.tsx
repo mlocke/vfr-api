@@ -26,9 +26,9 @@ export default function Home() {
       
       console.log('📈 API Response:', data)
       
-      if (data.success && data.symbols) {
+      if (data.success && data.symbols && Array.isArray(data.symbols)) {
         console.log('✅ Setting', data.symbols.length, 'symbols:', 
-          data.symbols.map(s => s.proName).join(', '))
+          data.symbols.map((s: any) => s.proName).join(', '))
         setSymbols(data.symbols)
       } else {
         console.error('❌ API error:', data.error)
