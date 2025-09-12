@@ -36,6 +36,9 @@ const MARKET_SECTORS: SectorOption[] = [
   { id: 'nasdaq100', label: 'NASDAQ 100', description: 'Top 100 non-financial NASDAQ stocks', category: 'index' },
   { id: 'dow30', label: 'Dow Jones 30', description: '30 major US industrial companies', category: 'index' },
   { id: 'russell2000', label: 'Russell 2000', description: 'Small-cap US stock index', category: 'index' },
+  
+  // Exchange Traded Funds
+  { id: 'etfs', label: 'Popular ETFs', description: 'Most traded ETFs and leveraged funds', category: 'etf' },
 ]
 
 export default function SectorDropdown({ onSectorChange, loading = false, disabled = false, currentSector }: SectorDropdownProps) {
@@ -49,7 +52,8 @@ export default function SectorDropdown({ onSectorChange, loading = false, disabl
 
   const sectorGroups = {
     sectors: MARKET_SECTORS.filter(s => s.category === 'sector'),
-    indices: MARKET_SECTORS.filter(s => s.category === 'index')
+    indices: MARKET_SECTORS.filter(s => s.category === 'index'),
+    etfs: MARKET_SECTORS.filter(s => s.category === 'etf')
   }
 
   // Close dropdown when clicking outside
@@ -115,6 +119,20 @@ export default function SectorDropdown({ onSectorChange, loading = false, disabl
               </button>
             ))}
           </div>
+          
+          {/* ETFs Group */}
+          <div className={styles.groupSection}>
+            <div className={styles.groupHeader}>💹 Exchange Traded Funds</div>
+            {sectorGroups.etfs.map((etf) => (
+              <button
+                key={etf.id}
+                onClick={() => handleSectorSelect(etf)}
+                className={styles.optionButton}
+              >
+                {etf.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -123,7 +141,7 @@ export default function SectorDropdown({ onSectorChange, loading = false, disabl
         <div className={styles.description}>
           <div className={styles.descriptionContent}>
             <span className={styles.categoryIcon}>
-              {currentSector.category === 'index' ? '📊' : '🏢'}
+              {currentSector.category === 'index' ? '📊' : currentSector.category === 'etf' ? '💹' : '🏢'}
             </span>
             <span className={styles.descriptionText}>{currentSector.description}</span>
           </div>
