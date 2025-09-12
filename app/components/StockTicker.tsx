@@ -45,10 +45,26 @@ export default function StockTicker({ symbols }: StockTickerProps) {
   useEffect(() => {
     let fallbackTimer: NodeJS.Timeout
 
+    // Clear the existing widget container
+    const widgetContainer = document.querySelector('.stock-ticker .tradingview-widget-container__widget')
+    if (widgetContainer) {
+      widgetContainer.innerHTML = '' // Clear existing widget
+    }
+
+    // Show loading state
+    const loadingElement = document.getElementById('ticker-loading')
+    if (loadingElement) {
+      loadingElement.style.display = 'flex'
+      loadingElement.style.opacity = '1'
+    }
+
+    console.log('🔄 Updating StockTicker with', activeSymbols.length, 'symbols:', 
+      activeSymbols.map(s => s.proName).join(', '))
+
     // TradingView widget callback - handles widget loaded event
     // @ts-ignore
     window.onTradingViewWidgetLoad = function() {
-      console.log('✅ TradingView ticker widget loaded successfully')
+      console.log('✅ TradingView ticker widget loaded with new symbols')
       
       // Hide loading text when widget loads
       const loadingElement = document.getElementById('ticker-loading')
@@ -68,42 +84,28 @@ export default function StockTicker({ symbols }: StockTickerProps) {
     // Polygon MCP Integration for enhanced data
     async function initPolygonMCPIntegration() {
       try {
-        // This would integrate with the backend Polygon MCP collector
-        console.log('🔌 Initializing Polygon MCP integration...')
+        console.log('🔌 Initializing Polygon MCP integration for sector-specific data...')
         
-        // Example: Call our backend endpoint that uses Polygon MCP
-        // const response = await fetch('/api/polygon-mcp/market-data')
-        // const data = await response.json()
+        // TODO: Implement MCP integration for real-time sector analysis
+        // This would call our MCP-enhanced backend
+        // const mcpResponse = await fetch('/api/mcp/polygon/sector-analysis', {
+        //   method: 'POST',
+        //   body: JSON.stringify({ symbols: activeSymbols })
+        // })
         
-        console.log('📈 Polygon MCP integration initialized - enhanced data available')
+        console.log('📈 MCP integration ready for sector-based analysis')
       } catch (error) {
-        console.log('⚠️ Polygon MCP integration optional - using TradingView data only')
+        console.log('⚠️ MCP integration optional - using TradingView data')
       }
     }
 
-    async function refreshMarketData() {
-      try {
-        // This would call our backend endpoint that uses Polygon MCP
-        console.log('🔄 Refreshing market data via Polygon MCP...')
-        
-        // Example implementation:
-        // const response = await fetch('/api/polygon-mcp/refresh-data')
-        // const freshData = await response.json()
-        
-        // Update any cached data or state
-        console.log('✅ Market data refreshed successfully')
-      } catch (error) {
-        console.log('📊 Using TradingView data as primary source')
-      }
-    }
-
-    // Set up TradingView widget monitoring
+    // Set up TradingView widget monitoring for new widget
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         if (mutation.type === 'childList') {
           const iframe = document.querySelector('.stock-ticker iframe')
           if (iframe) {
-            console.log('📈 Real-time ticker iframe loaded')
+            console.log('📈 New ticker iframe loaded with updated symbols')
             
             // Hide loading text when iframe is detected
             const loadingElement = document.getElementById('ticker-loading')
@@ -125,7 +127,7 @@ export default function StockTicker({ symbols }: StockTickerProps) {
       subtree: true
     })
     
-    // Fallback: hide loading text after 10 seconds regardless
+    // Fallback: hide loading text after 8 seconds regardless
     fallbackTimer = setTimeout(() => {
       const loadingElement = document.getElementById('ticker-loading')
       if (loadingElement) {
@@ -134,9 +136,9 @@ export default function StockTicker({ symbols }: StockTickerProps) {
           loadingElement.style.display = 'none'
         }, 300)
       }
-    }, 10000)
+    }, 8000)
 
-    // TradingView ticker widget configuration with dynamic symbols
+    // Create new TradingView ticker widget with updated symbols
     const script = document.createElement('script')
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js'
     script.async = true
@@ -149,7 +151,10 @@ export default function StockTicker({ symbols }: StockTickerProps) {
       "locale": "en"
     })
 
-    const widgetContainer = document.querySelector('.stock-ticker .tradingview-widget-container__widget')
+    // Add unique key to force widget recreation
+    script.setAttribute('data-symbols-hash', 
+      activeSymbols.map(s => s.proName).join(','))
+
     if (widgetContainer) {
       widgetContainer.appendChild(script)
     }

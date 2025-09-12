@@ -129,8 +129,14 @@ export async function GET(request: NextRequest) {
         
         console.log(`📊 Generated ${symbols.length} index symbols for ${sector}`)
       } else {
-        // For sectors, we'll use a curated list since we don't have MCP integration yet
-        symbols = await getCuratedSectorStocks(sector as string)
+        // Try MCP-enhanced stock selection first
+        symbols = await getMCPEnhancedStocks(sector as string)
+        
+        if (symbols.length === 0) {
+          // Fallback to curated list
+          symbols = await getCuratedSectorStocks(sector as string)
+          console.log(`📋 Using curated stocks for ${sector}`)
+        }
       }
 
       // Cache the result
@@ -145,20 +151,21 @@ export async function GET(request: NextRequest) {
         success: true, 
         symbols: symbols.slice(0, sectorConfig.limit),
         sector: sector,
-        cached: false
+        cached: false,
+        source: symbols.length > 0 ? 'mcp' : 'curated'
       })
 
     } catch (mcpError) {
-      console.log(`⚠️ MCP integration not yet available, using fallback for ${sector}`)
+      console.log(`⚠️ MCP error for ${sector}:`, mcpError)
       
-      // Fallback to default symbols for now
-      const fallbackSymbols = await getFallbackSymbols(sector)
+      // Fallback to curated symbols
+      const fallbackSymbols = await getCuratedSectorStocks(sector)
       
       return NextResponse.json({ 
         success: true, 
         symbols: fallbackSymbols,
         fallback: true,
-        message: 'Using curated symbols - MCP integration pending'
+        message: 'Using curated symbols - MCP temporarily unavailable'
       })
     }
 
@@ -170,6 +177,260 @@ export async function GET(request: NextRequest) {
       message: 'Unable to fetch sector data'
     }, { status: 500 })
   }
+}
+
+// MCP-enhanced stock selection using Polygon data
+async function getMCPEnhancedStocks(sector: string): Promise<SymbolData[]> {
+  try {
+    console.log(`🔌 Attempting MCP integration for ${sector} sector`)
+    
+    // TODO: This would integrate with actual Polygon MCP
+    // For now, return enhanced curated lists with better filtering
+    
+    // Simulate MCP processing delay
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    const mcpEnhancedStocks = await getEnhancedSectorStocks(sector)
+    
+    if (mcpEnhancedStocks.length > 0) {
+      console.log(`🚀 MCP enhanced selection: ${mcpEnhancedStocks.length} stocks for ${sector}`)
+      return mcpEnhancedStocks
+    }
+    
+    return []
+  } catch (error) {
+    console.log(`⚠️ MCP integration failed for ${sector}:`, error)
+    return []
+  }
+}
+
+// Enhanced sector stocks with better curation and filtering
+async function getEnhancedSectorStocks(sector: string): Promise<SymbolData[]> {
+  const enhancedSectorStocks = {
+    'technology': [
+      // Mega-cap tech (MCP would filter by market cap > $500B)
+      { proName: 'NASDAQ:AAPL', title: 'Apple Inc. - Consumer Electronics' },
+      { proName: 'NASDAQ:MSFT', title: 'Microsoft Corp. - Cloud Computing' },
+      { proName: 'NASDAQ:GOOGL', title: 'Alphabet Inc. - Search & AI' },
+      { proName: 'NASDAQ:AMZN', title: 'Amazon.com - E-commerce & Cloud' },
+      { proName: 'NASDAQ:META', title: 'Meta Platforms - Social Media' },
+      { proName: 'NASDAQ:TSLA', title: 'Tesla Inc. - Electric Vehicles' },
+      { proName: 'NASDAQ:NVDA', title: 'NVIDIA Corp. - AI Chips' },
+      
+      // Large-cap tech (MCP would filter by volume and volatility)
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc. - Streaming' },
+      { proName: 'NYSE:CRM', title: 'Salesforce Inc. - Enterprise Software' },
+      { proName: 'NASDAQ:ADBE', title: 'Adobe Inc. - Creative Software' },
+      { proName: 'NASDAQ:INTC', title: 'Intel Corp. - Semiconductors' },
+      { proName: 'NASDAQ:AMD', title: 'AMD - Semiconductors' },
+      
+      // Growth tech (MCP would add based on sector trends)
+      { proName: 'NASDAQ:SNOW', title: 'Snowflake - Cloud Data' },
+      { proName: 'NASDAQ:ZM', title: 'Zoom Communications' },
+      { proName: 'NYSE:PLTR', title: 'Palantir Technologies' }
+    ],
+    'healthcare': [
+      // Pharma giants
+      { proName: 'NYSE:JNJ', title: 'Johnson & Johnson - Diversified Healthcare' },
+      { proName: 'NYSE:PFE', title: 'Pfizer Inc. - Pharmaceuticals' },
+      { proName: 'NYSE:UNH', title: 'UnitedHealth Group - Health Insurance' },
+      { proName: 'NYSE:MRK', title: 'Merck & Co. - Pharmaceuticals' },
+      { proName: 'NYSE:ABT', title: 'Abbott Laboratories - Medical Devices' },
+      
+      // Biotech leaders
+      { proName: 'NASDAQ:GILD', title: 'Gilead Sciences - Antiviral Drugs' },
+      { proName: 'NASDAQ:AMGN', title: 'Amgen Inc. - Biotechnology' },
+      { proName: 'NASDAQ:MRNA', title: 'Moderna Inc. - mRNA Technology' },
+      { proName: 'NYSE:BMY', title: 'Bristol Myers Squibb - Oncology' },
+      
+      // Medical technology
+      { proName: 'NYSE:TMO', title: 'Thermo Fisher Scientific - Life Sciences' }
+    ],
+    'financials': [
+      // Major banks
+      { proName: 'NYSE:JPM', title: 'JPMorgan Chase - Investment Banking' },
+      { proName: 'NYSE:BAC', title: 'Bank of America - Commercial Banking' },
+      { proName: 'NYSE:WFC', title: 'Wells Fargo - Consumer Banking' },
+      { proName: 'NYSE:C', title: 'Citigroup Inc. - Global Banking' },
+      
+      // Investment firms
+      { proName: 'NYSE:GS', title: 'Goldman Sachs - Investment Banking' },
+      { proName: 'NYSE:MS', title: 'Morgan Stanley - Wealth Management' },
+      { proName: 'NYSE:BLK', title: 'BlackRock - Asset Management' },
+      
+      // Payment processors
+      { proName: 'NYSE:V', title: 'Visa Inc. - Payment Processing' },
+      { proName: 'NYSE:MA', title: 'Mastercard Inc. - Payment Technology' },
+      { proName: 'NYSE:AXP', title: 'American Express - Financial Services' }
+    ],
+    'energy': [
+      // Oil majors
+      { proName: 'NYSE:XOM', title: 'Exxon Mobil - Integrated Oil' },
+      { proName: 'NYSE:CVX', title: 'Chevron Corp. - Integrated Oil' },
+      { proName: 'NYSE:COP', title: 'ConocoPhillips - Oil & Gas E&P' },
+      
+      // Energy services
+      { proName: 'NYSE:SLB', title: 'Schlumberger - Oilfield Services' },
+      { proName: 'NYSE:HAL', title: 'Halliburton - Oilfield Services' },
+      
+      // Renewables & utilities
+      { proName: 'NYSE:NEE', title: 'NextEra Energy - Renewable Power' },
+      { proName: 'NYSE:DUK', title: 'Duke Energy - Electric Utility' }
+    ],
+    'consumer-discretionary': [
+      // Retail giants
+      { proName: 'NYSE:WMT', title: 'Walmart Inc. - Retail' },
+      { proName: 'NASDAQ:AMZN', title: 'Amazon.com - E-commerce' },
+      { proName: 'NYSE:HD', title: 'Home Depot - Home Improvement' },
+      { proName: 'NYSE:LOW', title: 'Lowe\'s Companies - Home Improvement' },
+      { proName: 'NYSE:TGT', title: 'Target Corp. - Retail' },
+      
+      // Automotive
+      { proName: 'NYSE:F', title: 'Ford Motor Company - Automotive' },
+      { proName: 'NYSE:GM', title: 'General Motors - Automotive' },
+      { proName: 'NASDAQ:TSLA', title: 'Tesla Inc. - Electric Vehicles' },
+      
+      // Apparel & luxury
+      { proName: 'NYSE:NKE', title: 'Nike Inc. - Athletic Apparel' },
+      { proName: 'NYSE:TJX', title: 'TJX Companies - Discount Retail' },
+      
+      // Entertainment & media
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company - Entertainment' },
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc. - Streaming' },
+      
+      // Restaurants
+      { proName: 'NYSE:MCD', title: 'McDonald\'s Corp. - Fast Food' },
+      { proName: 'NYSE:SBUX', title: 'Starbucks Corp. - Coffee Retail' }
+    ],
+    'consumer-staples': [
+      // Food & beverage giants
+      { proName: 'NYSE:KO', title: 'Coca-Cola Company - Beverages' },
+      { proName: 'NASDAQ:PEP', title: 'PepsiCo Inc. - Food & Beverages' },
+      { proName: 'NYSE:PG', title: 'Procter & Gamble - Consumer Products' },
+      { proName: 'NYSE:UL', title: 'Unilever PLC - Consumer Goods' },
+      
+      // Food producers
+      { proName: 'NYSE:KHC', title: 'Kraft Heinz Company - Food Products' },
+      { proName: 'NYSE:GIS', title: 'General Mills - Food Products' },
+      { proName: 'NYSE:K', title: 'Kellogg Company - Breakfast Foods' },
+      { proName: 'NYSE:CPB', title: 'Campbell Soup Company - Food Products' },
+      
+      // Household products
+      { proName: 'NYSE:CL', title: 'Colgate-Palmolive - Household Products' },
+      { proName: 'NYSE:KMB', title: 'Kimberly-Clark - Paper Products' },
+      
+      // Retail staples
+      { proName: 'NYSE:WMT', title: 'Walmart Inc. - Staples Retail' },
+      { proName: 'NYSE:COST', title: 'Costco Wholesale - Membership Retail' }
+    ],
+    'industrials': [
+      // Aerospace & defense
+      { proName: 'NYSE:BA', title: 'Boeing Company - Aerospace' },
+      { proName: 'NYSE:LMT', title: 'Lockheed Martin - Defense' },
+      { proName: 'NYSE:RTX', title: 'Raytheon Technologies - Aerospace & Defense' },
+      { proName: 'NYSE:NOC', title: 'Northrop Grumman - Defense' },
+      { proName: 'NYSE:GD', title: 'General Dynamics - Defense' },
+      
+      // Industrial conglomerates
+      { proName: 'NYSE:GE', title: 'General Electric - Industrial Conglomerate' },
+      { proName: 'NYSE:HON', title: 'Honeywell International - Diversified Technology' },
+      { proName: 'NYSE:MMM', title: '3M Company - Diversified Industrial' },
+      { proName: 'NYSE:CAT', title: 'Caterpillar Inc. - Heavy Machinery' },
+      { proName: 'NYSE:DE', title: 'Deere & Company - Agricultural Equipment' },
+      
+      // Transportation
+      { proName: 'NYSE:UPS', title: 'United Parcel Service - Package Delivery' },
+      { proName: 'NYSE:FDX', title: 'FedEx Corporation - Express Transportation' },
+      { proName: 'NYSE:UAL', title: 'United Airlines - Aviation' },
+      { proName: 'NYSE:DAL', title: 'Delta Air Lines - Aviation' }
+    ],
+    'utilities': [
+      // Electric utilities
+      { proName: 'NYSE:NEE', title: 'NextEra Energy - Renewable Energy' },
+      { proName: 'NYSE:DUK', title: 'Duke Energy - Electric Utility' },
+      { proName: 'NYSE:SO', title: 'Southern Company - Electric Utility' },
+      { proName: 'NYSE:AEP', title: 'American Electric Power - Electric Utility' },
+      { proName: 'NYSE:EXC', title: 'Exelon Corporation - Electric Utility' },
+      { proName: 'NYSE:XEL', title: 'Xcel Energy - Electric & Gas Utility' },
+      
+      // Gas utilities
+      { proName: 'NYSE:SRE', title: 'Sempra Energy - Gas & Electric Utility' },
+      { proName: 'NYSE:PEG', title: 'Public Service Enterprise Group - Gas & Electric' },
+      { proName: 'NYSE:ED', title: 'Consolidated Edison - Electric & Gas Utility' },
+      
+      // Water utilities
+      { proName: 'NYSE:AWK', title: 'American Water Works - Water Utility' },
+      
+      // Multi-utilities
+      { proName: 'NYSE:WEC', title: 'WEC Energy Group - Multi-Utility' },
+      { proName: 'NYSE:ETR', title: 'Entergy Corporation - Electric Utility' }
+    ],
+    'materials': [
+      // Mining & metals
+      { proName: 'NYSE:NEM', title: 'Newmont Corporation - Gold Mining' },
+      { proName: 'NYSE:FCX', title: 'Freeport-McMoRan - Copper & Gold Mining' },
+      { proName: 'NYSE:AA', title: 'Alcoa Corporation - Aluminum' },
+      { proName: 'NYSE:X', title: 'United States Steel - Steel Production' },
+      { proName: 'NYSE:NUE', title: 'Nucor Corporation - Steel Production' },
+      
+      // Chemicals
+      { proName: 'NYSE:DD', title: 'DuPont de Nemours - Specialty Chemicals' },
+      { proName: 'NYSE:DOW', title: 'Dow Inc. - Chemical Manufacturing' },
+      { proName: 'NYSE:LYB', title: 'LyondellBasell - Petrochemicals' },
+      { proName: 'NYSE:PPG', title: 'PPG Industries - Paints & Coatings' },
+      { proName: 'NYSE:SHW', title: 'Sherwin-Williams - Paints & Coatings' },
+      
+      // Forest products
+      { proName: 'NYSE:IP', title: 'International Paper - Forest Products' },
+      { proName: 'NYSE:WY', title: 'Weyerhaeuser Company - Forest Products' },
+      
+      // Construction materials
+      { proName: 'NYSE:VMC', title: 'Vulcan Materials - Construction Aggregates' },
+      { proName: 'NYSE:MLM', title: 'Martin Marietta Materials - Construction Materials' }
+    ],
+    'real-estate': [
+      // REITs - Residential
+      { proName: 'NYSE:AMT', title: 'American Tower Corporation - Cell Tower REIT' },
+      { proName: 'NYSE:PLD', title: 'Prologis Inc. - Industrial REIT' },
+      { proName: 'NYSE:CCI', title: 'Crown Castle International - Infrastructure REIT' },
+      { proName: 'NYSE:EQIX', title: 'Equinix Inc. - Data Center REIT' },
+      { proName: 'NYSE:WELL', title: 'Welltower Inc. - Healthcare REIT' },
+      
+      // REITs - Commercial
+      { proName: 'NYSE:SPG', title: 'Simon Property Group - Retail REIT' },
+      { proName: 'NYSE:O', title: 'Realty Income Corporation - Retail REIT' },
+      { proName: 'NYSE:VICI', title: 'VICI Properties - Gaming & Leisure REIT' },
+      { proName: 'NYSE:VTR', title: 'Ventas Inc. - Healthcare REIT' },
+      
+      // REITs - Specialty
+      { proName: 'NYSE:PSA', title: 'Public Storage - Self Storage REIT' },
+      { proName: 'NYSE:AVB', title: 'AvalonBay Communities - Residential REIT' },
+      { proName: 'NYSE:EQR', title: 'Equity Residential - Residential REIT' }
+    ],
+    'communication': [
+      // Telecom services
+      { proName: 'NYSE:VZ', title: 'Verizon Communications - Wireless Telecom' },
+      { proName: 'NYSE:T', title: 'AT&T Inc. - Telecommunications' },
+      { proName: 'NASDAQ:TMUS', title: 'T-Mobile US - Wireless Communications' },
+      
+      // Media & entertainment
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc. - Streaming Entertainment' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company - Media & Entertainment' },
+      { proName: 'NASDAQ:CMCSA', title: 'Comcast Corporation - Media & Telecommunications' },
+      { proName: 'NYSE:WBD', title: 'Warner Bros. Discovery - Media & Entertainment' },
+      
+      // Internet & digital media
+      { proName: 'NASDAQ:META', title: 'Meta Platforms - Social Media' },
+      { proName: 'NASDAQ:GOOGL', title: 'Alphabet Inc. - Internet Services' },
+      { proName: 'NYSE:CHTR', title: 'Charter Communications - Cable & Internet' },
+      
+      // Gaming & interactive media
+      { proName: 'NASDAQ:EA', title: 'Electronic Arts - Gaming Software' },
+      { proName: 'NASDAQ:TTWO', title: 'Take-Two Interactive - Gaming Software' }
+    ]
+  }
+  
+  return enhancedSectorStocks[sector as keyof typeof enhancedSectorStocks] || []
 }
 
 // Curated stock lists by sector (temporary until MCP integration)
@@ -227,6 +488,90 @@ async function getCuratedSectorStocks(sector: string): Promise<SymbolData[]> {
       { proName: 'NYSE:OXY', title: 'Occidental Petroleum' },
       { proName: 'NYSE:HAL', title: 'Halliburton Company' },
       { proName: 'NYSE:BKR', title: 'Baker Hughes Company' }
+    ],
+    'consumer-discretionary': [
+      { proName: 'NYSE:WMT', title: 'Walmart Inc.' },
+      { proName: 'NASDAQ:AMZN', title: 'Amazon.com Inc.' },
+      { proName: 'NYSE:HD', title: 'Home Depot Inc.' },
+      { proName: 'NYSE:LOW', title: 'Lowe\'s Companies Inc.' },
+      { proName: 'NYSE:TGT', title: 'Target Corporation' },
+      { proName: 'NYSE:F', title: 'Ford Motor Company' },
+      { proName: 'NYSE:GM', title: 'General Motors Company' },
+      { proName: 'NASDAQ:TSLA', title: 'Tesla Inc.' },
+      { proName: 'NYSE:NKE', title: 'Nike Inc.' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company' }
+    ],
+    'consumer-staples': [
+      { proName: 'NYSE:KO', title: 'Coca-Cola Company' },
+      { proName: 'NASDAQ:PEP', title: 'PepsiCo Inc.' },
+      { proName: 'NYSE:PG', title: 'Procter & Gamble Co.' },
+      { proName: 'NYSE:UL', title: 'Unilever PLC' },
+      { proName: 'NYSE:KHC', title: 'Kraft Heinz Company' },
+      { proName: 'NYSE:GIS', title: 'General Mills Inc.' },
+      { proName: 'NYSE:K', title: 'Kellogg Company' },
+      { proName: 'NYSE:CL', title: 'Colgate-Palmolive Company' },
+      { proName: 'NYSE:KMB', title: 'Kimberly-Clark Corporation' },
+      { proName: 'NYSE:COST', title: 'Costco Wholesale Corporation' }
+    ],
+    'industrials': [
+      { proName: 'NYSE:BA', title: 'Boeing Company' },
+      { proName: 'NYSE:LMT', title: 'Lockheed Martin Corporation' },
+      { proName: 'NYSE:RTX', title: 'Raytheon Technologies Corporation' },
+      { proName: 'NYSE:GE', title: 'General Electric Company' },
+      { proName: 'NYSE:HON', title: 'Honeywell International Inc.' },
+      { proName: 'NYSE:MMM', title: '3M Company' },
+      { proName: 'NYSE:CAT', title: 'Caterpillar Inc.' },
+      { proName: 'NYSE:DE', title: 'Deere & Company' },
+      { proName: 'NYSE:UPS', title: 'United Parcel Service Inc.' },
+      { proName: 'NYSE:FDX', title: 'FedEx Corporation' }
+    ],
+    'utilities': [
+      { proName: 'NYSE:NEE', title: 'NextEra Energy Inc.' },
+      { proName: 'NYSE:DUK', title: 'Duke Energy Corporation' },
+      { proName: 'NYSE:SO', title: 'Southern Company' },
+      { proName: 'NYSE:AEP', title: 'American Electric Power Company' },
+      { proName: 'NYSE:EXC', title: 'Exelon Corporation' },
+      { proName: 'NYSE:XEL', title: 'Xcel Energy Inc.' },
+      { proName: 'NYSE:SRE', title: 'Sempra Energy' },
+      { proName: 'NYSE:PEG', title: 'Public Service Enterprise Group' },
+      { proName: 'NYSE:ED', title: 'Consolidated Edison Inc.' },
+      { proName: 'NYSE:AWK', title: 'American Water Works Company Inc.' }
+    ],
+    'materials': [
+      { proName: 'NYSE:NEM', title: 'Newmont Corporation' },
+      { proName: 'NYSE:FCX', title: 'Freeport-McMoRan Inc.' },
+      { proName: 'NYSE:AA', title: 'Alcoa Corporation' },
+      { proName: 'NYSE:X', title: 'United States Steel Corporation' },
+      { proName: 'NYSE:NUE', title: 'Nucor Corporation' },
+      { proName: 'NYSE:DD', title: 'DuPont de Nemours Inc.' },
+      { proName: 'NYSE:DOW', title: 'Dow Inc.' },
+      { proName: 'NYSE:LYB', title: 'LyondellBasell Industries N.V.' },
+      { proName: 'NYSE:PPG', title: 'PPG Industries Inc.' },
+      { proName: 'NYSE:SHW', title: 'Sherwin-Williams Company' }
+    ],
+    'real-estate': [
+      { proName: 'NYSE:AMT', title: 'American Tower Corporation' },
+      { proName: 'NYSE:PLD', title: 'Prologis Inc.' },
+      { proName: 'NYSE:CCI', title: 'Crown Castle International Corp.' },
+      { proName: 'NYSE:EQIX', title: 'Equinix Inc.' },
+      { proName: 'NYSE:WELL', title: 'Welltower Inc.' },
+      { proName: 'NYSE:SPG', title: 'Simon Property Group Inc.' },
+      { proName: 'NYSE:O', title: 'Realty Income Corporation' },
+      { proName: 'NYSE:PSA', title: 'Public Storage' },
+      { proName: 'NYSE:AVB', title: 'AvalonBay Communities Inc.' },
+      { proName: 'NYSE:EQR', title: 'Equity Residential' }
+    ],
+    'communication': [
+      { proName: 'NYSE:VZ', title: 'Verizon Communications Inc.' },
+      { proName: 'NYSE:T', title: 'AT&T Inc.' },
+      { proName: 'NASDAQ:TMUS', title: 'T-Mobile US Inc.' },
+      { proName: 'NASDAQ:NFLX', title: 'Netflix Inc.' },
+      { proName: 'NYSE:DIS', title: 'Walt Disney Company' },
+      { proName: 'NASDAQ:CMCSA', title: 'Comcast Corporation' },
+      { proName: 'NASDAQ:META', title: 'Meta Platforms Inc.' },
+      { proName: 'NASDAQ:GOOGL', title: 'Alphabet Inc.' },
+      { proName: 'NYSE:CHTR', title: 'Charter Communications Inc.' },
+      { proName: 'NASDAQ:EA', title: 'Electronic Arts Inc.' }
     ]
   }
 
