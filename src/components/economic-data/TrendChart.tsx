@@ -250,7 +250,7 @@ const TrendChart: React.FC<TrendChartProps> = ({
 		}
 
 		// Add axes
-		const xAxis = d3.axisBottom(xScale).tickFormat(d3.timeFormat("%b %y")).ticks(5);
+		const xAxis = d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%b %y")(d as Date)).ticks(5);
 
 		const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d3.format(".2f"));
 

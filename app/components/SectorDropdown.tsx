@@ -7,7 +7,7 @@ export interface SectorOption {
   id: string
   label: string
   description: string
-  category: 'sector' | 'index'
+  category: 'sector' | 'index' | 'etf'
 }
 
 interface SectorDropdownProps {

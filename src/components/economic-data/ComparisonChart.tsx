@@ -324,7 +324,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({
 		});
 
 		// Add axes
-		const xAxis = d3.axisBottom(xScale).tickFormat(d3.timeFormat("%b %y")).ticks(6);
+		const xAxis = d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%b %y")(d as Date)).ticks(6);
 
 		const yAxisLeft = d3.axisLeft(yScaleLeft).ticks(6).tickFormat(d3.format(".2f"));
 

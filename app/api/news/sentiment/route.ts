@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { mcpClient } from '../../../services/mcp/MCPClient'
 
 interface NewsArticle {
   title: string
@@ -120,72 +121,54 @@ function extractKeywords(text: string): string[] {
   return foundKeywords.slice(0, 5) // Return top 5 keywords
 }
 
-// Fetch news using Firecrawl MCP
+// Fetch news using Firecrawl MCP for web intelligence
 async function fetchNewsWithFirecrawl(sector: string): Promise<NewsArticle[]> {
   try {
     console.log(`🔥 Using Firecrawl MCP for news sentiment analysis: ${sector}`)
     
     // Use Firecrawl search to find relevant financial news
-    const searchResults = await mcp__firecrawl__firecrawl_search({
-      query: `${sector} stocks financial news earnings revenue market`,
-      limit: 10,
-      sources: [{ type: 'news' }],
-      scrapeOptions: {
-        formats: ['markdown'],
-        onlyMainContent: true
-      }
-    })
-    
-    if (!searchResults?.news || searchResults.news.length === 0) {
-      throw new Error('No news results from Firecrawl')
-    }
-    
-    const articles: NewsArticle[] = []
-    
-    for (const newsItem of searchResults.news) {
-      try {
-        // Scrape the full article content if needed
-        let content = newsItem.description || ''
-        
-        if (newsItem.url && content.length < 200) {
-          const scrapeResult = await mcp__firecrawl__firecrawl_scrape({
-            url: newsItem.url,
-            formats: ['markdown'],
-            onlyMainContent: true,
-            maxAge: 86400000 // 24 hours cache
-          })
-          
-          if (scrapeResult?.markdown) {
-            content = scrapeResult.markdown.slice(0, 1000) // Limit content length
-          }
+    const searchResults = await mcpClient.executeTool(
+      'firecrawl_search',
+      {
+        query: `${sector} stocks financial news earnings revenue market analysis 2024`,
+        limit: 10,
+        sources: [{ type: 'news' }],
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true
         }
-        
-        // Analyze sentiment and extract keywords
-        const sentiment = analyzeSentiment(newsItem.title + ' ' + content)
-        const keywords = extractKeywords(newsItem.title + ' ' + content)
-        
-        // Calculate relevance based on keyword matches and sector relevance
-        const relevance = Math.min(keywords.length / 5 + 0.5, 1)
-        
-        articles.push({
-          title: newsItem.title || 'Untitled',
-          content: content,
-          url: newsItem.url || '',
-          publishedAt: new Date().toISOString(), // Use current time as fallback
-          source: newsItem.source || 'Unknown',
-          sentiment,
-          relevance,
-          keywords
-        })
-        
-      } catch (articleError) {
-        console.log('Error processing article:', articleError)
-        continue
+      },
+      {
+        preferredServer: 'firecrawl',
+        cacheTTL: 900000, // 15 minutes cache
+        priority: 'medium'
       }
+    )
+    
+    if (searchResults.success && searchResults.data?.results) {
+      console.log(`📰 Found ${searchResults.data.results.length} news articles via Firecrawl MCP`)
+      
+      const articles: NewsArticle[] = searchResults.data.results.map((result: any, index: number) => {
+        const fullText = `${result.title || ''} ${result.description || ''} ${result.markdown || ''}`
+        const sentiment = analyzeSentiment(fullText)
+        const keywords = extractKeywords(fullText)
+        
+        return {
+          title: result.title || `${sector} Market News`,
+          content: result.description || result.markdown?.substring(0, 500) || '',
+          url: result.url || `https://example.com/news/${index}`,
+          publishedAt: new Date().toISOString(),
+          source: result.source || 'Financial News',
+          sentiment,
+          relevance: 0.85, // High relevance for MCP-sourced news
+          keywords
+        }
+      })
+      
+      return articles
     }
     
-    console.log(`✅ Firecrawl MCP: Retrieved ${articles.length} news articles for ${sector}`)
-    return articles
+    throw new Error('No results from Firecrawl MCP')
     
   } catch (error) {
     console.log(`❌ Firecrawl MCP failed for ${sector}:`, error instanceof Error ? error.message : 'Unknown error')

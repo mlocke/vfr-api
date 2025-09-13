@@ -6,9 +6,9 @@ interface StockHoverPopupProps {
   symbol: string
   exchange: string
   name: string
-  visible: boolean
   x: number
   y: number
+  onClose?: () => void
 }
 
 interface StockData {
@@ -31,7 +31,7 @@ interface StockData {
   }
 }
 
-export default function StockHoverPopup({ symbol, exchange, name, visible, x, y }: StockHoverPopupProps) {
+export default function StockHoverPopup({ symbol, exchange, name, x, y, onClose }: StockHoverPopupProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [activeTimePeriod, setActiveTimePeriod] = useState('1M')
   const [stockData, setStockData] = useState<StockData | null>(null)
@@ -73,7 +73,7 @@ export default function StockHoverPopup({ symbol, exchange, name, visible, x, y 
   }
 
   useEffect(() => {
-    if (visible && symbol) {
+    if (symbol) {
       setIsLoaded(false)
       
       // Simulate data loading
@@ -109,9 +109,9 @@ export default function StockHoverPopup({ symbol, exchange, name, visible, x, y 
         widgetContainer.appendChild(script)
       }
     }
-  }, [visible, symbol, exchange, activeTimePeriod])
+  }, [symbol, exchange, activeTimePeriod])
 
-  if (!visible || !stockData) return null
+  if (!stockData) return null
 
   const adjustedX = Math.min(x, window.innerWidth - 520)
   const adjustedY = Math.max(y, 100)

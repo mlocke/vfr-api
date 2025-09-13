@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { mcpClient } from '../../../services/mcp/MCPClient'
 
 // Sector mapping to filter stocks by industry
 const SECTOR_MAPPINGS = {
@@ -191,23 +192,94 @@ async function getMCPEnhancedStocks(sector: string): Promise<SymbolData[]> {
   try {
     console.log(`🔌 Attempting MCP integration for ${sector} sector`)
     
-    // TODO: This would integrate with actual Polygon MCP
-    // For now, return enhanced curated lists with better filtering
+    // Step 1: Get sector tickers using Polygon MCP
+    const tickersResponse = await mcpClient.executeTool(
+      'list_tickers',
+      {
+        market: 'stocks',
+        active: true,
+        sort: 'ticker',
+        order: 'asc',
+        limit: 50
+      },
+      {
+        preferredServer: 'polygon',
+        cacheTTL: 300000, // 5 minutes cache
+        priority: 'high'
+      }
+    )
     
-    // Simulate MCP processing delay
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
-    const mcpEnhancedStocks = await getEnhancedSectorStocks(sector)
-    
-    if (mcpEnhancedStocks.length > 0) {
-      console.log(`🚀 MCP enhanced selection: ${mcpEnhancedStocks.length} stocks for ${sector}`)
-      return mcpEnhancedStocks
+    if (tickersResponse.success && tickersResponse.data) {
+      console.log(`📊 Retrieved ${tickersResponse.data.results?.length || 0} tickers from Polygon MCP`)
+      
+      // Step 2: Filter tickers by sector using enhanced mapping
+      const sectorConfig = SECTOR_MAPPINGS[sector as keyof typeof SECTOR_MAPPINGS]
+      let filteredTickers = []
+      
+      if ('keywords' in sectorConfig) {
+        // Filter by sector keywords
+        filteredTickers = (tickersResponse.data.results || []).filter((ticker: any) => {
+          const name = (ticker.name || '').toLowerCase()
+          const description = (ticker.description || '').toLowerCase()
+          return sectorConfig.keywords.some(keyword => 
+            name.includes(keyword) || description.includes(keyword)
+          )
+        })
+      }
+      
+      // Step 3: Get detailed ticker information for market cap ranking
+      const topTickers = filteredTickers.slice(0, 20)
+      const detailedStocks = []
+      
+      for (const ticker of topTickers) {
+        try {
+          const detailsResponse = await mcpClient.executeTool(
+            'get_ticker_details',
+            { ticker: ticker.ticker },
+            {
+              preferredServer: 'polygon',
+              cacheTTL: 600000, // 10 minutes cache
+              priority: 'medium'
+            }
+          )
+          
+          if (detailsResponse.success && detailsResponse.data) {
+            const details = detailsResponse.data.results
+            detailedStocks.push({
+              proName: `${ticker.primary_exchange || 'NASDAQ'}:${ticker.ticker}`,
+              title: `${ticker.ticker} - ${details.name || ticker.name}`,
+              marketCap: details.market_cap || 0,
+              sector: details.sic_description || sector
+            })
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to get details for ${ticker.ticker}:`, error)
+        }
+      }
+      
+      // Step 4: Sort by market cap and return top 20
+      const rankedStocks = detailedStocks
+        .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
+        .slice(0, 20)
+        .map(stock => ({
+          proName: stock.proName,
+          title: stock.title
+        }))
+      
+      if (rankedStocks.length > 0) {
+        console.log(`🚀 MCP enhanced selection: ${rankedStocks.length} stocks for ${sector}`)
+        return rankedStocks
+      }
     }
     
-    return []
+    // Fallback to enhanced curated list if MCP data is insufficient
+    console.log(`📋 MCP data insufficient, using enhanced curated list for ${sector}`)
+    return await getEnhancedSectorStocks(sector)
+    
   } catch (error) {
     console.log(`⚠️ MCP integration failed for ${sector}:`, error)
-    return []
+    // Fallback to enhanced curated list
+    return await getEnhancedSectorStocks(sector)
   }
 }
 

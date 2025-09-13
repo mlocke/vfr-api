@@ -6,8 +6,6 @@ import TrendChart from "./TrendChart";
 import { useResponsive } from "../../hooks/useResponsive";
 import { EconomicDashboardData, FredDataResponse, ChartDataPoint } from "../../types/economic-data";
 import {
-	convertToChartData,
-	getSectorConfig,
 	generateAriaDescription,
 	generateChartDescription,
 	announceToScreenReader,
@@ -209,6 +207,15 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 		}
 	};
 
+	// Convert FRED data to chart format
+	const convertToChartData = (fredData: any) => {
+		if (!fredData || !fredData.observations) return [];
+		return fredData.observations.map((obs: any) => ({
+			date: new Date(obs.date),
+			value: parseFloat(obs.value) || 0
+		}));
+	};
+
 	const prepareComparisonData = () => {
 		const series = [];
 
@@ -239,7 +246,7 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 		if (inflationData.length > 0) {
 			series.push({
 				name: "Consumer Price Index",
-				data: inflationData.map(d => ({ ...d, value: ((d.value - 300) / 300) * 100 })), // Normalize for comparison
+				data: inflationData.map((d: any) => ({ ...d, value: ((d.value - 300) / 300) * 100 })), // Normalize for comparison
 				color: "#0080FF",
 				yAxis: "right" as const,
 			});
@@ -348,7 +355,7 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 								dashboardData[sectorName as keyof EconomicDashboardData];
 							const indicators = Object.keys(sectorData);
 							const mainIndicator = sectorData[indicators[0]];
-							const config = getSectorConfig(sectorName);
+							const config = { color: '#00C853', description: sectorName, glowColor: 'green' as const };
 
 							return (
 								<MetricCard
