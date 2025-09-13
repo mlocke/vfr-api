@@ -71,6 +71,7 @@ Test outputs: Always save to /docs/test-output/
 Test outcomes: Always save to /docs/test-outcomes/
 
 ## Subagents
+-**IMPORTANT**-
 For every task, analyze if an existing subagent can be used. If not, RECOMMEND creating one. 
 DO NOT create a new subagent without explicit user approval.
 

@@ -488,6 +488,168 @@ export class DataTransformationLayer {
   }
 
   /**
+   * Transform financial statement data from various sources
+   */
+  static transformFinancialStatement(
+    rawData: any,
+    source: string,
+    symbol: string,
+    quality: QualityScore
+  ): UnifiedFinancialStatement {
+    switch (source) {
+      case 'fmp':
+        return this.transformFMPFinancialStatement(rawData, symbol, quality)
+      case 'yahoo':
+        return this.transformYahooFinancialStatement(rawData, symbol, quality)
+      case 'alphavantage':
+        return this.transformAlphaVantageFinancialStatement(rawData, symbol, quality)
+      default:
+        return this.transformGenericFinancialStatement(rawData, source, symbol, quality)
+    }
+  }
+
+  /**
+   * Transform FMP financial statement data
+   */
+  private static transformFMPFinancialStatement(
+    data: any,
+    symbol: string,
+    quality: QualityScore
+  ): UnifiedFinancialStatement {
+    const statement = Array.isArray(data) ? data[0] : data
+
+    return {
+      symbol,
+      period: this.determinePeriod(statement.period || statement.quarter),
+      fiscalYear: parseInt(statement.calendarYear || statement.date?.substring(0, 4) || new Date().getFullYear().toString()),
+      fiscalQuarter: statement.period === 'Q1' ? 1 : statement.period === 'Q2' ? 2 : statement.period === 'Q3' ? 3 : statement.period === 'Q4' ? 4 : undefined,
+      revenue: statement.revenue || statement.totalRevenue,
+      netIncome: statement.netIncome,
+      eps: statement.eps || statement.epsdiluted,
+      totalAssets: statement.totalAssets,
+      totalLiabilities: statement.totalLiabilities || statement.totalDebt,
+      totalEquity: statement.totalStockholdersEquity || statement.totalEquity,
+      operatingCashFlow: statement.operatingCashFlow || statement.netCashProvidedByOperatingActivities,
+      freeCashFlow: statement.freeCashFlow,
+      source: 'fmp',
+      quality
+    }
+  }
+
+  /**
+   * Transform Yahoo Finance financial statement data
+   */
+  private static transformYahooFinancialStatement(
+    data: any,
+    symbol: string,
+    quality: QualityScore
+  ): UnifiedFinancialStatement {
+    // Yahoo Finance format
+    const financials = data.quoteSummary?.result?.[0]?.incomeStatementHistory?.incomeStatementHistory?.[0] ||
+                      data.quoteSummary?.result?.[0]?.balanceSheetHistory?.balanceSheetStatements?.[0] ||
+                      data.quoteSummary?.result?.[0]?.cashflowStatementHistory?.cashflowStatements?.[0] ||
+                      data
+
+    const endDate = financials.endDate?.fmt || new Date().getFullYear().toString()
+
+    return {
+      symbol,
+      period: 'annual', // Yahoo typically provides annual data
+      fiscalYear: parseInt(endDate.substring(0, 4)),
+      revenue: financials.totalRevenue?.raw || financials.totalRevenue,
+      netIncome: financials.netIncome?.raw || financials.netIncome,
+      eps: financials.basicEPS?.raw || financials.basicEPS,
+      totalAssets: financials.totalAssets?.raw || financials.totalAssets,
+      totalLiabilities: financials.totalLiab?.raw || financials.totalLiabilities,
+      totalEquity: financials.totalStockholderEquity?.raw || financials.stockholderEquity,
+      operatingCashFlow: financials.totalCashFromOperatingActivities?.raw || financials.operatingCashFlow,
+      freeCashFlow: financials.freeCashFlow?.raw || financials.freeCashFlow,
+      source: 'yahoo',
+      quality
+    }
+  }
+
+  /**
+   * Transform Alpha Vantage financial statement data
+   */
+  private static transformAlphaVantageFinancialStatement(
+    data: any,
+    symbol: string,
+    quality: QualityScore
+  ): UnifiedFinancialStatement {
+    // Alpha Vantage format varies by endpoint
+    const reports = data.annualReports || data.quarterlyReports
+    const latest = Array.isArray(reports) ? reports[0] : data
+
+    return {
+      symbol,
+      period: data.quarterlyReports ? 'quarterly' : 'annual',
+      fiscalYear: parseInt(latest.fiscalDateEnding?.substring(0, 4) || new Date().getFullYear().toString()),
+      fiscalQuarter: data.quarterlyReports ? this.extractQuarterFromDate(latest.fiscalDateEnding) : undefined,
+      revenue: parseFloat(latest.totalRevenue || latest.revenue || '0'),
+      netIncome: parseFloat(latest.netIncome || '0'),
+      eps: parseFloat(latest.reportedEPS || latest.eps || '0'),
+      totalAssets: parseFloat(latest.totalAssets || '0'),
+      totalLiabilities: parseFloat(latest.totalLiabilities || '0'),
+      totalEquity: parseFloat(latest.totalShareholderEquity || latest.shareholderEquity || '0'),
+      operatingCashFlow: parseFloat(latest.operatingCashflow || '0'),
+      freeCashFlow: parseFloat(latest.operatingCashflow || '0') - parseFloat(latest.capitalExpenditures || '0'),
+      source: 'alphavantage',
+      quality
+    }
+  }
+
+  /**
+   * Transform generic financial statement data
+   */
+  private static transformGenericFinancialStatement(
+    data: any,
+    source: string,
+    symbol: string,
+    quality: QualityScore
+  ): UnifiedFinancialStatement {
+    return {
+      symbol,
+      period: this.determinePeriod(this.extractString(data, ['period', 'reportType', 'frequency'])),
+      fiscalYear: this.extractNumber(data, ['fiscalYear', 'year', 'calendarYear']) || new Date().getFullYear(),
+      fiscalQuarter: this.extractNumber(data, ['fiscalQuarter', 'quarter', 'q']),
+      revenue: this.extractNumber(data, ['revenue', 'totalRevenue', 'sales']),
+      netIncome: this.extractNumber(data, ['netIncome', 'earnings', 'profit']),
+      eps: this.extractNumber(data, ['eps', 'earningsPerShare', 'basicEPS']),
+      totalAssets: this.extractNumber(data, ['totalAssets', 'assets']),
+      totalLiabilities: this.extractNumber(data, ['totalLiabilities', 'liabilities']),
+      totalEquity: this.extractNumber(data, ['totalEquity', 'equity', 'shareholderEquity']),
+      operatingCashFlow: this.extractNumber(data, ['operatingCashFlow', 'cashFromOperations']),
+      freeCashFlow: this.extractNumber(data, ['freeCashFlow', 'fcf']),
+      source,
+      quality
+    }
+  }
+
+  /**
+   * Helper: Determine period from string
+   */
+  private static determinePeriod(periodStr: string): 'annual' | 'quarterly' {
+    if (!periodStr) return 'annual'
+    const lower = periodStr.toLowerCase()
+    if (lower.includes('q') || lower.includes('quarter')) return 'quarterly'
+    return 'annual'
+  }
+
+  /**
+   * Helper: Extract quarter number from date string
+   */
+  private static extractQuarterFromDate(dateStr: string): number | undefined {
+    if (!dateStr) return undefined
+    const month = parseInt(dateStr.substring(5, 7))
+    if (month <= 3) return 1
+    if (month <= 6) return 2
+    if (month <= 9) return 3
+    if (month <= 12) return 4
+    return undefined
+  }
+
+  /**
    * Helper: Create empty price object
    */
   private static createEmptyPrice(
