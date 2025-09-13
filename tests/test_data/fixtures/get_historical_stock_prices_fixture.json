@@ -1,0 +1,50 @@
+{
+  "tool_name": "get_historical_stock_prices",
+  "mock_response": {
+    "symbol": "AAPL",
+    "period": "1mo",
+    "interval": "1d",
+    "data": [
+      {
+        "date": "2024-01-15",
+        "open": 185.92,
+        "high": 187.65,
+        "low": 182.34,
+        "close": 186.27,
+        "volume": 65432100,
+        "adj_close": 186.27
+      },
+      {
+        "date": "2024-01-16",
+        "open": 186.5,
+        "high": 189.12,
+        "low": 185.78,
+        "close": 188.85,
+        "volume": 72156800,
+        "adj_close": 188.85
+      }
+    ],
+    "status": "success",
+    "response_time_ms": 145
+  },
+  "expected_keys": [
+    "symbol",
+    "period",
+    "interval",
+    "data",
+    "status"
+  ],
+  "validation_rules": {
+    "data_min_length": 1,
+    "required_ohlcv_keys": [
+      "date",
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume"
+    ],
+    "max_response_time": 200
+  },
+  "created_at": "2025-09-13T00:22:10.833337"
+}

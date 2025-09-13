@@ -35,13 +35,13 @@ Development plans, completed milestone reports and achievement summaries.
 ### 🧪 Test Output (`/test_output/`)
 Comprehensive test results and validation reports.
 
-- **[Yahoo Finance MCP Unit Tests](test_output/yahoo_finance_mcp_unit_tests.txt)** - Complete pytest output (19/19 tests passed) ⭐ **NEWEST**
-- **[Yahoo Finance MCP Integration Tests](test_output/yahoo_finance_mcp_integration_tests.txt)** - Router integration validation ⭐ **NEWEST**
-- **[Yahoo Finance Filtering System Update](test_output/yahoo_finance_filtering_system_update.txt)** - Enhanced filtering capabilities ⭐ **NEWEST**
-- **[Test Summary Report](test_output/test_summary_report.md)** - SEC EDGAR MCP integration test results
-- **[SEC EDGAR MCP Unit Tests](test_output/sec_edgar_mcp_unit_tests.txt)** - Complete pytest output (25/25 tests passed)
-- **[SEC EDGAR MCP Integration Tests](test_output/sec_edgar_mcp_integration_tests.txt)** - Router integration validation
-- **[Integration Test Script](test_output/sec_edgar_mcp_integration_test.py)** - Reusable integration test automation
+- **[Yahoo Finance MCP Unit Tests](test-output/yahoo_finance_mcp_unit_tests.txt)** - Complete pytest output (19/19 tests passed) ⭐ **NEWEST**
+- **[Yahoo Finance MCP Integration Tests](test-output/yahoo_finance_mcp_integration_tests.txt)** - Router integration validation ⭐ **NEWEST**
+- **[Yahoo Finance Filtering System Update](test-output/yahoo_finance_filtering_system_update.txt)** - Enhanced filtering capabilities ⭐ **NEWEST**
+- **[Test Summary Report](test-output/test_summary_report.md)** - SEC EDGAR MCP integration test results
+- **[SEC EDGAR MCP Unit Tests](test-output/sec_edgar_mcp_unit_tests.txt)** - Complete pytest output (25/25 tests passed)
+- **[SEC EDGAR MCP Integration Tests](test-output/sec_edgar_mcp_integration_tests.txt)** - Router integration validation
+- **[Integration Test Script](test-output/sec_edgar_mcp_integration_test.py)** - Reusable integration test automation
 
 ### 📚 Archived (`/archived/`)
 Historical documentation and deprecated materials.
@@ -105,7 +105,7 @@ Government Sources          Commercial Sources
 
 ### For Developers
 - **Current Status**: [Collector Status Report](reports/COLLECTOR_STATUS_REPORT.md)
-- **Test Results**: [Test Output Directory](test_output/)
+- **Test Results**: [Test Output Directory](test-output/)
 - **API Documentation**: `../data_collectors/README.md`
 
 ### For Project Managers  
@@ -114,9 +114,9 @@ Government Sources          Commercial Sources
 - **Implementation Progress**: [Implementation Status](implementation-status/)
 
 ### For QA/Testing
-- **Test Results**: [Test Output Directory](test_output/)
-- **Integration Validation**: [SEC EDGAR MCP Tests](test_output/test_summary_report.md)
-- **Automated Testing**: [Integration Test Script](test_output/sec_edgar_mcp_integration_test.py)
+- **Test Results**: [Test Output Directory](test-output/)
+- **Integration Validation**: [SEC EDGAR MCP Tests](test-output/test_summary_report.md)
+- **Automated Testing**: [Integration Test Script](test-output/sec_edgar_mcp_integration_test.py)
 
 ## 🔄 Documentation Maintenance
 

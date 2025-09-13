@@ -255,8 +255,8 @@ const loadEconomicData = async (): Promise<FredDataResponse | null> => {
 ### Using Test Data
 
 ```typescript
-import dashboardData from './docs/project/test_output/economic_dashboard.json';
-import historicalData from './docs/project/test_output/historical_analysis.json';
+import dashboardData from './docs/project/test-output/economic_dashboard.json';
+import historicalData from './docs/project/test-output/historical_analysis.json';
 
 // Use your existing test data
 <EconomicDataVisualization fredData={dashboardData} />

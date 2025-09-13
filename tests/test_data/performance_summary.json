@@ -1,0 +1,24 @@
+{
+  "created_at": "2025-09-13T00:22:10.847456",
+  "performance_targets": {
+    "max_response_time_ms": 200,
+    "min_success_rate": 0.995,
+    "required_sample_size": 10
+  },
+  "total_tools": 9,
+  "baseline_benchmarks": 9,
+  "avg_response_time_target": 200,
+  "success_rate_target": 0.995,
+  "tools_meeting_targets": 9,
+  "benchmark_files": [
+    "get_historical_stock_prices_benchmark.json",
+    "get_stock_info_benchmark.json",
+    "get_yahoo_finance_news_benchmark.json",
+    "get_stock_actions_benchmark.json",
+    "get_financial_statement_benchmark.json",
+    "get_holder_info_benchmark.json",
+    "get_option_expiration_dates_benchmark.json",
+    "get_option_chain_benchmark.json",
+    "get_recommendations_benchmark.json"
+  ]
+}

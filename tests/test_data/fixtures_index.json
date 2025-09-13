@@ -1,0 +1,18 @@
+{
+  "created_at": "2025-09-13T00:22:10.833948",
+  "total_fixtures": 5,
+  "fixtures": [
+    "get_historical_stock_prices",
+    "get_stock_info",
+    "get_financial_statements",
+    "get_options_chain",
+    "get_yahoo_finance_news"
+  ],
+  "fixture_files": [
+    "get_historical_stock_prices_fixture.json",
+    "get_stock_info_fixture.json",
+    "get_financial_statements_fixture.json",
+    "get_options_chain_fixture.json",
+    "get_yahoo_finance_news_fixture.json"
+  ]
+}

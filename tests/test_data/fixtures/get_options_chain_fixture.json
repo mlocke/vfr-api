@@ -1,0 +1,57 @@
+{
+  "tool_name": "get_options_chain",
+  "mock_response": {
+    "symbol": "AAPL",
+    "expiration_date": "2024-02-16",
+    "calls": [
+      {
+        "strike": 180.0,
+        "last_price": 8.45,
+        "bid": 8.2,
+        "ask": 8.5,
+        "volume": 1250,
+        "open_interest": 5432,
+        "implied_volatility": 0.285,
+        "delta": 0.72,
+        "gamma": 0.015,
+        "theta": -0.08,
+        "vega": 0.35
+      }
+    ],
+    "puts": [
+      {
+        "strike": 180.0,
+        "last_price": 2.15,
+        "bid": 2.1,
+        "ask": 2.2,
+        "volume": 890,
+        "open_interest": 3210,
+        "implied_volatility": 0.29,
+        "delta": -0.28,
+        "gamma": 0.015,
+        "theta": -0.06,
+        "vega": 0.35
+      }
+    ],
+    "status": "success",
+    "response_time_ms": 165
+  },
+  "expected_keys": [
+    "symbol",
+    "expiration_date",
+    "calls",
+    "puts",
+    "status"
+  ],
+  "validation_rules": {
+    "options_min_length": 1,
+    "required_option_keys": [
+      "strike",
+      "last_price",
+      "volume",
+      "implied_volatility"
+    ],
+    "max_response_time": 200
+  },
+  "created_at": "2025-09-13T00:22:10.833344"
+}

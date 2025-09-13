@@ -1,0 +1,34 @@
+{
+  "tool_name": "get_yahoo_finance_news",
+  "mock_response": {
+    "symbol": "AAPL",
+    "news": [
+      {
+        "title": "Apple Reports Strong Q1 Earnings Beat",
+        "summary": "Apple Inc. reported quarterly earnings that exceeded analyst expectations...",
+        "url": "https://finance.yahoo.com/news/apple-earnings-beat-123456.html",
+        "publish_time": "2024-01-15T16:30:00Z",
+        "provider": "Yahoo Finance",
+        "sentiment": "positive",
+        "sentiment_score": 0.75
+      }
+    ],
+    "status": "success",
+    "response_time_ms": 95
+  },
+  "expected_keys": [
+    "symbol",
+    "news",
+    "status"
+  ],
+  "validation_rules": {
+    "news_min_length": 1,
+    "required_news_keys": [
+      "title",
+      "summary",
+      "publish_time"
+    ],
+    "max_response_time": 200
+  },
+  "created_at": "2025-09-13T00:22:10.833346"
+}

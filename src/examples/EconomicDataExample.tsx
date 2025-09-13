@@ -7,7 +7,7 @@ import { FredDataResponse } from "../types/economic-data";
  * with real FRED data from your test outputs
  */
 
-// Sample data structure matching your test_output files
+// Sample data structure matching your test-output files
 const sampleFredData: FredDataResponse = {
 	description: "Comprehensive economic dashboard with key indicators by sector",
 	timestamp: "2025-09-06T16:28:26.734509",

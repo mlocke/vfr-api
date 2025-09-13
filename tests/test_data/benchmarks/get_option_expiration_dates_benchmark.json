@@ -1,0 +1,9 @@
+{
+  "tool_name": "get_option_expiration_dates",
+  "avg_response_time_ms": 95.0,
+  "min_response_time_ms": 70.0,
+  "max_response_time_ms": 120.0,
+  "success_rate": 0.998,
+  "test_timestamp": "2025-09-13T00:22:10.846973",
+  "sample_size": 10
+}

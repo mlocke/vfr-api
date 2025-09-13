@@ -1,0 +1,38 @@
+{
+  "tool_name": "get_stock_info",
+  "mock_response": {
+    "symbol": "AAPL",
+    "company_name": "Apple Inc.",
+    "sector": "Technology",
+    "industry": "Consumer Electronics",
+    "market_cap": 2950000000000,
+    "enterprise_value": 2970000000000,
+    "pe_ratio": 29.45,
+    "forward_pe": 26.12,
+    "peg_ratio": 2.15,
+    "price_to_book": 45.23,
+    "price_to_sales": 7.89,
+    "current_price": 186.27,
+    "target_price": 195.5,
+    "52_week_high": 199.62,
+    "52_week_low": 164.08,
+    "dividend_rate": 0.96,
+    "dividend_yield": 0.0052,
+    "beta": 1.25,
+    "status": "success",
+    "response_time_ms": 120
+  },
+  "expected_keys": [
+    "symbol",
+    "company_name",
+    "sector",
+    "current_price",
+    "market_cap"
+  ],
+  "validation_rules": {
+    "market_cap_min": 1000000000,
+    "current_price_min": 0.01,
+    "max_response_time": 200
+  },
+  "created_at": "2025-09-13T00:22:10.833340"
+}

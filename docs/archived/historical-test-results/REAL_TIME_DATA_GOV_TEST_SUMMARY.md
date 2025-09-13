@@ -195,7 +195,7 @@
 
 ### **Reproduction Instructions**
 ```bash
-cd /test_output/Data_Gov/
+cd /test-output/Data_Gov/
 python3 comprehensive_data_gov_test.py
 ```
 
