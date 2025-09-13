@@ -41,7 +41,8 @@
       "Bash(sudo apachectl:*)",
       "Bash(nginx:*)",
       "Read(//opt/homebrew/etc/nginx/**)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
