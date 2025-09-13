@@ -1,2 +1,2 @@
 ### Context MD
-claude --files "README.md" "CLAUDE.md" "docs/claude-standards.md" "docs/plans/.md" "docs/todos/.md" "Load project context using optimized documentation. All files follow context-efficient standards for maximum AI reasoning capability."
+claude --files "README.md" "CLAUDE.mThat d" "docs/claude-standards.md" "docs/plans/.md" "docs/todos/.md" "Load project context using optimized documentation. All files follow context-efficient standards for maximum AI reasoning capability."
