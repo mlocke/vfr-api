@@ -1,6 +1,6 @@
 # 📋 Polygon.io MCP Collector - Implementation TODO
 
-**Project**: Stock Picker Platform - Commercial Collector Expansion  
+**Project**: VFR Platform - Commercial Collector Expansion  
 **Created**: September 8, 2025  
 **Status**: 🎯 READY TO START  
 **Estimated Duration**: 4 weeks  
@@ -557,7 +557,7 @@ Complete TODO list for implementing Polygon.io MCP collector as a premium commer
 5. Create development branch: `feature/polygon-mcp-integration`
 6. Update CollectorRouter enum to include OPTIONS_DATA, FUTURES_DATA, CRYPTO_DATA request types
 
-**🎉 END GOAL**: Production-ready Polygon.io MCP collector providing institutional-grade financial data as a complementary premium feature alongside Alpha Vantage MCP, maintaining the Stock Picker platform's MCP-first architecture **and full compliance with the existing Four-Quadrant Collector Router system**.
+**🎉 END GOAL**: Production-ready Polygon.io MCP collector providing institutional-grade financial data as a complementary premium feature alongside Alpha Vantage MCP, maintaining the VFR platform's MCP-first architecture **and full compliance with the existing Four-Quadrant Collector Router system**.
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 🎯 **Executive Summary**
 
-Implement Polygon.io's official MCP server as a complementary commercial collector alongside Alpha Vantage MCP. This integration will provide institutional-grade real-time market data, comprehensive options coverage, and futures market access through 40+ AI-optimized tools. The implementation follows the Stock Picker platform's MCP-first architecture and positions Polygon.io as a premium feature requiring user API keys due to limited free tier restrictions.
+Implement Polygon.io's official MCP server as a complementary commercial collector alongside Alpha Vantage MCP. This integration will provide institutional-grade real-time market data, comprehensive options coverage, and futures market access through 40+ AI-optimized tools. The implementation follows the VFR platform's MCP-first architecture and positions Polygon.io as a premium feature requiring user API keys due to limited free tier restrictions.
 
 ## 📊 **Strategic Positioning**
 
@@ -26,7 +26,7 @@ Implement Polygon.io's official MCP server as a complementary commercial collect
 
 ### **Four-Quadrant Integration**
 ```
-Stock Picker Platform - Commercial MCP Collectors
+VFR Platform - Commercial MCP Collectors
 ├── data_collectors/
 │   ├── commercial/
 │   │   ├── mcp/

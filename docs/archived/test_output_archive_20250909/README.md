@@ -6,7 +6,7 @@
 
 ## 📁 Archived Contents
 
-This archive contains comprehensive test results and validation data from the Stock Picker Platform's development phases:
+This archive contains comprehensive test results and validation data from the VFR Platform's development phases:
 
 ### **Government Data Collectors**
 - **Alpha_Vantage/**: Alpha Vantage MCP collector test results (21 files)

@@ -15,7 +15,7 @@ Tests use actual company data (AAPL, MSFT, GOOGL, TSLA) to validate:
 - Cross-validation with known financial metrics
 - MCP protocol efficiency vs traditional APIs
 
-Author: Stock Picker Platform MCP Testing Suite
+Author: VFR Platform MCP Testing Suite
 """
 
 import asyncio

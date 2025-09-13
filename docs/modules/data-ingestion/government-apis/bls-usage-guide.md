@@ -9,7 +9,7 @@
 
 ## 🎯 Overview
 
-The Bureau of Labor Statistics (BLS) Collector provides comprehensive access to employment, unemployment, wages, productivity, and inflation data from the U.S. Department of Labor. This collector is fully integrated with the Stock Picker platform's smart routing system and offers advanced filtering capabilities for labor market analysis.
+The Bureau of Labor Statistics (BLS) Collector provides comprehensive access to employment, unemployment, wages, productivity, and inflation data from the U.S. Department of Labor. This collector is fully integrated with the VFR platform's smart routing system and offers advanced filtering capabilities for labor market analysis.
 
 ### Key Capabilities
 - **Employment Data**: Unemployment rates, job openings, labor force participation
@@ -504,7 +504,7 @@ if rate_limits['requests_remaining'] < 10:
 - **Series ID Lookup**: https://www.bls.gov/help/hlpforma.htm
 - **API Registration**: https://www.bls.gov/developers/api_key.htm
 
-### Stock Picker Platform Integration
+### VFR Platform Integration
 - **Collector Router Guide**: `collector-routing-guide.md`
 - **Advanced Filtering**: `ADVANCED_FILTERING_SYSTEM.md`
 - **Frontend Integration**: `frontend_filter_interface.py`

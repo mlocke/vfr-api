@@ -197,13 +197,13 @@ for collector in collectors:
 ✅ **Proven Data Quality**: Real financial data extraction validated  
 ✅ **FRED-Style Summaries**: Complete investment-grade analysis reports
 
-**Stock Picker Application Benefits:**
+**VFR Application Benefits:**
 - **Intelligent Data Sourcing**: Right collector for each request type
 - **Cost Efficient**: Free SEC data for individual analysis, premium APIs for bulk
 - **Investment Grade**: Regulatory-quality fundamental analysis
 - **Developer Friendly**: Simple integration with comprehensive documentation
 
-The filter-driven collector routing system ensures SEC EDGAR is used optimally - providing deep, comprehensive analysis when users need individual company insights, while efficiently routing broader requests to more appropriate data sources. This creates the perfect balance of data quality, performance, and cost efficiency for the Stock Picker platform. 🚀
+The filter-driven collector routing system ensures SEC EDGAR is used optimally - providing deep, comprehensive analysis when users need individual company insights, while efficiently routing broader requests to more appropriate data sources. This creates the perfect balance of data quality, performance, and cost efficiency for the VFR platform. 🚀
 
 ---
 

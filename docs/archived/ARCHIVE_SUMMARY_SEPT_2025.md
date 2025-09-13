@@ -1,4 +1,4 @@
-# Stock Picker Documentation Archive - September 2025
+# VFR Documentation Archive - September 2025
 
 **Archive Date**: September 9, 2025  
 **Archive Scope**: Completed plans, todos, summaries, and historical test results  

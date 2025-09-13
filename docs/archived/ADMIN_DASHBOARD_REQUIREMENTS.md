@@ -346,7 +346,7 @@ interface TestingSuite {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Stock Picker Admin Dashboard                               │
+│ VFR Admin Dashboard                               │
 ├─────────────────────────────────────────────────────────────┤
 │ Overview | Collectors | Performance | Costs | Config      │
 ├─────────────────────────────────────────────────────────────┤

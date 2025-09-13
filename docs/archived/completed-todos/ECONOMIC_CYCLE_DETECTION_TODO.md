@@ -1,7 +1,7 @@
 # Economic Cycle Detection Implementation TODO
 
 **Date Created**: September 9, 2025  
-**Project**: Stock Picker Financial Analysis (SPFA) - Economic Cycle Detection  
+**Project**: VFR Financial Analysis (SPFA) - Economic Cycle Detection  
 **Phase**: Phase 2.2 Treasury Data Collector - Final Component  
 **Priority**: ✅ **HIGH PRIORITY**  
 **Status**: 📋 **READY FOR IMPLEMENTATION**

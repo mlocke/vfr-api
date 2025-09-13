@@ -1,4 +1,4 @@
-# Specialized Agent Recommendations for Stock Picker Platform
+# Specialized Agent Recommendations for VFR Platform
 
 **Document Version**: 1.0  
 **Created**: 2025-09-06  

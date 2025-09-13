@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for deploying the Browser/Playwright MCP service for financial intelligence gathering in the Stock Picker platform.
+This guide provides step-by-step instructions for deploying the Browser/Playwright MCP service for financial intelligence gathering in the VFR platform.
 
 ## Prerequisites
 
@@ -99,7 +99,7 @@ module.exports = {
 
 ### 3. Financial Intelligence Integration
 
-#### Stock Picker Integration
+#### VFR Integration
 ```python
 # Add to requirements.txt
 aiohttp>=3.8.0
@@ -155,8 +155,8 @@ After=network.target
 [Service]
 Type=simple
 User=stockpicker
-WorkingDirectory=/opt/stock-picker
-ExecStart=/usr/bin/node /opt/stock-picker/mcp-server/browser-mcp.js
+WorkingDirectory=/opt/veritak-financial
+ExecStart=/usr/bin/node /opt/veritak-financial/mcp-server/browser-mcp.js
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
@@ -360,7 +360,7 @@ const logger = winston.createLogger({
 ```bash
 # Log monitoring with logrotate
 # /etc/logrotate.d/browser-mcp
-/opt/stock-picker/logs/*.log {
+/opt/veritak-financial/logs/*.log {
     daily
     rotate 30
     compress
@@ -627,7 +627,7 @@ docker-compose up -d --scale browser-mcp=1
 ### Documentation
 - [Playwright Documentation](https://playwright.dev/)
 - [MCP Protocol Specification](https://spec.modelcontextprotocol.io/)
-- [Stock Picker Platform Documentation](./README.md)
+- [VFR Platform Documentation](./README.md)
 
 ### Monitoring Tools
 - Grafana dashboards for metrics

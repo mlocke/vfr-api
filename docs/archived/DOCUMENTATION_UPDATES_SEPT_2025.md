@@ -188,7 +188,7 @@ When Phase 2 (Market Data Integration) begins, update:
 
 **All documentation has been successfully updated to reflect the major BEA integration breakthrough of September 7, 2025.**
 
-The Stock Picker platform documentation now accurately represents:
+The VFR platform documentation now accurately represents:
 - ✅ **Live economic data streaming capabilities**
 - ✅ **Production-ready government data integration**
 - ✅ **Real investment intelligence generation**

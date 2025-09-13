@@ -1,4 +1,4 @@
-# Stock Picker Platform - Master TODO List
+# VFR Platform - Master TODO List
 
 **Last Updated**: 2025-09-06  
 **Status**: Planning Phase → Implementation Ready  

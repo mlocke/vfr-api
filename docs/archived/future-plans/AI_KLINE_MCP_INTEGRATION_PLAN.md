@@ -7,7 +7,7 @@
 
 ## 🎯 **Executive Summary**
 
-AI-Kline MCP represents a breakthrough integration opportunity, providing **AI-powered Chinese stock analysis** with technical indicators, K-line chart analysis, and multi-modal AI predictions. This integration will establish the Stock Picker Platform as the **world's first comprehensive MCP-native financial platform** with both Western and Chinese market capabilities.
+AI-Kline MCP represents a breakthrough integration opportunity, providing **AI-powered Chinese stock analysis** with technical indicators, K-line chart analysis, and multi-modal AI predictions. This integration will establish the VFR Platform as the **world's first comprehensive MCP-native financial platform** with both Western and Chinese market capabilities.
 
 ### **Strategic Value Proposition**
 - **🇨🇳 Chinese Market Access**: A-share stocks analysis (Shanghai/Shenzhen exchanges)
@@ -285,7 +285,7 @@ AI-Kline Data Flow:
 
 ---
 
-**🎯 STRATEGIC CONCLUSION**: AI-Kline MCP integration represents the **final piece** in establishing the Stock Picker Platform as the **world's most comprehensive MCP-native financial analysis platform**. This integration delivers unique AI-powered Chinese market analysis capabilities that no competitor can match, cementing our technological leadership in the emerging MCP ecosystem.
+**🎯 STRATEGIC CONCLUSION**: AI-Kline MCP integration represents the **final piece** in establishing the VFR Platform as the **world's most comprehensive MCP-native financial analysis platform**. This integration delivers unique AI-powered Chinese market analysis capabilities that no competitor can match, cementing our technological leadership in the emerging MCP ecosystem.
 
 **📅 RECOMMENDED START DATE**: Immediately following this plan approval, targeting completion by October 7, 2025.
 

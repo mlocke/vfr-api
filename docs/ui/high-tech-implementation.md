@@ -2,13 +2,13 @@
 
 **Document Version**: 1.0  
 **Last Updated**: 2025-09-06  
-**Purpose**: Technical implementation guide for cyberpunk aesthetic across Stock Picker platform
+**Purpose**: Technical implementation guide for cyberpunk aesthetic across VFR platform
 
 ---
 
 ## 🚀 Overview
 
-This document provides concrete implementation guidelines for maintaining our cutting-edge cyberpunk aesthetic across all platform components. Our high-tech visual language differentiates Stock Picker as a next-generation AI-powered trading platform.
+This document provides concrete implementation guidelines for maintaining our cutting-edge cyberpunk aesthetic across all platform components. Our high-tech visual language differentiates VFR as a next-generation AI-powered trading platform.
 
 ## 🎨 Core Visual Principles
 

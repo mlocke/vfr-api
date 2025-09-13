@@ -236,7 +236,7 @@ income = collector.get_financial_statement(
 
 The Yahoo Finance MCP collector implementation is **COMPLETE** and ready for integration. This FREE collector provides unique data capabilities (options, holders) that complement our premium collectors while eliminating costs for basic market data needs.
 
-**Strategic Impact**: With Yahoo Finance MCP, the Stock Picker platform now offers the industry's most comprehensive data coverage at the lowest possible cost, creating an unbeatable value proposition for users.
+**Strategic Impact**: With Yahoo Finance MCP, the VFR platform now offers the industry's most comprehensive data coverage at the lowest possible cost, creating an unbeatable value proposition for users.
 
 ---
 

@@ -1,6 +1,6 @@
 # 📋 AI-Kline MCP Collector - Implementation TODO
 
-**Project**: Stock Picker Platform - Chinese Market Integration  
+**Project**: VFR Platform - Chinese Market Integration  
 **Created**: September 9, 2025  
 **Status**: 🎯 READY TO START  
 **Estimated Duration**: 3-4 weeks  
@@ -501,7 +501,7 @@ Complete TODO list for implementing AI-Kline MCP collector to add **AI-powered C
 4. **AI Model Setup**: Configure OpenAI-compatible API for multi-modal analysis
 5. **Create development branch**: `feature/ai-kline-mcp-integration`
 
-**🎉 END GOAL**: Production-ready AI-Kline MCP collector providing **AI-powered Chinese stock analysis** as a unique differentiator, maintaining full Four-Quadrant Router compliance and establishing the Stock Picker Platform as the **world's most comprehensive MCP-native financial analysis platform** with both Western and Chinese market capabilities.
+**🎉 END GOAL**: Production-ready AI-Kline MCP collector providing **AI-powered Chinese stock analysis** as a unique differentiator, maintaining full Four-Quadrant Router compliance and establishing the VFR Platform as the **world's most comprehensive MCP-native financial analysis platform** with both Western and Chinese market capabilities.
 
 ---
 

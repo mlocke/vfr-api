@@ -306,7 +306,7 @@ After resolving the API key authentication issue, the BEA collector is now:
 - ✅ **Production-ready** (error handling, rate limiting, validation)
 - ✅ **Smart routing enabled** (automatic activation for economic requests)
 
-**This provides the Stock Picker platform with world-class economic intelligence capabilities for investment analysis and market timing decisions.**
+**This provides the VFR platform with world-class economic intelligence capabilities for investment analysis and market timing decisions.**
 
 The foundation for Phase 2 (Market Data Integration) is now solid with proven government data collection and analysis capabilities.
 

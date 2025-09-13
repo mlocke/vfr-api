@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 # SEC API configuration
 BASE_URL = "https://data.sec.gov"
 HEADERS = {
-    'User-Agent': 'Stock-Picker Financial Analysis Platform contact@stockpicker.com',
+    'User-Agent': 'Veritak Financial Research LLC contact@veritak.com',
     'Accept': 'application/json',
     'Host': 'data.sec.gov'
 }
@@ -575,7 +575,7 @@ def main():
     print("✅ FRED-Style Summary - CREATED")
     print(f"\n🎉 SUCCESS! SEC EDGAR comprehensive analysis like FRED completed!")
     print(f"📁 All outputs saved to: {output_dir}")
-    print(f"💡 Stock Picker now has complete fundamental analysis capabilities!")
+    print(f"💡 VFR now has complete fundamental analysis capabilities!")
     print(f"🚀 Ready for production use with real SEC EDGAR data!")
 
 if __name__ == "__main__":

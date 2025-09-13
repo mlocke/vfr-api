@@ -1,8 +1,8 @@
-# Stock Picker Platform - High-Tech UI/UX Design System
+# VFR Platform - High-Tech UI/UX Design System
 
 ## Overview
 
-This document establishes the comprehensive design system and UI/UX guidelines for the Stock Picker Financial Analysis Platform, featuring a cutting-edge cyberpunk aesthetic that positions the platform as a next-generation AI-powered trading tool.
+This document establishes the comprehensive design system and UI/UX guidelines for the VFR Financial Analysis Platform, featuring a cutting-edge cyberpunk aesthetic that positions the platform as a next-generation AI-powered trading tool.
 
 ## Design Philosophy
 
@@ -610,4 +610,4 @@ Desktop: 769px and above
 - **Font Loading**: Preconnect to Google Fonts for faster rendering
 - **Critical CSS**: Above-the-fold styling optimization
 
-This design system serves as the foundation for all future UI development on the Stock Picker platform, ensuring consistency, professionalism, and optimal user experience across all interfaces.
+This design system serves as the foundation for all future UI development on the VFR platform, ensuring consistency, professionalism, and optimal user experience across all interfaces.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains all documentation for data collectors and ingestion systems in the Stock Picker platform. Each API and data source has comprehensive usage guides and implementation details.
+This directory contains all documentation for data collectors and ingestion systems in the VFR platform. Each API and data source has comprehensive usage guides and implementation details.
 
 ## Documentation Structure
 

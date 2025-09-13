@@ -1,4 +1,4 @@
-# Archived Documentation - Stock Picker Platform
+# Archived Documentation - VFR Platform
 
 **Purpose**: Historical documentation and deprecated materials  
 **Last Updated**: September 9, 2025

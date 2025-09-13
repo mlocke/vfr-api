@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Successfully implemented the foundation infrastructure and government data collectors for the Stock Picker Financial Analysis Platform. This creates a robust, modular system for collecting financial and economic data from authoritative government sources.
+Successfully implemented the foundation infrastructure and government data collectors for the VFR Financial Analysis Platform. This creates a robust, modular system for collecting financial and economic data from authoritative government sources.
 
 ## ✅ What Was Accomplished
 

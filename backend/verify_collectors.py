@@ -20,7 +20,7 @@ def verify_collectors():
         "collectors": {}
     }
     
-    print("🔍 Verifying Stock Picker Collectors\n")
+    print("🔍 Verifying VFR Collectors\n")
     print("=" * 50)
     
     # Government Collectors

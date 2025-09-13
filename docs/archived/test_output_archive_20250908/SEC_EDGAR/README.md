@@ -40,4 +40,4 @@ This SEC EDGAR data complements the existing FRED economic indicators to provide
 - **Fundamental Analysis**: P/E ratios, debt levels, profitability metrics
 - **Investment Screening**: Multi-criteria company comparison
 
-The data structure matches the FRED collector pattern, ensuring seamless integration into the Stock Picker platform.
+The data structure matches the FRED collector pattern, ensuring seamless integration into the VFR platform.

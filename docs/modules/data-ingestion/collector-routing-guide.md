@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to integrate the filter-driven collector routing system into the Stock Picker application. The routing system automatically selects the most appropriate data collectors based on user request specificity.
+This guide explains how to integrate the filter-driven collector routing system into the VFR application. The routing system automatically selects the most appropriate data collectors based on user request specificity.
 
 ## Core Concepts
 
@@ -469,4 +469,4 @@ def route_request(self, filter_criteria: Dict[str, Any]) -> List[DataCollectorIn
 - Implement timeout handling for slow collectors
 - Monitor collector performance and adjust priorities as needed
 
-This integration guide provides a comprehensive foundation for implementing the filter-driven collector routing system throughout the Stock Picker application.
+This integration guide provides a comprehensive foundation for implementing the filter-driven collector routing system throughout the VFR application.

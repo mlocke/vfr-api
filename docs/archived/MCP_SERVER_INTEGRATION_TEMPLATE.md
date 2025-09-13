@@ -8,7 +8,7 @@
 
 ## 🎯 **Template Purpose**
 
-This document provides a **standardized template** for integrating any MCP (Model Context Protocol) server into the Stock Picker Financial Analysis platform. Based on successful implementations of Alpha Vantage MCP (85.71% success rate) and Data.gov MCP, this template ensures rapid, consistent, and high-quality integrations.
+This document provides a **standardized template** for integrating any MCP (Model Context Protocol) server into the VFR Financial Analysis platform. Based on successful implementations of Alpha Vantage MCP (85.71% success rate) and Data.gov MCP, this template ensures rapid, consistent, and high-quality integrations.
 
 ### **Target MCP Servers**
 - **Immediate**: Polygon.io MCP, Financial Modeling Prep MCP

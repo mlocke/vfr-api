@@ -394,4 +394,4 @@ For questions and support:
 
 ---
 
-**Built with ⚡ by Claude Code for the Stock Picker Financial Platform**
+**Built with ⚡ by Claude Code for the VFR Financial Platform**

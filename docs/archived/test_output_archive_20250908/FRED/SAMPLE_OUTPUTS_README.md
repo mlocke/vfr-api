@@ -1,11 +1,11 @@
 # FRED Collector Sample Outputs
 
 **Generated:** September 6, 2025  
-**Purpose:** Documentation and examples for the Stock Picker Platform FRED integration
+**Purpose:** Documentation and examples for the VFR Platform FRED integration
 
 ## 📊 Sample Data Overview
 
-This directory contains **real economic data samples** retrieved from the Federal Reserve Economic Database (FRED) using the Stock Picker Platform's enhanced FRED collector. All data is current as of September 2025.
+This directory contains **real economic data samples** retrieved from the Federal Reserve Economic Database (FRED) using the VFR Platform's enhanced FRED collector. All data is current as of September 2025.
 
 ## 📁 Sample Files Generated
 

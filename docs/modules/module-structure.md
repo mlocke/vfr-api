@@ -1,8 +1,8 @@
-# Stock Picker Platform - Module Structure & Architecture
+# VFR Platform - Module Structure & Architecture
 
 ## Overview
 
-This document outlines the comprehensive module breakdown and directory structure for the Stock Picker Financial Analysis & Prediction Platform, designed to create a scalable, maintainable, and well-organized codebase.
+This document outlines the comprehensive module breakdown and directory structure for the VFR Financial Analysis & Prediction Platform, designed to create a scalable, maintainable, and well-organized codebase.
 
 ## Current Documentation State - UPDATED September 7, 2025
 
@@ -130,7 +130,7 @@ This document outlines the comprehensive module breakdown and directory structur
 ## MCP-Forward Four-Quadrant Data Collection Architecture
 
 ### Overview
-The Stock Picker platform uses a **revolutionary MCP-first four-quadrant collector routing system** that intelligently selects optimal data sources from both traditional APIs and AI-native MCP servers based on request specificity and data requirements.
+The VFR platform uses a **revolutionary MCP-first four-quadrant collector routing system** that intelligently selects optimal data sources from both traditional APIs and AI-native MCP servers based on request specificity and data requirements.
 
 **Key Innovation**: First financial platform designed with MCP-native architecture, seamlessly integrating traditional APIs with AI-optimized MCP servers through a unified four-quadrant system.
 
