@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "say 'Bite me'"
+            "command": "say 'Claude finished spectacularly'"
           }
         ]
       }

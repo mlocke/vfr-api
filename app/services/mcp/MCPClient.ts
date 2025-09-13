@@ -1,7 +1,25 @@
 /**
- * Unified MCP Client Service
- * Handles connections to multiple MCP servers with intelligent routing and error handling
+ * Unified MCP Client Service with Multi-Source Data Fusion
+ * Handles connections to multiple MCP servers with intelligent routing, error handling,
+ * and advanced data fusion capabilities for combining data from multiple sources
  */
+
+import {
+  FusedMCPResponse,
+  FusionOptions,
+  FusionMetadata,
+  ConflictResolutionStrategy,
+  QualityScore,
+  FusionSourceConfig,
+  UnifiedStockPrice,
+  UnifiedCompanyInfo,
+  UnifiedTechnicalIndicator,
+  UnifiedNewsItem
+} from './types'
+import { DataFusionEngine } from './DataFusionEngine'
+import { QualityScorer } from './QualityScorer'
+import { DataTransformationLayer } from './DataTransformationLayer'
+import { redisCache } from '../cache/RedisCache'
 
 interface MCPServerConfig {
   name: string
@@ -35,10 +53,15 @@ export class MCPClient {
   private connections: Map<string, ConnectionStats> = new Map()
   private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map()
   private requestQueue: Map<string, Promise<any>> = new Map()
+  private fusionEngine: DataFusionEngine
+  private qualityScorer: QualityScorer
+  private healthCheckInterval?: NodeJS.Timeout
 
   constructor() {
     this.initializeServers()
     this.startHealthChecks()
+    this.fusionEngine = new DataFusionEngine()
+    this.qualityScorer = new QualityScorer()
   }
 
   static getInstance(): MCPClient {
@@ -85,6 +108,15 @@ export class MCPClient {
       retryAttempts: 2
     })
 
+    // Yahoo Finance MCP Server Configuration (FREE)
+    this.servers.set('yahoo', {
+      name: 'Yahoo Finance MCP',
+      apiKey: '', // No API key required
+      rateLimit: 1000, // No rate limits
+      timeout: 10000,
+      retryAttempts: 3
+    })
+
     // Initialize connection stats
     this.servers.forEach((config, serverId) => {
       this.connections.set(serverId, {
@@ -100,7 +132,7 @@ export class MCPClient {
    * Execute MCP tool with intelligent server routing
    */
   async executeTool<T = any>(
-    toolName: string, 
+    toolName: string,
     params: Record<string, any> = {},
     options: {
       preferredServer?: string
@@ -110,16 +142,16 @@ export class MCPClient {
     } = {}
   ): Promise<MCPResponse<T>> {
     const startTime = Date.now()
-    const cacheKey = `${toolName}:${JSON.stringify(params)}`
-    
-    // Check cache first
+    const cacheKey = `tool:${toolName}:${JSON.stringify(params)}`
+
+    // Check Redis cache first
     if (options.cacheTTL && options.cacheTTL > 0) {
-      const cached = this.getFromCache(cacheKey)
+      const cached = await redisCache.get<T>(cacheKey)
       if (cached) {
         return {
           success: true,
           data: cached,
-          source: 'cache',
+          source: 'redis-cache',
           timestamp: Date.now(),
           cached: true
         }
@@ -162,9 +194,12 @@ export class MCPClient {
       stats.connected = true
       stats.lastConnected = Date.now()
 
-      // Cache the result if requested
+      // Cache the result in Redis if requested
       if (options.cacheTTL && options.cacheTTL > 0 && result.success) {
-        this.setCache(cacheKey, result.data, options.cacheTTL)
+        await redisCache.set(cacheKey, result.data, options.cacheTTL, {
+          source: serverId,
+          version: '1.0.0'
+        })
       }
 
       return {
@@ -447,76 +482,297 @@ export class MCPClient {
   }
 
   /**
-   * Select the optimal server for a given tool
+   * Execute MCP tool with multi-source data fusion
    */
-  private selectOptimalServer(toolName: string): string {
-    // Tool to server mapping based on capabilities
-    const toolServerMap: Record<string, string[]> = {
+  async executeWithFusion<T = any>(
+    toolName: string,
+    params: Record<string, any> = {},
+    options: FusionOptions = {}
+  ): Promise<FusedMCPResponse<T>> {
+    const startTime = Date.now()
+
+    // Determine which sources support this tool
+    const availableSources = options.sources || this.getSourcesForTool(toolName)
+
+    if (availableSources.length === 0) {
+      return {
+        success: false,
+        error: `No MCP sources available for tool: ${toolName}`,
+        source: 'fusion',
+        timestamp: Date.now()
+      }
+    }
+
+    // If only one source available, use regular execution
+    if (availableSources.length === 1) {
+      const result = await this.executeTool<T>(toolName, params, {
+        preferredServer: availableSources[0],
+        cacheTTL: options.cacheFusion ? 60000 : 0,
+        timeout: options.timeout
+      })
+
+      return {
+        ...result,
+        fusion: {
+          sources: [availableSources[0]],
+          primarySource: availableSources[0],
+          qualityScore: this.qualityScorer.calculateQualityScore(
+            availableSources[0],
+            result.data,
+            result.timestamp,
+            Date.now() - startTime
+          ),
+          conflicts: 0,
+          resolutionStrategy: options.strategy || ConflictResolutionStrategy.HIGHEST_QUALITY,
+          fusionTimestamp: Date.now()
+        }
+      } as FusedMCPResponse<T>
+    }
+
+    // Fetch data from multiple sources
+    const dataPoints = await this.fetchFromMultipleSources<T>(
+      toolName,
+      params,
+      availableSources,
+      options
+    )
+
+    // Use fusion engine to combine results
+    return this.fusionEngine.fuseData(dataPoints, options)
+  }
+
+  /**
+   * Fetch data from multiple sources in parallel
+   */
+  private async fetchFromMultipleSources<T>(
+    toolName: string,
+    params: Record<string, any>,
+    sources: string[],
+    options: FusionOptions
+  ): Promise<Array<{
+    source: string
+    data: T
+    quality: QualityScore
+    timestamp: number
+    latency: number
+  }>> {
+    const parallel = options.parallel !== false
+    const timeout = options.timeout || 10000
+
+    if (parallel) {
+      // Fetch from all sources in parallel
+      const promises = sources.map(source =>
+        this.fetchFromSource<T>(source, toolName, params, timeout)
+      )
+
+      const results = await Promise.allSettled(promises)
+
+      return results
+        .filter((result): result is PromiseFulfilledResult<any> =>
+          result.status === 'fulfilled' && result.value !== null
+        )
+        .map(result => result.value)
+    } else {
+      // Fetch sequentially
+      const results = []
+      for (const source of sources) {
+        try {
+          const result = await this.fetchFromSource<T>(source, toolName, params, timeout)
+          if (result) {
+            results.push(result)
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch from ${source}:`, error)
+        }
+      }
+      return results
+    }
+  }
+
+  /**
+   * Fetch data from a single source with quality scoring
+   */
+  private async fetchFromSource<T>(
+    source: string,
+    toolName: string,
+    params: Record<string, any>,
+    timeout: number
+  ): Promise<{
+    source: string
+    data: T
+    quality: QualityScore
+    timestamp: number
+    latency: number
+  } | null> {
+    const startTime = Date.now()
+
+    try {
+      const result = await this.executeTool<T>(toolName, params, {
+        preferredServer: source,
+        timeout,
+        cacheTTL: 0 // Don't cache individual requests in fusion mode
+      })
+
+      if (!result.success || !result.data) {
+        return null
+      }
+
+      const latency = Date.now() - startTime
+      const quality = this.qualityScorer.calculateQualityScore(
+        source,
+        result.data,
+        result.timestamp,
+        latency
+      )
+
+      // Update source reputation based on success
+      this.qualityScorer.updateSourceReputation(source, {
+        success: true,
+        latency
+      })
+
+      return {
+        source,
+        data: result.data,
+        quality,
+        timestamp: result.timestamp,
+        latency
+      }
+    } catch (error) {
+      // Update source reputation based on failure
+      this.qualityScorer.updateSourceReputation(source, {
+        success: false,
+        latency: Date.now() - startTime
+      })
+      return null
+    }
+  }
+
+  /**
+   * Get sources that support a specific tool
+   */
+  private getSourcesForTool(toolName: string): string[] {
+    const toolServerMap = this.getToolServerMap()
+    return toolServerMap[toolName] || []
+  }
+
+  /**
+   * Get tool to server mapping
+   */
+  private getToolServerMap(): Record<string, string[]> {
+    return {
       // Stock data tools
-      'get_ticker_details': ['polygon', 'alphavantage', 'fmp'],
+      'get_ticker_details': ['polygon', 'alphavantage', 'yahoo', 'fmp'],
+      'get_stock_info': ['yahoo', 'alphavantage', 'polygon'],
       'list_tickers': ['polygon', 'fmp'],
       'get_aggs': ['polygon', 'alphavantage'],
-      'get_daily_open_close': ['polygon', 'alphavantage'],
-      
+      'get_daily_open_close': ['polygon', 'alphavantage', 'yahoo'],
+      'get_historical_stock_prices': ['yahoo', 'polygon', 'alphavantage'],
+
       // Technical analysis tools
       'technical_indicators': ['alphavantage', 'polygon'],
       'moving_averages': ['alphavantage'],
       'rsi': ['alphavantage'],
       'macd': ['alphavantage'],
-      
+
       // Fundamental data tools
-      'company_profile': ['fmp', 'alphavantage'],
-      'financial_statements': ['fmp', 'alphavantage'],
-      'analyst_ratings': ['fmp'],
-      'insider_trading': ['fmp'],
-      
+      'company_profile': ['fmp', 'alphavantage', 'yahoo'],
+      'financial_statements': ['yahoo', 'fmp', 'alphavantage'],
+      'get_financial_statement': ['yahoo'],
+      'analyst_ratings': ['fmp', 'yahoo'],
+      'insider_trading': ['fmp', 'yahoo'],
+      'get_holder_info': ['yahoo'],
+
+      // Options data
+      'get_options_chain': ['yahoo'],
+
       // News and sentiment tools
-      'news_sentiment': ['alphavantage', 'firecrawl'],
-      'market_news': ['firecrawl', 'alphavantage'],
+      'news_sentiment': ['alphavantage', 'firecrawl', 'yahoo'],
+      'market_news': ['firecrawl', 'alphavantage', 'yahoo'],
+      'get_yahoo_finance_news': ['yahoo'],
       'scrape_content': ['firecrawl'],
-      
+
       // Market data tools
       'market_status': ['polygon', 'alphavantage'],
       'market_holidays': ['polygon'],
       'sector_performance': ['alphavantage', 'fmp']
     }
+  }
 
+  /**
+   * Select the optimal server for a given tool
+   */
+  private selectOptimalServer(toolName: string): string {
+    const toolServerMap = this.getToolServerMap()
     const possibleServers = toolServerMap[toolName] || ['polygon', 'alphavantage', 'fmp']
-    
-    // Select the server with best connection stats
-    return possibleServers.reduce((best, serverId) => {
+
+    // Use quality scorer to select best source
+    const scores = possibleServers.map(serverId => {
       const stats = this.connections.get(serverId)
-      const bestStats = this.connections.get(best)
-      
-      if (!stats) return best
-      if (!bestStats) return serverId
-      
-      // Prefer connected servers with lower error rates
-      if (stats.connected && !bestStats.connected) return serverId
-      if (bestStats.connected && !stats.connected) return best
-      
+      if (!stats) {
+        return {
+          source: serverId,
+          overall: 0.5,
+          metrics: {
+            freshness: 0.5,
+            completeness: 0.5,
+            accuracy: 0.5,
+            sourceReputation: this.qualityScorer.getSourceReputation(serverId),
+            latency: 0.5
+          },
+          timestamp: Date.now()
+        } as QualityScore
+      }
+
+      // Calculate quality based on connection stats
       const errorRate = stats.errorCount / Math.max(stats.requestCount, 1)
-      const bestErrorRate = bestStats.errorCount / Math.max(bestStats.requestCount, 1)
-      
-      return errorRate < bestErrorRate ? serverId : best
-    }, possibleServers[0])
+      const latencyScore = stats.avgResponseTime > 0
+        ? Math.max(0, 1 - stats.avgResponseTime / 10000)
+        : 0.5
+
+      return {
+        source: serverId,
+        overall: (1 - errorRate) * 0.4 + latencyScore * 0.3 + this.qualityScorer.getSourceReputation(serverId) * 0.3,
+        metrics: {
+          freshness: stats.connected ? 1 : 0,
+          completeness: 1 - errorRate,
+          accuracy: 1 - errorRate,
+          sourceReputation: this.qualityScorer.getSourceReputation(serverId),
+          latency: latencyScore
+        },
+        timestamp: Date.now()
+      } as QualityScore
+    })
+
+    const bestSource = QualityScorer.selectBestSource(scores)
+    return bestSource || possibleServers[0]
   }
 
   /**
    * Get fallback server for failed requests
    */
   private getFallbackServer(failedServer: string, toolName: string): string | null {
-    const toolServerMap: Record<string, string[]> = {
-      'get_ticker_details': ['polygon', 'alphavantage', 'fmp'],
-      'get_aggs': ['polygon', 'alphavantage'],
-      'company_profile': ['fmp', 'alphavantage'],
-      'news_sentiment': ['alphavantage', 'firecrawl']
-    }
-
+    const toolServerMap = this.getToolServerMap()
     const possibleServers = toolServerMap[toolName] || []
     const alternatives = possibleServers.filter(s => s !== failedServer)
-    
-    return alternatives.length > 0 ? alternatives[0] : null
+
+    if (alternatives.length === 0) return null
+
+    // Select best alternative using quality scoring
+    const scores = alternatives.map(serverId => ({
+      source: serverId,
+      overall: this.qualityScorer.getSourceReputation(serverId),
+      metrics: {
+        freshness: 0.5,
+        completeness: 0.5,
+        accuracy: 0.5,
+        sourceReputation: this.qualityScorer.getSourceReputation(serverId),
+        latency: 0.5
+      },
+      timestamp: Date.now()
+    } as QualityScore))
+
+    return QualityScorer.selectBestSource(scores)
   }
 
   /**
@@ -547,9 +803,24 @@ export class MCPClient {
    */
   private startHealthChecks() {
     // Check server health every 30 seconds
-    setInterval(() => {
+    this.healthCheckInterval = setInterval(() => {
       this.performHealthChecks()
     }, 30000)
+
+    // Allow process to exit even with active timer
+    if (this.healthCheckInterval.unref) {
+      this.healthCheckInterval.unref()
+    }
+  }
+
+  /**
+   * Stop health checks and cleanup resources
+   */
+  stopHealthChecks() {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+      this.healthCheckInterval = undefined
+    }
   }
 
   private async performHealthChecks() {
@@ -580,11 +851,352 @@ export class MCPClient {
   }
 
   /**
-   * Clear cache
+   * Get fusion statistics
    */
-  clearCache() {
+  getFusionStats() {
+    return {
+      connectionStats: this.getStats(),
+      fusionEngineStats: this.fusionEngine.getStatistics(),
+      qualityScorerStats: this.qualityScorer.getStatistics()
+    }
+  }
+
+  /**
+   * Get unified stock price with multi-source fusion and Redis caching
+   */
+  async getUnifiedStockPrice(
+    symbol: string,
+    options: FusionOptions = {}
+  ): Promise<FusedMCPResponse<UnifiedStockPrice>> {
+    // Check Redis cache first for unified stock price
+    const cachedPrice = await redisCache.getCachedStockPrice(symbol)
+    if (cachedPrice && options.cacheFusion !== false) {
+      return {
+        success: true,
+        data: cachedPrice,
+        source: 'redis-unified-cache',
+        timestamp: Date.now(),
+        cached: true
+      }
+    }
+
+    const toolName = 'get_aggs'
+    const params = { ticker: symbol, multiplier: 1, timespan: 'day', from_: '2023-01-01', to: '2023-12-31' }
+
+    // Get fused data from multiple sources
+    const fusedResponse = await this.executeWithFusion<any>(toolName, params, options)
+
+    if (!fusedResponse.success || !fusedResponse.data) {
+      return fusedResponse as FusedMCPResponse<UnifiedStockPrice>
+    }
+
+    // Transform to unified format
+    const quality = fusedResponse.fusion?.qualityScore || this.qualityScorer.calculateQualityScore(
+      fusedResponse.source,
+      fusedResponse.data,
+      fusedResponse.timestamp,
+      0
+    )
+
+    const unifiedPrice = DataTransformationLayer.transformStockPrice(
+      fusedResponse.data,
+      fusedResponse.source,
+      symbol,
+      quality
+    )
+
+    // Cache unified result with intelligent TTL
+    const isMarketHours = this.isMarketHours()
+    const ttl = isMarketHours ? 30 : 300 // 30s during market hours, 5min after
+
+    await redisCache.cacheStockPrice(symbol, unifiedPrice, fusedResponse.source, ttl)
+
+    return {
+      ...fusedResponse,
+      data: unifiedPrice
+    } as FusedMCPResponse<UnifiedStockPrice>
+  }
+
+  /**
+   * Get unified company information with multi-source fusion
+   */
+  async getUnifiedCompanyInfo(
+    symbol: string,
+    options: FusionOptions = {}
+  ): Promise<FusedMCPResponse<UnifiedCompanyInfo>> {
+    const toolName = 'get_ticker_details'
+    const params = { ticker: symbol }
+
+    const fusedResponse = await this.executeWithFusion<any>(toolName, params, options)
+
+    if (!fusedResponse.success || !fusedResponse.data) {
+      return fusedResponse as FusedMCPResponse<UnifiedCompanyInfo>
+    }
+
+    const quality = fusedResponse.fusion?.qualityScore || this.qualityScorer.calculateQualityScore(
+      fusedResponse.source,
+      fusedResponse.data,
+      fusedResponse.timestamp,
+      0
+    )
+
+    const unifiedCompany = DataTransformationLayer.transformCompanyInfo(
+      fusedResponse.data,
+      fusedResponse.source,
+      symbol,
+      quality
+    )
+
+    return {
+      ...fusedResponse,
+      data: unifiedCompany
+    } as FusedMCPResponse<UnifiedCompanyInfo>
+  }
+
+  /**
+   * Get unified technical indicator with multi-source fusion
+   */
+  async getUnifiedTechnicalIndicator(
+    symbol: string,
+    indicator: string,
+    options: FusionOptions = {}
+  ): Promise<FusedMCPResponse<UnifiedTechnicalIndicator>> {
+    const toolName = 'technical_indicators'
+    const params = { symbol, function: indicator.toUpperCase() }
+
+    const fusedResponse = await this.executeWithFusion<any>(toolName, params, options)
+
+    if (!fusedResponse.success || !fusedResponse.data) {
+      return fusedResponse as FusedMCPResponse<UnifiedTechnicalIndicator>
+    }
+
+    const quality = fusedResponse.fusion?.qualityScore || this.qualityScorer.calculateQualityScore(
+      fusedResponse.source,
+      fusedResponse.data,
+      fusedResponse.timestamp,
+      0
+    )
+
+    const unifiedIndicator = DataTransformationLayer.transformTechnicalIndicator(
+      fusedResponse.data,
+      fusedResponse.source,
+      symbol,
+      indicator,
+      quality
+    )
+
+    return {
+      ...fusedResponse,
+      data: unifiedIndicator
+    } as FusedMCPResponse<UnifiedTechnicalIndicator>
+  }
+
+  /**
+   * Get unified news with multi-source fusion
+   */
+  async getUnifiedNews(
+    keywords: string,
+    options: FusionOptions = {}
+  ): Promise<FusedMCPResponse<UnifiedNewsItem[]>> {
+    const toolName = 'news_sentiment'
+    const params = { topics: keywords }
+
+    const fusedResponse = await this.executeWithFusion<any>(toolName, params, options)
+
+    if (!fusedResponse.success || !fusedResponse.data) {
+      return fusedResponse as FusedMCPResponse<UnifiedNewsItem[]>
+    }
+
+    const quality = fusedResponse.fusion?.qualityScore || this.qualityScorer.calculateQualityScore(
+      fusedResponse.source,
+      fusedResponse.data,
+      fusedResponse.timestamp,
+      0
+    )
+
+    const unifiedNews = DataTransformationLayer.transformNews(
+      fusedResponse.data,
+      fusedResponse.source,
+      quality
+    )
+
+    return {
+      ...fusedResponse,
+      data: unifiedNews
+    } as FusedMCPResponse<UnifiedNewsItem[]>
+  }
+
+  /**
+   * Batch get multiple unified data types for a symbol
+   */
+  async getUnifiedSymbolData(
+    symbol: string,
+    options: {
+      includePrice?: boolean
+      includeCompany?: boolean
+      includeTechnicals?: string[]
+      includeNews?: boolean
+      fusionOptions?: FusionOptions
+    } = {}
+  ): Promise<{
+    price?: UnifiedStockPrice
+    company?: UnifiedCompanyInfo
+    technicals?: { [indicator: string]: UnifiedTechnicalIndicator }
+    news?: UnifiedNewsItem[]
+    errors?: string[]
+  }> {
+    const {
+      includePrice = true,
+      includeCompany = true,
+      includeTechnicals = ['RSI', 'MACD'],
+      includeNews = false,
+      fusionOptions = {}
+    } = options
+
+    const results: any = {}
+    const errors: string[] = []
+
+    // Fetch all data in parallel
+    const promises: Promise<any>[] = []
+
+    if (includePrice) {
+      promises.push(
+        this.getUnifiedStockPrice(symbol, fusionOptions)
+          .then(response => {
+            if (response.success) {
+              results.price = response.data
+            } else {
+              errors.push(`Price: ${response.error}`)
+            }
+          })
+          .catch(error => errors.push(`Price: ${error.message}`))
+      )
+    }
+
+    if (includeCompany) {
+      promises.push(
+        this.getUnifiedCompanyInfo(symbol, fusionOptions)
+          .then(response => {
+            if (response.success) {
+              results.company = response.data
+            } else {
+              errors.push(`Company: ${response.error}`)
+            }
+          })
+          .catch(error => errors.push(`Company: ${error.message}`))
+      )
+    }
+
+    if (includeTechnicals.length > 0) {
+      results.technicals = {}
+      includeTechnicals.forEach(indicator => {
+        promises.push(
+          this.getUnifiedTechnicalIndicator(symbol, indicator, fusionOptions)
+            .then(response => {
+              if (response.success) {
+                results.technicals[indicator] = response.data
+              } else {
+                errors.push(`${indicator}: ${response.error}`)
+              }
+            })
+            .catch(error => errors.push(`${indicator}: ${error.message}`))
+        )
+      })
+    }
+
+    if (includeNews) {
+      promises.push(
+        this.getUnifiedNews(symbol, fusionOptions)
+          .then(response => {
+            if (response.success) {
+              results.news = response.data
+            } else {
+              errors.push(`News: ${response.error}`)
+            }
+          })
+          .catch(error => errors.push(`News: ${error.message}`))
+      )
+    }
+
+    await Promise.all(promises)
+
+    return {
+      ...results,
+      errors: errors.length > 0 ? errors : undefined
+    }
+  }
+
+  /**
+   * Clear cache (both memory and Redis)
+   */
+  async clearCache() {
     this.cache.clear()
-    console.log('🧹 MCP cache cleared')
+    try {
+      await redisCache.invalidatePattern('*')
+    } catch (error) {
+      console.error('Failed to clear Redis cache:', error)
+    }
+    console.log('🧹 MCP cache cleared (memory + Redis)')
+  }
+
+  /**
+   * Get comprehensive cache statistics
+   */
+  async getCacheStats() {
+    const redisStats = await redisCache.getStats()
+
+    return {
+      memory: {
+        size: this.cache.size,
+        entries: Array.from(this.cache.keys()).length
+      },
+      redis: redisStats,
+      performance: {
+        totalHitRate: redisStats.hitRate,
+        memoryUsage: redisStats.memoryUsage
+      }
+    }
+  }
+
+  /**
+   * Warm cache for frequently accessed symbols
+   */
+  async warmCache(symbols: string[] = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']) {
+    console.log(`🔥 Warming cache for ${symbols.length} popular symbols...`)
+
+    await redisCache.warmCache(symbols, ['polygon', 'alphavantage', 'yahoo'])
+
+    // Pre-fetch unified data for these symbols
+    const warmingPromises = symbols.map(symbol =>
+      this.getUnifiedStockPrice(symbol, { cacheFusion: true })
+        .catch(error => console.warn(`Failed to warm cache for ${symbol}:`, error))
+    )
+
+    await Promise.all(warmingPromises)
+    console.log('✅ Cache warming complete')
+  }
+
+  /**
+   * Helper: Check if current time is during market hours
+   */
+  private isMarketHours(): boolean {
+    const now = new Date()
+    const hour = now.getHours()
+    const day = now.getDay()
+    // Monday-Friday, 9:30 AM - 4:00 PM EST
+    return day >= 1 && day <= 5 && hour >= 9 && hour < 16
+  }
+
+  /**
+   * Reset fusion engine and quality scorer
+   */
+  resetFusion() {
+    try {
+      this.qualityScorer.reset()
+    } catch (error) {
+      console.error('Error resetting quality scorer:', error)
+    }
+    console.log('🔄 Fusion engine reset')
   }
 }
 

@@ -1,0 +1,848 @@
+/**
+ * Dynamic Stock Selection Algorithm Engine
+ * Integrates with DataFusionEngine for multi-source data quality and Redis for caching
+ */
+
+import {
+  AlgorithmConfiguration,
+  AlgorithmContext,
+  AlgorithmExecution,
+  StockScore,
+  SelectionResult,
+  AlgorithmType,
+  SelectionCriteria,
+  FactorCalculator
+} from './types'
+
+import { DataFusionEngine } from '../mcp/DataFusionEngine'
+import { FusedMCPResponse, QualityScore, ConflictResolutionStrategy } from '../mcp/types'
+import { FactorLibrary } from './FactorLibrary'
+import { AlgorithmCache } from './AlgorithmCache'
+
+interface MarketDataPoint {
+  symbol: string
+  price: number
+  volume: number
+  marketCap: number
+  sector: string
+  exchange: string
+  timestamp: number
+}
+
+interface FundamentalDataPoint {
+  symbol: string
+  peRatio?: number
+  pbRatio?: number
+  debtToEquity?: number
+  roe?: number
+  revenueGrowth?: number
+  [key: string]: any
+}
+
+export class AlgorithmEngine {
+  private dataFusion: DataFusionEngine
+  private factorLibrary: FactorLibrary
+  private cache: AlgorithmCache
+  private activeExecutions: Map<string, AlgorithmExecution> = new Map()
+
+  constructor(
+    dataFusion: DataFusionEngine,
+    factorLibrary: FactorLibrary,
+    cache: AlgorithmCache
+  ) {
+    this.dataFusion = dataFusion
+    this.factorLibrary = factorLibrary
+    this.cache = cache
+  }
+
+  /**
+   * Execute stock selection algorithm
+   */
+  async executeAlgorithm(
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): Promise<SelectionResult> {
+    const executionId = `${config.id}_${context.runId}`
+    const startTime = Date.now()
+
+    try {
+      // Register execution
+      const execution: AlgorithmExecution = {
+        context,
+        config,
+        status: 'running'
+      }
+      this.activeExecutions.set(executionId, execution)
+
+      // Step 1: Get universe of stocks to evaluate
+      const universe = await this.getStockUniverse(config)
+      console.log(`Algorithm ${config.name}: Evaluating ${universe.length} stocks`)
+
+      // Step 2: Fetch and fuse market data for all stocks
+      const marketData = await this.fetchMarketData(universe, config)
+
+      // Step 3: Fetch and fuse fundamental data if required
+      const fundamentalData = await this.fetchFundamentalData(universe, config)
+
+      // Step 4: Calculate factor scores for each stock
+      const stockScores = await this.calculateStockScores(
+        universe,
+        marketData,
+        fundamentalData,
+        config
+      )
+
+      // Step 5: Apply selection criteria
+      const selections = await this.applySelectionCriteria(stockScores, config, context)
+
+      // Step 6: Calculate performance metrics
+      const metrics = this.calculateExecutionMetrics(stockScores, selections, startTime)
+
+      // Step 7: Build final result
+      const result: SelectionResult = {
+        algorithmId: config.id,
+        timestamp: Date.now(),
+        executionTime: Date.now() - startTime,
+        selections,
+        metrics,
+        quality: {
+          dataCompleteness: this.calculateDataCompleteness(stockScores),
+          sourceAgreement: this.calculateSourceAgreement(stockScores),
+          freshness: this.calculateDataFreshness(stockScores)
+        }
+      }
+
+      // Update execution status
+      execution.result = result
+      execution.status = 'completed'
+
+      // Cache result if enabled
+      if (config.dataFusion.cacheTTL > 0) {
+        await this.cache.setSelectionResult(config.id, result)
+      }
+
+      return result
+
+    } catch (error) {
+      const execution = this.activeExecutions.get(executionId)
+      if (execution) {
+        execution.status = 'failed'
+        execution.error = error instanceof Error ? error.message : 'Unknown error'
+      }
+      throw error
+    } finally {
+      this.activeExecutions.delete(executionId)
+    }
+  }
+
+  /**
+   * Get stock universe based on configuration
+   */
+  private async getStockUniverse(config: AlgorithmConfiguration): Promise<string[]> {
+    const cacheKey = this.cache.getCacheKeys().universe(config.id)
+
+    // Try cache first
+    const cached = await this.cache.getUniverse(config.id)
+    if (cached && cached.length > 0) {
+      return cached
+    }
+
+    // Build universe from screening criteria
+    let universe: string[] = []
+
+    // Query database or external sources based on universe config
+    const { sectors, marketCapMin, marketCapMax, exchanges, excludeSymbols } = config.universe
+
+    // This would typically query your stock database
+    // For demonstration, showing the structure
+    const query = this.buildUniverseQuery({
+      sectors,
+      marketCapMin,
+      marketCapMax,
+      exchanges,
+      excludeSymbols,
+      maxPositions: config.universe.maxPositions
+    })
+
+    // Execute query (implementation depends on your database)
+    universe = await this.executeUniverseQuery(query)
+
+    // Cache universe for reuse
+    await this.cache.setUniverse(config.id, universe)
+
+    return universe
+  }
+
+  /**
+   * Fetch and fuse market data from multiple sources
+   */
+  private async fetchMarketData(
+    symbols: string[],
+    config: AlgorithmConfiguration
+  ): Promise<Map<string, MarketDataPoint>> {
+    const marketData = new Map<string, MarketDataPoint>()
+    const batchSize = 50 // Process in batches to avoid overwhelming APIs
+
+    for (let i = 0; i < symbols.length; i += batchSize) {
+      const batch = symbols.slice(i, i + batchSize)
+      const batchPromises = batch.map(symbol => this.fetchSymbolMarketData(symbol, config))
+
+      const batchResults = await Promise.allSettled(batchPromises)
+
+      batchResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          marketData.set(batch[index], result.value)
+        }
+      })
+    }
+
+    return marketData
+  }
+
+  /**
+   * Fetch market data for a single symbol using data fusion
+   */
+  private async fetchSymbolMarketData(
+    symbol: string,
+    config: AlgorithmConfiguration
+  ): Promise<MarketDataPoint | null> {
+    try {
+      // Check cache first
+      const cached = await this.cache.getMarketData(symbol)
+      if (cached && Date.now() - cached.timestamp < config.dataFusion.cacheTTL) {
+        return cached
+      }
+
+      // Fetch from multiple sources using DataFusionEngine
+      const sources = config.dataFusion.requiredSources
+      const dataPoints = await Promise.all(
+        sources.map(async source => {
+          const data = await this.fetchFromSource(source, symbol, 'market_data')
+          return {
+            source,
+            data,
+            quality: await this.assessDataQuality(data, source),
+            timestamp: Date.now(),
+            latency: 0 // This would be measured
+          }
+        })
+      )
+
+      // Fuse data from multiple sources
+      const fusedResult = await this.dataFusion.fuseData(dataPoints, {
+        strategy: config.dataFusion.conflictResolution as ConflictResolutionStrategy,
+        minQualityScore: config.dataFusion.minQualityScore,
+        validateData: true,
+        cacheFusion: true
+      })
+
+      if (!fusedResult.success || !fusedResult.data) {
+        console.warn(`Failed to get market data for ${symbol}`)
+        return null
+      }
+
+      const marketDataPoint: MarketDataPoint = {
+        symbol,
+        price: fusedResult.data.price || 0,
+        volume: fusedResult.data.volume || 0,
+        marketCap: fusedResult.data.marketCap || 0,
+        sector: fusedResult.data.sector || '',
+        exchange: fusedResult.data.exchange || '',
+        timestamp: Date.now()
+      }
+
+      // Cache the result
+      await this.cache.setMarketData(symbol, marketDataPoint)
+
+      return marketDataPoint
+
+    } catch (error) {
+      console.error(`Error fetching market data for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Fetch fundamental data using multi-source fusion
+   */
+  private async fetchFundamentalData(
+    symbols: string[],
+    config: AlgorithmConfiguration
+  ): Promise<Map<string, FundamentalDataPoint>> {
+    const fundamentalData = new Map<string, FundamentalDataPoint>()
+
+    // Only fetch if fundamental factors are required
+    const requiresFundamentals = config.weights.some(w =>
+      w.enabled && this.factorLibrary.requiresFundamentalData(w.factor)
+    )
+
+    if (!requiresFundamentals) {
+      return fundamentalData
+    }
+
+    // Batch process fundamental data
+    const batchSize = 25 // Smaller batches for fundamental data (more expensive)
+
+    for (let i = 0; i < symbols.length; i += batchSize) {
+      const batch = symbols.slice(i, i + batchSize)
+      const batchPromises = batch.map(symbol => this.fetchSymbolFundamentalData(symbol, config))
+
+      const batchResults = await Promise.allSettled(batchPromises)
+
+      batchResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          fundamentalData.set(batch[index], result.value)
+        }
+      })
+    }
+
+    return fundamentalData
+  }
+
+  /**
+   * Fetch fundamental data for single symbol with fusion
+   */
+  private async fetchSymbolFundamentalData(
+    symbol: string,
+    config: AlgorithmConfiguration
+  ): Promise<FundamentalDataPoint | null> {
+    try {
+      // Check cache (fundamentals change less frequently)
+      const cached = await this.cache.getFundamentalData(symbol)
+      if (cached && Date.now() - cached.timestamp < config.dataFusion.cacheTTL * 10) {
+        return cached.data
+      }
+
+      const sources = config.dataFusion.requiredSources
+      const dataPoints = await Promise.all(
+        sources.map(async source => {
+          const data = await this.fetchFromSource(source, symbol, 'fundamental_data')
+          return {
+            source,
+            data,
+            quality: await this.assessDataQuality(data, source),
+            timestamp: Date.now(),
+            latency: 0
+          }
+        })
+      )
+
+      const fusedResult = await this.dataFusion.fuseData(dataPoints, {
+        strategy: config.dataFusion.conflictResolution as ConflictResolutionStrategy,
+        minQualityScore: config.dataFusion.minQualityScore * 0.8, // Lower threshold for fundamentals
+        validateData: true,
+        cacheFusion: true
+      })
+
+      if (!fusedResult.success || !fusedResult.data) {
+        return null
+      }
+
+      const fundamentalDataPoint: FundamentalDataPoint = {
+        symbol,
+        peRatio: fusedResult.data.peRatio,
+        pbRatio: fusedResult.data.pbRatio,
+        debtToEquity: fusedResult.data.debtToEquity,
+        roe: fusedResult.data.roe,
+        revenueGrowth: fusedResult.data.revenueGrowth,
+        ...fusedResult.data
+      }
+
+      // Cache with longer TTL
+      await this.cache.setFundamentalData(symbol, {
+        data: fundamentalDataPoint,
+        timestamp: Date.now()
+      })
+
+      return fundamentalDataPoint
+
+    } catch (error) {
+      console.error(`Error fetching fundamental data for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate comprehensive stock scores using configurable factors
+   */
+  private async calculateStockScores(
+    symbols: string[],
+    marketData: Map<string, MarketDataPoint>,
+    fundamentalData: Map<string, FundamentalDataPoint>,
+    config: AlgorithmConfiguration
+  ): Promise<StockScore[]> {
+    const stockScores: StockScore[] = []
+
+    for (const symbol of symbols) {
+      const market = marketData.get(symbol)
+      const fundamental = fundamentalData.get(symbol)
+
+      if (!market) {
+        console.warn(`Missing market data for ${symbol}, skipping`)
+        continue
+      }
+
+      try {
+        const score = await this.calculateSingleStockScore(
+          symbol,
+          market,
+          fundamental,
+          config
+        )
+
+        if (score) {
+          stockScores.push(score)
+        }
+      } catch (error) {
+        console.error(`Error calculating score for ${symbol}:`, error)
+      }
+    }
+
+    return stockScores
+  }
+
+  /**
+   * Calculate score for a single stock
+   */
+  private async calculateSingleStockScore(
+    symbol: string,
+    marketData: MarketDataPoint,
+    fundamentalData?: FundamentalDataPoint,
+    config: AlgorithmConfiguration
+  ): Promise<StockScore | null> {
+    const factorScores: { [factor: string]: number } = {}
+    const algorithmMetrics: { [algorithmType: string]: any } = {}
+
+    // Calculate each factor score
+    let totalWeightedScore = 0
+    let totalWeight = 0
+
+    for (const weight of config.weights) {
+      if (!weight.enabled) continue
+
+      try {
+        const factorScore = await this.factorLibrary.calculateFactor(
+          weight.factor,
+          symbol,
+          marketData,
+          fundamentalData
+        )
+
+        if (factorScore !== null && !isNaN(factorScore)) {
+          factorScores[weight.factor] = factorScore
+          totalWeightedScore += factorScore * weight.weight
+          totalWeight += weight.weight
+        }
+      } catch (error) {
+        console.warn(`Error calculating factor ${weight.factor} for ${symbol}:`, error)
+      }
+    }
+
+    if (totalWeight === 0) {
+      return null
+    }
+
+    const overallScore = totalWeightedScore / totalWeight
+
+    // Generate algorithm-specific metrics based on type
+    algorithmMetrics[config.type] = {
+      score: overallScore,
+      factorContribution: this.calculateFactorContributions(factorScores, config.weights)
+    }
+
+    // Assess data quality
+    const dataQuality: QualityScore = {
+      overall: this.calculateOverallDataQuality(marketData, fundamentalData),
+      metrics: {
+        freshness: this.calculateFreshness(marketData.timestamp),
+        completeness: this.calculateCompleteness(marketData, fundamentalData),
+        accuracy: 0.95, // This would be calculated based on cross-validation
+        sourceReputation: 0.9, // Based on source reliability
+        latency: 0 // Based on API response times
+      },
+      timestamp: Date.now(),
+      source: 'fusion'
+    }
+
+    return {
+      symbol,
+      overallScore,
+      factorScores,
+      dataQuality,
+      timestamp: Date.now(),
+      marketData: {
+        price: marketData.price,
+        volume: marketData.volume,
+        marketCap: marketData.marketCap,
+        sector: marketData.sector,
+        exchange: marketData.exchange
+      },
+      algorithmMetrics
+    }
+  }
+
+  /**
+   * Apply selection criteria to stock scores
+   */
+  private async applySelectionCriteria(
+    stockScores: StockScore[],
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): Promise<SelectionResult['selections']> {
+    // Filter by minimum data quality
+    const qualifiedScores = stockScores.filter(score =>
+      score.dataQuality.overall >= config.dataFusion.minQualityScore
+    )
+
+    // Sort by overall score (descending)
+    qualifiedScores.sort((a, b) => b.overallScore - a.overallScore)
+
+    const selections: SelectionResult['selections'] = []
+
+    switch (config.selectionCriteria) {
+      case SelectionCriteria.SCORE_BASED:
+        return this.applyScoreBased(qualifiedScores, config, context)
+
+      case SelectionCriteria.RANK_BASED:
+        return this.applyRankBased(qualifiedScores, config, context)
+
+      case SelectionCriteria.QUANTILE_BASED:
+        return this.applyQuantileBased(qualifiedScores, config, context)
+
+      case SelectionCriteria.THRESHOLD_BASED:
+        return this.applyThresholdBased(qualifiedScores, config, context)
+
+      default:
+        return this.applyScoreBased(qualifiedScores, config, context)
+    }
+  }
+
+  /**
+   * Score-based selection (top N by score)
+   */
+  private applyScoreBased(
+    scores: StockScore[],
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): SelectionResult['selections'] {
+    const topN = config.selection.topN || config.universe.maxPositions
+    const selectedScores = scores.slice(0, Math.min(topN, scores.length))
+
+    return selectedScores.map((score, index) => ({
+      symbol: score.symbol,
+      score,
+      weight: this.calculatePositionWeight(score, selectedScores, config),
+      action: this.determineAction(score.symbol, context),
+      confidence: this.calculateConfidence(score, index, selectedScores.length)
+    }))
+  }
+
+  /**
+   * Rank-based selection with equal weighting
+   */
+  private applyRankBased(
+    scores: StockScore[],
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): SelectionResult['selections'] {
+    const topN = config.selection.topN || config.universe.maxPositions
+    const selectedScores = scores.slice(0, Math.min(topN, scores.length))
+    const equalWeight = 1.0 / selectedScores.length
+
+    return selectedScores.map((score, index) => ({
+      symbol: score.symbol,
+      score,
+      weight: equalWeight,
+      action: this.determineAction(score.symbol, context),
+      confidence: this.calculateConfidence(score, index, selectedScores.length)
+    }))
+  }
+
+  /**
+   * Quantile-based selection (top X percentile)
+   */
+  private applyQuantileBased(
+    scores: StockScore[],
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): SelectionResult['selections'] {
+    const quantile = config.selection.quantile || 0.1 // Top 10% by default
+    const cutoffIndex = Math.floor(scores.length * quantile)
+    const selectedScores = scores.slice(0, Math.max(1, cutoffIndex))
+
+    return selectedScores.map((score, index) => ({
+      symbol: score.symbol,
+      score,
+      weight: this.calculatePositionWeight(score, selectedScores, config),
+      action: this.determineAction(score.symbol, context),
+      confidence: this.calculateConfidence(score, index, selectedScores.length)
+    }))
+  }
+
+  /**
+   * Threshold-based selection (above minimum score)
+   */
+  private applyThresholdBased(
+    scores: StockScore[],
+    config: AlgorithmConfiguration,
+    context: AlgorithmContext
+  ): SelectionResult['selections'] {
+    const threshold = config.selection.threshold || 0.6
+    const selectedScores = scores.filter(score => score.overallScore >= threshold)
+      .slice(0, config.universe.maxPositions)
+
+    if (selectedScores.length === 0) {
+      return []
+    }
+
+    return selectedScores.map((score, index) => ({
+      symbol: score.symbol,
+      score,
+      weight: this.calculatePositionWeight(score, selectedScores, config),
+      action: this.determineAction(score.symbol, context),
+      confidence: this.calculateConfidence(score, index, selectedScores.length)
+    }))
+  }
+
+  /**
+   * Calculate position weight based on score and constraints
+   */
+  private calculatePositionWeight(
+    score: StockScore,
+    allScores: StockScore[],
+    config: AlgorithmConfiguration
+  ): number {
+    // Score-weighted allocation
+    const totalScore = allScores.reduce((sum, s) => sum + s.overallScore, 0)
+    let weight = score.overallScore / totalScore
+
+    // Apply maximum single position constraint
+    weight = Math.min(weight, config.risk.maxSinglePosition)
+
+    // Apply sector constraints
+    if (config.risk.maxSectorWeight < 1.0) {
+      const sectorWeight = this.calculateSectorWeight(score.marketData.sector, allScores)
+      if (sectorWeight > config.risk.maxSectorWeight) {
+        weight *= config.risk.maxSectorWeight / sectorWeight
+      }
+    }
+
+    return Math.max(0, Math.min(1, weight))
+  }
+
+  /**
+   * Determine action (BUY/SELL/HOLD) based on current positions
+   */
+  private determineAction(
+    symbol: string,
+    context: AlgorithmContext
+  ): 'BUY' | 'SELL' | 'HOLD' {
+    if (!context.currentPositions) {
+      return 'BUY'
+    }
+
+    const currentPosition = context.currentPositions[symbol]
+    if (!currentPosition) {
+      return 'BUY'
+    }
+
+    // This is where you'd implement more sophisticated rebalancing logic
+    return 'HOLD'
+  }
+
+  /**
+   * Calculate confidence score for selection
+   */
+  private calculateConfidence(
+    score: StockScore,
+    rank: number,
+    totalSelections: number
+  ): number {
+    // Base confidence on data quality and relative score
+    let confidence = score.dataQuality.overall
+
+    // Boost confidence for higher-ranked selections
+    const rankBonus = (totalSelections - rank) / totalSelections * 0.2
+    confidence = Math.min(1.0, confidence + rankBonus)
+
+    // Factor in score magnitude
+    if (score.overallScore > 0.8) confidence += 0.1
+    if (score.overallScore < 0.3) confidence -= 0.2
+
+    return Math.max(0, Math.min(1, confidence))
+  }
+
+  // Utility methods
+  private buildUniverseQuery(criteria: any): string {
+    // Build SQL or other query based on criteria
+    // This is implementation-specific to your database
+    return `SELECT symbol FROM stocks WHERE ${this.buildWhereClause(criteria)}`
+  }
+
+  private buildWhereClause(criteria: any): string {
+    const conditions: string[] = []
+
+    if (criteria.sectors?.length) {
+      conditions.push(`sector IN (${criteria.sectors.map((s: string) => `'${s}'`).join(',')})`)
+    }
+    if (criteria.marketCapMin) {
+      conditions.push(`market_cap >= ${criteria.marketCapMin}`)
+    }
+    if (criteria.marketCapMax) {
+      conditions.push(`market_cap <= ${criteria.marketCapMax}`)
+    }
+    if (criteria.exchanges?.length) {
+      conditions.push(`exchange IN (${criteria.exchanges.map((e: string) => `'${e}'`).join(',')})`)
+    }
+    if (criteria.excludeSymbols?.length) {
+      conditions.push(`symbol NOT IN (${criteria.excludeSymbols.map((s: string) => `'${s}'`).join(',')})`)
+    }
+
+    return conditions.join(' AND ') || '1=1'
+  }
+
+  private async executeUniverseQuery(query: string): Promise<string[]> {
+    // Execute database query and return symbol list
+    // Implementation depends on your database client
+    return [] // Placeholder
+  }
+
+  private async fetchFromSource(source: string, symbol: string, dataType: string): Promise<any> {
+    // Fetch data from specific MCP source
+    // Implementation depends on your MCP client setup
+    return null // Placeholder
+  }
+
+  private async assessDataQuality(data: any, source: string): Promise<QualityScore> {
+    // Use QualityScorer to assess data quality
+    return {
+      overall: 0.9,
+      metrics: {
+        freshness: 0.9,
+        completeness: 0.9,
+        accuracy: 0.9,
+        sourceReputation: 0.9,
+        latency: 100
+      },
+      timestamp: Date.now(),
+      source
+    }
+  }
+
+  private calculateExecutionMetrics(
+    stockScores: StockScore[],
+    selections: SelectionResult['selections'],
+    startTime: number
+  ) {
+    return {
+      totalStocksEvaluated: stockScores.length,
+      averageDataQuality: stockScores.reduce((sum, s) => sum + s.dataQuality.overall, 0) / stockScores.length,
+      cacheHitRate: 0.85, // This would be tracked during execution
+      dataFusionConflicts: 0 // This would be tracked during fusion
+    }
+  }
+
+  private calculateDataCompleteness(stockScores: StockScore[]): number {
+    return stockScores.reduce((sum, s) => sum + s.dataQuality.metrics.completeness, 0) / stockScores.length
+  }
+
+  private calculateSourceAgreement(stockScores: StockScore[]): number {
+    // Calculate average agreement between sources (would be tracked during fusion)
+    return 0.92
+  }
+
+  private calculateDataFreshness(stockScores: StockScore[]): number {
+    return stockScores.reduce((sum, s) => sum + s.dataQuality.metrics.freshness, 0) / stockScores.length
+  }
+
+  private calculateOverallDataQuality(
+    marketData: MarketDataPoint,
+    fundamentalData?: FundamentalDataPoint
+  ): number {
+    // Implement comprehensive data quality calculation
+    return 0.9
+  }
+
+  private calculateFreshness(timestamp: number): number {
+    const age = Date.now() - timestamp
+    const maxAge = 5 * 60 * 1000 // 5 minutes
+    return Math.max(0, 1 - age / maxAge)
+  }
+
+  private calculateCompleteness(
+    marketData: MarketDataPoint,
+    fundamentalData?: FundamentalDataPoint
+  ): number {
+    let totalFields = 6 // symbol, price, volume, marketCap, sector, exchange
+    let completedFields = 0
+
+    if (marketData.symbol) completedFields++
+    if (marketData.price > 0) completedFields++
+    if (marketData.volume > 0) completedFields++
+    if (marketData.marketCap > 0) completedFields++
+    if (marketData.sector) completedFields++
+    if (marketData.exchange) completedFields++
+
+    if (fundamentalData) {
+      totalFields += 5 // peRatio, pbRatio, debtToEquity, roe, revenueGrowth
+      if (fundamentalData.peRatio !== undefined) completedFields++
+      if (fundamentalData.pbRatio !== undefined) completedFields++
+      if (fundamentalData.debtToEquity !== undefined) completedFields++
+      if (fundamentalData.roe !== undefined) completedFields++
+      if (fundamentalData.revenueGrowth !== undefined) completedFields++
+    }
+
+    return completedFields / totalFields
+  }
+
+  private calculateFactorContributions(
+    factorScores: { [factor: string]: number },
+    weights: AlgorithmConfiguration['weights']
+  ): { [factor: string]: number } {
+    const totalWeight = weights.reduce((sum, w) => sum + (w.enabled ? w.weight : 0), 0)
+    const contributions: { [factor: string]: number } = {}
+
+    weights.forEach(weight => {
+      if (weight.enabled && factorScores[weight.factor] !== undefined) {
+        contributions[weight.factor] = (weight.weight / totalWeight) * factorScores[weight.factor]
+      }
+    })
+
+    return contributions
+  }
+
+  private calculateSectorWeight(sector: string, scores: StockScore[]): number {
+    const sectorStocks = scores.filter(s => s.marketData.sector === sector)
+    return sectorStocks.length / scores.length
+  }
+
+  /**
+   * Get current execution status
+   */
+  getExecutionStatus(executionId: string): AlgorithmExecution | undefined {
+    return this.activeExecutions.get(executionId)
+  }
+
+  /**
+   * Cancel running execution
+   */
+  cancelExecution(executionId: string): boolean {
+    const execution = this.activeExecutions.get(executionId)
+    if (execution && execution.status === 'running') {
+      execution.status = 'cancelled'
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Get engine statistics
+   */
+  getEngineStats() {
+    return {
+      activeExecutions: this.activeExecutions.size,
+      cacheStats: this.cache.getStatistics(),
+      fusionStats: this.dataFusion.getStatistics()
+    }
+  }
+}

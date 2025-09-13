@@ -6,6 +6,7 @@
 - Focus on technical specifications, file paths, and development workflows
 - Business metrics included only when technically relevant
 - Architecture details and code examples preserved completely
+- Read docs/claude-standards.md for full guidelines
 
 **When creating or updating documentation:**
 - Follow the concise style demonstrated in README.md and CLAUDE.md

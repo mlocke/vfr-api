@@ -65,9 +65,16 @@ File Naming Conventions
 
 Technical docs: [feature]-implementation.md
 Optimized versions: [original-name]-optimized.md
-Test outputs: Always save to /docs/project/test_output/
 
-Validation Checklist
+## Testing and Validation
+Test outputs: Always save to /docs/test-output/
+Test outcomes: Always save to /docs/test-outcomes/
+
+## Subagents
+For every task, analyze if an existing subagent can be used. If not, RECOMMEND creating one. 
+DO NOT create a new subagent without explicit user approval.
+
+## Validation Checklist
 Before finalizing any documentation, verify it contains:
 
 All necessary file paths for code navigation
