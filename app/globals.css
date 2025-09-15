@@ -963,15 +963,15 @@ body {
   .logo-text {
     font-size: 2rem;
   }
-  
+
   .prominent-logo {
     height: 80px !important;
   }
-  
+
   .prominent-logo-text {
     font-size: 2.2rem !important;
   }
-  
+
   .company-tagline {
     font-size: 1rem !important;
   }
@@ -986,6 +986,38 @@ body {
 
   .data-sources {
     gap: 1.5rem;
+  }
+
+  /* Deep Analysis Page Responsive */
+  .deep-analysis-input-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  .deep-analysis-header h2 {
+    font-size: 2rem !important;
+  }
+
+  .deep-analysis-header p {
+    font-size: 1.1rem !important;
+  }
+
+  .deep-analysis-button {
+    padding: 1.2rem 2rem !important;
+    font-size: 1.1rem !important;
+  }
+
+  .deep-analysis-confirmation {
+    padding: 1.5rem !important;
+  }
+
+  .deep-analysis-confirmation-buttons {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+
+  .deep-analysis-confirmation-buttons button {
+    width: 100% !important;
   }
 }
 

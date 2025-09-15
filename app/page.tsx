@@ -136,7 +136,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🧠</span>
-            <span className="hidden sm:inline">&nbsp;Get Deep Analysis</span>
+            <span className="hidden sm:inline">&nbsp;Deep Analysis</span>
           </span>
           <span style={{
             fontSize: '12px',
@@ -190,7 +190,7 @@ export default function Home() {
               </p>
               <Link href="/stock-intelligence" className="cta-button">
                 <span>🧠</span>
-                Get Deep Analysis
+                Deep Analysis
               </Link>
             </div>
             <div className="dashboard-preview">

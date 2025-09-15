@@ -1,8 +1,60 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import SectorDropdown, { SectorOption } from '../components/SectorDropdown'
 
-export default function StockIntelligencePage() {
+export default function DeepAnalysisPage() {
+  const [selectedSector, setSelectedSector] = useState<SectorOption | undefined>()
+  const [tickerInput, setTickerInput] = useState('')
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [analysisType, setAnalysisType] = useState<'sector' | 'tickers' | null>(null)
+
+  const handleSectorChange = (sector: SectorOption) => {
+    setSelectedSector(sector)
+    setTickerInput('')
+    setAnalysisType('sector')
+    setShowConfirmation(false)
+  }
+
+  const handleTickerInputChange = (value: string) => {
+    setTickerInput(value)
+    setSelectedSector(undefined)
+    setAnalysisType('tickers')
+    setShowConfirmation(false)
+  }
+
+  const handleRunAnalysis = () => {
+    if ((analysisType === 'sector' && selectedSector) ||
+        (analysisType === 'tickers' && tickerInput.trim())) {
+      setShowConfirmation(true)
+    }
+  }
+
+  const handleConfirm = () => {
+    // TODO: Implement deep analysis logic
+    console.log('Running deep analysis for:', analysisType === 'sector' ? selectedSector : tickerInput)
+    setShowConfirmation(false)
+  }
+
+  const handleCancel = () => {
+    setShowConfirmation(false)
+  }
+
+  const getAnalysisSummary = () => {
+    if (analysisType === 'sector' && selectedSector) {
+      return `Analyzing: ${selectedSector.label} Sector`
+    }
+    if (analysisType === 'tickers' && tickerInput.trim()) {
+      const tickers = tickerInput.split(',').map(t => t.trim().toUpperCase()).filter(t => t)
+      return `Analyzing: ${tickers.join(', ')}`
+    }
+    return ''
+  }
+
+  const isAnalysisReady = (analysisType === 'sector' && selectedSector) ||
+                         (analysisType === 'tickers' && tickerInput.trim())
+
   return (
     <>
       {/* Background Animation - Consistent with homepage */}
@@ -112,137 +164,297 @@ export default function StockIntelligencePage() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             />
             <div className="logo-text-container">
-              <div className="logo-text prominent-logo-text">Market Intelligence</div>
+              <div className="logo-text prominent-logo-text">Deep Analysis</div>
               <div className="company-tagline">Select. Analyze. Decide.</div>
             </div>
           </div>
-          <p className="tagline">Advanced Financial Analysis & Real-time Market Intelligence</p>
+          <p className="tagline">Comprehensive Financial Analysis & Market Intelligence Platform</p>
         </header>
 
-        <main className="hero">
-          <div className="hero-content">
-            <div className="hero-text">
-              <h1 className="hero-title">Coming Soon</h1>
-              <p className="hero-subtitle">
-                Our advanced Market Intelligence platform is currently under development.
-                This powerful tool will provide real-time market analysis, AI-powered stock
-                selection, and comprehensive financial research capabilities powered by our
-                proprietary MCP-native infrastructure.
+        {/* Input Section */}
+        <section style={{ padding: '2rem 1rem', position: 'relative', zIndex: 2 }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            {/* Input Section Header */}
+            <div className="deep-analysis-header" style={{
+              textAlign: 'center',
+              marginBottom: '3rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '20px',
+              padding: '2rem',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+            }}>
+              <h2 style={{
+                fontSize: '2.5rem',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '1rem',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+              }}>
+                🔍 Start Your Analysis
+              </h2>
+              <p style={{
+                fontSize: '1.2rem',
+                color: 'rgba(255, 255, 255, 0.8)',
+                lineHeight: '1.6',
+                maxWidth: '600px',
+                margin: '0 auto'
+              }}>
+                Choose a sector or enter specific stock tickers to begin comprehensive market analysis
               </p>
+            </div>
+
+            {/* Input Controls */}
+            <div className="deep-analysis-input-grid" style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '2rem',
+              marginBottom: '2rem',
+              alignItems: 'start'
+            }}>
+              {/* Sector Selection */}
               <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.75rem',
                 background: 'rgba(255, 255, 255, 0.1)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                padding: '1rem 2rem',
-                borderRadius: '50px',
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                borderRadius: '15px',
+                padding: '2rem',
+                transition: 'all 0.3s ease',
+                boxShadow: analysisType === 'sector' ?
+                  '0 10px 30px rgba(0, 200, 83, 0.3), 0 0 0 2px rgba(0, 200, 83, 0.5)' :
+                  '0 4px 15px rgba(0, 0, 0, 0.2)'
               }}>
-                <span>🚧</span>
-                In Development
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: '600',
+                  color: 'white',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  🏢 Select Sector
+                </h3>
+                <SectorDropdown
+                  onSectorChange={handleSectorChange}
+                  currentSector={selectedSector}
+                />
               </div>
-            </div>
-            <div className="dashboard-preview">
-              <div className="dashboard-mockup">
-                <div className="mockup-header">
-                  <div className="mockup-dots">
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                  </div>
-                  <div className="mockup-title">Market Intelligence Preview</div>
-                </div>
-                <div className="chart-container">
-                  <div className="chart-line"></div>
-                </div>
-                <div className="metrics-grid">
-                  <div className="metric-card">
-                    <div className="metric-value">Real-time</div>
-                    <div className="metric-label">Data Analysis</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">AI-Powered</div>
-                    <div className="metric-label">Stock Selection</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">MCP-Native</div>
-                    <div className="metric-label">Infrastructure</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">Advanced</div>
-                    <div className="metric-label">Analytics</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
 
-        <section className="trust-section">
-          <div className="trust-container">
-            <h2 className="trust-title">Upcoming Features</h2>
-            <div className="data-sources">
-              <div className="source-badge">🤖 AI Stock Selection</div>
-              <div className="source-badge">📊 Real-time Analytics</div>
-              <div className="source-badge">🔍 Market Intelligence</div>
-              <div className="source-badge">⚡ Instant Insights</div>
-              <div className="source-badge">🎯 Portfolio Analysis</div>
+              {/* Ticker Input */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '15px',
+                padding: '2rem',
+                transition: 'all 0.3s ease',
+                boxShadow: analysisType === 'tickers' ?
+                  '0 10px 30px rgba(0, 200, 83, 0.3), 0 0 0 2px rgba(0, 200, 83, 0.5)' :
+                  '0 4px 15px rgba(0, 0, 0, 0.2)'
+              }}>
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: '600',
+                  color: 'white',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  📈 Enter Stock Tickers
+                </h3>
+                <input
+                  type="text"
+                  value={tickerInput}
+                  onChange={(e) => handleTickerInputChange(e.target.value)}
+                  placeholder="e.g., AAPL, MSFT, GOOG"
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(10px)',
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    outline: 'none',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'rgba(0, 200, 83, 0.6)'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 200, 83, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)'
+                  }}
+                />
+                <p style={{
+                  fontSize: '0.9rem',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  marginTop: '0.5rem',
+                  fontStyle: 'italic'
+                }}>
+                  Separate multiple tickers with commas
+                </p>
+              </div>
             </div>
-            <p className="disclaimer">
-              Our Market Intelligence platform will provide comprehensive market analysis
-              and stock selection tools for educational and informational purposes only.
-              All analysis will be provided for educational purposes and should not be
-              considered as investment advice.
-            </p>
-          </div>
-        </section>
 
-        <section id="features" className="features">
-          <div className="features-container">
-            <h2 className="features-title">Platform Preview</h2>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-icon">🧠</div>
-                <h3 className="feature-title">AI-Powered Analysis</h3>
-                <p className="feature-description">
-                  Advanced machine learning algorithms will analyze market trends,
-                  sentiment data, and technical indicators to provide intelligent
-                  stock recommendations and market insights.
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">⚡</div>
-                <h3 className="feature-title">Real-time Processing</h3>
-                <p className="feature-description">
-                  Lightning-fast data processing with sub-100ms response times
-                  for real-time market analysis and instant investment insights
-                  powered by our MCP infrastructure.
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">📈</div>
-                <h3 className="feature-title">Comprehensive Analytics</h3>
-                <p className="feature-description">
-                  Multi-factor analysis combining technical indicators, fundamental
-                  data, sentiment analysis, and market trends for complete
-                  investment research and decision support.
-                </p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">🎯</div>
-                <h3 className="feature-title">Smart Selection</h3>
-                <p className="feature-description">
-                  Intelligent stock selection algorithms that analyze multiple
-                  data sources and market factors to identify potential
-                  investment opportunities across various sectors.
-                </p>
-              </div>
+            {/* Run Analysis Button */}
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <button
+                className="deep-analysis-button"
+                onClick={handleRunAnalysis}
+                disabled={!isAnalysisReady}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  background: isAnalysisReady ?
+                    'linear-gradient(135deg, rgba(0, 200, 83, 0.9), rgba(0, 102, 204, 0.9))' :
+                    'rgba(100, 100, 100, 0.3)',
+                  color: 'white',
+                  padding: '1.5rem 3rem',
+                  border: 'none',
+                  borderRadius: '50px',
+                  fontSize: '1.3rem',
+                  fontWeight: '700',
+                  cursor: isAnalysisReady ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s ease',
+                  boxShadow: isAnalysisReady ?
+                    '0 10px 30px rgba(0, 200, 83, 0.4)' :
+                    '0 4px 15px rgba(0, 0, 0, 0.2)',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                  backdropFilter: 'blur(10px)',
+                  border: `2px solid ${isAnalysisReady ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`
+                }}
+                onMouseEnter={(e) => {
+                  if (isAnalysisReady) {
+                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)'
+                    e.currentTarget.style.boxShadow = '0 15px 40px rgba(0, 200, 83, 0.5)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isAnalysisReady) {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 200, 83, 0.4)'
+                  }
+                }}
+              >
+                <span style={{ fontSize: '1.5rem' }}>🚀</span>
+                Run Deep Analysis
+              </button>
             </div>
+
+            {/* Confirmation Panel */}
+            {showConfirmation && (
+              <div className="deep-analysis-confirmation" style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(20px)',
+                border: '2px solid rgba(0, 200, 83, 0.5)',
+                borderRadius: '20px',
+                padding: '2rem',
+                boxShadow: '0 20px 50px rgba(0, 200, 83, 0.3)',
+                animation: 'fadeInUp 0.4s ease-out',
+                marginTop: '2rem'
+              }}>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  color: 'white',
+                  marginBottom: '1rem',
+                  textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}>
+                  ✅ Confirm Analysis
+                </h3>
+
+                <div style={{
+                  background: 'rgba(0, 200, 83, 0.1)',
+                  border: '1px solid rgba(0, 200, 83, 0.3)',
+                  borderRadius: '10px',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem',
+                  textAlign: 'center'
+                }}>
+                  <p style={{
+                    fontSize: '1.2rem',
+                    fontWeight: '600',
+                    color: 'rgba(0, 200, 83, 0.9)',
+                    margin: 0
+                  }}>
+                    {getAnalysisSummary()}
+                  </p>
+                </div>
+
+                <div className="deep-analysis-confirmation-buttons" style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  justifyContent: 'center'
+                }}>
+                  <button
+                    onClick={handleConfirm}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.9), rgba(0, 150, 60, 0.9))',
+                      color: 'white',
+                      padding: '1rem 2rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 15px rgba(0, 200, 83, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 200, 83, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)'
+                    }}
+                  >
+                    Confirm & Run
+                  </button>
+
+                  <button
+                    onClick={handleCancel}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      color: 'rgba(239, 68, 68, 0.9)',
+                      padding: '1rem 2rem',
+                      border: '2px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '10px',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      backdropFilter: 'blur(10px)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -250,8 +462,7 @@ export default function StockIntelligencePage() {
           <p>© 2025 Veritak Financial Research LLC | Educational & Informational Use Only</p>
           <p>✨ Transparency First • 🔒 Government Data Sources • 📚 Educational Focus</p>
           <p style={{marginTop: '1rem', fontSize: '0.85rem', opacity: 0.8}}>
-            Market Intelligence platform is currently in development. All analysis tools
-            will be provided for educational purposes only and should not be considered as investment advice.
+            Deep Analysis tools are provided for educational purposes only and should not be considered as investment advice.
           </p>
         </footer>
       </div>
