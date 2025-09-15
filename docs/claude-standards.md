@@ -72,8 +72,10 @@ Test outcomes: Always save to /docs/test-outcomes/
 
 ## Subagents
 -**IMPORTANT**-
-For every task, analyze if an existing subagent can be used. If not, RECOMMEND creating one. 
-DO NOT create a new subagent without explicit user approval.
+-For every task, analyze if an existing subagent can be used. If not, RECOMMEND creating one. 
+-DO NOT create a new subagent without explicit user approval.
+-When asked what is the next step, use the technical docs expert agent to determine next steps.
+-**END IMPORTANT**
 
 ## Validation Checklist
 Before finalizing any documentation, verify it contains:

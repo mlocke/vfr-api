@@ -117,6 +117,15 @@ export class MCPClient {
       retryAttempts: 3
     })
 
+    // Dappier MCP Server Configuration (Web Intelligence)
+    this.servers.set('dappier', {
+      name: 'Dappier MCP',
+      apiKey: process.env.DAPPIER_API_KEY,
+      rateLimit: 200, // requests per minute
+      timeout: 15000, // Longer timeout for web intelligence processing
+      retryAttempts: 2
+    })
+
     // Initialize connection stats
     this.servers.forEach((config, serverId) => {
       this.connections.set(serverId, {
@@ -687,10 +696,12 @@ export class MCPClient {
       'get_options_chain': ['yahoo'],
 
       // News and sentiment tools
-      'news_sentiment': ['alphavantage', 'firecrawl', 'yahoo'],
-      'market_news': ['firecrawl', 'alphavantage', 'yahoo'],
+      'news_sentiment': ['dappier', 'alphavantage', 'firecrawl', 'yahoo'],
+      'market_news': ['dappier', 'firecrawl', 'alphavantage', 'yahoo'],
       'get_yahoo_finance_news': ['yahoo'],
-      'scrape_content': ['firecrawl'],
+      'scrape_content': ['firecrawl', 'dappier'],
+      'web_intelligence': ['dappier'],
+      'real_time_sentiment': ['dappier'],
 
       // Market data tools
       'market_status': ['polygon', 'alphavantage'],
