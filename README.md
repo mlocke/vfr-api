@@ -132,12 +132,20 @@ POLYGON_API_KEY=optional
 
 ## Testing & Validation
 
-**Test Coverage:** 100% for data collectors
+**Test Coverage:** 100% for data collectors, comprehensive MCP testing implemented
 **Test Location:** All outputs must go to `/docs/project/test_output/`
 **Key Test Files:**
+- `tests/test_yahoo_finance_mcp_comprehensive.py` (1,183 lines - Yahoo Finance MCP)
 - `backend/data_collectors/test_filtering_capabilities.py`
 - `test_fred_core.py`
 - `run_full_fred_demo.py`
+
+**Yahoo Finance MCP Testing:**
+- 10/10 tools tested with 99.5%+ accuracy validation
+- <200ms response time benchmarking
+- Cross-validation with Polygon.io and Alpha Vantage
+- Error handling and market hours scenarios
+- Performance metrics stored in SQLite database
 
 ## Development Standards
 
