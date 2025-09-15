@@ -136,7 +136,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🧠</span>
-            <span className="hidden sm:inline">&nbsp;Launch Market Intelligence</span>
+            <span className="hidden sm:inline">&nbsp;Get Deep Analysis</span>
           </span>
           <span style={{
             fontSize: '12px',
@@ -188,10 +188,10 @@ export default function Home() {
                 data from government sources, commercial APIs, and web intelligence to deliver 
                 comprehensive financial research and market intelligence.
               </p>
-              <a href="#features" className="cta-button">
-                <span>🚀</span>
-                Explore Platform
-              </a>
+              <Link href="/stock-intelligence" className="cta-button">
+                <span>🧠</span>
+                Get Deep Analysis
+              </Link>
             </div>
             <div className="dashboard-preview">
               <div className="dashboard-mockup">
