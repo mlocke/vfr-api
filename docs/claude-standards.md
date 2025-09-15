@@ -67,8 +67,8 @@ Technical docs: [feature]-implementation.md
 Optimized versions: [original-name]-optimized.md
 
 ## Testing and Validation
-Test outputs: Always save to /docs/test-output/
-Test outcomes: Always save to /docs/test-outcomes/
+-Test outputs: Always save to /docs/test-output/
+-Test outcomes: Always save to /docs/test-outcomes/
 
 ## Subagents
 -**IMPORTANT**-

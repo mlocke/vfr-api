@@ -6,10 +6,15 @@ const config = {
   // Test environment
   testEnvironment: 'node',
 
-  // Test file patterns
+  // Test file patterns - exclude node_modules to prevent memory issues
   testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/?(*.)+(spec|test).ts'
+    '<rootDir>/**/__tests__/**/*.test.ts',
+    '<rootDir>/**/?(*.)+(spec|test).ts'
+  ],
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/dist/',
+    '<rootDir>/.next/'
   ],
 
   // Module file extensions
@@ -41,8 +46,8 @@ const config = {
   // Verbose output for detailed test information
   verbose: true,
 
-  // Setup files
-  setupFilesAfterEnv: [],
+  // Setup files - memory optimization and leak prevention
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
   // Clear mocks between tests
   clearMocks: true,
@@ -51,15 +56,31 @@ const config = {
   detectOpenHandles: true,
   forceExit: false,
 
-  // Test timeout
-  testTimeout: 30000,
+  // Test timeout - reduced to prevent memory buildup
+  testTimeout: 10000,
 
   // Global setup/teardown
   globalSetup: undefined,
   globalTeardown: undefined,
 
   // Maximum worker processes
-  maxWorkers: 1
+  maxWorkers: 1,
+
+  // Memory leak prevention and optimization
+  logHeapUsage: true,
+  detectLeaks: false,  // Temporarily disabled until cleanup is complete
+  workerIdleMemoryLimit: '512MB',
+
+  // Force garbage collection between tests
+  // Note: runInBand is deprecated in Jest 30+, but maxWorkers: 1 achieves serial execution
+
+  // Additional memory optimization
+  maxConcurrency: 5,
+
+  // Test isolation to prevent memory leaks
+  restoreMocks: true,
+  resetMocks: true,
+  resetModules: false  // Keep false to avoid excessive module reloading
 };
 
 module.exports = config;

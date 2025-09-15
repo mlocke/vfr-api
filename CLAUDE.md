@@ -17,3 +17,35 @@
 **Reference Examples:**
 - README.md: See optimized structure with 70% context reduction
 - CLAUDE.md: See streamlined format focusing on development essentials
+
+## Stock Selection Engine Development Guidelines
+
+**Architecture Integration:**
+- `StockSelectionService` - Main orchestration layer
+- `AlgorithmIntegration` - Interfaces with Algorithm Engine
+- `SectorIntegration` - Sector-based analysis
+- `DataFlowManager` - Request/response optimization
+
+**API Development:**
+- `/api/stocks/select` - Unified endpoint for all selection modes
+- Request validation via Zod schemas
+- Response streaming for large datasets
+- Service pooling and connection management
+
+**Performance Requirements:**
+- <30s timeout for complex multi-stock analysis
+- <5s response for single stock queries
+- 75%+ cache hit rate for repeated requests
+- Request queuing with priority optimization
+
+**Testing Standards:**
+- All selection modes (single, multi, sector) must be tested
+- Performance benchmarks required for response times
+- Integration tests with MCP data sources
+- Error handling validation for timeout/rate limiting scenarios
+
+**Integration Patterns:**
+- Use `createStockSelectionService` factory function
+- Implement `DataIntegrationInterface` for new data sources
+- Follow event-driven architecture for status updates
+- Cache keys generated via `SelectionConfigManager`

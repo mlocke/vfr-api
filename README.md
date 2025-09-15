@@ -30,9 +30,10 @@ A financial analysis platform combining traditional APIs and MCP (Model Context 
 1. **Data Ingestion** - MCP servers + traditional APIs, unified interface
 2. **Data Processing** - ETL pipelines, validation, storage optimization
 3. **Analysis Engine** - Technical indicators, fundamental analysis
-4. **API Services** - FastAPI backend, JWT authentication, rate limiting
-5. **Frontend Dashboard** - React/Next.js interface
-6. **Infrastructure** - Docker, monitoring, CI/CD
+4. **Stock Selection Engine** - AI-native stock selection with multi-source fusion
+5. **API Services** - FastAPI backend, JWT authentication, rate limiting
+6. **Frontend Dashboard** - React/Next.js interface
+7. **Infrastructure** - Docker, monitoring, CI/CD
 
 ## Current Implementation Status
 
@@ -43,6 +44,7 @@ A financial analysis platform combining traditional APIs and MCP (Model Context 
 - Advanced filtering system (106+ filter options, 12 categories)
 - Real-time WebSocket pipeline (30-second refresh cycles)
 - Production-ready economic dashboard
+- **Stock Selection Engine** - Unified single/multi-stock, sector analysis with Algorithm Engine integration
 
 ## File Structure Context
 
@@ -57,6 +59,15 @@ app/services/mcp/            # Multi-source data fusion
 ├── MCPClient.ts            # Enhanced MCP client with fusion
 ├── DataFusionEngine.ts     # Quality scoring and conflict resolution
 └── types.ts                # Fusion interfaces
+
+app/services/stock-selection/ # Stock Selection Engine
+├── StockSelectionService.ts # Main selection service
+├── integration/            # Algorithm & sector integrations
+├── config/                 # Configuration management
+└── types.ts                # Selection interfaces
+
+app/api/stocks/select/      # Stock Selection API
+└── route.ts                # RESTful endpoint with streaming
 
 frontend/
 ├── components/              # React components
@@ -157,5 +168,5 @@ POLYGON_API_KEY=optional
 ## Current Phase
 
 **Phase 1 Complete:** Government data foundation (8 collectors operational)
-**Phase 2 Progress:** MCP integration (9 servers) + multi-source data fusion
-**Current Focus:** Advanced MCP intelligence layer implementation
+**Phase 2 Complete:** MCP integration (9 servers) + multi-source data fusion + Stock Selection Engine
+**Current Focus:** Advanced analytics and user interface optimization

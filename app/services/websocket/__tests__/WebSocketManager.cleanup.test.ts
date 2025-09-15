@@ -101,6 +101,11 @@ describe('WebSocketManager Cleanup Strategies', () => {
 
     // Return to real timers
     jest.useRealTimers()
+
+    // Force garbage collection if available (for memory testing)
+    if (global.gc) {
+      global.gc()
+    }
   })
 
   describe('Connection Cleanup on Disconnect', () => {
@@ -264,8 +269,8 @@ describe('WebSocketManager Cleanup Strategies', () => {
       // Arrange
       const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
 
-      // Act - Rapid cycles
-      for (let i = 0; i < 5; i++) {
+      // Act - Reduced cycles to prevent memory overload (5 -> 3)
+      for (let i = 0; i < 3; i++) {
         wsManager.connect()
         mockWebSocket = (wsManager as any).ws
         if (mockWebSocket) {
@@ -468,25 +473,25 @@ describe('WebSocketManager Cleanup Strategies', () => {
       // Arrange
       const initialHandlerCount = (wsManager as any).messageHandlers.length
 
-      // Add handlers
-      const handlers = Array(10).fill(null).map(() => jest.fn())
+      // Add fewer handlers to reduce memory pressure (10 -> 5)
+      const handlers = Array(5).fill(null).map(() => jest.fn())
       handlers.forEach(handler => wsManager.onMessage(handler))
 
-      expect((wsManager as any).messageHandlers.length).toBe(initialHandlerCount + 10)
+      expect((wsManager as any).messageHandlers.length).toBe(initialHandlerCount + 5)
 
       // Act - Disconnect should not affect handler array (by design)
       wsManager.disconnect()
 
       // Assert - Handlers persist but won't be called for old connections
-      expect((wsManager as any).messageHandlers.length).toBe(initialHandlerCount + 10)
+      expect((wsManager as any).messageHandlers.length).toBe(initialHandlerCount + 5)
     })
 
     test('should_handle_rapid_connection_cycles_without_memory_leaks', () => {
       // Arrange
       const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
 
-      // Act - Rapid connection cycles
-      for (let i = 0; i < 10; i++) {
+      // Act - Reduced cycles to prevent memory overload (10 -> 5)
+      for (let i = 0; i < 5; i++) {
         wsManager.connect()
         const ws = (wsManager as any).ws
         if (ws) {

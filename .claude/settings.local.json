@@ -42,7 +42,8 @@
       "Bash(nginx:*)",
       "Read(//opt/homebrew/etc/nginx/**)",
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []

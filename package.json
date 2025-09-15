@@ -11,9 +11,9 @@
 		"type-check": "tsc --noEmit",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"test": "jest",
-		"test:watch": "jest --watch",
-		"test:coverage": "jest --coverage"
+		"test": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --runInBand",
+		"test:watch": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --watch --maxWorkers=1",
+		"test:coverage": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --coverage --runInBand"
 	},
 	"dependencies": {
 		"@types/d3": "^7.4.3",
