@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import StockTicker from './components/StockTicker'
 import SectorDropdown, { SectorOption } from './components/SectorDropdown'
 
@@ -71,6 +72,81 @@ export default function Home() {
           loading={loading}
           currentSector={currentSector}
         />
+      </div>
+
+      {/* Stock Intelligence Button - Fixed position top right */}
+      <div
+        className="stock-intelligence-button-container"
+        style={{
+          position: 'fixed',
+          top: '65px',
+          right: '20px',
+          zIndex: 1100,
+          backgroundColor: 'transparent',
+          width: 'auto',
+          maxWidth: 'calc(100vw - 40px)',
+          minWidth: '200px'
+        }}
+      >
+        <Link
+          href="/stock-intelligence"
+          className="inline-flex items-center justify-between w-full"
+          style={{
+            padding: '12px 16px',
+            minHeight: '50px',
+            background: 'rgba(17, 24, 39, 0.85)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '2px solid rgba(239, 68, 68, 0.6)',
+            borderRadius: '12px',
+            color: 'rgba(255, 255, 255, 0.95)',
+            fontWeight: '500',
+            fontSize: '14px',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: `
+              0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(31, 41, 55, 0.9)'
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.8)'
+            e.currentTarget.style.boxShadow = `
+              0 8px 24px rgba(0, 0, 0, 0.5),
+              0 0 25px rgba(239, 68, 68, 0.4),
+              0 0 50px rgba(239, 68, 68, 0.2),
+              0 0 0 1px rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15)
+            `
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(17, 24, 39, 0.85)'
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)'
+            e.currentTarget.style.boxShadow = `
+              0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <span className="flex items-center">
+            <span className="mr-2 text-lg">🧠</span>
+            <span className="hidden sm:inline">&nbsp;Market Intelligence</span>
+            <span className="sm:hidden">Intelligence</span>
+          </span>
+          <span style={{
+            fontSize: '12px',
+            color: 'rgba(239, 68, 68, 0.6)',
+            transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            →
+          </span>
+        </Link>
       </div>
 
       {/* Stock Ticker Component */}
