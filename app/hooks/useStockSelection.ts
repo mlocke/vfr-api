@@ -369,7 +369,7 @@ export function useStockSelection(config: UseStockSelectionConfig = {}): UseStoc
       scope: {
         mode: SelectionMode.SECTOR_ANALYSIS,
         sector,
-        maxResults: options?.maxResults || 20
+        maxResults: 20
       },
       options: {
         algorithmId: finalConfig.defaultAlgorithm,

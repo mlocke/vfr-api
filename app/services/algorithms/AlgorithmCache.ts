@@ -75,7 +75,6 @@ export class AlgorithmCache {
       db: config.redis.db,
       keyPrefix: config.redis.keyPrefix,
       maxRetriesPerRequest: config.redis.maxRetries,
-      retryDelayOnFailover: config.redis.retryDelayOnFailover,
       lazyConnect: true,
       enableAutoPipelining: true
     })
@@ -155,7 +154,7 @@ export class AlgorithmCache {
       count: scores.length,
       timestamp,
       averageQuality: scores.reduce((sum, s) => sum + s.dataQuality.overall, 0) / scores.length,
-      sectors: [...new Set(scores.map(s => s.marketData.sector))]
+      sectors: Array.from(new Set(scores.map(s => s.marketData.sector)))
     }
 
     pipeline.setex(`${key}:meta`, this.config.ttl.stockScores, this.serialize(metadata))

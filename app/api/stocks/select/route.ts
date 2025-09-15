@@ -24,7 +24,8 @@ import { redisCache } from '../../../services/cache/RedisCache'
 const SectorSchema = z.object({
   id: z.string(),
   label: z.string(),
-  category: z.string().optional()
+  description: z.string(),
+  category: z.enum(['sector', 'index', 'etf'])
 })
 
 const TimeframeSchema = z.object({
@@ -111,7 +112,7 @@ class ServicePool {
     try {
       console.log('🔧 Initializing Stock Selection Service Pool...')
 
-      const dataFusion = new DataFusionEngine(mcpClient, redisCache)
+      const dataFusion = new DataFusionEngine()
       const factorLibrary = new FactorLibrary()
 
       this.dataFlowManager = new DataFlowManager(dataFusion, mcpClient, redisCache)
@@ -179,7 +180,7 @@ class RequestTracker {
     const now = Date.now()
     const maxAge = 5 * 60 * 1000 // 5 minutes
 
-    for (const [requestId, { timestamp, abortController }] of this.activeRequests.entries()) {
+    for (const [requestId, { timestamp, abortController }] of Array.from(this.activeRequests.entries())) {
       if (now - timestamp > maxAge) {
         abortController.abort()
         this.activeRequests.delete(requestId)
@@ -235,7 +236,7 @@ class ResponseStreamer {
     return new ReadableStream({
       start(controller) {
         // Stream response in chunks to reduce perceived latency
-        const chunks = this.chunkData(data)
+        const chunks = ResponseStreamer.chunkData(data)
         let index = 0
 
         const pump = () => {
@@ -301,8 +302,8 @@ class PerformanceOptimizer {
     // Use streaming for requests likely to have large responses
     return (
       request.scope.mode === SelectionMode.SECTOR_ANALYSIS ||
-      (request.scope.symbols && request.scope.symbols.length > 5) ||
-      request.scope.maxResults && request.scope.maxResults > 10
+      Boolean(request.scope.symbols && request.scope.symbols.length > 5) ||
+      Boolean(request.scope.maxResults && request.scope.maxResults > 10)
     )
   }
 }
@@ -529,7 +530,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (useStreaming) {
       // Streaming response for large datasets
       const stream = ResponseStreamer.createStreamingResponse(result)
-      return new Response(stream, {
+      const response = new NextResponse(stream, {
         headers: {
           'Content-Type': 'application/x-ndjson',
           'X-Request-ID': requestId,
@@ -538,6 +539,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           'Cache-Control': 'no-cache'
         }
       })
+      return response
     } else {
       // Standard JSON response for fast queries
       const response = NextResponse.json(result)

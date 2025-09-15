@@ -42,7 +42,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     this.factorLibrary = factorLibrary
     this.cache = cache
     this.selectionConfig = selectionConfig
-    this.configManager = new AlgorithmConfigManager()
+    this.configManager = new AlgorithmConfigManager(factorLibrary, cache)
     this.algorithmEngine = new AlgorithmEngine(dataFusion, factorLibrary, cache)
   }
 

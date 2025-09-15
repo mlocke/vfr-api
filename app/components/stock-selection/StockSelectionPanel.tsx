@@ -31,7 +31,7 @@ interface PanelState {
   inputMode: InputMode
   singleStock: string
   multipleStocks: string[]
-  selectedSector: SectorOption | null
+  selectedSector: SectorOption | undefined
   currentInput: string
   showAdvanced: boolean
   algorithmOptions: SelectionOptions
@@ -59,7 +59,7 @@ export default function StockSelectionPanel({
                defaultMode === SelectionMode.MULTIPLE_STOCKS ? 'multiple' : 'single',
     singleStock: '',
     multipleStocks: [],
-    selectedSector: null,
+    selectedSector: undefined,
     currentInput: '',
     showAdvanced: showAdvancedOptions,
     algorithmOptions: {
@@ -85,7 +85,7 @@ export default function StockSelectionPanel({
       currentInput: '',
       singleStock: '',
       multipleStocks: [],
-      selectedSector: null
+      selectedSector: undefined
     }))
 
     // Focus input after mode change
@@ -234,7 +234,7 @@ export default function StockSelectionPanel({
       case 'multiple':
         return state.multipleStocks.length > 0
       case 'sector':
-        return state.selectedSector !== null
+        return state.selectedSector !== undefined
       default:
         return false
     }

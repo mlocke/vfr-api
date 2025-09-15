@@ -248,11 +248,17 @@ export class AlgorithmConfigManager {
     const config = {
       name,
       description: `${name} - Based on ${template.name} template`,
+      type: template.template.type,
       ...template.template,
       ...customizations
     }
 
-    return this.createConfiguration(config, userId)
+    // Ensure required fields are present
+    if (!config.type) {
+      throw new Error('Algorithm type is required')
+    }
+
+    return this.createConfiguration(config as any, userId)
   }
 
   // ==================== VALIDATION SYSTEM ====================
@@ -575,7 +581,7 @@ export class AlgorithmConfigManager {
           dataFusion: {
             minQualityScore: 0.7,
             requiredSources: ['polygon', 'alpha_vantage', 'yahoo_finance'],
-            conflictResolution: 'most_recent',
+            conflictResolution: 'highest_quality',
             cacheTTL: 300
           }
         }

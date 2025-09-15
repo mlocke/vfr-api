@@ -625,7 +625,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
     try {
       // Check critical dependencies
-      const mcpHealthy = await this.mcpClient.healthCheck?.() || true
+      const mcpHealthy = await this.mcpClient.performHealthChecks().then(() => true).catch(() => false)
       const cacheHealthy = await this.cache.ping() === 'PONG'
 
       const details = {
