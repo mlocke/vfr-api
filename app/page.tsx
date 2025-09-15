@@ -136,8 +136,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🧠</span>
-            <span className="hidden sm:inline">&nbsp;Market Intelligence</span>
-            <span className="sm:hidden">Intelligence</span>
+            <span className="hidden sm:inline">&nbsp;Launch Market Intelligence</span>
           </span>
           <span style={{
             fontSize: '12px',

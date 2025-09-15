@@ -1,39 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import StockSelectionPanel from '../components/stock-selection/StockSelectionPanel'
-import SelectionResults from '../components/stock-selection/SelectionResults'
-import { SelectionResponse } from '../services/stock-selection/types'
-import { AlgorithmType } from '../services/algorithms/types'
-import useStockSelection from '../hooks/useStockSelection'
 
 export default function StockIntelligencePage() {
-  const [selectionResult, setSelectionResult] = useState<SelectionResponse | null>(null)
-
-  // Initialize the stock selection hook with enhanced configuration
-  const stockSelection = useStockSelection({
-    enableRealTime: true,
-    defaultAlgorithm: AlgorithmType.COMPOSITE,
-    autoReconnect: true,
-    updateInterval: 3000 // 3 second updates for real-time feel
-  })
-
-  // Extract the isLoading state from the hook (renamed for semantic clarity)
-  const { isLoading: isAnalyzing } = stockSelection
-
-  const handleSelectionChange = useCallback((result: SelectionResponse) => {
-    setSelectionResult(result)
-  }, [])
-
-  const handleAnalysisStart = useCallback(() => {
-    // Analysis start is handled by the hook's loading state
-  }, [])
-
-  const handleAnalysisComplete = useCallback(() => {
-    // Analysis completion is handled by the hook's state updates
-  }, [])
-
   return (
     <>
       {/* Background Animation - Consistent with homepage */}
@@ -49,179 +18,242 @@ export default function StockIntelligencePage() {
         <div className="particle"></div>
       </div>
 
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-        {/* Header Section */}
-        <header className="relative z-10 pt-8 pb-6">
-          <div className="container mx-auto px-6">
-            {/* Navigation */}
-            <div className="flex items-center justify-between mb-8">
-              <Link
-                href="/"
-                className="flex items-center text-green-400 hover:text-green-300 transition-colors duration-200"
-              >
-                <span className="mr-2">←</span>
-                <span className="font-medium">Back to Home</span>
-              </Link>
+      {/* Back to Home Button - Fixed position top left to mirror homepage button */}
+      <div
+        className="back-to-home-button-container"
+        style={{
+          position: 'fixed',
+          top: '65px',
+          left: '20px',
+          zIndex: 1100,
+          backgroundColor: 'transparent',
+          width: 'auto',
+          maxWidth: 'calc(100vw - 40px)',
+          minWidth: '200px'
+        }}
+      >
+        <Link
+          href="/"
+          className="inline-flex items-center justify-between w-full"
+          style={{
+            padding: '12px 16px',
+            minHeight: '50px',
+            background: 'rgba(17, 24, 39, 0.85)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '2px solid rgba(239, 68, 68, 0.6)',
+            borderRadius: '12px',
+            color: 'rgba(255, 255, 255, 0.95)',
+            fontWeight: '500',
+            fontSize: '14px',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: `
+              0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(31, 41, 55, 0.9)'
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.8)'
+            e.currentTarget.style.boxShadow = `
+              0 8px 24px rgba(0, 0, 0, 0.5),
+              0 0 25px rgba(239, 68, 68, 0.4),
+              0 0 50px rgba(239, 68, 68, 0.2),
+              0 0 0 1px rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15)
+            `
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(17, 24, 39, 0.85)'
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.6)'
+            e.currentTarget.style.boxShadow = `
+              0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(239, 68, 68, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <span className="flex items-center">
+            <span style={{
+              fontSize: '12px',
+              color: 'rgba(239, 68, 68, 0.6)',
+              transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+              marginRight: '8px'
+            }}>
+              ←
+            </span>
+            <span className="hidden sm:inline">Back to Home</span>
+            <span className="sm:hidden">Home</span>
+          </span>
+        </Link>
+      </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-400">
-                  Powered by MCP Intelligence
-                </div>
-              </div>
-            </div>
-
-            {/* Page Title */}
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent mb-4">
-                Stock Intelligence Platform
-              </h1>
-              <p className="text-xl md:text-2xl text-green-400 font-mono tracking-wider mb-2">
-                Select. Analyze. Decide.
-              </p>
-              <p className="text-gray-300 max-w-3xl mx-auto text-lg">
-                Harness advanced algorithms and real-time market data to make informed investment decisions.
-                Powered by our proprietary MCP-native infrastructure for institutional-grade analysis.
-              </p>
+      <div className="main-container" style={{marginTop: '120px'}}>
+        <header className="header">
+          <div className="logo">
+            <img
+              src="/assets/images/veritak_logo.png"
+              alt="Veritak Financial Research LLC"
+              className="logo-image prominent-logo"
+              style={{
+                height: '120px',
+                width: 'auto',
+                marginRight: '20px',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 200, 83, 0.3))',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            />
+            <div className="logo-text-container">
+              <div className="logo-text prominent-logo-text">Market Intelligence</div>
+              <div className="company-tagline">Select. Analyze. Decide.</div>
             </div>
           </div>
+          <p className="tagline">Advanced Financial Analysis & Real-time Market Intelligence</p>
         </header>
 
-        {/* Main Content */}
-        <main className="relative z-10 container mx-auto px-6 pb-12">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-            {/* Selection & Configuration Panel */}
-            <div className="xl:col-span-1 space-y-6">
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-green-500/20 rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-green-400 mb-6 flex items-center">
-                  <span className="mr-3">🎯</span>
-                  Analysis Configuration
-                </h2>
-
-                <StockSelectionPanel
-                  onSelectionChange={handleSelectionChange}
-                  onAnalysisStart={handleAnalysisStart}
-                  onAnalysisComplete={handleAnalysisComplete}
-                  showAdvancedOptions={true}
-                />
+        <main className="hero">
+          <div className="hero-content">
+            <div className="hero-text">
+              <h1 className="hero-title">Coming Soon</h1>
+              <p className="hero-subtitle">
+                Our advanced Market Intelligence platform is currently under development.
+                This powerful tool will provide real-time market analysis, AI-powered stock
+                selection, and comprehensive financial research capabilities powered by our
+                proprietary MCP-native infrastructure.
+              </p>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                background: 'rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                padding: '1rem 2rem',
+                borderRadius: '50px',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <span>🚧</span>
+                In Development
               </div>
-
-              {/* Analysis Status Panel */}
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-blue-500/20 rounded-lg p-6">
-                <h3 className="text-xl font-bold text-blue-400 mb-4 flex items-center">
-                  <span className="mr-3">📊</span>
-                  Analysis Status
-                </h3>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Current Status:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      isAnalyzing
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                        : selectionResult
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
-                    }`}>
-                      {isAnalyzing ? 'Analyzing...' : selectionResult ? 'Complete' : 'Ready'}
-                    </span>
+            </div>
+            <div className="dashboard-preview">
+              <div className="dashboard-mockup">
+                <div className="mockup-header">
+                  <div className="mockup-dots">
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                    <div className="dot"></div>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Data Sources:</span>
-                    <span className="text-green-400 text-sm">
-                      MCP • Real-time
-                    </span>
+                  <div className="mockup-title">Market Intelligence Preview</div>
+                </div>
+                <div className="chart-container">
+                  <div className="chart-line"></div>
+                </div>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-value">Real-time</div>
+                    <div className="metric-label">Data Analysis</div>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Performance:</span>
-                    <span className="text-green-400 text-sm">
-                      &lt;100ms response
-                    </span>
+                  <div className="metric-card">
+                    <div className="metric-value">AI-Powered</div>
+                    <div className="metric-label">Stock Selection</div>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-value">MCP-Native</div>
+                    <div className="metric-label">Infrastructure</div>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-value">Advanced</div>
+                    <div className="metric-label">Analytics</div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </main>
 
-            {/* Results Display Panel */}
-            <div className="xl:col-span-2">
-              <div className="bg-gray-800/50 backdrop-blur-sm border border-purple-500/20 rounded-lg p-6 min-h-[600px]">
-                <h2 className="text-2xl font-bold text-purple-400 mb-6 flex items-center">
-                  <span className="mr-3">🚀</span>
-                  Intelligence Results
-                </h2>
+        <section className="trust-section">
+          <div className="trust-container">
+            <h2 className="trust-title">Upcoming Features</h2>
+            <div className="data-sources">
+              <div className="source-badge">🤖 AI Stock Selection</div>
+              <div className="source-badge">📊 Real-time Analytics</div>
+              <div className="source-badge">🔍 Market Intelligence</div>
+              <div className="source-badge">⚡ Instant Insights</div>
+              <div className="source-badge">🎯 Portfolio Analysis</div>
+            </div>
+            <p className="disclaimer">
+              Our Market Intelligence platform will provide comprehensive market analysis
+              and stock selection tools for educational and informational purposes only.
+              All analysis will be provided for educational purposes and should not be
+              considered as investment advice.
+            </p>
+          </div>
+        </section>
 
-                {isAnalyzing ? (
-                  <div className="flex flex-col items-center justify-center h-96 space-y-6">
-                    <div className="relative">
-                      <div className="w-16 h-16 border-4 border-green-500/30 border-t-green-400 rounded-full animate-spin"></div>
-                      <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-blue-400 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl text-green-400 font-mono mb-2">Analyzing Market Data...</p>
-                      <p className="text-gray-400">Processing algorithms and real-time intelligence</p>
-                    </div>
-                  </div>
-                ) : selectionResult ? (
-                  <SelectionResults
-                    result={selectionResult}
-                    showAdvancedMetrics={true}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-96 space-y-6">
-                    <div className="w-24 h-24 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center border border-purple-500/30">
-                      <span className="text-4xl">🧠</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xl text-purple-400 font-mono mb-2">Ready for Analysis</p>
-                      <p className="text-gray-400 max-w-md">
-                        Configure your analysis parameters and select stocks to receive
-                        real-time intelligence and investment recommendations.
-                      </p>
-                    </div>
-                  </div>
-                )}
+        <section id="features" className="features">
+          <div className="features-container">
+            <h2 className="features-title">Platform Preview</h2>
+            <div className="features-grid">
+              <div className="feature-card">
+                <div className="feature-icon">🧠</div>
+                <h3 className="feature-title">AI-Powered Analysis</h3>
+                <p className="feature-description">
+                  Advanced machine learning algorithms will analyze market trends,
+                  sentiment data, and technical indicators to provide intelligent
+                  stock recommendations and market insights.
+                </p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">⚡</div>
+                <h3 className="feature-title">Real-time Processing</h3>
+                <p className="feature-description">
+                  Lightning-fast data processing with sub-100ms response times
+                  for real-time market analysis and instant investment insights
+                  powered by our MCP infrastructure.
+                </p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">📈</div>
+                <h3 className="feature-title">Comprehensive Analytics</h3>
+                <p className="feature-description">
+                  Multi-factor analysis combining technical indicators, fundamental
+                  data, sentiment analysis, and market trends for complete
+                  investment research and decision support.
+                </p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🎯</div>
+                <h3 className="feature-title">Smart Selection</h3>
+                <p className="feature-description">
+                  Intelligent stock selection algorithms that analyze multiple
+                  data sources and market factors to identify potential
+                  investment opportunities across various sectors.
+                </p>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Feature Highlights */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gray-800/30 backdrop-blur-sm border border-green-500/20 rounded-lg p-6 text-center">
-              <div className="text-3xl mb-4">⚡</div>
-              <h3 className="text-xl font-bold text-green-400 mb-2">Real-time Analysis</h3>
-              <p className="text-gray-300 text-sm">
-                Sub-100ms response times with live market data streaming and instant recommendations.
-              </p>
-            </div>
-
-            <div className="bg-gray-800/30 backdrop-blur-sm border border-blue-500/20 rounded-lg p-6 text-center">
-              <div className="text-3xl mb-4">🤖</div>
-              <h3 className="text-xl font-bold text-blue-400 mb-2">AI-Powered Algorithms</h3>
-              <p className="text-gray-300 text-sm">
-                Advanced factor-based scoring with 8+ algorithms for comprehensive market intelligence.
-              </p>
-            </div>
-
-            <div className="bg-gray-800/30 backdrop-blur-sm border border-purple-500/20 rounded-lg p-6 text-center">
-              <div className="text-3xl mb-4">🔒</div>
-              <h3 className="text-xl font-bold text-purple-400 mb-2">MCP-Native Infrastructure</h3>
-              <p className="text-gray-300 text-sm">
-                Powered by Model Context Protocol for seamless data integration and superior performance.
-              </p>
-            </div>
-          </div>
-
-          {/* Disclaimer */}
-          <div className="mt-8 text-center text-gray-500 text-sm max-w-4xl mx-auto">
-            <p>
-              This analysis is provided for educational and informational purposes only and should not be considered as investment advice.
-              All investment decisions should be made in consultation with qualified financial advisors.
-              Past performance does not guarantee future results.
-            </p>
-          </div>
-        </main>
+        <footer className="footer">
+          <p>© 2025 Veritak Financial Research LLC | Educational & Informational Use Only</p>
+          <p>✨ Transparency First • 🔒 Government Data Sources • 📚 Educational Focus</p>
+          <p style={{marginTop: '1rem', fontSize: '0.85rem', opacity: 0.8}}>
+            Market Intelligence platform is currently in development. All analysis tools
+            will be provided for educational purposes only and should not be considered as investment advice.
+          </p>
+        </footer>
       </div>
     </>
   )

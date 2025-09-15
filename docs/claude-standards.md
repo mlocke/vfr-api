@@ -53,6 +53,8 @@ markdown# [Module/Feature Name]
 ## Implementation
 [Key files, code examples, configuration]
 
+## Server Information
+-- Always use veritak.local or localhost (port 3000) for local development
 ## Usage
 [Commands, API endpoints, integration steps]
 Context Reduction Targets
