@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/logs/.e73895baa6ae054372b5a0fb117ee5188bb2db0f-audit.json",
+    "files": [
+        {
+            "date": 1757965140922,
+            "name": "/Users/michaellocke/WebstormProjects/Home/public/stock-picker/logs/mcp-puppeteer-2025-09-15.log",
+            "hash": "5efc8197e6f34c2366e4afc119d422a5b220511bd5e730dedae1cfcd767782df"
+        }
+    ],
+    "hashType": "sha256"
+}

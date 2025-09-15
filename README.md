@@ -45,6 +45,7 @@ A financial analysis platform combining traditional APIs and MCP (Model Context 
 - Real-time WebSocket pipeline (30-second refresh cycles)
 - Production-ready economic dashboard
 - **Stock Selection Engine** - Unified single/multi-stock, sector analysis with Algorithm Engine integration
+- **Market Intelligence Interface** - Fixed-position navigation, glassmorphism UI, responsive three-column analysis platform
 
 ## File Structure Context
 
@@ -68,6 +69,9 @@ app/services/stock-selection/ # Stock Selection Engine
 
 app/api/stocks/select/      # Stock Selection API
 └── route.ts                # RESTful endpoint with streaming
+
+app/stock-intelligence/     # Market Intelligence UI
+└── page.tsx                # Analysis platform interface
 
 frontend/
 ├── components/              # React components

@@ -49,3 +49,29 @@
 - Implement `DataIntegrationInterface` for new data sources
 - Follow event-driven architecture for status updates
 - Cache keys generated via `SelectionConfigManager`
+
+## Market Intelligence Interface Guidelines
+
+**UI Architecture:**
+- `app/page.tsx` - Fixed-position navigation button (top-right, z-index 1100)
+- `app/stock-intelligence/page.tsx` - Three-column analysis platform
+- `useStockSelection` hook - Real-time state management with 3s update intervals
+- Glassmorphism design pattern - backdrop-blur, rgba backgrounds, border glow effects
+
+**Navigation Component:**
+- Fixed positioning: `top: 65px, right: 20px`
+- Responsive text: "Market Intelligence" (desktop) / "Intelligence" (mobile)
+- Hover animations: glow expansion, transform translateY(-1px)
+- Brain emoji icon (🧠) with red accent borders
+
+**Platform Layout:**
+- StockSelectionPanel: Configuration and controls
+- Status panel: Loading states with animated spinners
+- SelectionResults: Analysis output display
+- Background animation: Particle system consistency with homepage
+
+**Performance Targets:**
+- Real-time updates: 3-second refresh intervals
+- Component initialization: <500ms mount time
+- Navigation transition: 300ms cubic-bezier animation
+- Responsive breakpoints: sm (640px) for text switching

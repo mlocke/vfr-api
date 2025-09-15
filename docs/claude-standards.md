@@ -70,11 +70,23 @@ Optimized versions: [original-name]-optimized.md
 -Test outputs: Always save to /docs/test-output/
 -Test outcomes: Always save to /docs/test-outcomes/
 
+## Screenshots
+-Always use puppeteer for screenshots
+-Save to /docs/screenshots/
+
 ## Subagents
 -**IMPORTANT**-
 -For every task, analyze if an existing subagent can be used. If not, RECOMMEND creating one. 
 -DO NOT create a new subagent without explicit user approval.
 -When asked what is the next step, use the technical docs expert agent to determine next steps.
+-- For documentation tasks, ALWAYS use the technical docs expert agent.
+-- For UX/UI tasks, ALWAYS use the UX/UI expert agent.
+-- For testing tasks, ALWAYS use the testing expert agent.
+-- For API tasks, ALWAYS use the API expert agent.
+-- For research tasks, ALWAYS use the research expert agent.
+-- For performance tasks, ALWAYS use the performance expert agent.
+-- For finance tasks, ALWAYS use the finance expert agent.
+-- For security tasks, ALWAYS use the security expert agent.
 -**END IMPORTANT**
 
 ## Validation Checklist

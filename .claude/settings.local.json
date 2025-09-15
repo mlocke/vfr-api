@@ -43,7 +43,9 @@
       "Read(//opt/homebrew/etc/nginx/**)",
       "Bash(curl:*)",
       "Bash(find:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
