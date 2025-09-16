@@ -148,6 +148,81 @@ export default function Home() {
         </Link>
       </div>
 
+      {/* Admin Dashboard Button - Fixed position below Market Intelligence */}
+      <div
+        className="admin-button-container"
+        style={{
+          position: 'fixed',
+          top: '125px',
+          right: '20px',
+          zIndex: 1100,
+          backgroundColor: 'transparent',
+          width: 'auto',
+          maxWidth: 'calc(100vw - 40px)',
+          minWidth: '200px'
+        }}
+      >
+        <Link
+          href="/admin"
+          className="inline-flex items-center justify-between w-full"
+          style={{
+            padding: '10px 14px',
+            minHeight: '44px',
+            background: 'rgba(17, 24, 39, 0.85)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '2px solid rgba(99, 102, 241, 0.6)',
+            borderRadius: '10px',
+            color: 'rgba(255, 255, 255, 0.95)',
+            fontWeight: '500',
+            fontSize: '13px',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: `
+              0 3px 10px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(99, 102, 241, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(31, 41, 55, 0.9)'
+            e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.8)'
+            e.currentTarget.style.boxShadow = `
+              0 6px 20px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(99, 102, 241, 0.4),
+              0 0 40px rgba(99, 102, 241, 0.2),
+              0 0 0 1px rgba(99, 102, 241, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15)
+            `
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(17, 24, 39, 0.85)'
+            e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.6)'
+            e.currentTarget.style.boxShadow = `
+              0 3px 10px rgba(0, 0, 0, 0.4),
+              0 0 0 0 rgba(99, 102, 241, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1)
+            `
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          <span className="flex items-center">
+            <span className="mr-2 text-lg">🔧</span>
+            <span className="hidden sm:inline">Admin</span>
+            <span className="sm:hidden">Admin</span>
+          </span>
+          <span style={{
+            fontSize: '12px',
+            color: 'rgba(99, 102, 241, 0.6)',
+            transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            →
+          </span>
+        </Link>
+      </div>
+
       {/* Stock Ticker Component */}
       <StockTicker symbols={symbols} />
 

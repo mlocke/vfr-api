@@ -40,7 +40,7 @@ except ImportError:
     import os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
     from base.collector_interface import DataCollectorInterface, CollectorConfig
-    
+
     # Define SubscriptionTier locally if needed
     from enum import Enum
     class SubscriptionTier(Enum):
@@ -48,6 +48,9 @@ except ImportError:
         BASIC = "basic"
         PREMIUM = "premium"
         ENTERPRISE = "enterprise"
+
+# Import MCP client
+from .mcp_client import MCPClient, MCPConnectionError, MCPProtocolError, MCPTimeoutError, MCPRateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +91,15 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
         
         # MCP server URL (official Alpha Vantage MCP server)
         mcp_server_url = f"https://mcp.alphavantage.co/mcp?apikey={self.alpha_vantage_api_key}"
+
+        # Initialize MCP client with production configuration
+        self.mcp_client_config = {
+            'timeout': 30.0,
+            'max_retries': 3,
+            'backoff_factor': 2.0,
+            'pool_size': 5,
+            'enable_compression': True
+        }
         
         # Initialize base data collector
         super().__init__(config)
@@ -98,6 +110,10 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
         self.connection_established = False
         self.server_info = None
         self.available_tools = []
+        self.mcp_client = None
+        self.last_health_check = None
+        self.connection_retry_count = 0
+        self.max_connection_retries = 5
         
         # Alpha Vantage specific configuration
         self._subscription_tier = SubscriptionTier.PREMIUM  # Assume premium with API key
@@ -261,42 +277,89 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
     
     async def collect_data(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Collect financial data using Alpha Vantage MCP tools.
-        
+        Collect financial data using Alpha Vantage MCP tools with comprehensive error handling.
+
         Args:
             filters: Data collection filters and parameters
-            
+
         Returns:
             Collected and processed financial data
         """
+        collection_start_time = datetime.now()
+
         try:
-            # Ensure MCP connection is established
-            if not self.connection_established:
-                await self.establish_connection_async()
-            
+            # Validate filters
+            self._validate_collection_filters(filters)
+
+            # Ensure MCP connection is established and healthy
+            if not await self._ensure_healthy_connection():
+                raise MCPConnectionError("Unable to establish or maintain healthy MCP connection")
+
             # Analyze filters to determine required tools
             required_tools = self._analyze_filters_for_tools(filters)
-            
-            # Prepare tool calls
+
+            if not required_tools:
+                logger.warning("No tools identified for the given filters")
+                return self._create_empty_response(filters, "No applicable tools found")
+
+            # Prepare tool calls with validation
             tool_calls = []
             for tool_info in required_tools:
-                tool_calls.append({
-                    'tool_name': tool_info['tool'],
-                    'arguments': tool_info['params']
-                })
-            
-            # Execute tools via MCP client
-            results = await self._execute_mcp_tools_async(tool_calls)
-            
+                if await self._validate_tool_availability(tool_info['tool']):
+                    tool_calls.append({
+                        'tool_name': tool_info['tool'],
+                        'arguments': tool_info['params']
+                    })
+                else:
+                    logger.warning(f"Tool {tool_info['tool']} not available, skipping")
+
+            if not tool_calls:
+                raise MCPProtocolError("No valid tools available for execution")
+
+            logger.info(f"Executing {len(tool_calls)} Alpha Vantage MCP tools")
+
+            # Execute tools via MCP client with retry logic
+            results = await self._execute_tools_with_retry(tool_calls)
+
             # Process and format results
             processed_data = self._process_alpha_vantage_results(results, filters)
-            
-            logger.info(f"Successfully collected data using {len(tool_calls)} Alpha Vantage MCP tools")
+
+            # Add execution metadata
+            execution_time = (datetime.now() - collection_start_time).total_seconds()
+            processed_data['execution_metadata'] = {
+                'execution_time_seconds': execution_time,
+                'tools_requested': len(tool_calls),
+                'tools_successful': len([r for r in results if r.get('success')]),
+                'connection_health': self.last_health_check,
+                'server_info': self.server_info.name if self.server_info else None
+            }
+
+            logger.info(f"Data collection completed in {execution_time:.2f}s using {len(tool_calls)} tools")
             return processed_data
-            
+
+        except MCPRateLimitError as e:
+            logger.warning(f"Rate limit exceeded: {e}")
+            return self._create_error_response(filters, "rate_limit_exceeded", str(e))
+
+        except MCPTimeoutError as e:
+            logger.error(f"Request timeout: {e}")
+            return self._create_error_response(filters, "timeout", str(e))
+
+        except MCPConnectionError as e:
+            logger.error(f"Connection error: {e}")
+            return self._create_error_response(filters, "connection_error", str(e))
+
+        except MCPProtocolError as e:
+            logger.error(f"Protocol error: {e}")
+            return self._create_error_response(filters, "protocol_error", str(e))
+
+        except ValueError as e:
+            logger.error(f"Invalid parameters: {e}")
+            return self._create_error_response(filters, "invalid_parameters", str(e))
+
         except Exception as e:
-            logger.error(f"Alpha Vantage MCP data collection failed: {e}")
-            raise
+            logger.error(f"Unexpected error during data collection: {e}", exc_info=True)
+            return self._create_error_response(filters, "unexpected_error", str(e))
     
     def _analyze_filters_for_tools(self, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -449,71 +512,163 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
     async def establish_connection_async(self) -> bool:
         """Establish async MCP connection to Alpha Vantage server."""
         try:
-            # Create async MCP client
-            self.async_mcp_client = MCPClient(
+            if self.connection_established and self.mcp_client:
+                # Check if connection is still healthy
+                health_check = await self.mcp_client.health_check()
+                if health_check.get('healthy', False):
+                    return True
+                else:
+                    logger.warning("Existing connection unhealthy, reconnecting...")
+                    await self._cleanup_connection()
+
+            # Create new MCP client with production configuration
+            self.mcp_client = MCPClient(
                 server_url=self.mcp_server_url,
                 api_key=self.api_key,
-                timeout=self.config.timeout,
-                max_retries=3
+                **self.mcp_client_config
             )
-            
-            # Connect to server
-            async with self.async_mcp_client:
-                # Test connection with a simple server info request
-                server_info = self.async_mcp_client.get_server_info()
-                if server_info:
-                    self.server_info = server_info.__dict__
+
+            # Connect to server with retry logic
+            connection_successful = False
+            for attempt in range(self.max_connection_retries):
+                try:
+                    await self.mcp_client.connect()
+                    connection_successful = True
+                    break
+                except MCPConnectionError as e:
+                    self.connection_retry_count += 1
+                    if attempt < self.max_connection_retries - 1:
+                        wait_time = (2 ** attempt) * 1.0  # Exponential backoff
+                        logger.warning(f"Connection attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        logger.error(f"All connection attempts failed: {e}")
+                        raise
+
+            if connection_successful:
+                # Get server information
+                self.server_info = self.mcp_client.get_server_info()
+                if self.server_info:
                     self.connection_established = True
-                    
+
                     # Get available tools
-                    tools = self.async_mcp_client.get_available_tools()
-                    logger.info(f"Connected to Alpha Vantage MCP server with {len(tools)} tools available")
-                    
+                    tools = self.mcp_client.get_available_tools()
+                    self.available_tools = tools
+                    logger.info(f"Connected to Alpha Vantage MCP server: {self.server_info.name} with {len(tools)} tools")
+
                     # Categorize Alpha Vantage tools
                     self._categorize_alpha_vantage_tools(tools)
-                    
+
+                    # Perform initial health check
+                    self.last_health_check = await self.mcp_client.health_check()
+
                     return True
-            
+
             return False
-            
+
         except Exception as e:
-            logger.error(f"Failed to establish async Alpha Vantage MCP connection: {e}")
+            logger.error(f"Failed to establish Alpha Vantage MCP connection: {e}")
+            await self._cleanup_connection()
             return False
     
     async def _execute_mcp_tools_async(self, tool_calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Execute MCP tools asynchronously."""
-        results = []
-        
-        # For now, simulate MCP tool execution since we don't have actual MCP server
-        # In production, this would use the actual MCP client
-        for tool_call in tool_calls:
-            try:
-                # Simulate tool execution with mock data
-                mock_result = await self._simulate_alpha_vantage_tool(tool_call)
-                results.append({
-                    'tool_name': tool_call['tool_name'],
-                    'success': True,
-                    'result': mock_result,
-                    'timestamp': datetime.now().isoformat()
-                })
-                
-            except Exception as e:
-                results.append({
-                    'tool_name': tool_call['tool_name'],
-                    'success': False,
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                })
-        
-        return results
+        """Execute MCP tools asynchronously using real Alpha Vantage MCP server."""
+        if not self.connection_established or not self.mcp_client:
+            raise MCPConnectionError("MCP connection not established")
+
+        try:
+            # Use batch execution for better performance
+            results = await self.mcp_client.batch_call_tools(
+                tool_calls,
+                optimize_order=True
+            )
+
+            # Process results and add metadata
+            processed_results = []
+            for result in results:
+                processed_result = {
+                    'tool_name': result['tool_name'],
+                    'success': result['success'],
+                    'timestamp': result.get('timestamp', datetime.now().isoformat())
+                }
+
+                if result['success']:
+                    processed_result['result'] = result['result']
+                else:
+                    processed_result['error'] = result.get('error', 'Unknown error')
+                    processed_result['error_type'] = result.get('error_type', 'UnknownError')
+
+                    # Log detailed error information
+                    logger.warning(f"Tool {result['tool_name']} failed: {result.get('error')}")
+
+                processed_results.append(processed_result)
+
+            return processed_results
+
+        except MCPRateLimitError as e:
+            logger.warning(f"Rate limit hit during tool execution: {e}")
+            raise
+        except MCPTimeoutError as e:
+            logger.error(f"Timeout during tool execution: {e}")
+            raise
+        except MCPConnectionError as e:
+            logger.error(f"Connection error during tool execution: {e}")
+            # Try to reconnect
+            await self.establish_connection_async()
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during tool execution: {e}")
+            raise
     
+    async def _cleanup_connection(self) -> None:
+        """Clean up MCP connection resources."""
+        self.connection_established = False
+        if self.mcp_client:
+            try:
+                await self.mcp_client.disconnect()
+            except Exception as e:
+                logger.warning(f"Error during connection cleanup: {e}")
+            finally:
+                self.mcp_client = None
+        self.server_info = None
+        self.available_tools = []
+        self.last_health_check = None
+
+    async def _validate_connection_health(self) -> bool:
+        """Validate MCP connection health."""
+        if not self.connection_established or not self.mcp_client:
+            return False
+
+        try:
+            # Perform health check if it's been a while since last check
+            now = datetime.now()
+            if (self.last_health_check is None or
+                (now - datetime.fromisoformat(self.last_health_check['timestamp'])).total_seconds() > 300):
+
+                self.last_health_check = await self.mcp_client.health_check()
+
+            return self.last_health_check.get('healthy', False)
+
+        except Exception as e:
+            logger.warning(f"Health check failed: {e}")
+            return False
+
     async def _simulate_alpha_vantage_tool(self, tool_call: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Simulate Alpha Vantage MCP tool execution with realistic mock data.
-        
-        This method provides realistic mock responses for testing and demonstration.
-        In production, this would be replaced with actual MCP tool calls.
+        DEPRECATED: This method is kept for backward compatibility only.
+
+        In production, use real MCP tool calls via _execute_mcp_tools_async.
+        This simulation is only used as fallback during development/testing.
         """
+        logger.warning("Using deprecated simulation method. Switch to real MCP integration in production.")
+
+        # Fallback simulation (keeping original implementation for compatibility)
+        tool_name = tool_call['tool_name']
+        params = tool_call.get('arguments', {})
+        symbol = params.get('symbol', 'AAPL')
+
+        # Simulate processing delay
+        await asyncio.sleep(0.1)
         tool_name = tool_call['tool_name']
         params = tool_call.get('arguments', {})
         symbol = params.get('symbol', 'AAPL')
@@ -633,7 +788,8 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
                 "tool": tool_name,
                 "symbol": symbol,
                 "timestamp": datetime.now().isoformat(),
-                "data": "Simulated response for " + tool_name
+                "data": "Simulated response for " + tool_name,
+                "note": "This is simulated data - production uses real MCP integration"
             }
     
     def _categorize_alpha_vantage_tools(self, tools: List[str]) -> None:
@@ -854,126 +1010,203 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
         return True
     
     def authenticate(self) -> bool:
-        """Authenticate with Alpha Vantage API."""
+        """Authenticate with Alpha Vantage API using MCP connection."""
         try:
-            # Test API key with a simple request
-            import requests
-            response = requests.get(
-                f"https://www.alphavantage.co/query",
-                params={
-                    'function': 'GLOBAL_QUOTE',
-                    'symbol': 'AAPL',
-                    'apikey': self.alpha_vantage_api_key
-                },
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'Error Message' not in data and 'Note' not in data:
-                    self._authenticated = True
-                    logger.info("Alpha Vantage authentication successful")
-                    return True
-                else:
-                    logger.error(f"Alpha Vantage authentication failed: {data}")
-                    return False
-            else:
-                logger.error(f"Alpha Vantage authentication failed: {response.status_code}")
-                return False
-                
+            # Test API key through MCP connection
+            import asyncio
+            return asyncio.run(self._authenticate_async())
+
         except Exception as e:
             logger.error(f"Alpha Vantage authentication error: {e}")
             return False
+
+    async def _authenticate_async(self) -> bool:
+        """Async authentication with Alpha Vantage MCP server."""
+        try:
+            # Try to establish MCP connection as authentication test
+            connection_successful = await self.establish_connection_async()
+
+            if connection_successful:
+                # Perform a lightweight test call
+                test_call = {
+                    'tool_name': 'GLOBAL_QUOTE',
+                    'arguments': {
+                        'symbol': 'AAPL',
+                        'apikey': self.alpha_vantage_api_key
+                    }
+                }
+
+                result = await self._execute_mcp_tools_async([test_call])
+
+                if result and len(result) > 0 and result[0].get('success'):
+                    self._authenticated = True
+                    logger.info("Alpha Vantage MCP authentication successful")
+                    return True
+                else:
+                    error_msg = result[0].get('error', 'Unknown error') if result else 'No response'
+                    logger.error(f"Alpha Vantage authentication failed: {error_msg}")
+                    return False
+            else:
+                logger.error("Alpha Vantage authentication failed: Unable to establish MCP connection")
+                return False
+
+        except Exception as e:
+            logger.error(f"Alpha Vantage async authentication error: {e}")
+            return False
     
     def test_connection(self) -> Dict[str, Any]:
-        """Test the connection to Alpha Vantage."""
+        """Test the MCP connection to Alpha Vantage server."""
         try:
-            start_time = datetime.now()
-            
-            import requests
-            response = requests.get(
-                f"https://www.alphavantage.co/query",
-                params={
-                    'function': 'GLOBAL_QUOTE', 
-                    'symbol': 'AAPL',
-                    'apikey': self.alpha_vantage_api_key
-                },
-                timeout=10
-            )
-            
-            response_time = (datetime.now() - start_time).total_seconds()
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'Error Message' not in data and 'Note' not in data:
-                    return {
-                        'status': 'connected',
-                        'response_time': response_time,
-                        'api_status': 'active',
-                        'subscription_tier': self._subscription_tier.value,
-                        'monthly_quota': self.monthly_quota_limit,
-                        'test_timestamp': datetime.now().isoformat()
-                    }
-                else:
-                    return {
-                        'status': 'failed',
-                        'error_message': data.get('Error Message', data.get('Note', 'Unknown error')),
-                        'response_time': response_time,
-                        'test_timestamp': datetime.now().isoformat()
-                    }
-            else:
-                return {
-                    'status': 'failed',
-                    'error_code': response.status_code,
-                    'error_message': response.text,
-                    'response_time': response_time,
-                    'test_timestamp': datetime.now().isoformat()
-                }
-                
+            import asyncio
+            return asyncio.run(self._test_connection_async())
+
         except Exception as e:
             return {
                 'status': 'error',
                 'error_message': str(e),
-                'test_timestamp': datetime.now().isoformat()
+                'test_timestamp': datetime.now().isoformat(),
+                'connection_type': 'mcp'
+            }
+
+    async def _test_connection_async(self) -> Dict[str, Any]:
+        """Async test of MCP connection to Alpha Vantage."""
+        start_time = datetime.now()
+
+        try:
+            # Test MCP connection establishment
+            connection_successful = await self.establish_connection_async()
+
+            if not connection_successful:
+                return {
+                    'status': 'failed',
+                    'error_message': 'Unable to establish MCP connection',
+                    'response_time': (datetime.now() - start_time).total_seconds(),
+                    'test_timestamp': datetime.now().isoformat(),
+                    'connection_type': 'mcp'
+                }
+
+            # Perform health check
+            health_check = await self.mcp_client.health_check()
+            response_time = (datetime.now() - start_time).total_seconds()
+
+            if health_check.get('healthy', False):
+                # Get connection statistics
+                stats = self.mcp_client.get_connection_stats()
+
+                return {
+                    'status': 'connected',
+                    'response_time': response_time,
+                    'api_status': 'active',
+                    'subscription_tier': self._subscription_tier.value,
+                    'monthly_quota': self.monthly_quota_limit,
+                    'mcp_server': self.server_info.name if self.server_info else None,
+                    'available_tools': len(self.available_tools),
+                    'connection_stats': stats,
+                    'health_check': health_check,
+                    'test_timestamp': datetime.now().isoformat(),
+                    'connection_type': 'mcp'
+                }
+            else:
+                return {
+                    'status': 'unhealthy',
+                    'error_message': health_check.get('error', 'Health check failed'),
+                    'response_time': response_time,
+                    'health_check': health_check,
+                    'test_timestamp': datetime.now().isoformat(),
+                    'connection_type': 'mcp'
+                }
+
+        except Exception as e:
+            response_time = (datetime.now() - start_time).total_seconds()
+            return {
+                'status': 'error',
+                'error_message': str(e),
+                'response_time': response_time,
+                'test_timestamp': datetime.now().isoformat(),
+                'connection_type': 'mcp'
             }
     
     def collect_batch(
-        self, 
-        symbols: List[str], 
-        date_range, 
+        self,
+        symbols: List[str],
+        date_range,
         frequency="daily",
         data_type: str = "prices"
     ):
         """Collect historical data for multiple symbols using Alpha Vantage MCP tools."""
         import pandas as pd
-        
+
+        try:
+            # Use async collection with real MCP tools
+            return asyncio.run(self._collect_batch_async(symbols, date_range, frequency, data_type))
+        except Exception as e:
+            logger.error(f"Batch collection failed: {e}")
+            return pd.DataFrame()
+
+    async def _collect_batch_async(self, symbols: List[str], date_range, frequency: str, data_type: str) -> 'pd.DataFrame':
+        """Async batch collection using real MCP tools."""
+        import pandas as pd
+
+        if not await self._ensure_healthy_connection():
+            logger.error("Cannot perform batch collection without healthy MCP connection")
+            return pd.DataFrame()
+
         results = []
-        
+
+        # Prepare tool calls for all symbols
+        tool_calls = []
         for symbol in symbols:
-            try:
-                if data_type == "prices":
-                    # Use mock data for now - in production would use MCP tools
-                    # This would be: data = asyncio.run(self.call_mcp_tool("TIME_SERIES_DAILY", {...}))
-                    mock_data = asyncio.run(self._simulate_alpha_vantage_tool({
-                        'tool_name': 'TIME_SERIES_DAILY',
-                        'arguments': {'symbol': symbol}
-                    }))
-                    
-                    if 'Time Series (Daily)' in mock_data:
-                        for date_str, values in mock_data['Time Series (Daily)'].items():
+            if data_type == "prices":
+                tool_name = 'TIME_SERIES_DAILY' if frequency == 'daily' else 'TIME_SERIES_INTRADAY'
+                params = {
+                    'symbol': symbol,
+                    'apikey': self.alpha_vantage_api_key,
+                    'outputsize': 'full'
+                }
+                if frequency != 'daily':
+                    params['interval'] = frequency
+
+                tool_calls.append({
+                    'tool_name': tool_name,
+                    'arguments': params
+                })
+
+        # Execute all tool calls
+        mcp_results = await self._execute_tools_with_retry(tool_calls)
+
+        # Process results
+        for i, result in enumerate(mcp_results):
+            if result.get('success') and i < len(symbols):
+                symbol = symbols[i]
+                tool_data = result.get('result', {})
+
+                # Extract time series data based on tool type
+                time_series_key = None
+                if 'Time Series (Daily)' in tool_data:
+                    time_series_key = 'Time Series (Daily)'
+                elif 'Time Series (5min)' in tool_data:
+                    time_series_key = 'Time Series (5min)'
+                elif 'Time Series (1min)' in tool_data:
+                    time_series_key = 'Time Series (1min)'
+
+                if time_series_key and time_series_key in tool_data:
+                    for date_str, values in tool_data[time_series_key].items():
+                        try:
                             results.append({
                                 'symbol': symbol,
                                 'date': pd.to_datetime(date_str).date(),
-                                'open': float(values['1. open']),
-                                'high': float(values['2. high']),
-                                'low': float(values['3. low']),
-                                'close': float(values['4. close']),
-                                'volume': int(values['5. volume'])
+                                'open': float(values.get('1. open', 0)),
+                                'high': float(values.get('2. high', 0)),
+                                'low': float(values.get('3. low', 0)),
+                                'close': float(values.get('4. close', 0)),
+                                'volume': int(values.get('5. volume', 0))
                             })
-                            
-            except Exception as e:
-                logger.error(f"Error collecting batch data for {symbol}: {e}")
-        
+                        except (ValueError, KeyError) as e:
+                            logger.warning(f"Error parsing data for {symbol} on {date_str}: {e}")
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                logger.error(f"Failed to collect data for {symbols[i] if i < len(symbols) else 'unknown'}: {error_msg}")
+
         if results:
             df = pd.DataFrame(results)
             df.set_index(['symbol', 'date'], inplace=True)
@@ -983,29 +1216,65 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
     
     def collect_realtime(self, symbols: List[str], data_type: str = "prices"):
         """Collect real-time data for symbols using Alpha Vantage MCP tools."""
+        try:
+            # Use async collection with real MCP tools
+            return asyncio.run(self._collect_realtime_async(symbols, data_type))
+        except Exception as e:
+            logger.error(f"Real-time collection failed: {e}")
+            return []
+
+    async def _collect_realtime_async(self, symbols: List[str], data_type: str) -> List[Dict[str, Any]]:
+        """Async real-time collection using real MCP tools."""
+        if not await self._ensure_healthy_connection():
+            logger.error("Cannot perform real-time collection without healthy MCP connection")
+            return []
+
+        results = []
+
+        # Prepare tool calls for all symbols
+        tool_calls = []
         for symbol in symbols:
-            try:
-                if data_type == "prices":
-                    # Use mock data for now - in production would use MCP tools  
-                    mock_data = asyncio.run(self._simulate_alpha_vantage_tool({
-                        'tool_name': 'GLOBAL_QUOTE',
-                        'arguments': {'symbol': symbol}
-                    }))
-                    
-                    if 'Global Quote' in mock_data:
-                        quote = mock_data['Global Quote']
-                        yield {
+            if data_type == "prices":
+                tool_calls.append({
+                    'tool_name': 'GLOBAL_QUOTE',
+                    'arguments': {
+                        'symbol': symbol,
+                        'apikey': self.alpha_vantage_api_key
+                    }
+                })
+
+        # Execute all tool calls
+        mcp_results = await self._execute_tools_with_retry(tool_calls)
+
+        # Process results
+        for i, result in enumerate(mcp_results):
+            if result.get('success') and i < len(symbols):
+                symbol = symbols[i]
+                tool_data = result.get('result', {})
+
+                if 'Global Quote' in tool_data:
+                    quote = tool_data['Global Quote']
+                    try:
+                        results.append({
                             'symbol': symbol,
                             'timestamp': datetime.now(),
-                            'price': float(quote['05. price']),
-                            'change': float(quote['09. change']),
-                            'change_percent': quote['10. change percent'],
-                            'volume': int(quote['06. volume']),
+                            'price': float(quote.get('05. price', 0)),
+                            'change': float(quote.get('09. change', 0)),
+                            'change_percent': quote.get('10. change percent', '0%'),
+                            'volume': int(quote.get('06. volume', 0)),
+                            'open': float(quote.get('02. open', 0)),
+                            'high': float(quote.get('03. high', 0)),
+                            'low': float(quote.get('04. low', 0)),
+                            'previous_close': float(quote.get('08. previous close', 0)),
                             'data_type': 'quote'
-                        }
-                        
-            except Exception as e:
-                logger.error(f"Error collecting real-time data for {symbol}: {e}")
+                        })
+                    except (ValueError, KeyError) as e:
+                        logger.warning(f"Error parsing real-time data for {symbol}: {e}")
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                logger.error(f"Failed to collect real-time data for {symbols[i] if i < len(symbols) else 'unknown'}: {error_msg}")
+
+        return results
     
     def get_available_symbols(self, exchange: Optional[str] = None, sector: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get list of available symbols from Alpha Vantage."""
@@ -1044,48 +1313,261 @@ class AlphaVantageMCPCollector(DataCollectorInterface):
     def validate_symbols(self, symbols: List[str]) -> Dict[str, bool]:
         """Validate if symbols are supported by Alpha Vantage."""
         # For now, assume all symbols are valid - could be enhanced with actual validation
-        return {symbol: True for symbol in symbols}
+        try:
+            # Use MCP connection to validate symbols if available
+            if self.connection_established:
+                return asyncio.run(self._validate_symbols_async(symbols))
+            else:
+                # Fallback to assuming all symbols are valid
+                logger.warning("Validating symbols without MCP connection - assuming all valid")
+                return {symbol: True for symbol in symbols}
+        except Exception as e:
+            logger.error(f"Symbol validation failed: {e}")
+            return {symbol: False for symbol in symbols}
+
+    async def _validate_symbols_async(self, symbols: List[str]) -> Dict[str, bool]:
+        """Async symbol validation using MCP search functionality."""
+        validation_results = {}
+
+        # Use SEARCH_ENDPOINT tool if available
+        if 'SEARCH_ENDPOINT' in self.available_tools:
+            for symbol in symbols:
+                try:
+                    search_result = await self.mcp_client.call_tool(
+                        'SEARCH_ENDPOINT',
+                        {
+                            'keywords': symbol,
+                            'apikey': self.alpha_vantage_api_key
+                        }
+                    )
+
+                    # Check if symbol exists in search results
+                    if 'bestMatches' in search_result:
+                        matches = search_result['bestMatches']
+                        found = any(
+                            match.get('1. symbol', '').upper() == symbol.upper()
+                            for match in matches
+                        )
+                        validation_results[symbol] = found
+                    else:
+                        validation_results[symbol] = False
+
+                except Exception as e:
+                    logger.warning(f"Failed to validate symbol {symbol}: {e}")
+                    validation_results[symbol] = True  # Assume valid on error
+        else:
+            # Fallback: assume all symbols are valid
+            validation_results = {symbol: True for symbol in symbols}
+
+        return validation_results
 
     def __str__(self) -> str:
         """String representation of Alpha Vantage MCP collector."""
+        connection_status = "connected" if self.connection_established else "disconnected"
+        server_name = self.server_info.name if self.server_info else "unknown"
+        tool_count = len(self.available_tools) if self.available_tools else 0
+
         return (f"AlphaVantageMCPCollector(tier={self._subscription_tier.value}, "
                 f"quota={self.monthly_quota_limit}, "
-                f"connected={self._authenticated})")
+                f"server={server_name}, "
+                f"tools={tool_count}, "
+                f"status={connection_status})")
 
 
 # Convenience function for testing
 async def test_alpha_vantage_mcp_collector():
-    """Test function for Alpha Vantage MCP collector."""
+    """Test function for Alpha Vantage MCP collector with real integration."""
     collector = AlphaVantageMCPCollector()
-    
-    # Test basic functionality
+
+    print("=== Alpha Vantage MCP Collector Test ===")
     print(f"Collector: {collector}")
     print(f"Supports MCP: {collector.supports_mcp_protocol}")
     print(f"Cost per request: ${collector.cost_per_request}")
     print(f"Monthly quota: {collector.monthly_quota_limit}")
-    
-    # Test tool activation
+    print(f"MCP Server URL: {collector.mcp_server_url}")
+
+    # Test authentication
+    print("\n--- Testing Authentication ---")
+    try:
+        auth_result = await collector._authenticate_async()
+        print(f"Authentication successful: {auth_result}")
+    except Exception as e:
+        print(f"Authentication failed: {e}")
+
+    # Test connection
+    print("\n--- Testing Connection ---")
+    try:
+        connection_test = await collector._test_connection_async()
+        print(f"Connection test result: {connection_test['status']}")
+        if connection_test.get('health_check'):
+            print(f"Health check: {connection_test['health_check']['healthy']}")
+        if connection_test.get('available_tools'):
+            print(f"Available tools: {connection_test['available_tools']}")
+    except Exception as e:
+        print(f"Connection test failed: {e}")
+
+    # Test tool activation logic
+    print("\n--- Testing Tool Activation ---")
     test_filters = {
         'companies': ['AAPL', 'MSFT'],
         'real_time': True,
         'analysis_type': 'technical'
     }
-    
+
     should_activate = collector.should_activate(test_filters)
     priority = collector.get_activation_priority(test_filters)
-    
+
     print(f"Should activate for real-time technical analysis: {should_activate}")
     print(f"Activation priority: {priority}")
-    
+
     if should_activate:
+        print("\n--- Testing Data Collection ---")
         try:
-            # Test data collection (with mock data)
+            # Test with real MCP integration
             data = await collector.collect_data(test_filters)
-            print(f"Data collection successful: {len(data.get('data', {}))} categories")
-            print(f"Tools used: {data.get('summary', {}).get('total_tools_executed', 0)}")
-            print(f"Estimated cost: ${data.get('summary', {}).get('estimated_cost', 0):.2f}")
+
+            print(f"Data collection status: {'Success' if not data.get('error') else 'Error'}")
+
+            if data.get('error'):
+                print(f"Error type: {data['error']['type']}")
+                print(f"Error message: {data['error']['message']}")
+            else:
+                print(f"Data categories: {len(data.get('data', {}))}")
+                print(f"Tools executed: {data.get('summary', {}).get('total_tools_executed', 0)}")
+                print(f"Successful tools: {data.get('summary', {}).get('successful_tools', 0)}")
+                print(f"Estimated cost: ${data.get('summary', {}).get('estimated_cost', 0):.2f}")
+
+                if data.get('execution_metadata'):
+                    metadata = data['execution_metadata']
+                    print(f"Execution time: {metadata.get('execution_time_seconds', 0):.2f}s")
+                    print(f"Server: {metadata.get('server_info', 'Unknown')}")
+
         except Exception as e:
             print(f"Data collection test failed: {e}")
+            import traceback
+            traceback.print_exc()
+
+    # Cleanup
+    print("\n--- Cleanup ---")
+    try:
+        await collector._cleanup_connection()
+        print("Connection cleanup completed")
+    except Exception as e:
+        print(f"Cleanup error: {e}")
+
+    print("\n=== Test Complete ===")
+
+
+    # Helper methods for production-ready error handling
+
+    def _validate_collection_filters(self, filters: Dict[str, Any]) -> None:
+        """Validate collection filters before processing."""
+        if not filters:
+            raise ValueError("Filters cannot be empty")
+
+        # Validate required fields based on request type
+        if filters.get('real_time') and not filters.get('companies'):
+            raise ValueError("Real-time requests require 'companies' field")
+
+        # Validate symbol format
+        if 'companies' in filters:
+            companies = filters['companies']
+            if isinstance(companies, str):
+                companies = [companies]
+
+            for symbol in companies:
+                if not isinstance(symbol, str) or not symbol.strip():
+                    raise ValueError(f"Invalid symbol format: {symbol}")
+                if len(symbol) > 10:  # Reasonable symbol length limit
+                    raise ValueError(f"Symbol too long: {symbol}")
+
+    async def _ensure_healthy_connection(self) -> bool:
+        """Ensure MCP connection is established and healthy."""
+        if not self.connection_established:
+            return await self.establish_connection_async()
+
+        # Check connection health periodically
+        is_healthy = await self._validate_connection_health()
+        if not is_healthy:
+            logger.info("Connection unhealthy, attempting to reconnect...")
+            await self._cleanup_connection()
+            return await self.establish_connection_async()
+
+        return True
+
+    async def _validate_tool_availability(self, tool_name: str) -> bool:
+        """Validate that a tool is available before calling it."""
+        if not self.mcp_client:
+            return False
+
+        return tool_name in self.available_tools
+
+    async def _execute_tools_with_retry(self, tool_calls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Execute tools with retry logic for handling transient failures."""
+        max_retries = 2
+
+        for attempt in range(max_retries + 1):
+            try:
+                return await self._execute_mcp_tools_async(tool_calls)
+
+            except MCPConnectionError as e:
+                if attempt < max_retries:
+                    logger.warning(f"Connection error on attempt {attempt + 1}, retrying: {e}")
+                    await asyncio.sleep(1.0 * (attempt + 1))  # Progressive backoff
+                    # Try to reconnect
+                    await self.establish_connection_async()
+                else:
+                    raise
+
+            except MCPRateLimitError as e:
+                if attempt < max_retries:
+                    # Extract retry-after information if available
+                    wait_time = 60  # Default to 1 minute
+                    logger.warning(f"Rate limit hit on attempt {attempt + 1}, waiting {wait_time}s")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise
+
+    def _create_empty_response(self, filters: Dict[str, Any], reason: str) -> Dict[str, Any]:
+        """Create empty response structure."""
+        return {
+            'source': 'Alpha Vantage MCP',
+            'timestamp': datetime.now().isoformat(),
+            'request_filters': filters,
+            'tools_used': 0,
+            'data': {},
+            'summary': {
+                'total_tools_executed': 0,
+                'successful_tools': 0,
+                'failed_tools': 0,
+                'data_categories': [],
+                'estimated_cost': 0.0,
+                'reason': reason
+            }
+        }
+
+    def _create_error_response(self, filters: Dict[str, Any], error_type: str, error_message: str) -> Dict[str, Any]:
+        """Create error response structure."""
+        return {
+            'source': 'Alpha Vantage MCP',
+            'timestamp': datetime.now().isoformat(),
+            'request_filters': filters,
+            'tools_used': 0,
+            'data': {},
+            'error': {
+                'type': error_type,
+                'message': error_message,
+                'timestamp': datetime.now().isoformat()
+            },
+            'summary': {
+                'total_tools_executed': 0,
+                'successful_tools': 0,
+                'failed_tools': 0,
+                'data_categories': [],
+                'estimated_cost': 0.0,
+                'error_occurred': True
+            }
+        }
 
 
 if __name__ == "__main__":

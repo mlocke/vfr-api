@@ -43,6 +43,7 @@ export class RedisCache {
   private config!: CacheConfig
   private stats!: CacheStats
   private healthCheckInterval?: NodeJS.Timeout
+  private redisAvailable: boolean = false
 
   constructor(config?: Partial<CacheConfig>) {
     this.config = {
@@ -71,6 +72,11 @@ export class RedisCache {
 
     this.initializeRedis()
     this.startHealthCheck()
+
+    // Initialize with fallback mode for development
+    if (process.env.NODE_ENV === 'development') {
+      this.setupDevelopmentFallback()
+    }
   }
 
   static getInstance(config?: Partial<CacheConfig>): RedisCache {
@@ -97,19 +103,28 @@ export class RedisCache {
     // Event handlers
     this.redis.on('connect', () => {
       console.log('✅ Redis connected successfully')
+      this.redisAvailable = true
     })
 
     this.redis.on('ready', () => {
       console.log('🚀 Redis ready for operations')
+      this.redisAvailable = true
     })
 
     this.redis.on('error', (error) => {
       console.error('❌ Redis error:', error)
+      this.redisAvailable = false
       this.stats.errors++
     })
 
     this.redis.on('reconnecting', () => {
       console.log('🔄 Redis reconnecting...')
+      this.redisAvailable = false
+    })
+
+    this.redis.on('close', () => {
+      console.log('📪 Redis connection closed')
+      this.redisAvailable = false
     })
 
     // Optional: Set up Redis cluster for high availability
@@ -136,10 +151,37 @@ export class RedisCache {
   }
 
   /**
+   * Setup development fallback when Redis is not available
+   */
+  private setupDevelopmentFallback(): void {
+    // Check Redis connection after a brief delay
+    setTimeout(() => {
+      if (!this.redisAvailable) {
+        console.warn('⚠️ Redis not available in development mode - using in-memory fallback')
+        console.warn('💡 To use Redis caching, ensure Redis is running on localhost:6379')
+      }
+    }, 2000) // Give Redis 2 seconds to connect
+  }
+
+  /**
+   * Check if Redis is available for operations
+   */
+  private isRedisAvailable(): boolean {
+    return this.redisAvailable && this.redis.status === 'ready'
+  }
+
+  /**
    * Get data from cache with automatic deserialization
    */
   async get<T = any>(key: string): Promise<T | null> {
     try {
+      // Check if Redis is available
+      if (!this.isRedisAvailable()) {
+        this.stats.misses++
+        this.updateHitRate()
+        return null
+      }
+
       const cached = await this.redis.get(key)
 
       if (!cached) {
@@ -179,6 +221,12 @@ export class RedisCache {
     metadata: { source?: string; version?: string } = {}
   ): Promise<boolean> {
     try {
+      // Check if Redis is available
+      if (!this.isRedisAvailable()) {
+        console.warn(`⚠️ Redis not available, skipping cache set for key: ${key}`)
+        return false
+      }
+
       const entry: CacheEntry<T> = {
         data,
         timestamp: Date.now(),
@@ -205,6 +253,11 @@ export class RedisCache {
    */
   async delete(key: string): Promise<boolean> {
     try {
+      // Check if Redis is available
+      if (!this.isRedisAvailable()) {
+        return false
+      }
+
       const result = await this.redis.del(key)
       this.stats.deletes++
       return result > 0

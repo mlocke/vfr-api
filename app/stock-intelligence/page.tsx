@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import SectorDropdown, { SectorOption } from '../components/SectorDropdown'
+import { SelectionMode } from '../services/stock-selection/types'
 
 // Type definitions for API communication
 interface AnalysisRequest {
   scope: {
-    mode: 'SINGLE_STOCK' | 'MULTIPLE_STOCKS' | 'SECTOR_ANALYSIS'
+    mode: SelectionMode
     symbols?: string[]
     sector?: {
       id: string
@@ -163,8 +164,8 @@ export default function DeepAnalysisPage() {
       // Build request based on analysis type
       const request: AnalysisRequest = {
         scope: {
-          mode: analysisType === 'sector' ? 'SECTOR_ANALYSIS' :
-                (tickerInput.split(',').filter(t => t.trim()).length === 1 ? 'SINGLE_STOCK' : 'MULTIPLE_STOCKS'),
+          mode: analysisType === 'sector' ? SelectionMode.SECTOR_ANALYSIS :
+                (tickerInput.split(',').filter(t => t.trim()).length === 1 ? SelectionMode.SINGLE_STOCK : SelectionMode.MULTIPLE_STOCKS),
           maxResults: analysisType === 'sector' ? 20 : undefined
         },
         options: {
@@ -203,8 +204,28 @@ export default function DeepAnalysisPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}`)
+        let errorData: any = {}
+        let errorText = ''
+
+        try {
+          errorText = await response.text()
+          errorData = JSON.parse(errorText)
+        } catch (parseError) {
+          console.error('❌ Failed to parse error response:', parseError)
+          console.error('📄 Raw error response:', errorText)
+          console.error('📊 Response status:', response.status)
+          console.error('📋 Response headers:', Object.fromEntries(response.headers.entries()))
+        }
+
+        console.error('❌ API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          rawText: errorText,
+          headers: Object.fromEntries(response.headers.entries())
+        })
+
+        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
       // Check if it's a streaming response

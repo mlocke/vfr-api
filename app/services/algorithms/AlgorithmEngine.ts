@@ -151,7 +151,15 @@ export class AlgorithmEngine {
     let universe: string[] = []
 
     // Query database or external sources based on universe config
-    const { sectors, marketCapMin, marketCapMax, exchanges, excludeSymbols } = config.universe
+    // Provide default universe config if not defined
+    const universeConfig = config.universe || {
+      maxPositions: 50,
+      marketCapMin: 100000000,
+      sectors: [],
+      excludeSymbols: []
+    }
+
+    const { sectors, marketCapMin, marketCapMax, exchanges, excludeSymbols } = universeConfig
 
     // This would typically query your stock database
     // For demonstration, showing the structure
@@ -161,7 +169,7 @@ export class AlgorithmEngine {
       marketCapMax,
       exchanges,
       excludeSymbols,
-      maxPositions: config.universe.maxPositions
+      maxPositions: universeConfig.maxPositions
     })
 
     // Execute query (implementation depends on your database)
@@ -525,7 +533,7 @@ export class AlgorithmEngine {
     config: AlgorithmConfiguration,
     context: AlgorithmContext
   ): SelectionResult['selections'] {
-    const topN = config.selection.topN || config.universe.maxPositions
+    const topN = config.selection.topN || (config.universe?.maxPositions || 50)
     const selectedScores = scores.slice(0, Math.min(topN, scores.length))
 
     return selectedScores.map((score, index) => ({
@@ -545,7 +553,7 @@ export class AlgorithmEngine {
     config: AlgorithmConfiguration,
     context: AlgorithmContext
   ): SelectionResult['selections'] {
-    const topN = config.selection.topN || config.universe.maxPositions
+    const topN = config.selection.topN || (config.universe?.maxPositions || 50)
     const selectedScores = scores.slice(0, Math.min(topN, scores.length))
     const equalWeight = 1.0 / selectedScores.length
 
@@ -589,7 +597,7 @@ export class AlgorithmEngine {
   ): SelectionResult['selections'] {
     const threshold = config.selection.threshold || 0.6
     const selectedScores = scores.filter(score => score.overallScore >= threshold)
-      .slice(0, config.universe.maxPositions)
+      .slice(0, config.universe?.maxPositions || 50)
 
     if (selectedScores.length === 0) {
       return []

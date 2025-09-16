@@ -1,11 +1,18 @@
 """
 Data.gov MCP Integration Test Suite
 
-Comprehensive test suite for validating Data.gov MCP collector integration
+⚠️  NOTE: This is a legacy test suite for the local MCP server implementation.
+The main Data.gov MCP integration has been replaced with real government API calls.
+
+For testing the real Data.gov implementation, see:
+- tests/data-gov-real-integration.test.ts (Real API integration tests)
+- app/services/mcp/MCPClient.ts (Real implementation)
+
+This legacy test suite validates the local MCP collector integration
 with the four-quadrant routing system. Tests include:
 
 1. MCP Server Connectivity Tests
-2. Tool Discovery and Functionality Tests  
+2. Tool Discovery and Functionality Tests
 3. Four-Quadrant Router Integration Tests
 4. Data Collection and Processing Tests
 5. Error Handling and Recovery Tests

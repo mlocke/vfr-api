@@ -106,12 +106,26 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     }
 
     // Customize configuration based on selection request
+    console.log('🔧 Building customized config for:', algorithmId)
+    console.log('📋 Base config keys:', Object.keys(baseConfig))
+    console.log('🌌 Base universe:', baseConfig.universe)
+
+    let universeConfig
+    try {
+      universeConfig = this.buildUniverseConfig(scope, baseConfig.universe)
+      console.log('✅ Universe config built successfully:', universeConfig)
+    } catch (error) {
+      console.error('❌ Failed to build universe config:', error)
+      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error))
+      throw error
+    }
+
     const customizedConfig: AlgorithmConfiguration = {
       ...baseConfig,
       id: `${baseConfig.id}_${Date.now()}`, // Unique execution ID
 
       // Customize universe based on scope
-      universe: this.buildUniverseConfig(scope, baseConfig.universe),
+      universe: universeConfig,
 
       // Adjust weights based on options
       weights: this.adjustWeights(baseConfig.weights, options),
@@ -166,7 +180,15 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
    * Build universe configuration based on scope
    */
   private buildUniverseConfig(scope: AnalysisScope, baseUniverse: any): any {
-    const universeConfig = { ...baseUniverse }
+    // Provide default universe config if baseUniverse is undefined
+    const defaultUniverse = {
+      maxPositions: 50,
+      marketCapMin: 100000000,
+      sectors: [],
+      excludeSymbols: []
+    }
+
+    const universeConfig = { ...(baseUniverse || defaultUniverse) }
 
     switch (scope.mode) {
       case SelectionMode.SINGLE_STOCK:

@@ -194,6 +194,90 @@ export interface UnifiedNewsItem {
 }
 
 /**
+ * Treasury Fiscal Data Types
+ * For U.S. Treasury government fiscal data integration
+ */
+
+export interface UnifiedTreasuryDebt {
+  amount: number
+  date: string
+  formattedAmount: string
+  amountTrillions: string
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedTreasuryOperations {
+  date: string
+  openingBalance: number
+  closingBalance: number
+  receipts: number
+  withdrawals: number
+  netChange: number
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedTreasurySpending {
+  fiscalYear: string
+  month: string
+  category: string
+  description: string
+  amount: number
+  formattedAmount: string
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedTreasuryRevenue {
+  fiscalYear: string
+  month: string
+  category: string
+  description: string
+  amount: number
+  formattedAmount: string
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedTreasuryExchangeRate {
+  date: string
+  currency: string
+  exchangeRate: number
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedYieldCurve {
+  date: string
+  rates: {
+    '1_month'?: number
+    '3_month'?: number
+    '6_month'?: number
+    '1_year'?: number
+    '2_year'?: number
+    '5_year'?: number
+    '10_year'?: number
+    '30_year'?: number
+  }
+  curveShape?: 'normal' | 'inverted' | 'flat' | 'humped'
+  recessionIndicator?: boolean
+  source: string
+  quality: QualityScore
+}
+
+export interface UnifiedFiscalIndicators {
+  date: string
+  federalDebt: UnifiedTreasuryDebt
+  yieldCurve?: UnifiedYieldCurve
+  cashBalance?: number
+  debtToGDPRatio?: number
+  interestExpense?: number
+  source: string
+  quality: QualityScore
+}
+
+/**
  * Fusion engine state and statistics
  */
 export interface FusionEngineStats {

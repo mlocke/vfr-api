@@ -126,8 +126,18 @@ class ServicePool {
       console.log('✅ Stock Selection Service Pool initialized')
     } catch (error) {
       console.error('❌ Failed to initialize Service Pool:', error)
+      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error))
+
+      // In development, provide more specific error guidance
+      if (process.env.NODE_ENV === 'development') {
+        console.error('💡 Development troubleshooting:')
+        console.error('   - Ensure Redis is running: redis-server')
+        console.error('   - Check Redis connection: redis-cli ping')
+        console.error('   - Verify environment variables: REDIS_HOST, REDIS_PORT')
+      }
+
       this.isInitializing = false
-      throw new Error('Service pool initialization failed')
+      throw new Error(`Service pool initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 }
