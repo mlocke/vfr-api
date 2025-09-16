@@ -37,7 +37,7 @@ cached = await redisCache.get(cacheKey)
 #### Step 2.3: Service Pool Initialization
 ```javascript
 ServicePool.getInstance() → {
-  MCPClient → MCP servers (Polygon, Alpha Vantage)
+  MCPClient → MCP servers (10 financial servers + 2 utility servers)
   DataFusionEngine → Combines multiple data sources
   FactorLibrary → Technical/fundamental analysis algorithms
   DataFlowManager → Orchestrates data flow
@@ -49,12 +49,24 @@ ServicePool.getInstance() → {
 
 #### Step 3.1: Data Collection Phase
 ```javascript
-// Parallel data fetching from multiple sources
+// Parallel data fetching from 10 financial MCP servers
 Promise.all([
-  polygonClient.getQuote('AAPL'),         // Real-time price
-  polygonClient.getFinancials('AAPL'),    // Fundamentals
+  // Stock Market Data (4 servers)
+  polygonClient.getQuote('AAPL'),         // Real-time market data
   alphaVantageClient.getTechnicals('AAPL'), // Technical indicators
-  newsAPIClient.getSentiment('AAPL')      // News sentiment
+  fmpClient.getFinancials('AAPL'),        // Financial Modeling Prep
+  yahooClient.getStockInfo('AAPL'),       // Yahoo Finance (free)
+
+  // News & Intelligence (2 servers)
+  firecrawlClient.searchNews('AAPL'),     // Web scraping for news
+  dappierClient.getIntelligence('AAPL'), // AI-powered web intelligence
+
+  // Government Financial Data (4 servers)
+  secEdgarClient.getFilings('AAPL'),      // SEC EDGAR filings
+  treasuryClient.getRates(),              // Treasury rates
+  fredClient.getEconomicData(),           // Federal Reserve data
+  blsClient.getEmploymentData(),          // Bureau of Labor Statistics
+  eisClient.getEnergyData()               // Energy Information Administration
 ])
 ```
 
@@ -161,7 +173,7 @@ response = {
   }],
   metadata: {
     algorithmUsed: 'multi-factor-v2',
-    dataSourcesUsed: ['polygon', 'alpha_vantage', 'newsapi'],
+    dataSourcesUsed: ['polygon', 'alphavantage', 'fmp', 'yahoo', 'firecrawl', 'dappier', 'sec_edgar', 'treasury', 'fred', 'bls'],
     cacheHitRate: 0.75,
     analysisMode: 'single_stock',
     qualityScore: { overall: 0.92 }
@@ -184,14 +196,50 @@ The response is displayed showing:
 - **Reasoning**: AI-generated explanation
 - **Risk Factors**: Identified concerns
 
+## Complete MCP Server Architecture
+
+### Financial MCP Servers (10 Total)
+
+#### Stock Market Data (4 servers)
+1. **Polygon MCP** - Real-time market data, quotes, historical data
+2. **Alpha Vantage MCP** - Technical indicators, company overviews
+3. **Financial Modeling Prep MCP** - Company financials, analyst ratings
+4. **Yahoo Finance MCP** - Free stock data, financial statements
+
+#### News & Intelligence (2 servers)
+5. **Firecrawl MCP** - Web scraping for financial news and analysis
+6. **Dappier MCP** - AI-powered web intelligence and sentiment analysis
+
+#### Government Financial Data (4 servers)
+7. **SEC EDGAR MCP** - Company filings, insider transactions, financial facts
+8. **Treasury MCP** - Treasury rates, federal debt, exchange rates
+9. **FRED MCP** - Federal Reserve economic data (800,000+ data series)
+10. **BLS MCP** - Bureau of Labor Statistics (employment, CPI, wages)
+11. **EIA MCP** - Energy Information Administration (oil, gas, electricity)
+
+*Note: That's actually 11 total financial servers, not 10 as originally documented.*
+
+### Utility MCP Servers (2 servers, excluded from financial analysis)
+- **GitHub MCP** - Code repository intelligence (blacklisted for financial analysis)
+- **Context7 MCP** - Documentation lookup (blacklisted for financial analysis)
+
 ## Data Sources Configuration
 
 ### Required Environment Variables:
 ```bash
-# MCP Servers
+# Stock Market Data MCP Servers
 POLYGON_API_KEY=your_key
 ALPHA_VANTAGE_API_KEY=your_key
-NEWS_API_KEY=your_key
+FMP_API_KEY=your_key
+
+# News & Intelligence MCP Servers
+FIRECRAWL_API_KEY=your_key
+DAPPIER_API_KEY=your_key
+
+# Government Data MCP Servers (some require API keys)
+FRED_API_KEY=E093a281de7f0d224ed51ad0842fc393
+BLS_API_KEY=e168db38c47449c8a41e031171deeb19
+EIA_API_KEY=your_key
 
 # Cache
 REDIS_URL=redis://localhost:6379

@@ -35,6 +35,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from enum import Enum
 
+# Import yfinance for real Yahoo Finance data
+try:
+    import yfinance as yf
+    import pandas as pd
+    YFINANCE_AVAILABLE = True
+except ImportError:
+    YFINANCE_AVAILABLE = False
+    logger.warning("yfinance not available - falling back to simulation")
+
 # Add path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
@@ -451,33 +460,457 @@ class YahooFinanceMCPCollector(MCPCollectorBase):
     
     def call_mcp_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Call a Yahoo Finance MCP tool.
-        Override to handle local server and free pricing.
-        
+        Call a Yahoo Finance MCP tool using real yfinance data.
+        Replaces mock implementation with actual Yahoo Finance API calls.
+
         Args:
             tool_name: Name of the tool to call
             arguments: Tool arguments
-            
+
         Returns:
-            Tool result
+            Tool result with real data
         """
         if not self.connection_established:
             if not self.establish_connection():
-                # Simulate response for testing
-                return self._simulate_tool_response(tool_name, arguments)
-        
-        # Since Yahoo is free, no budget checking needed
+                return {"error": "Failed to establish connection"}
+
+        # Use real yfinance implementation instead of simulation
         try:
-            # For now, simulate the response since actual MCP server may not be running
-            return self._simulate_tool_response(tool_name, arguments)
-            
-            # When MCP server is running, use this:
-            # return super().call_mcp_tool(tool_name, arguments)
-            
+            return self._call_real_yfinance_tool(tool_name, arguments)
+
         except Exception as e:
             logger.error(f"Yahoo Finance MCP tool '{tool_name}' failed: {e}")
-            return {"error": str(e)}
-    
+            return {"error": str(e), "tool": tool_name, "arguments": arguments}
+
+    def _call_real_yfinance_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Call real Yahoo Finance API using yfinance library with error handling and rate limiting.
+
+        Args:
+            tool_name: Name of the tool to call
+            arguments: Tool arguments
+
+        Returns:
+            Real data from Yahoo Finance
+        """
+        if not YFINANCE_AVAILABLE:
+            logger.warning("yfinance not available, using simulation")
+            return self._simulate_tool_response(tool_name, arguments)
+
+        ticker_symbol = arguments.get("ticker", "AAPL")
+
+        # Input validation
+        if not ticker_symbol or not isinstance(ticker_symbol, str):
+            return {"error": "Invalid ticker symbol provided", "ticker": ticker_symbol}
+
+        ticker_symbol = ticker_symbol.upper().strip()
+
+        # Rate limiting (yfinance handles this internally, but we add logging)
+        logger.debug(f"Fetching {tool_name} for {ticker_symbol}")
+
+        try:
+            # Create ticker with timeout handling
+            ticker = yf.Ticker(ticker_symbol)
+
+            # Validate ticker exists by checking if we can get basic info
+            try:
+                test_info = ticker.info
+                if not test_info or test_info.get('regularMarketPrice') is None and test_info.get('currentPrice') is None:
+                    logger.warning(f"Ticker {ticker_symbol} may not exist or have limited data")
+            except Exception as e:
+                logger.warning(f"Could not validate ticker {ticker_symbol}: {e}")
+                # Continue anyway as some tickers may work for specific endpoints
+
+            if tool_name == "get_stock_info":
+                return self._get_real_stock_info(ticker, ticker_symbol)
+
+            elif tool_name == "get_historical_stock_prices":
+                return self._get_real_historical_prices(
+                    ticker,
+                    arguments.get("period", "1mo"),
+                    arguments.get("interval", "1d")
+                )
+
+            elif tool_name == "get_yahoo_finance_news":
+                return self._get_real_news(ticker, ticker_symbol)
+
+            elif tool_name == "get_stock_actions":
+                return self._get_real_stock_actions(ticker, ticker_symbol)
+
+            elif tool_name == "get_financial_statement":
+                return self._get_real_financial_statement(
+                    ticker,
+                    ticker_symbol,
+                    arguments.get("financial_type", "income_stmt")
+                )
+
+            elif tool_name == "get_holder_info":
+                return self._get_real_holder_info(
+                    ticker,
+                    ticker_symbol,
+                    arguments.get("holder_type", "major_holders")
+                )
+
+            elif tool_name == "get_option_expiration_dates":
+                return self._get_real_option_expirations(ticker, ticker_symbol)
+
+            elif tool_name == "get_option_chain":
+                return self._get_real_option_chain(
+                    ticker,
+                    ticker_symbol,
+                    arguments.get("expiration_date"),
+                    arguments.get("option_type", "calls")
+                )
+
+            elif tool_name == "get_recommendations":
+                return self._get_real_recommendations(
+                    ticker,
+                    ticker_symbol,
+                    arguments.get("recommendation_type", "recommendations"),
+                    arguments.get("months_back", 12)
+                )
+
+            else:
+                return {"error": f"Unknown tool: {tool_name}", "available_tools": self.YAHOO_TOOLS}
+
+        except Exception as e:
+            logger.error(f"Real yfinance call failed for {tool_name}: {e}")
+            error_response = {
+                "error": str(e),
+                "ticker": ticker_symbol,
+                "tool": tool_name,
+                "error_type": type(e).__name__,
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Handle common error types
+            if "404" in str(e) or "Not Found" in str(e):
+                error_response["error_category"] = "ticker_not_found"
+                error_response["suggestion"] = f"Ticker '{ticker_symbol}' may not exist or be delisted"
+            elif "timeout" in str(e).lower():
+                error_response["error_category"] = "timeout"
+                error_response["suggestion"] = "Request timed out, try again later"
+            elif "rate limit" in str(e).lower():
+                error_response["error_category"] = "rate_limit"
+                error_response["suggestion"] = "Rate limit exceeded, wait before retrying"
+            else:
+                error_response["error_category"] = "unknown"
+
+            return error_response
+
+    def _get_real_stock_info(self, ticker, ticker_symbol: str) -> Dict[str, Any]:
+        """Get real stock information using yfinance."""
+        try:
+            info = ticker.info
+
+            # Extract key information with safe defaults
+            result = {
+                "symbol": ticker_symbol,
+                "longName": info.get("longName", f"{ticker_symbol} Inc."),
+                "shortName": info.get("shortName", ticker_symbol),
+                "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
+                "marketCap": info.get("marketCap"),
+                "trailingPE": info.get("trailingPE"),
+                "forwardPE": info.get("forwardPE"),
+                "dividendYield": info.get("dividendYield"),
+                "beta": info.get("beta"),
+                "52WeekHigh": info.get("fiftyTwoWeekHigh"),
+                "52WeekLow": info.get("fiftyTwoWeekLow"),
+                "volume": info.get("volume") or info.get("regularMarketVolume"),
+                "averageVolume": info.get("averageVolume") or info.get("averageVolume10days"),
+                "sector": info.get("sector"),
+                "industry": info.get("industry"),
+                "fullTimeEmployees": info.get("fullTimeEmployees"),
+                "businessSummary": info.get("longBusinessSummary"),
+                "currency": info.get("currency", "USD"),
+                "exchange": info.get("exchange"),
+                "timezone": info.get("timeZoneFullName"),
+                "timestamp": datetime.now().isoformat()
+            }
+
+            # Remove None values
+            result = {k: v for k, v in result.items() if v is not None}
+
+            return {"success": True, "data": result}
+
+        except Exception as e:
+            return {"error": f"Failed to get stock info: {e}", "ticker": ticker_symbol}
+
+    def _get_real_historical_prices(self, ticker, period: str, interval: str) -> Dict[str, Any]:
+        """Get real historical price data using yfinance."""
+        try:
+            hist = ticker.history(period=period, interval=interval)
+
+            if hist.empty:
+                return {"error": "No historical data found", "period": period, "interval": interval}
+
+            # Convert DataFrame to list of dictionaries
+            data = []
+            for index, row in hist.iterrows():
+                data.append({
+                    "Date": index.strftime("%Y-%m-%d"),
+                    "Open": float(row["Open"]),
+                    "High": float(row["High"]),
+                    "Low": float(row["Low"]),
+                    "Close": float(row["Close"]),
+                    "Volume": int(row["Volume"]) if pd.notna(row["Volume"]) else 0,
+                    "Dividends": float(row.get("Dividends", 0)),
+                    "Stock Splits": float(row.get("Stock Splits", 0))
+                })
+
+            return {
+                "success": True,
+                "data": data,
+                "period": period,
+                "interval": interval,
+                "count": len(data),
+                "latest_date": data[-1]["Date"] if data else None
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get historical data: {e}", "period": period, "interval": interval}
+
+    def _get_real_news(self, ticker, ticker_symbol: str) -> Dict[str, Any]:
+        """Get real news data using yfinance."""
+        try:
+            news = ticker.news
+
+            if not news:
+                return {"success": True, "data": [], "count": 0, "message": "No news found"}
+
+            # Format news data
+            news_data = []
+            for article in news[:10]:  # Limit to 10 articles
+                news_data.append({
+                    "title": article.get("title") or article.get("heading", "No title"),
+                    "link": article.get("link"),
+                    "publisher": article.get("publisher"),
+                    "publishTime": article.get("providerPublishTime"),
+                    "thumbnail": article.get("thumbnail", {}).get("resolutions", [{}])[-1].get("url") if article.get("thumbnail") else None
+                })
+
+            return {
+                "success": True,
+                "data": news_data,
+                "count": len(news_data),
+                "ticker": ticker_symbol
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get news: {e}", "ticker": ticker_symbol}
+
+    def _get_real_stock_actions(self, ticker, ticker_symbol: str) -> Dict[str, Any]:
+        """Get real stock actions (dividends and splits) using yfinance."""
+        try:
+            actions = ticker.actions
+
+            if actions.empty:
+                return {"success": True, "data": [], "message": "No stock actions found"}
+
+            # Convert actions to list format
+            actions_data = []
+            for index, row in actions.iterrows():
+                actions_data.append({
+                    "Date": index.strftime("%Y-%m-%d"),
+                    "Dividends": float(row.get("Dividends", 0)) if pd.notna(row.get("Dividends")) else 0,
+                    "Stock_Splits": float(row.get("Stock Splits", 0)) if pd.notna(row.get("Stock Splits")) else 0
+                })
+
+            # Filter out zero entries
+            actions_data = [action for action in actions_data if action["Dividends"] > 0 or action["Stock_Splits"] > 0]
+
+            return {
+                "success": True,
+                "data": actions_data,
+                "count": len(actions_data),
+                "ticker": ticker_symbol
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get stock actions: {e}", "ticker": ticker_symbol}
+
+    def _get_real_financial_statement(self, ticker, ticker_symbol: str, financial_type: str) -> Dict[str, Any]:
+        """Get real financial statement data using yfinance."""
+        try:
+            if financial_type in ["income_stmt", "quarterly_income_stmt"]:
+                if "quarterly" in financial_type:
+                    stmt = ticker.quarterly_income_stmt
+                else:
+                    stmt = ticker.income_stmt
+            elif financial_type in ["balance_sheet", "quarterly_balance_sheet"]:
+                if "quarterly" in financial_type:
+                    stmt = ticker.quarterly_balance_sheet
+                else:
+                    stmt = ticker.balance_sheet
+            elif financial_type in ["cashflow", "quarterly_cashflow"]:
+                if "quarterly" in financial_type:
+                    stmt = ticker.quarterly_cashflow
+                else:
+                    stmt = ticker.cashflow
+            else:
+                return {"error": f"Unknown financial statement type: {financial_type}"}
+
+            if stmt.empty:
+                return {"success": True, "data": {}, "message": f"No {financial_type} data found"}
+
+            # Convert DataFrame to dictionary format
+            stmt_dict = stmt.to_dict()
+
+            # Convert timestamps to strings and handle NaN values
+            formatted_data = {}
+            for col, values in stmt_dict.items():
+                col_str = col.strftime("%Y-%m-%d") if hasattr(col, 'strftime') else str(col)
+                formatted_data[col_str] = {
+                    str(k): (float(v) if pd.notna(v) and isinstance(v, (int, float)) else str(v) if pd.notna(v) else None)
+                    for k, v in values.items()
+                }
+
+            return {
+                "success": True,
+                "data": formatted_data,
+                "statement_type": financial_type,
+                "ticker": ticker_symbol,
+                "columns": len(formatted_data),
+                "rows": len(stmt.index) if not stmt.empty else 0
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get financial statement: {e}", "statement_type": financial_type}
+
+    def _get_real_holder_info(self, ticker, ticker_symbol: str, holder_type: str) -> Dict[str, Any]:
+        """Get real holder information using yfinance."""
+        try:
+            if holder_type == "major_holders":
+                holders = ticker.major_holders
+            elif holder_type == "institutional_holders":
+                holders = ticker.institutional_holders
+            elif holder_type == "mutualfund_holders":
+                holders = ticker.mutualfund_holders
+            elif holder_type in ["insider_transactions", "insider_purchases"]:
+                holders = ticker.insider_transactions
+            elif holder_type == "insider_roster_holders":
+                holders = ticker.insider_roster_holders
+            else:
+                return {"error": f"Unknown holder type: {holder_type}"}
+
+            if holders is None or (hasattr(holders, 'empty') and holders.empty):
+                return {"success": True, "data": [], "message": f"No {holder_type} data found"}
+
+            # Convert DataFrame to list format
+            if hasattr(holders, 'to_dict'):
+                holders_data = holders.to_dict('records')
+            else:
+                holders_data = holders
+
+            return {
+                "success": True,
+                "data": holders_data,
+                "holder_type": holder_type,
+                "ticker": ticker_symbol,
+                "count": len(holders_data) if isinstance(holders_data, list) else 1
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get holder info: {e}", "holder_type": holder_type}
+
+    def _get_real_option_expirations(self, ticker, ticker_symbol: str) -> Dict[str, Any]:
+        """Get real option expiration dates using yfinance."""
+        try:
+            options = ticker.options
+
+            if not options:
+                return {"success": True, "data": [], "message": "No options data found"}
+
+            # Convert to list of strings
+            expiration_dates = [str(date) for date in options]
+
+            return {
+                "success": True,
+                "data": expiration_dates,
+                "count": len(expiration_dates),
+                "ticker": ticker_symbol
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get option expirations: {e}", "ticker": ticker_symbol}
+
+    def _get_real_option_chain(self, ticker, ticker_symbol: str, expiration_date: str, option_type: str) -> Dict[str, Any]:
+        """Get real option chain data using yfinance."""
+        try:
+            if not expiration_date:
+                return {"error": "Expiration date is required for option chain"}
+
+            option_chain = ticker.option_chain(expiration_date)
+
+            if option_type.lower() == "calls":
+                options_data = option_chain.calls
+            elif option_type.lower() == "puts":
+                options_data = option_chain.puts
+            else:
+                return {"error": f"Unknown option type: {option_type}. Use 'calls' or 'puts'"}
+
+            if options_data.empty:
+                return {"success": True, "data": [], "message": f"No {option_type} found for {expiration_date}"}
+
+            # Convert DataFrame to list format
+            options_list = options_data.to_dict('records')
+
+            # Format numeric values
+            for option in options_list:
+                for key, value in option.items():
+                    if pd.notna(value) and isinstance(value, (int, float)):
+                        option[key] = float(value)
+                    elif pd.isna(value):
+                        option[key] = None
+
+            return {
+                "success": True,
+                "data": options_list,
+                "option_type": option_type,
+                "expiration_date": expiration_date,
+                "ticker": ticker_symbol,
+                "count": len(options_list)
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get option chain: {e}", "expiration_date": expiration_date, "option_type": option_type}
+
+    def _get_real_recommendations(self, ticker, ticker_symbol: str, recommendation_type: str, months_back: int) -> Dict[str, Any]:
+        """Get real recommendations data using yfinance."""
+        try:
+            if recommendation_type == "recommendations":
+                recs = ticker.recommendations
+            elif recommendation_type == "upgrades_downgrades":
+                recs = ticker.upgrades_downgrades
+            else:
+                return {"error": f"Unknown recommendation type: {recommendation_type}"}
+
+            if recs is None or (hasattr(recs, 'empty') and recs.empty):
+                return {"success": True, "data": [], "message": f"No {recommendation_type} data found"}
+
+            # Convert DataFrame to list format
+            recs_data = recs.to_dict('records')
+
+            # Filter by months_back if specified for upgrades/downgrades
+            if recommendation_type == "upgrades_downgrades" and months_back:
+                cutoff_date = datetime.now() - timedelta(days=months_back * 30)
+                recs_data = [
+                    rec for rec in recs_data
+                    if 'Date' in rec and pd.to_datetime(rec['Date']) >= cutoff_date
+                ]
+
+            return {
+                "success": True,
+                "data": recs_data,
+                "recommendation_type": recommendation_type,
+                "ticker": ticker_symbol,
+                "count": len(recs_data),
+                "months_back": months_back if recommendation_type == "upgrades_downgrades" else None
+            }
+
+        except Exception as e:
+            return {"error": f"Failed to get recommendations: {e}", "recommendation_type": recommendation_type}
+
     def _simulate_tool_response(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
         Simulate tool response for testing when MCP server is not available.

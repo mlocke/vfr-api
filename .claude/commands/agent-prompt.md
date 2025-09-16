@@ -6,6 +6,4 @@
 5. AWAIT the subagent's response.
 </protocol>
 
-<task>
-Please implement the new `user_auth` endpoint. Review the codebase to see how we handle authorization and ensure all our security guidelines are met.
-</task>
+
