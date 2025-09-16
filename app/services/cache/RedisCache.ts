@@ -38,10 +38,10 @@ interface CacheStats {
 
 export class RedisCache {
   private static instance: RedisCache
-  private redis: Redis
+  private redis!: Redis
   private backupRedis?: Redis
-  private config: CacheConfig
-  private stats: CacheStats
+  private config!: CacheConfig
+  private stats!: CacheStats
   private healthCheckInterval?: NodeJS.Timeout
 
   constructor(config?: Partial<CacheConfig>) {
@@ -88,16 +88,10 @@ export class RedisCache {
       password: this.config.password,
       keyPrefix: this.config.keyPrefix,
       maxRetriesPerRequest: this.config.maxRetries,
-      retryDelayOnFailover: this.config.retryDelayOnFailover,
       enableReadyCheck: this.config.enableReadyCheck,
       lazyConnect: this.config.lazyConnect,
-      // Optimizations for financial data
-      maxmemoryPolicy: 'allkeys-lru',
-      keepAlive: 30000,
       connectTimeout: 10000,
-      commandTimeout: 5000,
-      // Compression for large objects
-      compression: 'gzip'
+      commandTimeout: 5000
     })
 
     // Event handlers

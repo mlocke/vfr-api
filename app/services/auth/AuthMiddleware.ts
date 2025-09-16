@@ -373,8 +373,3 @@ setInterval(() => {
 /**
  * Export types for use in protected endpoints
  */
-export type {
-  AuthenticatedRequest,
-  AuthMiddlewareOptions,
-  AuthResult
-}

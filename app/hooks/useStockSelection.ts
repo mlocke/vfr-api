@@ -92,7 +92,7 @@ const DEFAULT_CONFIG: UseStockSelectionConfig = {
   autoReconnect: true
 }
 
-const STOCK_SELECTION_API_BASE = '/api/stock-selection'
+const STOCK_SELECTION_API_BASE = '/api/stocks'
 
 /**
  * React hook for stock selection with convenience methods and real-time updates
@@ -143,7 +143,7 @@ export function useStockSelection(config: UseStockSelectionConfig = {}): UseStoc
     }))
 
     try {
-      const response = await fetch(`${STOCK_SELECTION_API_BASE}/analyze`, {
+      const response = await fetch(`${STOCK_SELECTION_API_BASE}/select`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

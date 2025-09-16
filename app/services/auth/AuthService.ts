@@ -147,7 +147,6 @@ export class AuthService {
         return {
           success: true,
           requiresTwoFactor: true,
-          sessionToken,
           message: 'Two-factor authentication required'
         }
       }
@@ -224,7 +223,7 @@ export class AuthService {
       }
 
       // Clean up 2FA session
-      await redisCache.del(`2fa_session:${request.sessionToken}`)
+      await redisCache.delete(`2fa_session:${request.sessionToken}`)
 
       // Create user session and tokens
       const session = await this.createUserSession(user, clientInfo)
@@ -393,7 +392,7 @@ export class AuthService {
         for (const tokenId of sessionTokens) {
           await redisCache.set(`blacklist:${tokenId}`, 'revoked', 86400) // 24 hours
         }
-        await redisCache.del(`session_tokens:${sessionId}`)
+        await redisCache.delete(`session_tokens:${sessionId}`)
       }
 
       // Log logout event
@@ -444,11 +443,10 @@ export class AuthService {
 
   private async checkRateLimit(identifier: string, ipAddress: string): Promise<void> {
     const key = `rate_limit:auth:${identifier}:${ipAddress}`
-    const attempts = await redisCache.incr(key)
+    const currentAttempts = await redisCache.get(key) || '0'
+    const attempts = parseInt(currentAttempts) + 1
 
-    if (attempts === 1) {
-      await redisCache.expire(key, 900) // 15 minutes
-    }
+    await redisCache.set(key, attempts.toString(), 900) // 15 minutes
 
     if (attempts > 10) { // Max 10 auth attempts per 15 minutes
       throw new AuthenticationError('Too many authentication attempts', 'RATE_LIMITED')

@@ -92,7 +92,7 @@ export class AlgorithmScheduler extends EventEmitter {
       lastMarketData: 0
     }
 
-    this.setupMarketContext()
+    this.updateMarketContext()
   }
 
   /**
@@ -141,9 +141,9 @@ export class AlgorithmScheduler extends EventEmitter {
 
       setTimeout(() => {
         // Force cancel any still-running executions
-        for (const [executionId] of this.runningExecutions) {
+        this.runningExecutions.forEach((_, executionId) => {
           this.engine.cancelExecution(executionId)
-        }
+        })
         this.runningExecutions.clear()
       }, this.config.executionTimeout)
     }
@@ -209,14 +209,14 @@ export class AlgorithmScheduler extends EventEmitter {
     const dueAlgorithms: string[] = []
 
     // Find algorithms due for execution
-    for (const [algorithmId, scheduled] of this.scheduledAlgorithms) {
+    this.scheduledAlgorithms.forEach((scheduled, algorithmId) => {
       if (!scheduled.isRunning && now >= scheduled.nextExecution) {
         // Check if we have capacity for more concurrent executions
         if (this.runningExecutions.size < this.config.maxConcurrentAlgorithms) {
           dueAlgorithms.push(algorithmId)
         }
       }
-    }
+    })
 
     if (dueAlgorithms.length === 0) return
 
@@ -532,7 +532,7 @@ export class AlgorithmScheduler extends EventEmitter {
   private broadcastMessage(message: AlgorithmStreamMessage): void {
     const messageStr = JSON.stringify(message)
 
-    for (const client of this.websocketClients) {
+    this.websocketClients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         try {
           client.send(messageStr)
@@ -541,7 +541,7 @@ export class AlgorithmScheduler extends EventEmitter {
           this.websocketClients.delete(client)
         }
       }
-    }
+    })
 
     // Emit as event for internal listeners
     this.emit('message', message)

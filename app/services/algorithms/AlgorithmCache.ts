@@ -93,7 +93,8 @@ export class AlgorithmCache {
       selections: (algorithmId: string, timestamp: number) =>
         `algorithm:selections:${algorithmId}:${Math.floor(timestamp / 300000)}`, // 5-minute buckets
       marketData: (symbol: string) => `market:${symbol}`,
-      dataQuality: (source: string, symbol: string) => `quality:${source}:${symbol}`
+      dataQuality: (source: string, symbol: string) => `quality:${source}:${symbol}`,
+      universe: (algorithmId: string) => `universe:${algorithmId}`
     }
   }
 

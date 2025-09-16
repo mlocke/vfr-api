@@ -684,11 +684,11 @@ export class FactorLibrary {
   clearCache(symbol?: string) {
     if (symbol) {
       // Clear cache entries for specific symbol
-      for (const [key] of this.factorCache.entries()) {
+      this.factorCache.forEach((_, key) => {
         if (key.includes(symbol)) {
           this.factorCache.delete(key)
         }
-      }
+      })
       this.historicalDataCache.delete(symbol)
     } else {
       // Clear all cache
@@ -715,9 +715,9 @@ export class FactorLibrary {
     totalSize += this.factorCache.size * 100 // Rough estimate per entry
 
     // Estimate historical data cache size
-    for (const data of this.historicalDataCache.values()) {
+    this.historicalDataCache.forEach((data) => {
       totalSize += data.length * 50 // Rough estimate per price point
-    }
+    })
 
     if (totalSize < 1024) return `${totalSize}B`
     if (totalSize < 1024 * 1024) return `${Math.round(totalSize / 1024)}KB`

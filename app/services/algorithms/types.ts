@@ -280,6 +280,7 @@ export interface AlgorithmCacheKeys {
   selections: (algorithmId: string, timestamp: number) => string
   marketData: (symbol: string) => string
   dataQuality: (source: string, symbol: string) => string
+  universe: (algorithmId: string) => string
 }
 
 /**

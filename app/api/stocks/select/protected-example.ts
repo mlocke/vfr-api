@@ -9,6 +9,7 @@ import {
   withAuth,
   requirePremiumAccess,
   requireRealTimeAccess,
+  requireBasicAccess,
   getUserContext,
   getUserLimits,
   checkPermission
@@ -19,11 +20,66 @@ import {
   Permission
 } from '../../../services/auth/types'
 import {
-  SelectionRequestSchema,
   SelectionResponse,
-  SelectionMode
+  SelectionMode,
+  SelectionRequest
 } from '../../../services/stock-selection/types'
 import { StockSelectionService, createStockSelectionService } from '../../../services/stock-selection/StockSelectionService'
+
+// Request validation schemas (copied from main route)
+const SectorSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string(),
+  category: z.enum(['sector', 'index', 'etf'])
+})
+
+const TimeframeSchema = z.object({
+  start: z.number().optional(),
+  end: z.number().optional(),
+  period: z.enum(['day', 'week', 'month', 'quarter', 'year']).optional()
+})
+
+const AnalysisScopeSchema = z.object({
+  mode: z.nativeEnum(SelectionMode),
+  symbols: z.array(z.string()).optional(),
+  sector: SectorSchema.optional(),
+  excludeSymbols: z.array(z.string()).optional(),
+  maxResults: z.number().min(1).max(100).optional(),
+  timeframe: TimeframeSchema.optional()
+})
+
+const CustomWeightsSchema = z.object({
+  technical: z.number().min(0).max(1).optional(),
+  fundamental: z.number().min(0).max(1).optional(),
+  sentiment: z.number().min(0).max(1).optional(),
+  momentum: z.number().min(0).max(1).optional()
+})
+
+const DataPreferencesSchema = z.object({
+  sources: z.array(z.string()).optional(),
+  minQualityScore: z.number().min(0).max(1).optional(),
+  maxLatency: z.number().min(0).optional()
+})
+
+const SelectionOptionsSchema = z.object({
+  algorithmId: z.string().optional(),
+  useRealTimeData: z.boolean().optional(),
+  includeSentiment: z.boolean().optional(),
+  includeNews: z.boolean().optional(),
+  riskTolerance: z.enum(['conservative', 'moderate', 'aggressive']).optional(),
+  dataPreferences: DataPreferencesSchema.optional(),
+  customWeights: CustomWeightsSchema.optional(),
+  timeout: z.number().min(1000).max(300000).optional(),
+  parallel: z.boolean().optional()
+})
+
+const SelectionRequestSchema = z.object({
+  scope: AnalysisScopeSchema,
+  options: SelectionOptionsSchema.optional(),
+  requestId: z.string().optional(),
+  userId: z.string().optional()
+})
 
 /**
  * Enhanced request validation with user-specific limits
@@ -181,12 +237,36 @@ async function protectedStockSelectionHandler(
     }
 
     // Create service instance (in practice, this would be cached/pooled)
-    const stockSelectionService = await createStockSelectionService(
-      // MCP client, data fusion, factor library, cache instances would be passed here
-    )
+    // TODO: Implement proper service creation with required parameters
+    // const stockSelectionService = await createStockSelectionService(
+    //   mcpClient, dataFusion, factorLibrary, cache
+    // )
+    throw new Error('Service creation not implemented in example')
 
     // Execute stock selection with user context
-    const result: SelectionResponse = await stockSelectionService.selectStocks(enhancedRequest)
+    // const result: SelectionResponse = await stockSelectionService.selectStocks(enhancedRequest)
+
+    // Mock result for example
+    const result: SelectionResponse = {
+      success: false,
+      requestId: enhancedRequest.requestId || 'mock',
+      timestamp: Date.now(),
+      executionTime: 0,
+      topSelections: [],
+      metadata: {
+        algorithmUsed: 'example',
+        dataSourcesUsed: [],
+        cacheHitRate: 0,
+        analysisMode: enhancedRequest.scope.mode,
+        qualityScore: {
+          overall: 0,
+          metrics: { freshness: 0, completeness: 0, accuracy: 0, sourceReputation: 0, latency: 0 },
+          timestamp: Date.now(),
+          source: 'mock'
+        }
+      },
+      performance: { dataFetchTime: 0, analysisTime: 0, fusionTime: 0, cacheTime: 0 }
+    }
 
     const processingTime = Date.now() - startTime
 

@@ -756,7 +756,7 @@ export class MCPClient {
   }
 
   /**
-   * SEC EDGAR MCP Tool Execution
+   * SEC EDGAR MCP Tool Execution - Real API Implementation
    */
   private async executeSECTool(
     toolName: string,
@@ -765,61 +765,32 @@ export class MCPClient {
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing SEC EDGAR MCP tool: ${toolName}`, params)
 
-    await new Promise(resolve => setTimeout(resolve, 200))
-
     try {
       let result: any
 
       switch (toolName) {
+        case 'get_company_facts':
+          result = await this.fetchCompanyFacts(params)
+          break
+
         case 'get_company_filings':
-          result = {
-            filings: [
-              {
-                accessionNumber: '0000320193-24-000010',
-                filingDate: '2024-01-15',
-                reportDate: '2023-12-31',
-                formType: '10-K',
-                size: 1024000,
-                filingUrl: 'https://www.sec.gov/Archives/edgar/data/320193/000032019324000010/aapl-20231231.htm'
-              }
-            ]
-          }
+          result = await this.fetchCompanyFilings(params)
           break
 
         case 'get_insider_transactions':
-          result = {
-            insider_transactions: [
-              {
-                filingDate: '2024-01-15',
-                transactionDate: '2024-01-10',
-                ownerName: 'John Doe',
-                transactionType: 'S',
-                sharesTraded: 1000,
-                pricePerShare: 150.00,
-                totalValue: 150000
-              }
-            ]
-          }
+          result = await this.fetchInsiderTransactions(params)
           break
 
-        case 'get_company_facts':
-          result = {
-            company_facts: {
-              Assets: 350000000000,
-              Revenues: 400000000000,
-              NetIncomeLoss: 95000000000,
-              SharesOutstanding: 16000000000
-            }
-          }
+        case 'search_companies':
+          result = await this.searchCompanies(params)
+          break
+
+        case 'get_company_concept':
+          result = await this.fetchCompanyConcept(params)
           break
 
         default:
-          result = {
-            mock: true,
-            tool: toolName,
-            params,
-            message: 'SEC EDGAR MCP integration pending - using mock data'
-          }
+          throw new Error(`Unsupported SEC EDGAR tool: ${toolName}`)
       }
 
       return {
@@ -830,13 +801,399 @@ export class MCPClient {
       }
 
     } catch (error) {
+      console.error(`❌ SEC EDGAR API error for ${toolName}:`, error)
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'SEC EDGAR MCP tool execution failed',
+        error: error instanceof Error ? error.message : 'SEC EDGAR API tool execution failed',
         source: 'sec_edgar',
         timestamp: Date.now()
       }
     }
+  }
+
+  /**
+   * Fetch company facts (financial data) from SEC EDGAR API
+   */
+  private async fetchCompanyFacts(params: Record<string, any>): Promise<any> {
+    const { ticker, cik } = params
+
+    // Convert ticker to CIK if needed
+    const companyCik = cik || await this.getCompanyCik(ticker)
+    if (!companyCik) {
+      throw new Error(`Unable to find CIK for ticker: ${ticker}`)
+    }
+
+    // Format CIK with leading zeros (10 digits)
+    const formattedCik = companyCik.toString().padStart(10, '0')
+
+    const url = `https://data.sec.gov/api/xbrl/companyfacts/CIK${formattedCik}.json`
+    const response = await this.makeSecApiRequest(url)
+
+    // Transform SEC data to our unified format
+    const transformedData = this.transformCompanyFacts(response, ticker || companyCik)
+
+    return {
+      company_facts: transformedData.financial_metrics,
+      company_info: transformedData.company_info,
+      metadata: {
+        cik: formattedCik,
+        source: 'sec_edgar_api',
+        last_updated: transformedData.metadata.last_updated,
+        concepts_available: Object.keys(response.facts?.['us-gaap'] || {}).length
+      }
+    }
+  }
+
+  /**
+   * Fetch company filings from SEC EDGAR API
+   */
+  private async fetchCompanyFilings(params: Record<string, any>): Promise<any> {
+    const { ticker, cik, forms = ['10-K', '10-Q', '8-K'], limit = 20 } = params
+
+    const companyCik = cik || await this.getCompanyCik(ticker)
+    if (!companyCik) {
+      throw new Error(`Unable to find CIK for ticker: ${ticker}`)
+    }
+
+    const formattedCik = companyCik.toString().padStart(10, '0')
+    const url = `https://data.sec.gov/submissions/CIK${formattedCik}.json`
+    const response = await this.makeSecApiRequest(url)
+
+    // Filter and format filings
+    const filings = response.filings?.recent
+    if (!filings) {
+      return { filings: [] }
+    }
+
+    const transformedFilings = []
+    const targetForms = new Set(forms)
+
+    for (let i = 0; i < Math.min(filings.form?.length || 0, limit); i++) {
+      const formType = filings.form[i]
+      if (targetForms.has(formType)) {
+        transformedFilings.push({
+          accessionNumber: filings.accessionNumber[i],
+          filingDate: filings.filingDate[i],
+          reportDate: filings.reportDate[i],
+          formType: formType,
+          size: filings.size[i],
+          filingUrl: `https://www.sec.gov/Archives/edgar/data/${companyCik}/${filings.accessionNumber[i].replace(/-/g, '')}/${filings.primaryDocument[i]}`,
+          description: this.getFilingDescription(formType)
+        })
+      }
+    }
+
+    return {
+      filings: transformedFilings,
+      company_info: {
+        name: response.name,
+        cik: formattedCik,
+        ticker: response.tickers?.[0] || ticker
+      },
+      metadata: {
+        total_filings: filings.form?.length || 0,
+        filtered_count: transformedFilings.length,
+        forms_requested: forms
+      }
+    }
+  }
+
+  /**
+   * Fetch insider transactions from SEC submissions
+   */
+  private async fetchInsiderTransactions(params: Record<string, any>): Promise<any> {
+    const { ticker, cik, limit = 50 } = params
+
+    const companyCik = cik || await this.getCompanyCik(ticker)
+    if (!companyCik) {
+      throw new Error(`Unable to find CIK for ticker: ${ticker}`)
+    }
+
+    const formattedCik = companyCik.toString().padStart(10, '0')
+    const url = `https://data.sec.gov/submissions/CIK${formattedCik}.json`
+    const response = await this.makeSecApiRequest(url)
+
+    // Filter for insider trading forms (3, 4, 5)
+    const filings = response.filings?.recent
+    const insiderForms = ['3', '4', '5']
+    const insiderTransactions = []
+
+    if (filings) {
+      for (let i = 0; i < Math.min(filings.form?.length || 0, limit); i++) {
+        const formType = filings.form[i]
+        if (insiderForms.includes(formType)) {
+          insiderTransactions.push({
+            filingDate: filings.filingDate[i],
+            reportDate: filings.reportDate[i],
+            formType: formType,
+            accessionNumber: filings.accessionNumber[i],
+            filingUrl: `https://www.sec.gov/Archives/edgar/data/${companyCik}/${filings.accessionNumber[i].replace(/-/g, '')}/${filings.primaryDocument[i]}`,
+            description: this.getInsiderFormDescription(formType)
+          })
+        }
+      }
+    }
+
+    return {
+      insider_transactions: insiderTransactions,
+      company_info: {
+        name: response.name,
+        cik: formattedCik,
+        ticker: response.tickers?.[0] || ticker
+      },
+      metadata: {
+        total_transactions: insiderTransactions.length,
+        search_limit: limit,
+        forms_included: insiderForms
+      }
+    }
+  }
+
+  /**
+   * Search companies by name or ticker
+   */
+  private async searchCompanies(params: Record<string, any>): Promise<any> {
+    const { query, limit = 10 } = params
+
+    // Use the company tickers JSON endpoint for search
+    const url = 'https://www.sec.gov/files/company_tickers.json'
+    const response = await this.makeSecApiRequest(url)
+
+    const results = []
+    const searchTerm = query.toLowerCase()
+
+    for (const [index, company] of Object.entries(response)) {
+      if (results.length >= limit) break
+
+      const companyData = company as any
+      const ticker = companyData.ticker?.toLowerCase() || ''
+      const title = companyData.title?.toLowerCase() || ''
+
+      if (ticker.includes(searchTerm) || title.includes(searchTerm)) {
+        results.push({
+          cik: companyData.cik_str.toString().padStart(10, '0'),
+          ticker: companyData.ticker,
+          title: companyData.title,
+          relevance_score: this.calculateRelevanceScore(searchTerm, ticker, title)
+        })
+      }
+    }
+
+    // Sort by relevance score
+    results.sort((a, b) => b.relevance_score - a.relevance_score)
+
+    return {
+      companies: results,
+      metadata: {
+        query: query,
+        total_results: results.length,
+        limit: limit
+      }
+    }
+  }
+
+  /**
+   * Fetch specific company concept data
+   */
+  private async fetchCompanyConcept(params: Record<string, any>): Promise<any> {
+    const { ticker, cik, concept = 'Revenues', taxonomy = 'us-gaap' } = params
+
+    const companyCik = cik || await this.getCompanyCik(ticker)
+    if (!companyCik) {
+      throw new Error(`Unable to find CIK for ticker: ${ticker}`)
+    }
+
+    const formattedCik = companyCik.toString().padStart(10, '0')
+    const url = `https://data.sec.gov/api/xbrl/companyconcept/CIK${formattedCik}/${taxonomy}/${concept}.json`
+
+    try {
+      const response = await this.makeSecApiRequest(url)
+
+      return {
+        concept_data: response,
+        company_info: {
+          cik: formattedCik,
+          ticker: ticker || 'N/A'
+        },
+        metadata: {
+          concept: concept,
+          taxonomy: taxonomy,
+          units_available: Object.keys(response.units || {})
+        }
+      }
+    } catch (error) {
+      // If concept doesn't exist, return empty result rather than error
+      if (error instanceof Error && error.message.includes('404')) {
+        return {
+          concept_data: null,
+          error: `Concept '${concept}' not found for company`,
+          company_info: {
+            cik: formattedCik,
+            ticker: ticker || 'N/A'
+          }
+        }
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Make rate-limited request to SEC API with proper headers
+   */
+  private async makeSecApiRequest(url: string): Promise<any> {
+    // Rate limiting: SEC allows 10 requests per second
+    await this.secRateLimit()
+
+    const headers = {
+      'User-Agent': 'Stock Selection Platform 1.0 (support@stockpicker.com)',
+      'Accept': 'application/json',
+      'Host': url.includes('data.sec.gov') ? 'data.sec.gov' : 'www.sec.gov'
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      timeout: 10000
+    })
+
+    if (!response.ok) {
+      throw new Error(`SEC API error: ${response.status} ${response.statusText}`)
+    }
+
+    return await response.json()
+  }
+
+  /**
+   * Rate limiting for SEC API (10 requests per second max)
+   */
+  private lastSecRequest = 0
+  private async secRateLimit(): Promise<void> {
+    const now = Date.now()
+    const timeSinceLastRequest = now - this.lastSecRequest
+    const minInterval = 100 // 100ms = 10 requests per second
+
+    if (timeSinceLastRequest < minInterval) {
+      await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastRequest))
+    }
+
+    this.lastSecRequest = Date.now()
+  }
+
+  /**
+   * Get company CIK from ticker symbol
+   */
+  private async getCompanyCik(ticker: string): Promise<string | null> {
+    if (!ticker) return null
+
+    try {
+      const url = 'https://www.sec.gov/files/company_tickers.json'
+      const response = await this.makeSecApiRequest(url)
+
+      for (const company of Object.values(response)) {
+        const companyData = company as any
+        if (companyData.ticker === ticker.toUpperCase()) {
+          return companyData.cik_str.toString().padStart(10, '0')
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.warn(`Failed to get CIK for ticker ${ticker}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Transform SEC company facts to unified format
+   */
+  private transformCompanyFacts(secData: any, identifier: string): any {
+    const facts = secData.facts?.['us-gaap'] || {}
+    const entityName = secData.entityName || 'Unknown Company'
+
+    // Extract latest values for key financial metrics
+    const getLatestValue = (concept: string) => {
+      const conceptData = facts[concept]
+      if (!conceptData || !conceptData.units) return null
+
+      // Prefer USD units
+      const units = conceptData.units.USD || conceptData.units[Object.keys(conceptData.units)[0]]
+      if (!units || units.length === 0) return null
+
+      // Get most recent value
+      const sortedUnits = units.sort((a: any, b: any) => new Date(b.end).getTime() - new Date(a.end).getTime())
+      return sortedUnits[0]?.val || null
+    }
+
+    const financialMetrics = {
+      Revenue: getLatestValue('Revenues'),
+      NetIncome: getLatestValue('NetIncomeLoss'),
+      Assets: getLatestValue('Assets'),
+      Liabilities: getLatestValue('Liabilities'),
+      StockholdersEquity: getLatestValue('StockholdersEquity'),
+      Cash: getLatestValue('CashAndCashEquivalentsAtCarryingValue'),
+      Debt: getLatestValue('LongTermDebt'),
+      SharesOutstanding: getLatestValue('CommonStockSharesOutstanding')
+    }
+
+    return {
+      company_info: {
+        name: entityName,
+        identifier: identifier,
+        entityName: secData.entityName
+      },
+      financial_metrics: financialMetrics,
+      metadata: {
+        last_updated: new Date().toISOString(),
+        data_source: 'sec_edgar_xbrl'
+      }
+    }
+  }
+
+  /**
+   * Get human-readable description for filing types
+   */
+  private getFilingDescription(formType: string): string {
+    const descriptions: Record<string, string> = {
+      '10-K': 'Annual Report',
+      '10-Q': 'Quarterly Report',
+      '8-K': 'Current Report',
+      '20-F': 'Annual Report (Foreign)',
+      '40-F': 'Annual Report (Canadian)',
+      '6-K': 'Report (Foreign)',
+      'DEF 14A': 'Proxy Statement',
+      'S-1': 'Registration Statement'
+    }
+    return descriptions[formType] || formType
+  }
+
+  /**
+   * Get description for insider trading forms
+   */
+  private getInsiderFormDescription(formType: string): string {
+    const descriptions: Record<string, string> = {
+      '3': 'Initial Statement of Ownership',
+      '4': 'Statement of Changes in Ownership',
+      '5': 'Annual Statement of Ownership'
+    }
+    return descriptions[formType] || `Form ${formType}`
+  }
+
+  /**
+   * Calculate relevance score for company search
+   */
+  private calculateRelevanceScore(searchTerm: string, ticker: string, title: string): number {
+    let score = 0
+
+    // Exact ticker match gets highest score
+    if (ticker === searchTerm) score += 100
+    else if (ticker.startsWith(searchTerm)) score += 80
+    else if (ticker.includes(searchTerm)) score += 60
+
+    // Company name matches
+    if (title.includes(searchTerm)) score += 40
+
+    return score
   }
 
   /**
@@ -1818,6 +2175,8 @@ export class MCPClient {
       'get_company_filings': ['sec_edgar'],
       'get_insider_transactions': ['sec_edgar'],
       'get_company_facts': ['sec_edgar'],
+      'search_companies': ['sec_edgar'],
+      'get_company_concept': ['sec_edgar'],
 
       // Treasury tools
       'get_daily_treasury_rates': ['treasury'],

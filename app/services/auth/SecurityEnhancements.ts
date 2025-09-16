@@ -262,7 +262,7 @@ export class SessionSecurity {
   }
 
   private static async terminateSession(sessionId: string): Promise<void> {
-    await redisCache.del(`session:${sessionId}`)
+    await redisCache.delete(`session:${sessionId}`)
     console.log(`🔒 Session ${sessionId} terminated due to limit enforcement`)
   }
 }
@@ -279,7 +279,7 @@ export class DataEncryption {
    */
   static encrypt(data: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(16)
-    const cipher = crypto.createCipher(this.ALGORITHM, this.KEY)
+    const cipher = crypto.createCipheriv(this.ALGORITHM, this.KEY, iv)
     cipher.setAAD(Buffer.from('financial-data'))
 
     let encrypted = cipher.update(data, 'utf8', 'hex')
@@ -298,7 +298,8 @@ export class DataEncryption {
    * Decrypt sensitive data after retrieval
    */
   static decrypt(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipher(this.ALGORITHM, this.KEY)
+    const iv = Buffer.from(encryptedData.iv, 'hex')
+    const decipher = crypto.createDecipheriv(this.ALGORITHM, this.KEY, iv)
     decipher.setAAD(Buffer.from('financial-data'))
     decipher.setAuthTag(Buffer.from(encryptedData.tag, 'hex'))
 

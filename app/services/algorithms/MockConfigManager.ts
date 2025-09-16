@@ -80,8 +80,7 @@ export class MockConfigManager {
       risk: {
         maxSectorWeight: 0.25,
         maxSinglePosition: 0.08,
-        maxTurnover: 1.0,
-        riskModel: 'factor_based'
+        maxTurnover: 1.0
       },
 
       dataFusion: {
@@ -132,8 +131,7 @@ export class MockConfigManager {
       risk: {
         maxSectorWeight: 0.3,
         maxSinglePosition: 0.1,
-        maxTurnover: 0.5,
-        riskModel: 'conservative'
+        maxTurnover: 0.5
       },
 
       dataFusion: {

@@ -386,8 +386,8 @@ export class AlgorithmEngine {
         const score = await this.calculateSingleStockScore(
           symbol,
           market,
-          fundamental,
-          config
+          config,
+          fundamental
         )
 
         if (score) {
@@ -407,8 +407,8 @@ export class AlgorithmEngine {
   private async calculateSingleStockScore(
     symbol: string,
     marketData: MarketDataPoint,
-    fundamentalData?: FundamentalDataPoint,
-    config: AlgorithmConfiguration
+    config: AlgorithmConfiguration,
+    fundamentalData?: FundamentalDataPoint
   ): Promise<StockScore | null> {
     const factorScores: { [factor: string]: number } = {}
     const algorithmMetrics: { [algorithmType: string]: any } = {}

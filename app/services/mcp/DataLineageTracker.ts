@@ -252,7 +252,7 @@ export class DataLineageTracker {
   queryLineage(query: LineageQuery): DataLineageInfo[] {
     const results: DataLineageInfo[] = []
 
-    for (const [trackingId, lineage] of this.completedLineage.entries()) {
+    this.completedLineage.forEach((lineage, trackingId) => {
       let matches = true
 
       // Filter by source
@@ -293,7 +293,7 @@ export class DataLineageTracker {
 
         results.push(filteredLineage)
       }
-    }
+    })
 
     return results.sort((a, b) => b.timestamp - a.timestamp) // Most recent first
   }
@@ -313,7 +313,7 @@ export class DataLineageTracker {
     const filteredNodes = new Map<string, LineageNode>()
     const filteredEdges = new Map<string, string[]>()
 
-    for (const [nodeId, node] of this.lineageGraph.nodes.entries()) {
+    this.lineageGraph.nodes.forEach((node, nodeId) => {
       let include = true
 
       // Filter by source
@@ -339,7 +339,7 @@ export class DataLineageTracker {
           filteredEdges.set(nodeId, this.lineageGraph.edges.get(nodeId)!)
         }
       }
-    }
+    })
 
     return {
       nodes: filteredNodes,
@@ -561,23 +561,23 @@ export class DataLineageTracker {
   private removeGraphNodes(trackingId: string): void {
     const nodesToRemove: string[] = []
 
-    for (const [nodeId, node] of this.lineageGraph.nodes.entries()) {
+    this.lineageGraph.nodes.forEach((node, nodeId) => {
       if (nodeId.includes(trackingId)) {
         nodesToRemove.push(nodeId)
       }
-    }
+    })
 
     nodesToRemove.forEach(nodeId => {
       this.lineageGraph.nodes.delete(nodeId)
       this.lineageGraph.edges.delete(nodeId)
 
       // Remove edges pointing to this node
-      for (const [sourceId, targets] of this.lineageGraph.edges.entries()) {
+      this.lineageGraph.edges.forEach((targets, sourceId) => {
         const filteredTargets = targets.filter(target => target !== nodeId)
         if (filteredTargets.length !== targets.length) {
           this.lineageGraph.edges.set(sourceId, filteredTargets)
         }
-      }
+      })
     })
   }
 }
