@@ -9,7 +9,7 @@ import { serverConfigManager } from '../../../../services/admin/ServerConfigMana
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
     // Extract authorization header
@@ -32,7 +32,7 @@ export async function GET(
       )
     }
 
-    const { serverId } = params
+    const { serverId } = await params
 
     try {
       const serverConfig = serverConfigManager.getServerConfiguration(serverId)

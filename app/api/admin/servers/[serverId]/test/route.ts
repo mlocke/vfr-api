@@ -9,7 +9,7 @@ import { serverConfigManager } from '../../../../../services/admin/ServerConfigM
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { serverId: string } }
+  { params }: { params: Promise<{ serverId: string }> }
 ) {
   try {
     // Extract authorization header
@@ -32,7 +32,7 @@ export async function POST(
       )
     }
 
-    const { serverId } = params
+    const { serverId } = await params
     const body = await request.json().catch(() => ({}))
     const testType = body.testType || 'health'
 

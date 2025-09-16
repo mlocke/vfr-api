@@ -4,6 +4,7 @@
 3. State which subagent you will use and briefly explain why.
 4. Pass the task details to the subagent using the command provided.
 5. AWAIT the subagent's response.
+6. Wait for further instructions.
 </protocol>
 
 

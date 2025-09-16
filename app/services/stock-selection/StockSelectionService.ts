@@ -57,8 +57,32 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.cache = cache
     this.config = selectionConfig
 
-    // Initialize algorithm cache
-    const algorithmCache = new AlgorithmCache(cache)
+    // Initialize algorithm cache with proper config structure
+    const algorithmCache = new AlgorithmCache({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: 0,
+        keyPrefix: 'algo:',
+        maxRetries: 3,
+        retryDelayOnFailover: 100
+      },
+      ttl: {
+        configuration: 3600,      // 1 hour - configs change rarely
+        stockScores: 300,         // 5 minutes - scores update frequently
+        marketData: 60,           // 1 minute - market data is real-time
+        fundamentalData: 3600,    // 1 hour - fundamentals change slowly
+        selectionResults: 1800,   // 30 minutes - algorithm results
+        universe: 14400,          // 4 hours - stock universes are stable
+        factors: 300             // 5 minutes - factor calculations
+      },
+      performance: {
+        pipelineSize: 100,
+        compressionThreshold: 1024,
+        enableCompression: true
+      }
+    })
 
     // Initialize integration layers
     this.algorithmIntegration = new AlgorithmIntegration(

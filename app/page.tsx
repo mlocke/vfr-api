@@ -210,8 +210,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🔧</span>
-            <span className="hidden sm:inline">Admin</span>
-            <span className="sm:hidden">Admin</span>
+            <span className="hidden sm:inline">&nbsp;Admin</span>
           </span>
           <span style={{
             fontSize: '12px',
