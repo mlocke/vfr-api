@@ -5,6 +5,7 @@
 
 import { AlgorithmEngine } from '../../algorithms/AlgorithmEngine'
 import { AlgorithmConfigManager } from '../../algorithms/AlgorithmConfigManager'
+import { MockConfigManager } from '../../algorithms/MockConfigManager'
 import { FactorLibrary } from '../../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../../algorithms/AlgorithmCache'
 import { DataFusionEngine } from '../../mcp/DataFusionEngine'
@@ -29,6 +30,7 @@ import { SelectionConfigManager } from '../config/SelectionConfig'
 export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
   private algorithmEngine: AlgorithmEngine
   private configManager: AlgorithmConfigManager
+  private mockConfigManager: MockConfigManager
   private selectionConfig: SelectionConfigManager
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
@@ -43,6 +45,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     this.cache = cache
     this.selectionConfig = selectionConfig
     this.configManager = new AlgorithmConfigManager(factorLibrary, cache)
+    this.mockConfigManager = MockConfigManager.getInstance()
     this.algorithmEngine = new AlgorithmEngine(dataFusion, factorLibrary, cache)
   }
 
@@ -81,12 +84,21 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
                        this.selectOptimalAlgorithm(scope.mode, options) ||
                        serviceConfig.defaultAlgorithmId
 
-    // Get base algorithm configuration
-    let baseConfig = await this.configManager.getConfiguration(algorithmId)
+    // Get base algorithm configuration (try mock config manager first for development)
+    let baseConfig = await this.mockConfigManager.getConfiguration(algorithmId)
+
+    if (!baseConfig) {
+      console.warn(`Algorithm ${algorithmId} not found in mock config, trying main config manager`)
+      baseConfig = await this.configManager.getConfiguration(algorithmId)
+    }
 
     if (!baseConfig) {
       console.warn(`Algorithm ${algorithmId} not found, using fallback`)
-      baseConfig = await this.configManager.getConfiguration(serviceConfig.fallbackAlgorithmId)
+      baseConfig = await this.mockConfigManager.getConfiguration(serviceConfig.fallbackAlgorithmId)
+
+      if (!baseConfig) {
+        baseConfig = await this.configManager.getConfiguration(serviceConfig.fallbackAlgorithmId)
+      }
     }
 
     if (!baseConfig) {
@@ -335,7 +347,9 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
    * Get list of available algorithms
    */
   getAvailableAlgorithms(): string[] {
-    return this.configManager.getAvailableConfigurations()
+    const mockConfigs = this.mockConfigManager.getAvailableConfigurations()
+    const mainConfigs = this.configManager ? [] : [] // Main config manager returns empty for now
+    return [...mockConfigs, ...mainConfigs]
   }
 
   /**

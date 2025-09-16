@@ -480,6 +480,18 @@ export class RedisCache {
   }
 
   /**
+   * Ping Redis server for health checks
+   */
+  async ping(): Promise<string> {
+    try {
+      return await this.redis.ping()
+    } catch (error) {
+      console.error('❌ Redis ping failed:', error)
+      throw error
+    }
+  }
+
+  /**
    * Shutdown cache connections
    */
   async shutdown(): Promise<void> {
