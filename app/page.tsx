@@ -229,16 +229,165 @@ export default function Home() {
           </div>
         </main>
 
-        <section className="trust-section">
-          <div className="trust-container">
-            <h2 className="trust-title">Trusted Data Sources</h2>
-            <div className="data-sources">
-              <div className="source-badge">🏛️ SEC EDGAR</div>
-              <div className="source-badge">🏦 Federal Reserve</div>
-              <div className="source-badge">📈 Alpha Vantage</div>
-              <div className="source-badge">📊 IEX Cloud</div>
-              <div className="source-badge">📰 News APIs</div>
+        <section className="data-engines-section">
+          <div className="data-engines-container">
+            <div className="data-engines-header">
+              <h2 className="data-engines-title">Powered by 12 Premium Data Engines</h2>
+              <p className="data-engines-subtitle">
+                Institutional-grade data sources across the entire financial ecosystem
+              </p>
             </div>
+
+            <div className="data-engines-grid">
+              {/* Financial & Market Data Category */}
+              <div className="data-category">
+                <div className="category-header">
+                  <span className="category-icon">📈</span>
+                  <h3 className="category-title">Financial & Market Data</h3>
+                  <span className="category-count">7 Sources</span>
+                </div>
+                <div className="data-sources-grid">
+                  <div className="data-source-card premium">
+                    <div className="source-icon">📊</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Polygon.io MCP</h4>
+                      <p className="source-desc">Real-time market data</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card premium">
+                    <div className="source-icon">🤖</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Alpha Vantage MCP</h4>
+                      <p className="source-desc">AI-optimized intelligence</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card premium">
+                    <div className="source-icon">📈</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Financial Modeling Prep</h4>
+                      <p className="source-desc">Financial modeling & analysis</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card free">
+                    <div className="source-icon">💰</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Yahoo Finance MCP</h4>
+                      <p className="source-desc">Comprehensive stock analysis</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card government">
+                    <div className="source-icon">🏛️</div>
+                    <div className="source-info">
+                      <h4 className="source-name">SEC EDGAR MCP</h4>
+                      <p className="source-desc">SEC filings & insider trading</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card government">
+                    <div className="source-icon">🏦</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Treasury MCP</h4>
+                      <p className="source-desc">Treasury yields & federal debt</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card government">
+                    <div className="source-icon">📊</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Data.gov MCP</h4>
+                      <p className="source-desc">Government financial datasets</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Economic Data Category */}
+              <div className="data-category">
+                <div className="category-header">
+                  <span className="category-icon">📊</span>
+                  <h3 className="category-title">Economic Data</h3>
+                  <span className="category-count">3 Sources</span>
+                </div>
+                <div className="data-sources-grid">
+                  <div className="data-source-card government">
+                    <div className="source-icon">🏦</div>
+                    <div className="source-info">
+                      <h4 className="source-name">FRED MCP</h4>
+                      <p className="source-desc">Federal Reserve (800K+ series)</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card government">
+                    <div className="source-icon">👥</div>
+                    <div className="source-info">
+                      <h4 className="source-name">BLS MCP</h4>
+                      <p className="source-desc">Employment & inflation data</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card government">
+                    <div className="source-icon">⚡</div>
+                    <div className="source-info">
+                      <h4 className="source-name">EIA MCP</h4>
+                      <p className="source-desc">Energy market intelligence</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Intelligence & Web Data Category */}
+              <div className="data-category">
+                <div className="category-header">
+                  <span className="category-icon">🧠</span>
+                  <h3 className="category-title">Intelligence & Web Data</h3>
+                  <span className="category-count">2 Sources</span>
+                </div>
+                <div className="data-sources-grid">
+                  <div className="data-source-card premium">
+                    <div className="source-icon">🕷️</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Firecrawl MCP</h4>
+                      <p className="source-desc">Web scraping & sentiment</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card premium">
+                    <div className="source-icon">🌐</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Dappier MCP</h4>
+                      <p className="source-desc">Real-time web intelligence</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="data-engines-stats">
+              <div className="stat-item">
+                <div className="stat-number">12</div>
+                <div className="stat-label">Data Sources</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">800K+</div>
+                <div className="stat-label">Data Series</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">Real-time</div>
+                <div className="stat-label">Updates</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-number">99.9%</div>
+                <div className="stat-label">Uptime</div>
+              </div>
+            </div>
+
             <p className="disclaimer">
               Our platform aggregates data exclusively from government agencies and
               licensed financial data providers. All analysis is provided for educational
