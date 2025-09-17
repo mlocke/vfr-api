@@ -2,15 +2,7 @@
 const nextConfig = {
   typedRoutes: true,
   // Allow cross-origin requests for local development
-  allowedDevOrigins: ['veritak.local'],
-  // Force port 3000
-  async rewrites() {
-    return []
-  },
-  // Custom server configuration
-  async headers() {
-    return []
-  }
+  allowedDevOrigins: ['veritak.local']
 }
 
 module.exports = nextConfig

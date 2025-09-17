@@ -3,16 +3,28 @@
  * Tests the admin toggle endpoint and then stock selection endpoint
  */
 
-const fetch = require('node-fetch')
+// Handle fetch import for different Node.js versions
+let fetch
+try {
+  // Try Node.js 18+ built-in fetch
+  fetch = globalThis.fetch
+  if (!fetch) {
+    // Fallback to node-fetch
+    fetch = require('node-fetch')
+  }
+} catch (error) {
+  console.error('❌ Could not import fetch. Please install node-fetch: npm install node-fetch')
+  process.exit(1)
+}
 
-const BASE_URL = 'http://localhost:3000'
+const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
 
 async function testPolygonToggle() {
   console.log('🧪 Testing Polygon Server Toggle via API')
   console.log('=' .repeat(50))
 
-  // Mock auth token for testing (in real app, would get from login)
-  const authToken = 'mock-admin-token'
+  // Mock auth token for testing (matches development token in ServerConfigManager)
+  const authToken = 'dev-admin-token'
 
   try {
     // Test 1: Toggle Polygon OFF
@@ -93,7 +105,15 @@ async function checkServerRunning() {
     const response = await fetch(`${BASE_URL}/api/health`, {
       timeout: 2000
     })
-    return response.ok
+
+    // Accept both 200 and 503 if they return structured data
+    if (response.status === 200 || response.status === 503) {
+      const data = await response.json()
+      // If we get structured data with timestamp, server is running
+      return data.timestamp !== undefined
+    }
+
+    return false
   } catch (error) {
     return false
   }

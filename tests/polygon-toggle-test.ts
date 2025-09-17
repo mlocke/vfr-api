@@ -6,6 +6,11 @@
 import { MCPClient } from '../app/services/mcp/MCPClient'
 import { serverConfigManager } from '../app/services/admin/ServerConfigManager'
 
+// Fix Node.js module issues for testing
+declare global {
+  var require: any
+}
+
 async function testPolygonToggleBehavior() {
   console.log('🧪 Testing Polygon Server Toggle Behavior')
   console.log('=' .repeat(50))

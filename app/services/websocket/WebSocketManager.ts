@@ -55,7 +55,7 @@ export class WebSocketManager {
   
   constructor(config: Partial<WebSocketConfig> = {}) {
     this.config = {
-      url: config.url || 'ws://localhost:3000/api/ws/stocks',
+      url: config.url || 'ws://localhost:3001',
       reconnectInterval: config.reconnectInterval || 2000, // Faster reconnect
       maxReconnectAttempts: config.maxReconnectAttempts || 10,
       heartbeatTimeout: config.heartbeatTimeout || 10000, // Shorter timeout

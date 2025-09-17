@@ -296,13 +296,12 @@ export default function AdminDashboard() {
 
       // Call the actual ServerConfigManager API
       const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
-      const response = await fetch('/api/admin/server-config/toggle', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/servers/${serverId}/toggle`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ serverId })
+        }
       })
 
       if (!response.ok) {
