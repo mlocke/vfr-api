@@ -25,7 +25,6 @@ import { QualityScorer } from './QualityScorer'
 import { DataTransformationLayer } from './DataTransformationLayer'
 import { redisCache } from '../cache/RedisCache'
 import { treasuryFiscalService, TreasuryFiscalResponse } from './collectors/TreasuryFiscalService'
-import { serverConfigManager } from '../admin/ServerConfigManager'
 
 interface MCPServerConfig {
   name: string
@@ -3314,20 +3313,26 @@ export class MCPClient {
   /**
    * Check if a server is enabled in the admin configuration
    */
-  private isServerEnabled(serverId: string): boolean {
-    return serverConfigManager.isServerEnabled(serverId)
+  private async isServerEnabled(serverId: string): Promise<boolean> {
+    try {
+      const { serverConfigManager } = await import('../admin/ServerConfigManager')
+      return serverConfigManager.isServerEnabled(serverId)
+    } catch (error) {
+      console.warn('Could not check server enabled status:', error)
+      return true // Default to enabled if config manager is not available
+    }
   }
 
   /**
    * Get only enabled servers
    */
-  private getEnabledServers(): Map<string, MCPServerConfig> {
+  private async getEnabledServers(): Promise<Map<string, MCPServerConfig>> {
     const enabledServers = new Map<string, MCPServerConfig>()
-    this.servers.forEach((config, serverId) => {
-      if (this.isServerEnabled(serverId)) {
+    for (const [serverId, config] of this.servers.entries()) {
+      if (await this.isServerEnabled(serverId)) {
         enabledServers.set(serverId, config)
       }
-    })
+    }
     return enabledServers
   }
 

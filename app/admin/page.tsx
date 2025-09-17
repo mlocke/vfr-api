@@ -967,13 +967,14 @@ export default function AdminDashboard() {
                       color: 'white',
                       fontSize: '0.9rem',
                       fontWeight: '500',
-                      outline: 'none'
+                      outline: 'none',
+                      cursor: 'pointer'
                     }}
                   >
-                    <option value="connection">🔗 Connection Test</option>
-                    <option value="data">📊 Data Retrieval Test</option>
-                    <option value="performance">⚡ Performance Test</option>
-                    <option value="comprehensive">🔍 Comprehensive Test</option>
+                    <option value="connection" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>🔗 Connection Test</option>
+                    <option value="data" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📊 Data Retrieval Test</option>
+                    <option value="performance" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>⚡ Performance Test</option>
+                    <option value="comprehensive" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>🔍 Comprehensive Test</option>
                   </select>
                 </div>
 
