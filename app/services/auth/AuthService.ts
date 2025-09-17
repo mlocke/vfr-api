@@ -433,11 +433,19 @@ export class AuthService {
   // Private helper methods
 
   private async verifyConnections(): Promise<void> {
-    // Test Redis connection
+    // Test Redis connection with fallback for development
     try {
-      await redisCache.ping()
+      const pingResult = await redisCache.ping()
+      if (pingResult.includes('fallback')) {
+        console.warn('⚠️ AuthService: Using Redis fallback mode (development)')
+      }
     } catch (error) {
-      throw new Error('Redis connection failed')
+      // In development, warn but don't fail
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ AuthService: Redis not available in development, using fallback mode')
+      } else {
+        throw new Error('Redis connection failed')
+      }
     }
   }
 

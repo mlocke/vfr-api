@@ -320,7 +320,8 @@ export class ServerConfigManager {
           // Basic connectivity test
           result = await this.mcpClient.executeTool('health_check', {}, {
             preferredServer: serverId,
-            timeout: 5000
+            timeout: 5000,
+            bypassEnabledCheck: true // Allow testing of disabled servers
           })
           break
 
@@ -466,19 +467,22 @@ export class ServerConfigManager {
       case 'stock_data':
         return this.mcpClient.executeTool('get_ticker_details', { ticker: 'AAPL' }, {
           preferredServer: serverId,
-          timeout: server.timeout
+          timeout: server.timeout,
+          bypassEnabledCheck: true // Allow testing of disabled servers
         })
 
       case 'economic_data':
         if (serverId === 'treasury') {
           return this.mcpClient.executeTool('get_treasury_rates', {}, {
             preferredServer: serverId,
-            timeout: server.timeout
+            timeout: server.timeout,
+            bypassEnabledCheck: true // Allow testing of disabled servers
           })
         } else if (serverId === 'fred') {
           return this.mcpClient.executeTool('get_economic_data', { series_id: 'GDP' }, {
             preferredServer: serverId,
-            timeout: server.timeout
+            timeout: server.timeout,
+            bypassEnabledCheck: true // Allow testing of disabled servers
           })
         }
         break
@@ -486,13 +490,15 @@ export class ServerConfigManager {
       case 'filings':
         return this.mcpClient.executeTool('get_company_filings', { ticker: 'AAPL', limit: 1 }, {
           preferredServer: serverId,
-          timeout: server.timeout
+          timeout: server.timeout,
+          bypassEnabledCheck: true // Allow testing of disabled servers
         })
 
       case 'web_intelligence':
         return this.mcpClient.executeTool('health_check', {}, {
           preferredServer: serverId,
-          timeout: server.timeout
+          timeout: server.timeout,
+          bypassEnabledCheck: true // Allow testing of disabled servers
         })
     }
 
@@ -521,7 +527,8 @@ export class ServerConfigManager {
     const requests = Array(5).fill(null).map(() =>
       this.mcpClient.executeTool('health_check', {}, {
         preferredServer: serverId,
-        timeout: server.timeout
+        timeout: server.timeout,
+        bypassEnabledCheck: true // Allow testing of disabled servers
       })
     )
 

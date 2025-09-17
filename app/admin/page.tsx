@@ -203,11 +203,31 @@ export default function AdminDashboard() {
         })
 
         if (response.ok) {
-          const data = await response.json()
-          setEnabledServers(new Set(data.enabledServers))
-          console.log('Loaded server states:', data.enabledServers)
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json()
+            setEnabledServers(new Set(data.enabledServers))
+            console.log('✅ Loaded server states:', data.enabledServers)
+          } else {
+            console.warn('⚠️ Expected JSON but received:', contentType)
+            const text = await response.text()
+            console.warn('Response text:', text.substring(0, 200))
+          }
         } else {
-          console.warn('Failed to load server states, using defaults. Status:', response.status)
+          console.warn('❌ Failed to load server states. Status:', response.status)
+
+          // Try to parse error response
+          try {
+            const errorData = await response.json()
+            console.warn('Error details:', errorData)
+          } catch (parseError) {
+            console.warn('Could not parse error response:', parseError)
+            const text = await response.text()
+            if (text.includes('<!DOCTYPE')) {
+              console.error('🚨 API returned HTML instead of JSON - service initialization may have failed')
+            }
+          }
+
           // If unauthorized, try to set a dev token for next time
           if (response.status === 401 && !localStorage.getItem('auth_token')) {
             localStorage.setItem('auth_token', 'dev-admin-token')
@@ -215,7 +235,8 @@ export default function AdminDashboard() {
           }
         }
       } catch (error) {
-        console.error('Error loading server states:', error)
+        console.error('❌ Error loading server states:', error)
+        console.log('🔧 This may indicate service initialization issues in development')
       }
     }
 
@@ -287,18 +308,31 @@ export default function AdminDashboard() {
       if (!response.ok) {
         let errorMessage = 'Failed to toggle server'
         try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch (jsonError) {
-          // If response is not JSON, it might be HTML error page
-          const textResponse = await response.text()
-          if (textResponse.includes('<!DOCTYPE')) {
-            errorMessage = `Server returned HTML instead of JSON (Status: ${response.status})`
+          const contentType = response.headers.get('content-type')
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
           } else {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`
+            const textResponse = await response.text()
+            if (textResponse.includes('<!DOCTYPE')) {
+              errorMessage = `🚨 API returned HTML instead of JSON (Status: ${response.status}) - service initialization failed`
+              console.error('HTML response received:', textResponse.substring(0, 300))
+            } else {
+              errorMessage = `HTTP ${response.status}: ${response.statusText}`
+            }
           }
+        } catch (parseError) {
+          console.warn('Could not parse error response:', parseError)
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
         }
         throw new Error(errorMessage)
+      }
+
+      // Verify response is JSON before parsing
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text()
+        throw new Error(`Expected JSON response but received ${contentType}. Response: ${text.substring(0, 200)}`)
       }
 
       const result = await response.json()

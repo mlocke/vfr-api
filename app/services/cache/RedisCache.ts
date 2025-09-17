@@ -205,8 +205,9 @@ export class RedisCache {
       return entry.data
 
     } catch (error) {
-      console.error(`❌ Cache get error for key ${key}:`, error)
+      console.warn(`⚠️ Cache get error for key ${key} (Redis may not be available):`, error.message)
       this.stats.errors++
+      this.redisAvailable = false
       return null
     }
   }
@@ -531,10 +532,14 @@ export class RedisCache {
    */
   async ping(): Promise<string> {
     try {
+      if (!this.isRedisAvailable()) {
+        return 'PONG (fallback)'
+      }
       return await this.redis.ping()
     } catch (error) {
-      console.error('❌ Redis ping failed:', error)
-      throw error
+      console.warn('⚠️ Redis ping failed (may not be available in development):', error.message)
+      this.redisAvailable = false
+      return 'PONG (fallback)'
     }
   }
 

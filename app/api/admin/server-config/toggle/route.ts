@@ -20,8 +20,18 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
 
-    // Validate admin access
-    const hasAdminAccess = await serverConfigManager.validateAdminAccess(token)
+    // Validate admin access with error handling
+    let hasAdminAccess = false
+    try {
+      hasAdminAccess = await serverConfigManager.validateAdminAccess(token)
+    } catch (authError) {
+      console.warn('❌ Admin access validation failed:', authError)
+      return NextResponse.json(
+        { error: 'Authentication service unavailable', success: false },
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     if (!hasAdminAccess) {
       return NextResponse.json(
         { error: 'Admin access required', success: false },
@@ -29,8 +39,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    const { serverId } = await request.json()
+    // Parse request body with error handling
+    let requestBody
+    try {
+      requestBody = await request.json()
+    } catch (parseError) {
+      console.warn('❌ Invalid JSON in request body:', parseError)
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body', success: false },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { serverId } = requestBody
     if (!serverId || typeof serverId !== 'string') {
       return NextResponse.json(
         { error: 'Server ID is required', success: false },
@@ -38,8 +59,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Toggle the server
-    const result = await serverConfigManager.toggleServer(serverId)
+    // Toggle the server with error handling
+    let result
+    try {
+      result = await serverConfigManager.toggleServer(serverId)
+    } catch (toggleError) {
+      console.warn('❌ Server toggle failed:', toggleError)
+      return NextResponse.json(
+        { error: 'Server configuration service unavailable', success: false },
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!result.success) {
       return NextResponse.json(
@@ -56,9 +86,13 @@ export async function POST(request: NextRequest) {
     }, { headers: { 'Content-Type': 'application/json' } })
 
   } catch (error) {
-    console.error('Server toggle API error:', error)
+    console.error('❌ Server toggle API error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', success: false },
+      {
+        error: 'Internal server error',
+        success: false,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }

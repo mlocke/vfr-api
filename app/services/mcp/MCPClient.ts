@@ -214,6 +214,7 @@ export class MCPClient {
       cacheTTL?: number
       priority?: 'high' | 'medium' | 'low'
       timeout?: number
+      bypassEnabledCheck?: boolean // For testing purposes
     } = {}
   ): Promise<MCPResponse<T>> {
     const startTime = Date.now()
@@ -246,8 +247,8 @@ export class MCPClient {
       }
     }
 
-    // Check if server is enabled
-    if (!this.isServerEnabled(serverId)) {
+    // Check if server is enabled (bypass for testing)
+    if (!options.bypassEnabledCheck && !this.isServerEnabled(serverId)) {
       console.log(`🚫 Server ${serverId} is disabled, trying fallback...`)
       const fallbackServer = this.getFallbackServer(serverId, toolName)
       if (fallbackServer && fallbackServer !== serverId) {
@@ -275,7 +276,7 @@ export class MCPClient {
       }
 
       // Execute the MCP tool
-      const requestPromise = this.makeRequest(serverId, toolName, params, options.timeout)
+      const requestPromise = this.makeRequest(serverId, toolName, params, options.timeout, options.bypassEnabledCheck)
       this.requestQueue.set(queueKey, requestPromise)
 
       const result = await requestPromise
@@ -336,10 +337,11 @@ export class MCPClient {
    * This is where we'll integrate with the actual MCP client libraries
    */
   private async makeRequest(
-    serverId: string, 
-    toolName: string, 
+    serverId: string,
+    toolName: string,
     params: Record<string, any>,
-    timeout?: number
+    timeout?: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     const server = this.servers.get(serverId)!
     const requestTimeout = timeout || server.timeout
@@ -349,46 +351,46 @@ export class MCPClient {
     
     switch (serverId) {
       case 'polygon':
-        return this.executePolygonTool(toolName, params, requestTimeout)
-      
+        return this.executePolygonTool(toolName, params, requestTimeout, bypassEnabledCheck)
+
       case 'alphavantage':
-        return this.executeAlphaVantageTool(toolName, params, requestTimeout)
+        return this.executeAlphaVantageTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'fmp':
-        return this.executeFMPTool(toolName, params, requestTimeout)
+        return this.executeFMPTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'firecrawl':
-        return this.executeFirecrawlTool(toolName, params, requestTimeout)
+        return this.executeFirecrawlTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'yahoo':
-        return this.executeYahooTool(toolName, params, requestTimeout)
+        return this.executeYahooTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'dappier':
-        return this.executeDappierTool(toolName, params, requestTimeout)
+        return this.executeDappierTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'sec_edgar':
-        return this.executeSECTool(toolName, params, requestTimeout)
+        return this.executeSECTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'treasury':
-        return this.executeTreasuryTool(toolName, params, requestTimeout)
+        return this.executeTreasuryTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'datagov':
-        return this.executeDataGovTool(toolName, params, requestTimeout)
+        return this.executeDataGovTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'context7':
-        return this.executeContext7Tool(toolName, params, requestTimeout)
+        return this.executeContext7Tool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'github':
-        return this.executeGitHubTool(toolName, params, requestTimeout)
+        return this.executeGitHubTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'fred':
-        return this.executeFREDTool(toolName, params, requestTimeout)
+        return this.executeFREDTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'bls':
-        return this.executeBLSTool(toolName, params, requestTimeout)
+        return this.executeBLSTool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       case 'eia':
-        return this.executeEIATool(toolName, params, requestTimeout)
+        return this.executeEIATool(toolName, params, requestTimeout, bypassEnabledCheck)
 
       default:
         throw new Error(`Unsupported server: ${serverId}`)
@@ -401,12 +403,13 @@ export class MCPClient {
   private async executePolygonTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Polygon MCP tool: ${toolName}`, params)
 
-    // CRITICAL: Check if Polygon server is enabled before executing
-    if (!this.isServerEnabled('polygon')) {
+    // CRITICAL: Check if Polygon server is enabled before executing (bypass for testing)
+    if (!bypassEnabledCheck && !this.isServerEnabled('polygon')) {
       console.log(`🚫 Polygon server is disabled, cannot execute tool: ${toolName}`)
       return {
         success: false,
@@ -495,12 +498,13 @@ export class MCPClient {
   private async executeAlphaVantageTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Alpha Vantage tool: ${toolName}`, params)
 
-    // Check if Alpha Vantage server is enabled before executing
-    if (!this.isServerEnabled('alphavantage')) {
+    // Check if Alpha Vantage server is enabled before executing (bypass for testing)
+    if (!bypassEnabledCheck && !this.isServerEnabled('alphavantage')) {
       console.log(`🚫 Alpha Vantage server is disabled, cannot execute tool: ${toolName}`)
       return {
         success: false,
@@ -615,12 +619,13 @@ export class MCPClient {
   private async executeFMPTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing FMP MCP tool: ${toolName}`, params)
 
-    // Check if FMP server is enabled before executing
-    if (!this.isServerEnabled('fmp')) {
+    // Check if FMP server is enabled before executing (bypass for testing)
+    if (!bypassEnabledCheck && !this.isServerEnabled('fmp')) {
       console.log(`🚫 FMP server is disabled, cannot execute tool: ${toolName}`)
       return {
         success: false,
@@ -651,7 +656,8 @@ export class MCPClient {
   private async executeFirecrawlTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Firecrawl MCP tool: ${toolName}`, params)
 
@@ -728,12 +734,13 @@ export class MCPClient {
   private async executeYahooTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Yahoo Finance MCP tool: ${toolName}`, params)
 
-    // Check if Yahoo server is enabled before executing
-    if (!this.isServerEnabled('yahoo')) {
+    // Check if Yahoo server is enabled before executing (bypass for testing)
+    if (!bypassEnabledCheck && !this.isServerEnabled('yahoo')) {
       console.log(`🚫 Yahoo server is disabled, cannot execute tool: ${toolName}`)
       return {
         success: false,
@@ -823,7 +830,8 @@ export class MCPClient {
   private async executeDappierTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Dappier MCP tool: ${toolName}`, params)
 
@@ -918,12 +926,13 @@ export class MCPClient {
   private async executeSECTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing SEC EDGAR MCP tool: ${toolName}`, params)
 
-    // Check if SEC EDGAR server is enabled before executing
-    if (!this.isServerEnabled('sec_edgar')) {
+    // Check if SEC EDGAR server is enabled before executing (bypass for testing)
+    if (!bypassEnabledCheck && !this.isServerEnabled('sec_edgar')) {
       console.log(`🚫 SEC EDGAR server is disabled, cannot execute tool: ${toolName}`)
       return {
         success: false,
@@ -1379,7 +1388,8 @@ export class MCPClient {
   private async executeTreasuryTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🏛️ Executing Treasury MCP tool (REAL DATA): ${toolName}`, params)
 
@@ -1540,7 +1550,8 @@ export class MCPClient {
   private async executeDataGovTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Data.gov MCP tool: ${toolName}`, params)
 
@@ -1589,7 +1600,8 @@ export class MCPClient {
   private async executeContext7Tool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Context7 MCP tool: ${toolName}`, params)
 
@@ -1663,7 +1675,8 @@ export class MCPClient {
   private async executeGitHubTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing GitHub MCP tool: ${toolName}`, params)
 
@@ -1776,7 +1789,8 @@ export class MCPClient {
   private async executeFREDTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing FRED MCP tool: ${toolName}`, params)
 
@@ -1903,7 +1917,8 @@ export class MCPClient {
   private async executeBLSTool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing BLS MCP tool: ${toolName}`, params)
 
@@ -2025,7 +2040,8 @@ export class MCPClient {
   private async executeEIATool(
     toolName: string,
     params: Record<string, any>,
-    timeout: number
+    timeout: number,
+    bypassEnabledCheck?: boolean
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing EIA MCP tool: ${toolName}`, params)
 
