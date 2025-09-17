@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import AdminStatusMonitor from '../components/AdminStatusMonitor'
+import ServerToggle from '../components/ui/ServerToggle'
 
 // Server configuration interface
 interface ServerConfig {
@@ -10,7 +11,8 @@ interface ServerConfig {
   name: string
   category: 'financial' | 'economic' | 'intelligence'
   description: string
-  status: 'online' | 'offline' | 'degraded'
+  status: 'online' | 'offline' | 'degraded' | 'idle' | 'processing' | 'maintenance'
+  enabled: boolean
   endpoint?: string
   rateLimit: number
   timeout: number
@@ -49,6 +51,7 @@ export default function AdminDashboard() {
       category: 'financial',
       description: 'Real-time market data',
       status: 'online',
+      enabled: true,
       rateLimit: 1000,
       timeout: 5000
     },
@@ -58,6 +61,7 @@ export default function AdminDashboard() {
       category: 'financial',
       description: 'AI-optimized intelligence',
       status: 'online',
+      enabled: true,
       rateLimit: 500,
       timeout: 10000
     },
@@ -67,6 +71,7 @@ export default function AdminDashboard() {
       category: 'financial',
       description: 'Financial modeling & analysis',
       status: 'online',
+      enabled: true,
       rateLimit: 300,
       timeout: 8000
     },
@@ -76,6 +81,7 @@ export default function AdminDashboard() {
       category: 'financial',
       description: 'Comprehensive stock analysis',
       status: 'online',
+      enabled: true,
       rateLimit: 2000,
       timeout: 3000
     },
@@ -85,6 +91,7 @@ export default function AdminDashboard() {
       category: 'financial',
       description: 'SEC filings & insider trading',
       status: 'online',
+      enabled: true,
       rateLimit: 100,
       timeout: 15000
     },
@@ -94,6 +101,7 @@ export default function AdminDashboard() {
       category: 'economic',
       description: 'Treasury yields & federal debt',
       status: 'online',
+      enabled: true,
       rateLimit: 200,
       timeout: 8000
     },
@@ -103,6 +111,7 @@ export default function AdminDashboard() {
       category: 'economic',
       description: 'Government financial datasets',
       status: 'online',
+      enabled: true,
       rateLimit: 150,
       timeout: 12000
     },
@@ -112,6 +121,7 @@ export default function AdminDashboard() {
       category: 'economic',
       description: 'Federal Reserve (800K+ series)',
       status: 'online',
+      enabled: true,
       rateLimit: 120,
       timeout: 10000
     },
@@ -121,6 +131,7 @@ export default function AdminDashboard() {
       category: 'economic',
       description: 'Employment & inflation data',
       status: 'online',
+      enabled: true,
       rateLimit: 100,
       timeout: 15000
     },
@@ -130,6 +141,7 @@ export default function AdminDashboard() {
       category: 'economic',
       description: 'Energy market intelligence',
       status: 'online',
+      enabled: true,
       rateLimit: 200,
       timeout: 8000
     },
@@ -139,6 +151,7 @@ export default function AdminDashboard() {
       category: 'intelligence',
       description: 'Web scraping & sentiment',
       status: 'online',
+      enabled: true,
       rateLimit: 300,
       timeout: 20000
     },
@@ -148,6 +161,7 @@ export default function AdminDashboard() {
       category: 'intelligence',
       description: 'Real-time web intelligence',
       status: 'online',
+      enabled: true,
       rateLimit: 500,
       timeout: 10000
     }
@@ -155,6 +169,9 @@ export default function AdminDashboard() {
 
   // State management
   const [selectedServers, setSelectedServers] = useState<string[]>([])
+  const [enabledServers, setEnabledServers] = useState<Set<string>>(
+    new Set() // Start with no servers enabled by default
+  )
   const [testConfig, setTestConfig] = useState<TestConfig>({
     selectedServers: [],
     testType: 'connection',
@@ -171,8 +188,46 @@ export default function AdminDashboard() {
     setTestConfig(prev => ({ ...prev, selectedServers }))
   }, [selectedServers])
 
+  // Load server states from API on component mount
+  useEffect(() => {
+    const loadServerStates = async () => {
+      try {
+        // Get auth token or use development token
+        const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
+
+        const response = await fetch('/api/admin/server-config', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setEnabledServers(new Set(data.enabledServers))
+          console.log('Loaded server states:', data.enabledServers)
+        } else {
+          console.warn('Failed to load server states, using defaults. Status:', response.status)
+          // If unauthorized, try to set a dev token for next time
+          if (response.status === 401 && !localStorage.getItem('auth_token')) {
+            localStorage.setItem('auth_token', 'dev-admin-token')
+            console.log('Set development auth token')
+          }
+        }
+      } catch (error) {
+        console.error('Error loading server states:', error)
+      }
+    }
+
+    loadServerStates()
+  }, [])
+
   // Server selection handlers
   const handleServerToggle = (serverId: string) => {
+    // Only allow selection of enabled servers
+    const server = serverConfigs.find(s => s.id === serverId)
+    if (!server?.enabled) return
+
     setSelectedServers(prev =>
       prev.includes(serverId)
         ? prev.filter(id => id !== serverId)
@@ -181,7 +236,8 @@ export default function AdminDashboard() {
   }
 
   const handleSelectAll = () => {
-    setSelectedServers(serverConfigs.map(server => server.id))
+    // Only select enabled servers
+    setSelectedServers(serverConfigs.filter(server => server.enabled).map(server => server.id))
   }
 
   const handleDeselectAll = () => {
@@ -198,6 +254,82 @@ export default function AdminDashboard() {
       )
       return [...withoutCategory, ...categoryServers]
     })
+  }
+
+  // Server enable/disable handler
+  const handleServerEnableToggle = async (serverId: string, enabled: boolean): Promise<void> => {
+    // Early return if trying to disable an already disabled server
+    if (!enabled && !enabledServers.has(serverId)) return
+
+    try {
+      // Optimistic update
+      setEnabledServers(prev => {
+        const newSet = new Set(prev)
+        if (enabled) {
+          newSet.add(serverId)
+        } else {
+          newSet.delete(serverId)
+        }
+        return newSet
+      })
+
+      // Call the actual ServerConfigManager API
+      const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
+      const response = await fetch('/api/admin/server-config/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ serverId })
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to toggle server'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (jsonError) {
+          // If response is not JSON, it might be HTML error page
+          const textResponse = await response.text()
+          if (textResponse.includes('<!DOCTYPE')) {
+            errorMessage = `Server returned HTML instead of JSON (Status: ${response.status})`
+          } else {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`
+          }
+        }
+        throw new Error(errorMessage)
+      }
+
+      const result = await response.json()
+      console.log(`Server ${serverId} toggle result:`, result)
+
+      // Verify the optimistic update matches the server response
+      // If there's a mismatch, correct it
+      setEnabledServers(prev => {
+        const newSet = new Set(prev)
+        if (result.enabled) {
+          newSet.add(serverId)
+        } else {
+          newSet.delete(serverId)
+        }
+        return newSet
+      })
+
+    } catch (error) {
+      console.error(`Failed to ${enabled ? 'enable' : 'disable'} server ${serverId}:`, error)
+      // Revert optimistic update on error
+      setEnabledServers(prev => {
+        const newSet = new Set(prev)
+        if (!enabled) {
+          newSet.add(serverId)
+        } else {
+          newSet.delete(serverId)
+        }
+        return newSet
+      })
+      throw error
+    }
   }
 
   // Test execution handler
@@ -464,7 +596,7 @@ export default function AdminDashboard() {
             {/* Three-Column Layout */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+              gridTemplateColumns: '450px 320px 1fr',
               gap: '2rem',
               minHeight: '600px',
               alignItems: 'start'
@@ -623,7 +755,9 @@ export default function AdminDashboard() {
                 <div style={{
                   maxHeight: '400px',
                   overflowY: 'auto',
-                  padding: '0.5rem'
+                  overflowX: 'hidden', // Prevent horizontal scrollbar
+                  padding: '0.5rem 0.25rem', // Reduce horizontal padding to give more space
+                  marginRight: '-0.25rem' // Compensate for scrollbar space
                 }}>
                   {serverConfigs.map((server) => (
                     <div
@@ -644,7 +778,12 @@ export default function AdminDashboard() {
                         cursor: 'pointer',
                         transition: 'all 0.3s ease'
                       }}
-                      onClick={() => handleServerToggle(server.id)}
+                      onClick={(e) => {
+                        // Only toggle test selection if clicking on the main area, not the toggle component
+                        if (!(e.target as HTMLElement).closest('[role="switch"]')) {
+                          handleServerToggle(server.id)
+                        }
+                      }}
                       onMouseEnter={(e) => {
                         if (!selectedServers.includes(server.id)) {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
@@ -659,6 +798,7 @@ export default function AdminDashboard() {
                       <input
                         type="checkbox"
                         checked={selectedServers.includes(server.id)}
+                        disabled={!server.enabled}
                         onChange={() => handleServerToggle(server.id)}
                         style={{
                           width: '16px',
@@ -666,9 +806,25 @@ export default function AdminDashboard() {
                           accentColor: 'rgba(99, 102, 241, 0.8)'
                         }}
                       />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                        <span style={{ fontSize: '1rem' }}>{getCategoryIcon(server.category)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        flex: 1,
+                        minHeight: '44px' // Ensure consistent row height
+                      }}>
+                        <span style={{
+                          fontSize: '1rem',
+                          minWidth: '20px',
+                          textAlign: 'center'
+                        }}>
+                          {getCategoryIcon(server.category)}
+                        </span>
+                        <div style={{
+                          flex: 1,
+                          minWidth: 0,
+                          paddingRight: '0.5rem'
+                        }}>
                           <div style={{
                             fontSize: '0.9rem',
                             fontWeight: '600',
@@ -690,7 +846,22 @@ export default function AdminDashboard() {
                             {server.description}
                           </div>
                         </div>
-                        <span style={{ fontSize: '0.8rem' }}>{getStatusIcon(server.status)}</span>
+
+                        {/* Server Enable/Disable Toggle - Fixed alignment */}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          minWidth: '140px' // Fixed width for consistent alignment
+                        }}>
+                          <ServerToggle
+                            serverId={server.id}
+                            serverName={server.name}
+                            enabled={enabledServers.has(server.id)}
+                            status={enabledServers.has(server.id) ? server.status : 'offline'}
+                            onToggle={handleServerEnableToggle}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1196,9 +1367,15 @@ export default function AdminDashboard() {
           }
         }
 
-        @media (min-width: 1200px) {
+        @media (min-width: 1400px) {
           .admin-layout {
-            grid-template-columns: 350px 1fr 400px !important;
+            grid-template-columns: 480px 340px 1fr !important;
+          }
+        }
+
+        @media (min-width: 1200px) and (max-width: 1399px) {
+          .admin-layout {
+            grid-template-columns: 450px 320px 1fr !important;
           }
         }
 

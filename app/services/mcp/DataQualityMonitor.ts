@@ -431,7 +431,7 @@ export class DataQualityMonitor {
   private analyzeTrends(): QualityTrend[] {
     const trends: QualityTrend[] = []
 
-    for (const [key, history] of this.qualityHistory.entries()) {
+    for (const [key, history] of Array.from(this.qualityHistory.entries())) {
       if (history.length < this.trendWindowSize) continue
 
       const [source, dataType] = key.split(':')
@@ -584,7 +584,7 @@ export class DataQualityMonitor {
     this.statistics.alertSummary = { critical: 0, warning: 0, info: 0, resolved: 0 }
 
     // Re-run alert checks for recent quality scores
-    for (const [key, history] of this.qualityHistory.entries()) {
+    for (const [key, history] of Array.from(this.qualityHistory.entries())) {
       const [source, dataType] = key.split(':')
       const recentScores = history.slice(-10) // Check last 10 scores
 

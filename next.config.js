@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
   // Allow cross-origin requests for local development
   allowedDevOrigins: ['veritak.local'],
   // Force port 3000

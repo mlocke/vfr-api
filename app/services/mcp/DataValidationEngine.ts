@@ -10,7 +10,8 @@ import {
   UnifiedTechnicalIndicator,
   UnifiedNewsItem,
   ValidationResult,
-  DataDiscrepancy
+  DataDiscrepancy,
+  ConflictResolutionStrategy
 } from './types'
 import { ValidationThresholds } from './DataNormalizationPipeline'
 
@@ -71,7 +72,7 @@ export class DataValidationEngine {
           sources: { [data.source]: 'missing' },
           variance: 1.0,
           resolution: {
-            strategy: 'custom',
+            strategy: ConflictResolutionStrategy.CUSTOM,
             resolvedValue: null,
             reason: `Required field '${field}' is missing or invalid`
           }
@@ -184,7 +185,7 @@ export class DataValidationEngine {
           sources: { [data.source]: 'missing' },
           variance: 1.0,
           resolution: {
-            strategy: 'custom',
+            strategy: ConflictResolutionStrategy.CUSTOM,
             resolvedValue: null,
             reason: `Required field '${field}' is missing or invalid`
           }
@@ -279,7 +280,7 @@ export class DataValidationEngine {
           sources: { [data.source]: 'missing' },
           variance: 1.0,
           resolution: {
-            strategy: 'custom',
+            strategy: ConflictResolutionStrategy.CUSTOM,
             resolvedValue: null,
             reason: `Required field '${field}' is missing or invalid`
           }
@@ -390,7 +391,7 @@ export class DataValidationEngine {
           sources: { [data.source]: 'missing' },
           variance: 1.0,
           resolution: {
-            strategy: 'custom',
+            strategy: ConflictResolutionStrategy.CUSTOM,
             resolvedValue: null,
             reason: `Required field '${field}' is missing or invalid`
           }
@@ -545,7 +546,7 @@ export class DataValidationEngine {
           sources: { unknown: 'invalid_type' },
           variance: 1.0,
           resolution: {
-            strategy: 'custom',
+            strategy: ConflictResolutionStrategy.CUSTOM,
             resolvedValue: null,
             reason: 'News data must be an array'
           }
@@ -568,7 +569,7 @@ export class DataValidationEngine {
             sources: { [item.source]: 'missing' },
             variance: 1.0,
             resolution: {
-              strategy: 'custom',
+              strategy: ConflictResolutionStrategy.CUSTOM,
               resolvedValue: null,
               reason: `Required field '${field}' is missing in news item ${i}`
             }
@@ -846,7 +847,7 @@ export class DataValidationEngine {
       sources: { [source]: actualValue },
       variance: this.calculateVariance(actualValue, expectedValue),
       resolution: {
-        strategy: 'custom',
+        strategy: ConflictResolutionStrategy.CUSTOM,
         resolvedValue: expectedValue,
         reason
       }

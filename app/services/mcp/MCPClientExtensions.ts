@@ -5,6 +5,7 @@
 
 import { MCPClient } from './MCPClient'
 import { QualityScore } from './types'
+import { redisCache } from '../cache/RedisCache'
 
 // Government server configurations
 interface GovernmentServerConfig {
@@ -139,7 +140,7 @@ MCPClient.prototype.invalidateCacheOnMarketClose = async function(symbol: string
   ]
 
   for (const pattern of patterns) {
-    await this.redisCache?.invalidatePattern(pattern)
+    await redisCache.invalidatePattern(pattern)
   }
 
   console.log(`🧹 Cache invalidated for ${symbol} at market close`)
@@ -154,16 +155,17 @@ MCPClient.prototype.invalidateCacheForEarnings = async function(symbol: string, 
   ]
 
   for (const pattern of patterns) {
-    await this.redisCache?.invalidatePattern(pattern)
+    await redisCache.invalidatePattern(pattern)
   }
 
   console.log(`🧹 Cache invalidated for ${symbol} earnings on ${earningsDate}`)
 }
 
 MCPClient.prototype.handleExpiredCache = async function(key: string): Promise<{ shouldRefresh: boolean }> {
-  const ttl = await this.redisCache?.ttl(key)
+  // Check if key exists in cache - if not, it should be refreshed
+  const exists = await redisCache.get(key)
   return {
-    shouldRefresh: ttl === -1 || ttl < 300 // Refresh if expired or less than 5 minutes remaining
+    shouldRefresh: !exists // Refresh if key doesn't exist in cache
   }
 }
 
@@ -229,12 +231,11 @@ MCPClient.prototype.executeIntegratedAnalysis = async function(symbol: string, o
 
   // Calculate consensus score
   const totalSources = options.government_sources.length + options.commercial_sources.length
-  const successfulSources = [
-    ...(governmentResults.status === 'fulfilled' ?
-        governmentResults.value.filter(r => r.status === 'fulfilled').length : 0),
-    ...(commercialResults.status === 'fulfilled' ?
+  const successfulSources =
+    (governmentResults.status === 'fulfilled' ?
+        governmentResults.value.filter(r => r.status === 'fulfilled').length : 0) +
+    (commercialResults.status === 'fulfilled' ?
         commercialResults.value.filter(r => r.status === 'fulfilled').length : 0)
-  ].length
 
   const consensusScore = successfulSources / totalSources
 

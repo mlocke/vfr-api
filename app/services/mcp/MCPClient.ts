@@ -25,11 +25,13 @@ import { QualityScorer } from './QualityScorer'
 import { DataTransformationLayer } from './DataTransformationLayer'
 import { redisCache } from '../cache/RedisCache'
 import { treasuryFiscalService, TreasuryFiscalResponse } from './collectors/TreasuryFiscalService'
+import { serverConfigManager } from '../admin/ServerConfigManager'
 
 interface MCPServerConfig {
   name: string
   endpoint?: string
   apiKey?: string
+  baseUrls?: Record<string, string>
   rateLimit: number // requests per minute
   timeout: number // milliseconds
   retryAttempts: number
@@ -54,12 +56,12 @@ interface ConnectionStats {
 
 export class MCPClient {
   private static instance: MCPClient
-  private servers: Map<string, MCPServerConfig> = new Map()
-  private connections: Map<string, ConnectionStats> = new Map()
+  protected servers: Map<string, MCPServerConfig> = new Map()
+  protected connections: Map<string, ConnectionStats> = new Map()
   private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map()
   private requestQueue: Map<string, Promise<any>> = new Map()
   private fusionEngine: DataFusionEngine
-  private qualityScorer: QualityScorer
+  protected qualityScorer: QualityScorer
   private healthCheckInterval?: NodeJS.Timeout
 
   constructor() {
@@ -234,11 +236,30 @@ export class MCPClient {
     // Determine best server for this tool
     const serverId = options.preferredServer || this.selectOptimalServer(toolName)
     const server = this.servers.get(serverId)
-    
+
     if (!server) {
       return {
         success: false,
         error: `Server ${serverId} not configured`,
+        source: serverId,
+        timestamp: Date.now()
+      }
+    }
+
+    // Check if server is enabled
+    if (!this.isServerEnabled(serverId)) {
+      console.log(`🚫 Server ${serverId} is disabled, trying fallback...`)
+      const fallbackServer = this.getFallbackServer(serverId, toolName)
+      if (fallbackServer && fallbackServer !== serverId) {
+        console.log(`🔄 Using fallback server: ${fallbackServer}`)
+        return this.executeTool(toolName, params, {
+          ...options,
+          preferredServer: fallbackServer
+        })
+      }
+      return {
+        success: false,
+        error: `Server ${serverId} is disabled and no fallback available`,
         source: serverId,
         timestamp: Date.now()
       }
@@ -378,12 +399,23 @@ export class MCPClient {
    * Polygon.io MCP Tool Execution
    */
   private async executePolygonTool(
-    toolName: string, 
+    toolName: string,
     params: Record<string, any>,
     timeout: number
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Polygon MCP tool: ${toolName}`, params)
-    
+
+    // CRITICAL: Check if Polygon server is enabled before executing
+    if (!this.isServerEnabled('polygon')) {
+      console.log(`🚫 Polygon server is disabled, cannot execute tool: ${toolName}`)
+      return {
+        success: false,
+        error: 'Polygon server is disabled',
+        source: 'polygon',
+        timestamp: Date.now()
+      }
+    }
+
     try {
       // In production, these would call the actual MCP polygon tools
       // For now, we simulate the call and return structured mock data
@@ -466,6 +498,17 @@ export class MCPClient {
     timeout: number
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Alpha Vantage tool: ${toolName}`, params)
+
+    // Check if Alpha Vantage server is enabled before executing
+    if (!this.isServerEnabled('alphavantage')) {
+      console.log(`🚫 Alpha Vantage server is disabled, cannot execute tool: ${toolName}`)
+      return {
+        success: false,
+        error: 'Alpha Vantage server is disabled',
+        source: 'alphavantage',
+        timestamp: Date.now()
+      }
+    }
 
     try {
       const apiKey = process.env.ALPHA_VANTAGE_API_KEY || '4M20CQ7QT67RJ835'
@@ -570,13 +613,23 @@ export class MCPClient {
    * Financial Modeling Prep MCP Tool Execution
    */
   private async executeFMPTool(
-    toolName: string, 
+    toolName: string,
     params: Record<string, any>,
     timeout: number
   ): Promise<MCPResponse> {
-    // TODO: Replace with actual FMP MCP client
     console.log(`🔌 Executing FMP MCP tool: ${toolName}`, params)
-    
+
+    // Check if FMP server is enabled before executing
+    if (!this.isServerEnabled('fmp')) {
+      console.log(`🚫 FMP server is disabled, cannot execute tool: ${toolName}`)
+      return {
+        success: false,
+        error: 'FMP server is disabled',
+        source: 'fmp',
+        timestamp: Date.now()
+      }
+    }
+
     await new Promise(resolve => setTimeout(resolve, 120))
     
     return {
@@ -678,6 +731,17 @@ export class MCPClient {
     timeout: number
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing Yahoo Finance MCP tool: ${toolName}`, params)
+
+    // Check if Yahoo server is enabled before executing
+    if (!this.isServerEnabled('yahoo')) {
+      console.log(`🚫 Yahoo server is disabled, cannot execute tool: ${toolName}`)
+      return {
+        success: false,
+        error: 'Yahoo server is disabled',
+        source: 'yahoo',
+        timestamp: Date.now()
+      }
+    }
 
     await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -857,6 +921,17 @@ export class MCPClient {
     timeout: number
   ): Promise<MCPResponse> {
     console.log(`🔌 Executing SEC EDGAR MCP tool: ${toolName}`, params)
+
+    // Check if SEC EDGAR server is enabled before executing
+    if (!this.isServerEnabled('sec_edgar')) {
+      console.log(`🚫 SEC EDGAR server is disabled, cannot execute tool: ${toolName}`)
+      return {
+        success: false,
+        error: 'SEC EDGAR server is disabled',
+        source: 'sec_edgar',
+        timestamp: Date.now()
+      }
+    }
 
     try {
       let result: any
@@ -1144,17 +1219,26 @@ export class MCPClient {
       'Host': url.includes('data.sec.gov') ? 'data.sec.gov' : 'www.sec.gov'
     }
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers,
-      timeout: 10000
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-    if (!response.ok) {
-      throw new Error(`SEC API error: ${response.status} ${response.statusText}`)
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers,
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        throw new Error(`SEC API error: ${response.status} ${response.statusText}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
     }
-
-    return await response.json()
   }
 
   /**
@@ -2245,7 +2329,9 @@ export class MCPClient {
    */
   private getSourcesForTool(toolName: string): string[] {
     const toolServerMap = this.getToolServerMap()
-    return toolServerMap[toolName] || []
+    const allSources = toolServerMap[toolName] || []
+    // Filter to only include enabled servers
+    return allSources.filter(serverId => this.isServerEnabled(serverId))
   }
 
   /**
@@ -2347,7 +2433,16 @@ export class MCPClient {
    */
   private selectOptimalServer(toolName: string): string {
     const toolServerMap = this.getToolServerMap()
-    const possibleServers = toolServerMap[toolName] || ['polygon', 'alphavantage', 'fmp']
+    const allPossibleServers = toolServerMap[toolName] || ['polygon', 'alphavantage', 'fmp']
+
+    // Filter to only include enabled servers
+    const possibleServers = allPossibleServers.filter(serverId => this.isServerEnabled(serverId))
+
+    if (possibleServers.length === 0) {
+      // If no enabled servers for this tool, return the first configured server as fallback
+      console.warn(`🚫 No enabled servers available for tool ${toolName}`)
+      return allPossibleServers[0] || 'polygon'
+    }
 
     // Use quality scorer to select best source
     const scores = possibleServers.map(serverId => {
@@ -3198,6 +3293,26 @@ export class MCPClient {
     const day = now.getDay()
     // Monday-Friday, 9:30 AM - 4:00 PM EST
     return day >= 1 && day <= 5 && hour >= 9 && hour < 16
+  }
+
+  /**
+   * Check if a server is enabled in the admin configuration
+   */
+  private isServerEnabled(serverId: string): boolean {
+    return serverConfigManager.isServerEnabled(serverId)
+  }
+
+  /**
+   * Get only enabled servers
+   */
+  private getEnabledServers(): Map<string, MCPServerConfig> {
+    const enabledServers = new Map<string, MCPServerConfig>()
+    this.servers.forEach((config, serverId) => {
+      if (this.isServerEnabled(serverId)) {
+        enabledServers.set(serverId, config)
+      }
+    })
+    return enabledServers
   }
 
   /**
