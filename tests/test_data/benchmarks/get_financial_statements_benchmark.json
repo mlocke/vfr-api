@@ -1,9 +1,0 @@
-{
-  "tool_name": "get_financial_statements",
-  "avg_response_time_ms": 150.0,
-  "min_response_time_ms": 120.0,
-  "max_response_time_ms": 180.0,
-  "success_rate": 0.998,
-  "test_timestamp": "2025-09-13T00:21:08.020155",
-  "sample_size": 10
-}

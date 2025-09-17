@@ -1,9 +1,0 @@
-{
-  "tool_name": "get_stock_actions",
-  "avg_response_time_ms": 95.0,
-  "min_response_time_ms": 70.0,
-  "max_response_time_ms": 120.0,
-  "success_rate": 0.998,
-  "test_timestamp": "2025-09-15T08:49:41.585012",
-  "sample_size": 10
-}
