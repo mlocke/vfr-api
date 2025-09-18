@@ -1,7 +1,7 @@
 # Claude Code Documentation Standards
 
 ## Format Standards
-- **Server**: `localhost:3002` or `veritak-api.local` for development
+- **Server**: `localhost:3000` or `veritak-api.local` for development
 - **Tests**: Save outputs to `/docs/test-output/`
 - **Screenshots**: Use puppeteer or playwright, save to `/docs/screenshots/`
 - **Structure**: Lead with file paths, use bullet points over paragraphs

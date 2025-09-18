@@ -100,14 +100,36 @@ export async function POST(request: NextRequest) {
             break
 
           case 'comprehensive':
-            // Combined test
+            // Combined test - all four test types in succession
             const connectionTest = await testDataSourceConnection(dataSourceId, timeout)
             const dataTest = await testDataSourceData(dataSourceId, timeout)
-            success = connectionTest && !!dataTest
+            const endpointsTest = await listDataSourceEndpoints(dataSourceId)
+            const performanceTest = await testDataSourcePerformance(dataSourceId, timeout)
+
+            success = connectionTest && !!dataTest && !!endpointsTest && !!performanceTest
             testData = {
-              connection: connectionTest,
-              data: dataTest,
-              timestamp: Date.now()
+              connection: {
+                success: connectionTest,
+                testType: 'connection'
+              },
+              dataRetrieval: {
+                success: !!dataTest,
+                data: dataTest,
+                testType: 'data'
+              },
+              apiEndpoints: {
+                success: !!endpointsTest,
+                data: endpointsTest,
+                testType: 'list_api_endpoints'
+              },
+              performance: {
+                success: !!performanceTest,
+                data: performanceTest,
+                testType: 'performance'
+              },
+              overallSuccess: success,
+              timestamp: Date.now(),
+              testType: 'comprehensive'
             }
             break
 

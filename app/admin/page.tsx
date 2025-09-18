@@ -553,7 +553,6 @@ export default function AdminDashboard() {
               ←
             </span>
             <span className="hidden sm:inline">Back to Home</span>
-            <span className="sm:hidden">Home</span>
           </span>
         </Link>
       </div>
@@ -975,9 +974,10 @@ export default function AdminDashboard() {
                   >
                     <option value="connection" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>🔗 Connection Test</option>
                     <option value="data" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📊 Data Retrieval Test</option>
+					<option value="list_api_endpoints" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📋 List API Endpoints</option>
                     <option value="performance" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>⚡ Performance Test</option>
                     <option value="comprehensive" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>🔍 Comprehensive Test</option>
-                    <option value="list_api_endpoints" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📋 List API Endpoints</option>
+
                   </select>
                 </div>
 
