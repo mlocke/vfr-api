@@ -21,7 +21,7 @@ interface DataSourceConfig {
 // Test configuration interface
 interface TestConfig {
   selectedDataSources: string[]
-  testType: 'connection' | 'data' | 'performance' | 'comprehensive'
+  testType: 'connection' | 'data' | 'performance' | 'comprehensive' | 'list_api_endpoints'
   timeout: number
   maxRetries: number
   parallelRequests: boolean
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
       console.log('🔧 Test configuration:', testConfig)
 
       // Call the data source testing API endpoint
-      const response = await fetch('/api/admin/data-sources/test', {
+      const response = await fetch('/api/admin/test-data-sources', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -977,6 +977,7 @@ export default function AdminDashboard() {
                     <option value="data" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📊 Data Retrieval Test</option>
                     <option value="performance" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>⚡ Performance Test</option>
                     <option value="comprehensive" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>🔍 Comprehensive Test</option>
+                    <option value="list_api_endpoints" style={{ backgroundColor: '#1a1a1a', color: 'white' }}>📋 List API Endpoints</option>
                   </select>
                 </div>
 
