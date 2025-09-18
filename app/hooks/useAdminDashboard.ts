@@ -1,6 +1,6 @@
 /**
  * Admin Dashboard Hook
- * Manages real-time server status updates and test execution state
+ * Manages real-time API data source status updates and test execution state
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -16,7 +16,7 @@ export interface ServerStatus {
 }
 
 export interface AdminDashboardState {
-  servers: ServerStatus[]
+  dataSources: ServerStatus[]
   isMonitoring: boolean
   lastUpdate: number
   globalStatus: 'healthy' | 'degraded' | 'critical'
@@ -24,32 +24,32 @@ export interface AdminDashboardState {
 
 export function useAdminDashboard() {
   const [state, setState] = useState<AdminDashboardState>({
-    servers: [],
+    dataSources: [],
     isMonitoring: false,
     lastUpdate: 0,
     globalStatus: 'healthy'
   })
 
-  // Initialize server statuses
+  // Initialize data source statuses
   useEffect(() => {
-    const initialServers: ServerStatus[] = [
-      { id: 'polygon', name: 'Polygon.io MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.8 },
-      { id: 'alphavantage', name: 'Alpha Vantage MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.5 },
-      { id: 'fmp', name: 'Financial Modeling Prep', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.2 },
-      { id: 'yahoo', name: 'Yahoo Finance MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.9 },
-      { id: 'sec_edgar', name: 'SEC EDGAR MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.5 },
-      { id: 'treasury', name: 'Treasury MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.7 },
-      { id: 'datagov', name: 'Data.gov MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.8 },
-      { id: 'fred', name: 'FRED MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.6 },
-      { id: 'bls', name: 'BLS MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.1 },
-      { id: 'eia', name: 'EIA MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.3 },
-      { id: 'firecrawl', name: 'Firecrawl MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.9 },
-      { id: 'dappier', name: 'Dappier MCP', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.4 }
+    const initialDataSources: ServerStatus[] = [
+      { id: 'polygon', name: 'Polygon.io API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.8 },
+      { id: 'alphavantage', name: 'Alpha Vantage API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.5 },
+      { id: 'fmp', name: 'Financial Modeling Prep API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.2 },
+      { id: 'yahoo', name: 'Yahoo Finance API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.9 },
+      { id: 'sec_edgar', name: 'SEC EDGAR API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.5 },
+      { id: 'treasury', name: 'Treasury API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.7 },
+      { id: 'datagov', name: 'Data.gov API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.8 },
+      { id: 'fred', name: 'FRED API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.6 },
+      { id: 'bls', name: 'BLS API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.1 },
+      { id: 'eia', name: 'EIA API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.3 },
+      { id: 'firecrawl', name: 'Firecrawl API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.9 },
+      { id: 'dappier', name: 'Dappier API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.4 }
     ]
 
     setState(prev => ({
       ...prev,
-      servers: initialServers,
+      dataSources: initialDataSources,
       lastUpdate: Date.now()
     }))
   }, [])
@@ -64,14 +64,14 @@ export function useAdminDashboard() {
     setState(prev => ({ ...prev, isMonitoring: false }))
   }, [])
 
-  // Update server status
-  const updateServerStatus = useCallback((serverId: string, status: Partial<ServerStatus>) => {
+  // Update data source status
+  const updateDataSourceStatus = useCallback((dataSourceId: string, status: Partial<ServerStatus>) => {
     setState(prev => ({
       ...prev,
-      servers: prev.servers.map(server =>
-        server.id === serverId
-          ? { ...server, ...status, lastCheck: Date.now() }
-          : server
+      dataSources: prev.dataSources.map(dataSource =>
+        dataSource.id === dataSourceId
+          ? { ...dataSource, ...status, lastCheck: Date.now() }
+          : dataSource
       ),
       lastUpdate: Date.now()
     }))
@@ -83,10 +83,10 @@ export function useAdminDashboard() {
 
     const interval = setInterval(() => {
       setState(prev => {
-        const updatedServers = prev.servers.map(server => {
+        const updatedDataSources = prev.dataSources.map(dataSource => {
           // Simulate occasional status changes (5% chance of degraded, 1% chance of offline)
           const rand = Math.random()
-          let newStatus = server.status
+          let newStatus = dataSource.status
 
           if (rand < 0.01) {
             newStatus = 'offline'
@@ -97,17 +97,17 @@ export function useAdminDashboard() {
           }
 
           return {
-            ...server,
+            ...dataSource,
             status: newStatus,
             lastCheck: Date.now(),
             responseTime: Math.floor(Math.random() * 2000) + 100,
-            errorCount: newStatus === 'offline' ? server.errorCount + 1 : server.errorCount
+            errorCount: newStatus === 'offline' ? dataSource.errorCount + 1 : dataSource.errorCount
           }
         })
 
         // Calculate global status
-        const offlineCount = updatedServers.filter(s => s.status === 'offline').length
-        const degradedCount = updatedServers.filter(s => s.status === 'degraded').length
+        const offlineCount = updatedDataSources.filter(s => s.status === 'offline').length
+        const degradedCount = updatedDataSources.filter(s => s.status === 'degraded').length
 
         let globalStatus: 'healthy' | 'degraded' | 'critical' = 'healthy'
         if (offlineCount > 2) {
@@ -118,46 +118,46 @@ export function useAdminDashboard() {
 
         return {
           ...prev,
-          servers: updatedServers,
+          dataSources: updatedDataSources,
           lastUpdate: Date.now(),
           globalStatus
         }
       })
-    }, 3000) // Update every 3 seconds like useStockSelection
+    }, 3000) // Update every 3 seconds
 
     return () => clearInterval(interval)
   }, [state.isMonitoring])
 
-  // Test specific servers
-  const testServers = useCallback(async (serverIds: string[]) => {
-    console.log('🧪 Testing servers:', serverIds)
+  // Test specific data sources
+  const testDataSources = useCallback(async (dataSourceIds: string[]) => {
+    console.log('🧪 Testing data sources:', dataSourceIds)
 
-    // Mark servers as being tested
-    serverIds.forEach(serverId => {
-      updateServerStatus(serverId, { status: 'degraded' })
+    // Mark data sources as being tested
+    dataSourceIds.forEach(dataSourceId => {
+      updateDataSourceStatus(dataSourceId, { status: 'degraded' })
     })
 
     // Simulate test execution
-    for (const serverId of serverIds) {
+    for (const dataSourceId of dataSourceIds) {
       await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 500))
 
       // Simulate test results (90% success rate)
       const success = Math.random() > 0.1
-      updateServerStatus(serverId, {
+      updateDataSourceStatus(dataSourceId, {
         status: success ? 'online' : 'offline',
         responseTime: Math.floor(Math.random() * 3000) + 100,
         errorCount: success ? 0 : 1
       })
     }
 
-    console.log('✅ Server tests completed')
-  }, [updateServerStatus])
+    console.log('✅ Data source tests completed')
+  }, [updateDataSourceStatus])
 
   return {
     ...state,
     startMonitoring,
     stopMonitoring,
-    updateServerStatus,
-    testServers
+    updateDataSourceStatus,
+    testDataSources
   }
 }

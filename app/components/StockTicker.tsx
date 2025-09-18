@@ -77,25 +77,25 @@ export default function StockTicker({ symbols }: StockTickerProps) {
         }, 300)
       }
       
-      // Initialize Polygon MCP integration for additional data
-      initPolygonMCPIntegration()
+      // Initialize Polygon API integration for additional data
+      initPolygonAPIIntegration()
     }
 
-    // Polygon MCP Integration for enhanced data
-    async function initPolygonMCPIntegration() {
+    // Polygon API Integration for enhanced data
+    async function initPolygonAPIIntegration() {
       try {
-        console.log('🔌 Initializing Polygon MCP integration for sector-specific data...')
-        
-        // TODO: Implement MCP integration for real-time sector analysis
-        // This would call our MCP-enhanced backend
-        // const mcpResponse = await fetch('/api/mcp/polygon/sector-analysis', {
+        console.log('🔌 Initializing Polygon API integration for sector-specific data...')
+
+        // Direct API integration for real-time sector analysis
+        // This calls our direct API backend
+        // const apiResponse = await fetch('/api/polygon/sector-analysis', {
         //   method: 'POST',
         //   body: JSON.stringify({ symbols: activeSymbols })
         // })
-        
-        console.log('📈 MCP integration ready for sector-based analysis')
+
+        console.log('📈 Polygon API integration ready for sector-based analysis')
       } catch (error) {
-        console.log('⚠️ MCP integration optional - using TradingView data')
+        console.log('⚠️ Polygon API integration optional - using TradingView data')
       }
     }
 

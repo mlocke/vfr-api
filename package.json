@@ -5,6 +5,7 @@
 	"main": "src/index.tsx",
 	"scripts": {
 		"dev": "next dev -p 3000",
+		"dev:api": "next dev -p 3002",
 		"dev:clean": "./scripts/dev-clean.sh",
 		"dev:port-check": "lsof -i:3000 || echo 'Port 3000 is available'",
 		"dev:kill": "pkill -f 'next dev' && pkill -f 'npm.*dev' || true",

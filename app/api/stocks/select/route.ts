@@ -1,11 +1,11 @@
 /**
  * Simplified Stock Selection API - KISS principles applied
- * Replaces the 836-line over-engineered route with simple, direct functionality
+ * Direct API implementation replacing MCP-based architecture
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { SimpleMCPClient, SimpleStockData, SimpleCompanyInfo } from '../../../services/mcp/SimpleMCPClient'
+import { financialDataService, StockData } from '../../../services/financial-data'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -24,7 +24,7 @@ const RequestSchema = z.object({
 interface SimpleStockResponse {
   success: boolean
   data?: {
-    stocks: SimpleStockData[]
+    stocks: StockData[]
     metadata: {
       mode: string
       count: number
@@ -44,12 +44,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const body = await request.json()
     const { mode, symbols, sector, limit, config } = RequestSchema.parse(body)
 
-    let stocks: SimpleStockData[] = []
+    let stocks: StockData[] = []
     const sources = new Set<string>()
 
     // Handle test format where symbol is in config
     const symbolToUse = config?.symbol || symbols?.[0]
     const preferredSources = config?.preferredDataSources || []
+
+    // Determine preferred provider from data sources
+    const preferredProvider = preferredSources.length > 0 ? preferredSources[0] : undefined
 
     // Handle different selection modes
     switch (mode) {
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
         }
 
-        const stockData = await SimpleMCPClient.getStockPrice(symbolToUse)
+        const stockData = await financialDataService.getStockPrice(symbolToUse, preferredProvider)
         if (stockData) {
           stocks = [stockData]
           sources.add(stockData.source)
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        stocks = await SimpleMCPClient.getStocksBySector(sector, limit)
+        stocks = await financialDataService.getStocksBySector(sector, limit)
         stocks.forEach(stock => sources.add(stock.source))
         break
 
@@ -104,12 +107,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Get multiple stocks in parallel
-        const promises = symbols.slice(0, limit).map(symbol =>
-          SimpleMCPClient.getStockPrice(symbol)
-        )
-
-        const results = await Promise.all(promises)
-        stocks = results.filter(Boolean) as SimpleStockData[]
+        stocks = await financialDataService.getMultipleStocks(symbols.slice(0, limit), preferredProvider)
         stocks.forEach(stock => sources.add(stock.source))
         break
 
@@ -153,13 +151,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 export async function GET(): Promise<NextResponse> {
   try {
-    const health = await SimpleMCPClient.healthCheck()
+    const health = await financialDataService.healthCheck()
+
+    // Convert provider health to simple format
+    const services: { [key: string]: boolean } = {}
+    health.forEach(provider => {
+      services[provider.name.toLowerCase().replace(/\s+/g, '')] = provider.healthy
+    })
 
     return NextResponse.json({
       success: true,
       data: {
         status: 'healthy',
-        services: health,
+        services,
+        providers: health,
         timestamp: Date.now()
       }
     })

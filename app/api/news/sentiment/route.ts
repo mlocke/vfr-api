@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mcpClient } from '../../../services/mcp/MCPClient'
 
 interface NewsArticle {
   title: string
@@ -121,60 +120,9 @@ function extractKeywords(text: string): string[] {
   return foundKeywords.slice(0, 5) // Return top 5 keywords
 }
 
-// Fetch news using Firecrawl MCP for web intelligence
-async function fetchNewsWithFirecrawl(sector: string): Promise<NewsArticle[]> {
-  try {
-    console.log(`🔥 Using Firecrawl MCP for news sentiment analysis: ${sector}`)
-    
-    // Use Firecrawl search to find relevant financial news
-    const searchResults = await mcpClient.executeTool(
-      'firecrawl_search',
-      {
-        query: `${sector} stocks financial news earnings revenue market analysis 2024`,
-        limit: 10,
-        sources: [{ type: 'news' }],
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true
-        }
-      },
-      {
-        preferredServer: 'firecrawl',
-        cacheTTL: 900000, // 15 minutes cache
-        priority: 'medium'
-      }
-    )
-    
-    if (searchResults.success && searchResults.data?.results) {
-      console.log(`📰 Found ${searchResults.data.results.length} news articles via Firecrawl MCP`)
-      
-      const articles: NewsArticle[] = searchResults.data.results.map((result: any, index: number) => {
-        const fullText = `${result.title || ''} ${result.description || ''} ${result.markdown || ''}`
-        const sentiment = analyzeSentiment(fullText)
-        const keywords = extractKeywords(fullText)
-        
-        return {
-          title: result.title || `${sector} Market News`,
-          content: result.description || result.markdown?.substring(0, 500) || '',
-          url: result.url || `https://example.com/news/${index}`,
-          publishedAt: new Date().toISOString(),
-          source: result.source || 'Financial News',
-          sentiment,
-          relevance: 0.85, // High relevance for MCP-sourced news
-          keywords
-        }
-      })
-      
-      return articles
-    }
-    
-    throw new Error('No results from Firecrawl MCP')
-    
-  } catch (error) {
-    console.log(`❌ Firecrawl MCP failed for ${sector}:`, error instanceof Error ? error.message : 'Unknown error')
-    throw error
-  }
-}
+// Note: News fetching now uses fallback data only
+// In a production system, this would integrate with news APIs directly
+// such as NewsAPI, Alpha Vantage News, or financial news services
 
 // Fallback news data generation
 function generateFallbackNews(sector: string): NewsArticle[] {
@@ -283,18 +231,9 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    let articles: NewsArticle[] = []
-    let source = 'fallback'
-    
-    try {
-      // Try Firecrawl MCP first
-      articles = await fetchNewsWithFirecrawl(sector)
-      source = 'firecrawl-mcp'
-    } catch (error) {
-      console.log(`⚠️ Firecrawl MCP failed, using fallback news for ${sector}`)
-      articles = generateFallbackNews(sector)
-      source = 'fallback'
-    }
+    // Use fallback news data (in production, this would use direct news APIs)
+    const articles = generateFallbackNews(sector)
+    const source = 'fallback'
     
     // Calculate overall sentiment and market impact
     const overallSentiment = calculateOverallSentiment(articles)

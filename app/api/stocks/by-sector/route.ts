@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mcpClient } from '../../../services/mcp/MCPClient'
+import { financialDataService } from '../../../services/financial-data'
 
 // Sector mapping to filter stocks by industry
 const SECTOR_MAPPINGS = {
@@ -134,12 +134,12 @@ export async function GET(request: NextRequest) {
           proName: `${sectorConfig.exchanges[0]}:${symbol}`,
           title: `${symbol} - Market Index`
         }))
-        
+
         console.log(`📊 Generated ${symbols.length} index symbols for ${sector}`)
       } else {
-        // Try MCP-enhanced stock selection first
-        symbols = await getMCPEnhancedStocks(sector as string)
-        
+        // Use direct API service for sector stocks
+        symbols = await getDirectAPISectorStocks(sector as string)
+
         if (symbols.length === 0) {
           // Fallback to curated list
           symbols = await getCuratedSectorStocks(sector as string)
@@ -154,26 +154,26 @@ export async function GET(request: NextRequest) {
       })
 
       console.log(`✅ Generated ${symbols.length} symbols for sector: ${sector}`)
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         symbols: symbols.slice(0, sectorConfig.limit),
         sector: sector,
         cached: false,
-        source: symbols.length > 0 ? 'mcp' : 'curated'
+        source: symbols.length > 0 ? 'direct-api' : 'curated'
       })
 
-    } catch (mcpError) {
-      console.log(`⚠️ MCP error for ${sector}:`, mcpError)
-      
+    } catch (apiError) {
+      console.log(`⚠️ API error for ${sector}:`, apiError)
+
       // Fallback to curated symbols
       const fallbackSymbols = await getCuratedSectorStocks(sector)
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         symbols: fallbackSymbols,
         fallback: true,
-        message: 'Using curated symbols - MCP temporarily unavailable'
+        message: 'Using curated symbols - Direct API temporarily unavailable'
       })
     }
 
@@ -187,97 +187,30 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// MCP-enhanced stock selection using Polygon data
-async function getMCPEnhancedStocks(sector: string): Promise<SymbolData[]> {
+// Direct API sector stock selection
+async function getDirectAPISectorStocks(sector: string): Promise<SymbolData[]> {
   try {
-    console.log(`🔌 Attempting MCP integration for ${sector} sector`)
-    
-    // Step 1: Get sector tickers using Polygon MCP
-    const tickersResponse = await mcpClient.executeTool(
-      'list_tickers',
-      {
-        market: 'stocks',
-        active: true,
-        sort: 'ticker',
-        order: 'asc',
-        limit: 50
-      },
-      {
-        preferredServer: 'polygon',
-        cacheTTL: 300000, // 5 minutes cache
-        priority: 'high'
-      }
-    )
-    
-    if (tickersResponse.success && tickersResponse.data) {
-      console.log(`📊 Retrieved ${tickersResponse.data.results?.length || 0} tickers from Polygon MCP`)
-      
-      // Step 2: Filter tickers by sector using enhanced mapping
-      const sectorConfig = SECTOR_MAPPINGS[sector as keyof typeof SECTOR_MAPPINGS]
-      let filteredTickers = []
-      
-      if ('keywords' in sectorConfig) {
-        // Filter by sector keywords
-        filteredTickers = (tickersResponse.data.results || []).filter((ticker: any) => {
-          const name = (ticker.name || '').toLowerCase()
-          const description = (ticker.description || '').toLowerCase()
-          return sectorConfig.keywords.some(keyword => 
-            name.includes(keyword) || description.includes(keyword)
-          )
-        })
-      }
-      
-      // Step 3: Get detailed ticker information for market cap ranking
-      const topTickers = filteredTickers.slice(0, 20)
-      const detailedStocks = []
-      
-      for (const ticker of topTickers) {
-        try {
-          const detailsResponse = await mcpClient.executeTool(
-            'get_ticker_details',
-            { ticker: ticker.ticker },
-            {
-              preferredServer: 'polygon',
-              cacheTTL: 600000, // 10 minutes cache
-              priority: 'medium'
-            }
-          )
-          
-          if (detailsResponse.success && detailsResponse.data) {
-            const details = detailsResponse.data.results
-            detailedStocks.push({
-              proName: `${ticker.primary_exchange || 'NASDAQ'}:${ticker.ticker}`,
-              title: `${ticker.ticker} - ${details.name || ticker.name}`,
-              marketCap: details.market_cap || 0,
-              sector: details.sic_description || sector
-            })
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to get details for ${ticker.ticker}:`, error)
-        }
-      }
-      
-      // Step 4: Sort by market cap and return top 20
-      const rankedStocks = detailedStocks
-        .sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0))
-        .slice(0, 20)
-        .map(stock => ({
-          proName: stock.proName,
-          title: stock.title
-        }))
-      
-      if (rankedStocks.length > 0) {
-        console.log(`🚀 MCP enhanced selection: ${rankedStocks.length} stocks for ${sector}`)
-        return rankedStocks
-      }
+    console.log(`🔌 Attempting direct API integration for ${sector} sector`)
+
+    // Use the financial data service to get sector stocks
+    const stocks = await financialDataService.getStocksBySector(sector, 20)
+
+    if (stocks.length > 0) {
+      const symbols = stocks.map(stock => ({
+        proName: `NASDAQ:${stock.symbol}`, // Default to NASDAQ
+        title: `${stock.symbol} - ${sector} stock`
+      }))
+
+      console.log(`🚀 Direct API selection: ${symbols.length} stocks for ${sector}`)
+      return symbols
     }
-    
-    // Fallback to enhanced curated list if MCP data is insufficient
-    console.log(`📋 MCP data insufficient, using enhanced curated list for ${sector}`)
+
+    // Fallback to enhanced curated list if API data is insufficient
+    console.log(`📋 API data insufficient, using enhanced curated list for ${sector}`)
     return await getEnhancedSectorStocks(sector)
-    
+
   } catch (error) {
-    console.log(`⚠️ MCP integration failed for ${sector}:`, error)
+    console.log(`⚠️ Direct API integration failed for ${sector}:`, error)
     // Fallback to enhanced curated list
     return await getEnhancedSectorStocks(sector)
   }

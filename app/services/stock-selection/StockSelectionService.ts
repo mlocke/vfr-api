@@ -18,17 +18,7 @@ import {
   SelectionServiceEvent,
   DataIntegrationInterface
 } from './types'
-import { AlgorithmIntegration } from './integration/AlgorithmIntegration'
-import { SectorIntegration } from './integration/SectorIntegration'
-import { SelectionConfigManager, selectionConfig } from './config/SelectionConfig'
-import { AlgorithmEngine } from '../algorithms/AlgorithmEngine'
-import { DataFusionEngine } from '../mcp/DataFusionEngine'
-import { MCPClient } from '../mcp/MCPClient'
-import { FactorLibrary } from '../algorithms/FactorLibrary'
-import { AlgorithmCache } from '../algorithms/AlgorithmCache'
-import { RedisCache } from '../cache/RedisCache'
-import { SelectionResult, StockScore } from '../algorithms/types'
-import { QualityScore } from '../mcp/types'
+import { financialDataService, StockData } from '../financial-data'
 import { SectorOption } from '../../components/SectorDropdown'
 
 /**

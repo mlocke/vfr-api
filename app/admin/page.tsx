@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import AdminStatusMonitor from '../components/AdminStatusMonitor'
-import ServerToggle from '../components/ui/ServerToggle'
+import DataSourceToggle from '../components/ui/DataSourceToggle'
 
-// Server configuration interface
-interface ServerConfig {
+// Data source configuration interface
+interface DataSourceConfig {
   id: string
   name: string
   category: 'financial' | 'economic' | 'intelligence'
@@ -20,7 +20,7 @@ interface ServerConfig {
 
 // Test configuration interface
 interface TestConfig {
-  selectedServers: string[]
+  selectedDataSources: string[]
   testType: 'connection' | 'data' | 'performance' | 'comprehensive'
   timeout: number
   maxRetries: number
@@ -43,11 +43,11 @@ interface TestResult {
 }
 
 export default function AdminDashboard() {
-  // Server configurations based on MCPClient
-  const serverConfigs: ServerConfig[] = [
+  // API data source configurations for direct integration
+  const dataSourceConfigs: DataSourceConfig[] = [
     {
       id: 'polygon',
-      name: 'Polygon.io MCP',
+      name: 'Polygon.io API',
       category: 'financial',
       description: 'Real-time market data',
       status: 'online',
@@ -57,9 +57,9 @@ export default function AdminDashboard() {
     },
     {
       id: 'alphavantage',
-      name: 'Alpha Vantage MCP',
+      name: 'Alpha Vantage API',
       category: 'financial',
-      description: 'AI-optimized intelligence',
+      description: 'Financial market intelligence',
       status: 'online',
       enabled: true,
       rateLimit: 500,
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'fmp',
-      name: 'Financial Modeling Prep',
+      name: 'Financial Modeling Prep API',
       category: 'financial',
       description: 'Financial modeling & analysis',
       status: 'online',
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'yahoo',
-      name: 'Yahoo Finance MCP',
+      name: 'Yahoo Finance API',
       category: 'financial',
       description: 'Comprehensive stock analysis',
       status: 'online',
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'sec_edgar',
-      name: 'SEC EDGAR MCP',
+      name: 'SEC EDGAR API',
       category: 'financial',
       description: 'SEC filings & insider trading',
       status: 'online',
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'treasury',
-      name: 'Treasury MCP',
+      name: 'Treasury API',
       category: 'economic',
       description: 'Treasury yields & federal debt',
       status: 'online',
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'datagov',
-      name: 'Data.gov MCP',
+      name: 'Data.gov API',
       category: 'economic',
       description: 'Government financial datasets',
       status: 'online',
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'fred',
-      name: 'FRED MCP',
+      name: 'FRED API',
       category: 'economic',
       description: 'Federal Reserve (800K+ series)',
       status: 'online',
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'bls',
-      name: 'BLS MCP',
+      name: 'BLS API',
       category: 'economic',
       description: 'Employment & inflation data',
       status: 'online',
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'eia',
-      name: 'EIA MCP',
+      name: 'EIA API',
       category: 'economic',
       description: 'Energy market intelligence',
       status: 'online',
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'firecrawl',
-      name: 'Firecrawl MCP',
+      name: 'Firecrawl API',
       category: 'intelligence',
       description: 'Web scraping & sentiment',
       status: 'online',
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
     },
     {
       id: 'dappier',
-      name: 'Dappier MCP',
+      name: 'Dappier API',
       category: 'intelligence',
       description: 'Real-time web intelligence',
       status: 'online',
@@ -168,12 +168,12 @@ export default function AdminDashboard() {
   ]
 
   // State management
-  const [selectedServers, setSelectedServers] = useState<string[]>([])
+  const [selectedDataSources, setSelectedDataSources] = useState<string[]>([])
   const [enabledServers, setEnabledServers] = useState<Set<string>>(
     new Set() // Start with no servers enabled by default
   )
   const [testConfig, setTestConfig] = useState<TestConfig>({
-    selectedServers: [],
+    selectedDataSources: [],
     testType: 'connection',
     timeout: 10000,
     maxRetries: 3,
@@ -183,10 +183,10 @@ export default function AdminDashboard() {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [activeTab, setActiveTab] = useState<'results' | 'raw' | 'performance'>('results')
 
-  // Update test config when selected servers change
+  // Update test config when selected data sources change
   useEffect(() => {
-    setTestConfig(prev => ({ ...prev, selectedServers }))
-  }, [selectedServers])
+    setTestConfig(prev => ({ ...prev, selectedDataSources }))
+  }, [selectedDataSources])
 
   // Load server states from API on component mount
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function AdminDashboard() {
         // Get auth token or use development token
         const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
 
-        const response = await fetch('/api/admin/server-config', {
+        const response = await fetch('/api/admin/data-source-config', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
@@ -246,10 +246,10 @@ export default function AdminDashboard() {
   // Server selection handlers
   const handleServerToggle = (serverId: string) => {
     // Only allow selection of enabled servers
-    const server = serverConfigs.find(s => s.id === serverId)
+    const server = dataSourceConfigs.find(s => s.id === serverId)
     if (!server?.enabled) return
 
-    setSelectedServers(prev =>
+    setSelectedDataSources(prev =>
       prev.includes(serverId)
         ? prev.filter(id => id !== serverId)
         : [...prev, serverId]
@@ -258,22 +258,22 @@ export default function AdminDashboard() {
 
   const handleSelectAll = () => {
     // Only select enabled servers
-    setSelectedServers(serverConfigs.filter(server => server.enabled).map(server => server.id))
+    setSelectedDataSources(dataSourceConfigs.filter(dataSource => dataSource.enabled).map(dataSource => dataSource.id))
   }
 
   const handleDeselectAll = () => {
-    setSelectedServers([])
+    setSelectedDataSources([])
   }
 
   const handleSelectByCategory = (category: string) => {
-    const categoryServers = serverConfigs
-      .filter(server => server.category === category)
-      .map(server => server.id)
-    setSelectedServers(prev => {
+    const categoryDataSources = dataSourceConfigs
+      .filter(dataSource => dataSource.category === category)
+      .map(dataSource => dataSource.id)
+    setSelectedDataSources(prev => {
       const withoutCategory = prev.filter(id =>
-        !serverConfigs.find(s => s.id === id && s.category === category)
+        !dataSourceConfigs.find(s => s.id === id && s.category === category)
       )
-      return [...withoutCategory, ...categoryServers]
+      return [...withoutCategory, ...categoryDataSources]
     })
   }
 
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
 
       // Call the actual ServerConfigManager API
       const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
-      const response = await fetch(`/api/admin/servers/${serverId}/toggle`, {
+      const response = await fetch(`/api/admin/data-sources/${serverId}/toggle`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -367,23 +367,23 @@ export default function AdminDashboard() {
 
   // Test execution handler
   const handleRunTests = async () => {
-    if (selectedServers.length === 0) return
+    if (selectedDataSources.length === 0) return
 
     setIsRunningTests(true)
     setTestResults([])
 
     try {
-      console.log('🧪 Running tests for servers:', selectedServers)
+      console.log('🧪 Running tests for servers:', selectedDataSources)
       console.log('🔧 Test configuration:', testConfig)
 
-      // Call the real admin API endpoint
-      const response = await fetch('/api/admin/test-servers', {
+      // Call the data source testing API endpoint
+      const response = await fetch('/api/admin/test-data-sources', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          serverIds: selectedServers,
+          dataSourceIds: selectedDataSources,
           testType: testConfig.testType,
           timeout: testConfig.timeout,
           maxRetries: testConfig.maxRetries,
@@ -413,8 +413,8 @@ export default function AdminDashboard() {
       console.log('🔄 Falling back to mock test data...')
       const results: TestResult[] = []
 
-      for (const serverId of selectedServers) {
-        const server = serverConfigs.find(s => s.id === serverId)
+      for (const serverId of selectedDataSources) {
+        const server = dataSourceConfigs.find(s => s.id === serverId)
         if (!server) continue
 
         // Simulate test execution with realistic timing
@@ -422,12 +422,12 @@ export default function AdminDashboard() {
 
         const result: TestResult = {
           serverId,
-          serverName: server.name,
+          serverName: dataSource.name,
           success: Math.random() > 0.15, // 85% success rate
-          responseTime: Math.floor(Math.random() * server.timeout * 0.6) + 150,
+          responseTime: Math.floor(Math.random() * dataSource.timeout * 0.6) + 150,
           data: {
             testType: testConfig.testType,
-            sampleData: `Mock data from ${server.name}`,
+            sampleData: `Mock data from ${dataSource.name}`,
             timestamp: Date.now(),
             note: 'API unavailable - using mock data'
           },
@@ -582,7 +582,7 @@ export default function AdminDashboard() {
               <div className="company-tagline">Monitor. Test. Manage.</div>
             </div>
           </div>
-          <p className="tagline">MCP/API Server Integration Management & Testing Platform</p>
+          <p className="tagline">Financial API Integration Management & Testing Platform</p>
         </header>
 
         {/* Main Dashboard Content */}
@@ -591,7 +591,7 @@ export default function AdminDashboard() {
 
             {/* Status Monitor Widget */}
             <AdminStatusMonitor
-              servers={serverConfigs.map(s => s.id)}
+              dataSources={dataSourceConfigs.map(ds => ds.id)}
               updateInterval={3000}
             />
 
@@ -622,7 +622,7 @@ export default function AdminDashboard() {
                 maxWidth: '600px',
                 margin: '0 auto'
               }}>
-                Monitor and test connections to all 12 MCP data servers
+                Monitor and test connections to all 12 financial data APIs
               </p>
             </div>
 
@@ -657,7 +657,7 @@ export default function AdminDashboard() {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  🗄️ Server Selection
+                  🗄️ Data Source Selection
                 </h3>
 
                 {/* Quick Selection Buttons */}
@@ -687,7 +687,7 @@ export default function AdminDashboard() {
                       e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)'
                     }}
                   >
-                    Select All ({serverConfigs.length})
+                    Select All ({dataSourceConfigs.length})
                   </button>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
@@ -792,21 +792,21 @@ export default function AdminDashboard() {
                   padding: '0.5rem 0.25rem', // Reduce horizontal padding to give more space
                   marginRight: '-0.25rem' // Compensate for scrollbar space
                 }}>
-                  {serverConfigs.map((server) => (
+                  {dataSourceConfigs.map((dataSource) => (
                     <div
-                      key={server.id}
+                      key={dataSource.id}
                       data-testid="server-card"
-                      data-server-id={server.id}
+                      data-server-id={dataSource.id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.75rem',
                         padding: '0.75rem',
                         marginBottom: '0.5rem',
-                        background: selectedServers.includes(server.id)
+                        background: selectedDataSources.includes(dataSource.id)
                           ? 'rgba(99, 102, 241, 0.15)'
                           : 'rgba(255, 255, 255, 0.05)',
-                        border: selectedServers.includes(server.id)
+                        border: selectedDataSources.includes(dataSource.id)
                           ? '1px solid rgba(99, 102, 241, 0.4)'
                           : '1px solid rgba(255, 255, 255, 0.1)',
                         borderRadius: '10px',
@@ -816,25 +816,25 @@ export default function AdminDashboard() {
                       onClick={(e) => {
                         // Only toggle test selection if clicking on the main area, not the toggle component
                         if (!(e.target as HTMLElement).closest('[role="switch"]')) {
-                          handleServerToggle(server.id)
+                          handleServerToggle(dataSource.id)
                         }
                       }}
                       onMouseEnter={(e) => {
-                        if (!selectedServers.includes(server.id)) {
+                        if (!selectedDataSources.includes(dataSource.id)) {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (!selectedServers.includes(server.id)) {
+                        if (!selectedDataSources.includes(dataSource.id)) {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
                         }
                       }}
                     >
                       <input
                         type="checkbox"
-                        checked={selectedServers.includes(server.id)}
-                        disabled={!server.enabled}
-                        onChange={() => handleServerToggle(server.id)}
+                        checked={selectedDataSources.includes(dataSource.id)}
+                        disabled={!dataSource.enabled}
+                        onChange={() => handleServerToggle(dataSource.id)}
                         style={{
                           width: '16px',
                           height: '16px',
@@ -853,7 +853,7 @@ export default function AdminDashboard() {
                           minWidth: '20px',
                           textAlign: 'center'
                         }}>
-                          {getCategoryIcon(server.category)}
+                          {getCategoryIcon(dataSource.category)}
                         </span>
                         <div style={{
                           flex: 1,
@@ -869,7 +869,7 @@ export default function AdminDashboard() {
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
                           }}>
-                            {server.name}
+                            {dataSource.name}
                           </div>
                           <div style={{
                             fontSize: '0.75rem',
@@ -878,7 +878,7 @@ export default function AdminDashboard() {
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
                           }}>
-                            {server.description}
+                            {dataSource.description}
                           </div>
                         </div>
 
@@ -889,11 +889,11 @@ export default function AdminDashboard() {
                           justifyContent: 'flex-end',
                           minWidth: '140px' // Fixed width for consistent alignment
                         }}>
-                          <ServerToggle
-                            serverId={server.id}
-                            serverName={server.name}
-                            enabled={enabledServers.has(server.id)}
-                            status={enabledServers.has(server.id) ? server.status : 'offline'}
+                          <DataSourceToggle
+                            dataSourceId={dataSource.id}
+                            dataSourceName={dataSource.name}
+                            enabled={enabledServers.has(dataSource.id)}
+                            status={enabledServers.has(dataSource.id) ? dataSource.status : 'offline'}
                             onToggle={handleServerEnableToggle}
                           />
                         </div>
@@ -916,7 +916,7 @@ export default function AdminDashboard() {
                     fontWeight: '600',
                     color: 'rgba(99, 102, 241, 0.9)'
                   }}>
-                    {selectedServers.length} of {serverConfigs.length} servers selected
+                    {selectedDataSources.length} of {dataSourceConfigs.length} data sources selected
                   </div>
                 </div>
               </div>
@@ -1082,14 +1082,14 @@ export default function AdminDashboard() {
                 {/* Run Tests Button */}
                 <button
                   onClick={handleRunTests}
-                  disabled={selectedServers.length === 0 || isRunningTests}
+                  disabled={selectedDataSources.length === 0 || isRunningTests}
                   style={{
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '0.75rem',
-                    background: selectedServers.length > 0 && !isRunningTests ?
+                    background: selectedDataSources.length > 0 && !isRunningTests ?
                       'linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(59, 130, 246, 0.9))' :
                       'rgba(100, 100, 100, 0.3)',
                     color: 'white',
@@ -1098,21 +1098,21 @@ export default function AdminDashboard() {
                     borderRadius: '12px',
                     fontSize: '1.1rem',
                     fontWeight: '600',
-                    cursor: selectedServers.length > 0 && !isRunningTests ? 'pointer' : 'not-allowed',
+                    cursor: selectedDataSources.length > 0 && !isRunningTests ? 'pointer' : 'not-allowed',
                     transition: 'all 0.3s ease',
-                    boxShadow: selectedServers.length > 0 && !isRunningTests ?
+                    boxShadow: selectedDataSources.length > 0 && !isRunningTests ?
                       '0 8px 25px rgba(99, 102, 241, 0.4)' :
                       '0 4px 15px rgba(0, 0, 0, 0.2)',
                     marginBottom: '1rem'
                   }}
                   onMouseEnter={(e) => {
-                    if (selectedServers.length > 0 && !isRunningTests) {
+                    if (selectedDataSources.length > 0 && !isRunningTests) {
                       e.currentTarget.style.transform = 'translateY(-2px)'
                       e.currentTarget.style.boxShadow = '0 12px 35px rgba(99, 102, 241, 0.5)'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (selectedServers.length > 0 && !isRunningTests) {
+                    if (selectedDataSources.length > 0 && !isRunningTests) {
                       e.currentTarget.style.transform = 'translateY(0)'
                       e.currentTarget.style.boxShadow = '0 8px 25px rgba(99, 102, 241, 0.4)'
                     }
@@ -1126,12 +1126,12 @@ export default function AdminDashboard() {
                       }}>
                         🔄
                       </span>
-                      Testing {selectedServers.length} servers...
+                      Testing {selectedDataSources.length} data sources...
                     </>
                   ) : (
                     <>
                       <span style={{ fontSize: '1.2rem' }}>🚀</span>
-                      Run Tests ({selectedServers.length} servers)
+                      Run Tests ({selectedDataSources.length} data sources)
                     </>
                   )}
                 </button>
@@ -1150,7 +1150,7 @@ export default function AdminDashboard() {
                       color: 'rgba(99, 102, 241, 0.9)',
                       marginBottom: '0.5rem'
                     }}>
-                      Progress: {testResults.length}/{selectedServers.length} servers tested
+                      Progress: {testResults.length}/{selectedDataSources.length} data sources tested
                     </div>
                     <div style={{
                       width: '100%',
@@ -1160,7 +1160,7 @@ export default function AdminDashboard() {
                       overflow: 'hidden'
                     }}>
                       <div style={{
-                        width: `${(testResults.length / selectedServers.length) * 100}%`,
+                        width: `${(testResults.length / selectedDataSources.length) * 100}%`,
                         height: '100%',
                         background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.8), rgba(59, 130, 246, 0.8))',
                         transition: 'width 0.3s ease'

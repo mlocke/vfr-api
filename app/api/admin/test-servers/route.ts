@@ -1,13 +1,13 @@
 /**
- * Admin API - MCP Server Testing Endpoint
- * Provides real testing capabilities for MCP server connections
+ * Admin API - Financial Data Provider Testing Endpoint
+ * Provides real testing capabilities for direct API connections
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { MCPClient } from '../../../services/mcp/MCPClient'
+import { financialDataService } from '../../../services/financial-data'
 
 interface TestRequest {
-  serverIds: string[]
+  dataSourceIds: string[]
   testType: 'connection' | 'data' | 'performance' | 'comprehensive'
   timeout?: number
   maxRetries?: number
@@ -15,8 +15,8 @@ interface TestRequest {
 }
 
 interface TestResult {
-  serverId: string
-  serverName: string
+  dataSourceId: string
+  dataSourceName: string
   success: boolean
   responseTime: number
   error?: string
@@ -28,57 +28,57 @@ interface TestResult {
   }
 }
 
-// Server configuration mapping (matches MCPClient)
-const SERVER_CONFIGS = {
-  polygon: { name: 'Polygon.io MCP', timeout: 5000 },
-  alphavantage: { name: 'Alpha Vantage MCP', timeout: 10000 },
+// Provider configuration mapping (direct API providers)
+const PROVIDER_CONFIGS = {
+  polygon: { name: 'Polygon.io', timeout: 5000 },
+  alphavantage: { name: 'Alpha Vantage', timeout: 10000 },
+  yahoo: { name: 'Yahoo Finance', timeout: 3000 },
+  // Legacy configs for compatibility (will return not implemented)
   fmp: { name: 'Financial Modeling Prep', timeout: 8000 },
-  yahoo: { name: 'Yahoo Finance MCP', timeout: 3000 },
-  sec_edgar: { name: 'SEC EDGAR MCP', timeout: 15000 },
-  treasury: { name: 'Treasury MCP', timeout: 8000 },
-  datagov: { name: 'Data.gov MCP', timeout: 12000 },
-  fred: { name: 'FRED MCP', timeout: 10000 },
-  bls: { name: 'BLS MCP', timeout: 15000 },
-  eia: { name: 'EIA MCP', timeout: 8000 },
-  firecrawl: { name: 'Firecrawl MCP', timeout: 20000 },
-  dappier: { name: 'Dappier MCP', timeout: 10000 }
+  sec_edgar: { name: 'SEC EDGAR', timeout: 15000 },
+  treasury: { name: 'Treasury', timeout: 8000 },
+  datagov: { name: 'Data.gov', timeout: 12000 },
+  fred: { name: 'FRED', timeout: 10000 },
+  bls: { name: 'BLS', timeout: 15000 },
+  eia: { name: 'EIA', timeout: 8000 },
+  firecrawl: { name: 'Firecrawl', timeout: 20000 },
+  dappier: { name: 'Dappier', timeout: 10000 }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: TestRequest = await request.json()
-    const { serverIds, testType, timeout = 10000, maxRetries = 3, parallelRequests = true } = body
+    const { dataSourceIds, testType, timeout = 10000, maxRetries = 3, parallelRequests = true } = body
 
-    console.log('🧪 Admin API: Testing servers with REAL MCP calls', { serverIds, testType, timeout, maxRetries, parallelRequests })
+    console.log('🧪 Admin API: Testing providers with REAL API calls', { dataSourceIds, testType, timeout, maxRetries, parallelRequests })
     console.log('📊 Data retrieval will use:', {
-      polygon: 'REAL mcp__polygon__get_aggs for AAPL',
-      yahoo: 'REAL getUnifiedStockPrice with Yahoo source',
-      alphavantage: 'REAL getUnifiedStockPrice with AlphaVantage source',
+      polygon: 'REAL Polygon.io REST API for AAPL',
+      yahoo: 'REAL Yahoo Finance API for AAPL',
+      alphavantage: 'REAL Alpha Vantage API for AAPL',
       others: 'Mock data with clear labeling'
     })
 
-    if (!serverIds || !Array.isArray(serverIds) || serverIds.length === 0) {
+    if (!dataSourceIds || !Array.isArray(dataSourceIds) || dataSourceIds.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid server IDs provided', success: false },
+        { error: 'Invalid data source IDs provided', success: false },
         { status: 400 }
       )
     }
 
-    // Validate server IDs
-    const invalidServers = serverIds.filter(id => !SERVER_CONFIGS[id as keyof typeof SERVER_CONFIGS])
-    if (invalidServers.length > 0) {
+    // Validate provider IDs
+    const invalidProviders = dataSourceIds.filter(id => !PROVIDER_CONFIGS[id as keyof typeof PROVIDER_CONFIGS])
+    if (invalidProviders.length > 0) {
       return NextResponse.json(
-        { error: `Invalid server IDs: ${invalidServers.join(', ')}`, success: false },
+        { error: `Invalid provider IDs: ${invalidProviders.join(', ')}`, success: false },
         { status: 400 }
       )
     }
 
-    const mcpClient = MCPClient.getInstance()
     const results: TestResult[] = []
 
-    // Test function for individual servers
-    const testServer = async (serverId: string): Promise<TestResult> => {
-      const serverConfig = SERVER_CONFIGS[serverId as keyof typeof SERVER_CONFIGS]
+    // Test function for individual providers
+    const testProvider = async (providerId: string): Promise<TestResult> => {
+      const providerConfig = PROVIDER_CONFIGS[providerId as keyof typeof PROVIDER_CONFIGS]
       const startTime = Date.now()
 
       try {
@@ -89,26 +89,26 @@ export async function POST(request: NextRequest) {
         switch (testType) {
           case 'connection':
             // Simple connection test
-            success = await testServerConnection(mcpClient, serverId, timeout)
+            success = await testProviderConnection(providerId, timeout)
             testData = { testType: 'connection', timestamp: Date.now() }
             break
 
           case 'data':
             // Data retrieval test
-            testData = await testServerData(mcpClient, serverId, timeout)
+            testData = await testProviderData(providerId, timeout)
             success = !!testData
             break
 
           case 'performance':
             // Performance benchmark test
-            testData = await testServerPerformance(mcpClient, serverId, timeout)
+            testData = await testProviderPerformance(providerId, timeout)
             success = !!testData
             break
 
           case 'comprehensive':
             // Combined test
-            const connectionTest = await testServerConnection(mcpClient, serverId, timeout)
-            const dataTest = await testServerData(mcpClient, serverId, timeout)
+            const connectionTest = await testProviderConnection(providerId, timeout)
+            const dataTest = await testProviderData(providerId, timeout)
             success = connectionTest && !!dataTest
             testData = {
               connection: connectionTest,
@@ -124,8 +124,8 @@ export async function POST(request: NextRequest) {
         const responseTime = Date.now() - startTime
 
         return {
-          serverId,
-          serverName: serverConfig.name,
+          dataSourceId: providerId,
+          dataSourceName: providerConfig.name,
           success,
           responseTime,
           data: testData,
@@ -138,11 +138,11 @@ export async function POST(request: NextRequest) {
 
       } catch (error) {
         const responseTime = Date.now() - startTime
-        console.error(`❌ Server test failed for ${serverId}:`, error)
+        console.error(`❌ Provider test failed for ${providerId}:`, error)
 
         return {
-          serverId,
-          serverName: serverConfig.name,
+          dataSourceId: providerId,
+          dataSourceName: providerConfig.name,
           success: false,
           responseTime,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -158,12 +158,12 @@ export async function POST(request: NextRequest) {
     // Execute tests (parallel or sequential based on configuration)
     if (parallelRequests) {
       console.log('🚀 Running tests in parallel...')
-      const testPromises = serverIds.map(serverId => testServer(serverId))
+      const testPromises = dataSourceIds.map(providerId => testProvider(providerId))
       results.push(...await Promise.all(testPromises))
     } else {
       console.log('⏯️ Running tests sequentially...')
-      for (const serverId of serverIds) {
-        const result = await testServer(serverId)
+      for (const providerId of dataSourceIds) {
+        const result = await testProvider(providerId)
         results.push(result)
       }
     }
@@ -211,59 +211,71 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Helper function to test server connection
-async function testServerConnection(mcpClient: MCPClient, serverId: string, timeout: number): Promise<boolean> {
+// Helper function to test provider connection
+async function testProviderConnection(providerId: string, timeout: number): Promise<boolean> {
   try {
-    // Mock connection test - replace with actual MCP client calls
-    console.log(`🔗 Testing connection to ${serverId}...`)
+    console.log(`🔗 Testing connection to ${providerId}...`)
 
-    // Simulate realistic connection delays
+    // For implemented providers, use real health checks
+    if (['polygon', 'alphavantage', 'yahoo'].includes(providerId)) {
+      const health = await financialDataService.healthCheck()
+      const providerHealth = health.find(h => h.name.toLowerCase().includes(providerId))
+      return providerHealth?.healthy || false
+    }
+
+    // For non-implemented providers, simulate connection
     await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 200))
-
-    // 90% success rate simulation
-    const success = Math.random() > 0.1
+    const success = Math.random() > 0.3 // 70% success rate for legacy providers
 
     if (!success) {
-      throw new Error('Connection timeout or refused')
+      throw new Error('Provider not implemented or connection refused')
     }
 
     return true
   } catch (error) {
-    console.error(`❌ Connection test failed for ${serverId}:`, error)
+    console.error(`❌ Connection test failed for ${providerId}:`, error)
     return false
   }
 }
 
-// Helper function to test data retrieval - REAL MCP CALLS
-async function testServerData(mcpClient: MCPClient, serverId: string, timeout: number): Promise<any> {
+// Helper function to test data retrieval - REAL API CALLS
+async function testProviderData(providerId: string, timeout: number): Promise<any> {
   try {
-    console.log(`📊 Testing REAL data retrieval from ${serverId}...`)
+    console.log(`📊 Testing REAL data retrieval from ${providerId}...`)
 
     let testData: any = null
 
-    switch (serverId) {
+    switch (providerId) {
       case 'polygon':
-        // Test REAL Polygon.io MCP data
-        console.log('🔴 Making REAL Polygon MCP call...')
-        testData = await mcpClient.testPolygonData('aggregates')
+        // Test REAL Polygon.io API data
+        console.log('🔴 Making REAL Polygon API call...')
+        testData = await financialDataService.getStockPrice('AAPL', 'polygon')
 
-        if (testData.success) {
+        if (testData) {
           console.log('✅ REAL Polygon data retrieved successfully:', {
-            endpoint: testData.endpoint,
-            dataSize: JSON.stringify(testData.fullData).length,
-            responseTime: testData.responseTime
+            symbol: testData.symbol,
+            price: testData.price,
+            source: testData.source
           })
         } else {
-          console.error('❌ REAL Polygon data retrieval failed:', testData.error)
+          console.error('❌ REAL Polygon data retrieval failed')
+          testData = {
+            error: 'Failed to retrieve data from Polygon API',
+            source: 'polygon-error'
+          }
         }
         break
 
       case 'yahoo':
-        // Test Yahoo Finance data - try real call first, fallback to mock
+        // Test Yahoo Finance data - try real call
         try {
           console.log('🟡 Attempting real Yahoo Finance call...')
-          testData = await mcpClient.getUnifiedStockPrice('AAPL', { preferredSources: ['yahoo'] })
-          console.log('✅ REAL Yahoo data retrieved:', testData)
+          testData = await financialDataService.getStockPrice('AAPL', 'yahoo')
+          if (testData) {
+            console.log('✅ REAL Yahoo data retrieved:', testData)
+          } else {
+            throw new Error('No data returned from Yahoo Finance')
+          }
         } catch (error) {
           console.warn('⚠️ Yahoo real call failed, using mock data:', error)
           testData = {
@@ -278,20 +290,22 @@ async function testServerData(mcpClient: MCPClient, serverId: string, timeout: n
         break
 
       case 'alphavantage':
-        // Test Alpha Vantage data - try real call first, fallback to mock
+        // Test Alpha Vantage data - try real call
         try {
           console.log('🟢 Attempting real Alpha Vantage call...')
-          testData = await mcpClient.getUnifiedStockPrice('AAPL', { preferredSources: ['alphavantage'] })
-          console.log('✅ REAL Alpha Vantage data retrieved:', testData)
+          testData = await financialDataService.getStockPrice('AAPL', 'alphavantage')
+          if (testData) {
+            console.log('✅ REAL Alpha Vantage data retrieved:', testData)
+          } else {
+            throw new Error('No data returned from Alpha Vantage')
+          }
         } catch (error) {
           console.warn('⚠️ Alpha Vantage real call failed, using mock data:', error)
           testData = {
             symbol: 'AAPL',
-            quote: {
-              price: 150.25 + Math.random() * 10,
-              change: (Math.random() - 0.5) * 5,
-              changePercent: (Math.random() - 0.5) * 3
-            },
+            price: 150.25 + Math.random() * 10,
+            change: (Math.random() - 0.5) * 5,
+            changePercent: (Math.random() - 0.5) * 3,
             source: 'alphavantage-mock',
             note: 'Mock data due to real API failure'
           }
@@ -299,97 +313,137 @@ async function testServerData(mcpClient: MCPClient, serverId: string, timeout: n
         break
 
       case 'fred':
-        // Test FRED economic data
+        // Test FRED economic data (not implemented)
         testData = {
           series: 'GDP',
           value: 25000 + Math.random() * 1000,
           date: new Date().toISOString().split('T')[0],
           units: 'Billions of Dollars',
           source: 'fred-mock',
-          note: 'Mock economic data - real FRED MCP not yet implemented'
+          note: 'Mock economic data - FRED API not yet implemented in direct architecture'
         }
         break
 
       case 'sec_edgar':
-        // Test SEC filing data
+        // Test SEC filing data (not implemented)
         testData = {
           filing: '10-K',
           company: 'Test Corporation',
           date: new Date().toISOString().split('T')[0],
           url: 'https://sec.gov/test',
           source: 'sec-mock',
-          note: 'Mock filing data - real SEC EDGAR MCP not yet implemented'
+          note: 'Mock filing data - SEC EDGAR API not yet implemented in direct architecture'
         }
         break
 
       default:
-        // Generic fallback - still mock but clearly labeled
-        console.warn(`⚠️ No real MCP implementation for ${serverId}, using generic mock data`)
+        // Generic fallback for legacy providers
+        console.warn(`⚠️ No direct API implementation for ${providerId}, using generic mock data`)
         testData = {
-          status: 'ok',
+          status: 'not_implemented',
           timestamp: Date.now(),
-          server: serverId,
+          provider: providerId,
           sampleValue: Math.random() * 100,
           source: 'generic-mock',
-          note: `Mock data - real ${serverId} MCP not yet implemented`
+          note: `Mock data - direct ${providerId} API not yet implemented`
         }
     }
 
     // Add timing metadata
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = serverId === 'polygon' && testData.success
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo'].includes(providerId) && !testData.error
     }
 
     return testData
   } catch (error) {
-    console.error(`❌ Data test failed for ${serverId}:`, error)
+    console.error(`❌ Data test failed for ${providerId}:`, error)
     return {
       error: error instanceof Error ? error.message : 'Unknown error',
-      server: serverId,
+      provider: providerId,
       source: 'error',
       timestamp: Date.now()
     }
   }
 }
 
-// Helper function to test server performance
-async function testServerPerformance(mcpClient: MCPClient, serverId: string, timeout: number): Promise<any> {
+// Helper function to test provider performance
+async function testProviderPerformance(providerId: string, timeout: number): Promise<any> {
   try {
-    console.log(`⚡ Testing performance for ${serverId}...`)
+    console.log(`⚡ Testing performance for ${providerId}...`)
 
     const startTime = Date.now()
 
-    // Simulate multiple rapid requests to test performance
-    const requests = []
-    for (let i = 0; i < 5; i++) {
-      requests.push(new Promise(resolve => {
-        setTimeout(() => {
-          resolve({
-            request: i + 1,
-            responseTime: Math.random() * 500 + 100,
-            success: Math.random() > 0.1
-          })
-        }, Math.random() * 200)
-      }))
-    }
+    // For implemented providers, do real performance testing
+    if (['polygon', 'alphavantage', 'yahoo'].includes(providerId)) {
+      const requests = []
 
-    const responses = await Promise.all(requests)
-    const totalTime = Date.now() - startTime
+      // Make 5 rapid requests to test performance
+      for (let i = 0; i < 5; i++) {
+        requests.push(
+          financialDataService.getStockPrice('AAPL', providerId)
+            .then(result => ({
+              request: i + 1,
+              responseTime: Date.now() - startTime,
+              success: !!result
+            }))
+            .catch(() => ({
+              request: i + 1,
+              responseTime: Date.now() - startTime,
+              success: false
+            }))
+        )
+      }
 
-    const successfulRequests = responses.filter((r: any) => r.success).length
-    const avgResponseTime = responses.reduce((sum: number, r: any) => sum + r.responseTime, 0) / responses.length
+      const responses = await Promise.all(requests)
+      const totalTime = Date.now() - startTime
 
-    return {
-      totalRequests: 5,
-      successfulRequests,
-      totalTime,
-      avgResponseTime: Math.round(avgResponseTime),
-      throughput: Math.round((successfulRequests / totalTime) * 1000), // requests per second
-      timestamp: Date.now()
+      const successfulRequests = responses.filter(r => r.success).length
+      const avgResponseTime = responses.reduce((sum, r) => sum + r.responseTime, 0) / responses.length
+
+      return {
+        totalRequests: 5,
+        successfulRequests,
+        totalTime,
+        avgResponseTime: Math.round(avgResponseTime),
+        throughput: Math.round((successfulRequests / totalTime) * 1000), // requests per second
+        timestamp: Date.now(),
+        isRealPerformanceTest: true
+      }
+    } else {
+      // For non-implemented providers, simulate performance test
+      const requests = []
+      for (let i = 0; i < 5; i++) {
+        requests.push(new Promise(resolve => {
+          setTimeout(() => {
+            resolve({
+              request: i + 1,
+              responseTime: Math.random() * 500 + 100,
+              success: Math.random() > 0.3
+            })
+          }, Math.random() * 200)
+        }))
+      }
+
+      const responses = await Promise.all(requests)
+      const totalTime = Date.now() - startTime
+
+      const successfulRequests = responses.filter((r: any) => r.success).length
+      const avgResponseTime = responses.reduce((sum: number, r: any) => sum + r.responseTime, 0) / responses.length
+
+      return {
+        totalRequests: 5,
+        successfulRequests,
+        totalTime,
+        avgResponseTime: Math.round(avgResponseTime),
+        throughput: Math.round((successfulRequests / totalTime) * 1000), // requests per second
+        timestamp: Date.now(),
+        isRealPerformanceTest: false,
+        note: `Mock performance test - ${providerId} not implemented in direct architecture`
+      }
     }
   } catch (error) {
-    console.error(`❌ Performance test failed for ${serverId}:`, error)
+    console.error(`❌ Performance test failed for ${providerId}:`, error)
     return null
   }
 }

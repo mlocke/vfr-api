@@ -1,6 +1,6 @@
 /**
  * Admin Status Monitor Component
- * Real-time status monitoring widget for the admin dashboard
+ * Real-time status monitoring widget for API data sources
  */
 
 'use client'
@@ -17,58 +17,58 @@ interface ServerStatus {
 }
 
 interface StatusMonitorProps {
-  servers: string[]
+  dataSources: string[]
   updateInterval?: number
 }
 
-export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: StatusMonitorProps) {
-  const [serverStatuses, setServerStatuses] = useState<Map<string, ServerStatus>>(new Map())
+export default function AdminStatusMonitor({ dataSources, updateInterval = 5000 }: StatusMonitorProps) {
+  const [dataSourceStatuses, setDataSourceStatuses] = useState<Map<string, ServerStatus>>(new Map())
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<number>(0)
 
-  // Server name mapping
-  const serverNames: Record<string, string> = {
-    polygon: 'Polygon.io',
-    alphavantage: 'Alpha Vantage',
-    fmp: 'FMP',
-    yahoo: 'Yahoo Finance',
-    sec_edgar: 'SEC EDGAR',
-    treasury: 'Treasury',
-    datagov: 'Data.gov',
-    fred: 'FRED',
-    bls: 'BLS',
-    eia: 'EIA',
-    firecrawl: 'Firecrawl',
-    dappier: 'Dappier'
+  // Data source name mapping
+  const dataSourceNames: Record<string, string> = {
+    polygon: 'Polygon.io API',
+    alphavantage: 'Alpha Vantage API',
+    fmp: 'FMP API',
+    yahoo: 'Yahoo Finance API',
+    sec_edgar: 'SEC EDGAR API',
+    treasury: 'Treasury API',
+    datagov: 'Data.gov API',
+    fred: 'FRED API',
+    bls: 'BLS API',
+    eia: 'EIA API',
+    firecrawl: 'Firecrawl API',
+    dappier: 'Dappier API'
   }
 
-  // Initialize server statuses
+  // Initialize data source statuses
   useEffect(() => {
     const initialStatuses = new Map<string, ServerStatus>()
-    servers.forEach(serverId => {
-      initialStatuses.set(serverId, {
-        id: serverId,
-        name: serverNames[serverId] || serverId,
+    dataSources.forEach(dataSourceId => {
+      initialStatuses.set(dataSourceId, {
+        id: dataSourceId,
+        name: dataSourceNames[dataSourceId] || dataSourceId,
         status: 'online',
         responseTime: Math.floor(Math.random() * 1000) + 100,
         lastCheck: Date.now(),
         uptime: 99.0 + Math.random() * 0.9
       })
     })
-    setServerStatuses(initialStatuses)
+    setDataSourceStatuses(initialStatuses)
     setLastUpdate(Date.now())
-  }, [servers])
+  }, [dataSources])
 
   // Start/stop monitoring
   useEffect(() => {
     if (!isMonitoring) return
 
     const interval = setInterval(() => {
-      setServerStatuses(prevStatuses => {
+      setDataSourceStatuses(prevStatuses => {
         const newStatuses = new Map(prevStatuses)
 
-        servers.forEach(serverId => {
-          const currentStatus = newStatuses.get(serverId)
+        dataSources.forEach(dataSourceId => {
+          const currentStatus = newStatuses.get(dataSourceId)
           if (!currentStatus) return
 
           // Simulate status changes
@@ -78,7 +78,7 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
           if (rand < 0.02) newStatus = 'offline'
           else if (rand < 0.08) newStatus = 'degraded'
 
-          newStatuses.set(serverId, {
+          newStatuses.set(dataSourceId, {
             ...currentStatus,
             status: newStatus,
             responseTime: newStatus === 'offline' ? undefined : Math.floor(Math.random() * 2000) + 100,
@@ -93,7 +93,7 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
     }, updateInterval)
 
     return () => clearInterval(interval)
-  }, [isMonitoring, servers, updateInterval])
+  }, [isMonitoring, dataSources, updateInterval])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -113,9 +113,9 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
     }
   }
 
-  const onlineCount = Array.from(serverStatuses.values()).filter(s => s.status === 'online').length
-  const degradedCount = Array.from(serverStatuses.values()).filter(s => s.status === 'degraded').length
-  const offlineCount = Array.from(serverStatuses.values()).filter(s => s.status === 'offline').length
+  const onlineCount = Array.from(dataSourceStatuses.values()).filter(s => s.status === 'online').length
+  const degradedCount = Array.from(dataSourceStatuses.values()).filter(s => s.status === 'degraded').length
+  const offlineCount = Array.from(dataSourceStatuses.values()).filter(s => s.status === 'offline').length
 
   return (
     <div style={{
@@ -143,7 +143,7 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
           alignItems: 'center',
           gap: '0.5rem'
         }}>
-          📡 Server Status Monitor
+          📡 API Data Source Monitor
         </h3>
 
         <button
@@ -230,7 +230,7 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
           borderRadius: '8px'
         }}>
           <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#6366f1' }}>
-            {Math.round((onlineCount / servers.length) * 100)}%
+            {Math.round((onlineCount / dataSources.length) * 100)}%
           </div>
           <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.7)' }}>
             Uptime
@@ -247,22 +247,22 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
         overflowY: 'auto',
         padding: '0.5rem'
       }}>
-        {Array.from(serverStatuses.values()).map((server) => (
+        {Array.from(dataSourceStatuses.values()).map((dataSource) => (
           <div
-            key={server.id}
+            key={dataSource.id}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '0.5rem 0.75rem',
               background: 'rgba(255, 255, 255, 0.05)',
-              border: `1px solid ${getStatusColor(server.status)}30`,
+              border: `1px solid ${getStatusColor(dataSource.status)}30`,
               borderRadius: '6px',
               transition: 'all 0.3s ease'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '0.8rem' }}>{getStatusIcon(server.status)}</span>
+              <span style={{ fontSize: '0.8rem' }}>{getStatusIcon(dataSource.status)}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontSize: '0.8rem',
@@ -272,14 +272,14 @@ export default function AdminStatusMonitor({ servers, updateInterval = 5000 }: S
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}>
-                  {server.name}
+                  {dataSource.name}
                 </div>
-                {server.responseTime && (
+                {dataSource.responseTime && (
                   <div style={{
                     fontSize: '0.7rem',
                     color: 'rgba(255, 255, 255, 0.6)'
                   }}>
-                    {server.responseTime}ms
+                    {dataSource.responseTime}ms
                   </div>
                 )}
               </div>
