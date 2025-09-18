@@ -9,7 +9,7 @@ import { financialDataService } from '../../../services/financial-data'
 
 interface TestRequest {
   dataSourceIds: string[]
-  testType: 'connection' | 'data' | 'performance' | 'comprehensive'
+  testType: 'connection' | 'data' | 'performance' | 'comprehensive' | 'list_api_endpoints'
   timeout?: number
   maxRetries?: number
   parallelRequests?: boolean
@@ -109,6 +109,12 @@ export async function POST(request: NextRequest) {
               data: dataTest,
               timestamp: Date.now()
             }
+            break
+
+          case 'list_api_endpoints':
+            // List available API endpoints for the data source
+            testData = await listDataSourceEndpoints(dataSourceId)
+            success = !!testData
             break
 
           default:
@@ -279,6 +285,189 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       error: error instanceof Error ? error.message : 'Unknown error',
       dataSource: dataSourceId,
       source: 'error',
+      timestamp: Date.now()
+    }
+  }
+}
+
+// Helper function to list available API endpoints for a data source
+async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
+  try {
+    console.log(`📋 Listing API endpoints for ${dataSourceId}...`)
+
+    // Define available endpoints for each data source
+    const endpointMappings: Record<string, any> = {
+      polygon: {
+        baseUrl: 'https://api.polygon.io',
+        endpoints: [
+          { path: '/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}', description: 'Stock aggregates (OHLC)', method: 'GET' },
+          { path: '/v3/reference/tickers', description: 'List all tickers', method: 'GET' },
+          { path: '/v2/last/trade/{ticker}', description: 'Last trade for ticker', method: 'GET' },
+          { path: '/v2/snapshot/locale/us/markets/stocks/tickers', description: 'Market snapshot', method: 'GET' },
+          { path: '/v3/reference/financials', description: 'Company financials', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://polygon.io/docs',
+        rateLimit: '5 requests per minute (free tier)'
+      },
+      alphavantage: {
+        baseUrl: 'https://www.alphavantage.co',
+        endpoints: [
+          { path: '/query?function=TIME_SERIES_DAILY', description: 'Daily time series', method: 'GET' },
+          { path: '/query?function=GLOBAL_QUOTE', description: 'Real-time quote', method: 'GET' },
+          { path: '/query?function=OVERVIEW', description: 'Company overview', method: 'GET' },
+          { path: '/query?function=INCOME_STATEMENT', description: 'Income statement', method: 'GET' },
+          { path: '/query?function=BALANCE_SHEET', description: 'Balance sheet', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://www.alphavantage.co/documentation/',
+        rateLimit: '5 requests per minute (free tier)'
+      },
+      yahoo: {
+        baseUrl: 'https://query1.finance.yahoo.com',
+        endpoints: [
+          { path: '/v8/finance/chart/{symbol}', description: 'Stock chart data', method: 'GET' },
+          { path: '/v10/finance/quoteSummary/{symbol}', description: 'Quote summary', method: 'GET' },
+          { path: '/v1/finance/search', description: 'Symbol search', method: 'GET' },
+          { path: '/v7/finance/options/{symbol}', description: 'Options data', method: 'GET' }
+        ],
+        authentication: 'No API key required',
+        documentation: 'Unofficial API (reverse-engineered)',
+        rateLimit: 'Rate limiting enforced by Yahoo'
+      },
+      fmp: {
+        baseUrl: 'https://financialmodelingprep.com/api',
+        endpoints: [
+          { path: '/v3/quote/{symbol}', description: 'Real-time stock quote', method: 'GET' },
+          { path: '/v3/income-statement/{symbol}', description: 'Income statement', method: 'GET' },
+          { path: '/v3/balance-sheet-statement/{symbol}', description: 'Balance sheet', method: 'GET' },
+          { path: '/v3/cash-flow-statement/{symbol}', description: 'Cash flow statement', method: 'GET' },
+          { path: '/v3/financial-ratios/{symbol}', description: 'Financial ratios', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://financialmodelingprep.com/developer/docs',
+        rateLimit: '250 requests per day (free tier)'
+      },
+      sec_edgar: {
+        baseUrl: 'https://data.sec.gov/api',
+        endpoints: [
+          { path: '/xbrl/companyfacts/CIK{cik}.json', description: 'Company facts', method: 'GET' },
+          { path: '/xbrl/companyconcept/CIK{cik}/us-gaap/{tag}.json', description: 'Company concept', method: 'GET' },
+          { path: '/xbrl/frames/us-gaap/{tag}/USD/{period}.json', description: 'XBRL frames', method: 'GET' },
+          { path: '/submissions/CIK{cik}.json', description: 'Company submissions', method: 'GET' }
+        ],
+        authentication: 'User-Agent header required',
+        documentation: 'https://www.sec.gov/edgar/sec-api-documentation',
+        rateLimit: '10 requests per second'
+      },
+      treasury: {
+        baseUrl: 'https://api.fiscaldata.treasury.gov',
+        endpoints: [
+          { path: '/services/api/fiscal_service/v1/accounting/od/debt_to_penny', description: 'Daily treasury debt', method: 'GET' },
+          { path: '/services/api/fiscal_service/v1/accounting/od/avg_interest_rates', description: 'Average interest rates', method: 'GET' },
+          { path: '/services/api/fiscal_service/v1/accounting/od/securities_sales', description: 'Securities sales', method: 'GET' }
+        ],
+        authentication: 'No API key required',
+        documentation: 'https://fiscaldata.treasury.gov/api-documentation/',
+        rateLimit: 'No strict limits mentioned'
+      },
+      fred: {
+        baseUrl: 'https://api.stlouisfed.org/fred',
+        endpoints: [
+          { path: '/series/observations', description: 'Series observations', method: 'GET' },
+          { path: '/series', description: 'Series information', method: 'GET' },
+          { path: '/series/search', description: 'Search series', method: 'GET' },
+          { path: '/category', description: 'Category information', method: 'GET' },
+          { path: '/releases', description: 'Economic releases', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://fred.stlouisfed.org/docs/api/',
+        rateLimit: '120 requests per 60 seconds'
+      },
+      bls: {
+        baseUrl: 'https://api.bls.gov/publicAPI',
+        endpoints: [
+          { path: '/v2/timeseries/data/', description: 'Time series data', method: 'POST' },
+          { path: '/v1/timeseries/data/{seriesid}', description: 'Single series data', method: 'GET' }
+        ],
+        authentication: 'API Key recommended for higher limits',
+        documentation: 'https://www.bls.gov/developers/api_signature_v2.htm',
+        rateLimit: '25 queries per day (unregistered), 500 per day (registered)'
+      },
+      eia: {
+        baseUrl: 'https://api.eia.gov',
+        endpoints: [
+          { path: '/v2/petroleum/pri/spt/data/', description: 'Petroleum spot prices', method: 'GET' },
+          { path: '/v2/natural-gas/pri/fut/data/', description: 'Natural gas futures', method: 'GET' },
+          { path: '/v2/electricity/rto/region-data/data/', description: 'Electricity data', method: 'GET' },
+          { path: '/v2/total-energy/data/', description: 'Total energy statistics', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://www.eia.gov/opendata/documentation.php',
+        rateLimit: 'No strict limits mentioned'
+      },
+      datagov: {
+        baseUrl: 'https://catalog.data.gov/api',
+        endpoints: [
+          { path: '/3/action/package_search', description: 'Search datasets', method: 'GET' },
+          { path: '/3/action/package_show', description: 'Get dataset details', method: 'GET' },
+          { path: '/3/action/resource_show', description: 'Get resource details', method: 'GET' }
+        ],
+        authentication: 'No API key required',
+        documentation: 'https://www.data.gov/developers/apis',
+        rateLimit: 'Standard web scraping limits'
+      },
+      firecrawl: {
+        baseUrl: 'https://api.firecrawl.dev',
+        endpoints: [
+          { path: '/v0/scrape', description: 'Scrape single URL', method: 'POST' },
+          { path: '/v0/crawl', description: 'Crawl website', method: 'POST' },
+          { path: '/v0/crawl/status/{jobId}', description: 'Check crawl status', method: 'GET' },
+          { path: '/v0/search', description: 'Search web', method: 'POST' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://docs.firecrawl.dev/',
+        rateLimit: 'Plan-based limits'
+      },
+      dappier: {
+        baseUrl: 'https://api.dappier.com',
+        endpoints: [
+          { path: '/app/datapoint', description: 'Get real-time data', method: 'GET' },
+          { path: '/app/search', description: 'Search real-time data', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://docs.dappier.com/',
+        rateLimit: 'Plan-based limits'
+      }
+    }
+
+    const endpointInfo = endpointMappings[dataSourceId]
+
+    if (!endpointInfo) {
+      return {
+        dataSource: dataSourceId,
+        error: 'No endpoint information available for this data source',
+        timestamp: Date.now()
+      }
+    }
+
+    return {
+      dataSource: dataSourceId,
+      baseUrl: endpointInfo.baseUrl,
+      endpoints: endpointInfo.endpoints,
+      authentication: endpointInfo.authentication,
+      documentation: endpointInfo.documentation,
+      rateLimit: endpointInfo.rateLimit,
+      totalEndpoints: endpointInfo.endpoints.length,
+      timestamp: Date.now(),
+      testType: 'list_api_endpoints'
+    }
+
+  } catch (error) {
+    console.error(`❌ Failed to list endpoints for ${dataSourceId}:`, error)
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      dataSource: dataSourceId,
       timestamp: Date.now()
     }
   }

@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 
 # Load the image
-img_path = '/Users/michaellocke/WebstormProjects/Home/public/stock-picker/public/veritak_logo_transparent.png'
+img_path = '/Users/michaellocke/WebstormProjects/Home/public/vfr-api/public/veritak_logo_transparent.png'
 img = Image.open(img_path)
 
 print(f"Original image mode: {img.mode}")
@@ -38,13 +38,13 @@ data[gray_mask, 3] = data[gray_mask, 3] // 2  # Reduce alpha by half
 new_img = Image.fromarray(data, 'RGBA')
 
 # Save the truly transparent version
-output_path = '/Users/michaellocke/WebstormProjects/Home/public/stock-picker/public/veritak_logo_truly_transparent.png'
+output_path = '/Users/michaellocke/WebstormProjects/Home/public/vfr-api/public/veritak_logo_truly_transparent.png'
 new_img.save(output_path, 'PNG')
 
 print(f"\nSaved truly transparent logo to: {output_path}")
 print(f"New image mode: {new_img.mode}")
 
 # Also save to assets folder
-assets_output = '/Users/michaellocke/WebstormProjects/Home/public/stock-picker/assets/images/veritak_logo_truly_transparent.png'
+assets_output = '/Users/michaellocke/WebstormProjects/Home/public/vfr-api/assets/images/veritak_logo_truly_transparent.png'
 new_img.save(assets_output, 'PNG')
 print(f"Also saved to: {assets_output}")
