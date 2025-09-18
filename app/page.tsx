@@ -324,7 +324,7 @@ export default function Home() {
                   <div className="data-source-card premium">
                     <div className="source-icon">📊</div>
                     <div className="source-info">
-                      <h4 className="source-name">Polygon.io MCP</h4>
+                      <h4 className="source-name">Polygon.io</h4>
                       <p className="source-desc">Real-time market data</p>
                     </div>
                     <div className="source-status live"></div>
@@ -332,7 +332,7 @@ export default function Home() {
                   <div className="data-source-card premium">
                     <div className="source-icon">🤖</div>
                     <div className="source-info">
-                      <h4 className="source-name">Alpha Vantage MCP</h4>
+                      <h4 className="source-name">Alpha Vantage</h4>
                       <p className="source-desc">AI-optimized intelligence</p>
                     </div>
                     <div className="source-status live"></div>
@@ -348,7 +348,7 @@ export default function Home() {
                   <div className="data-source-card free">
                     <div className="source-icon">💰</div>
                     <div className="source-info">
-                      <h4 className="source-name">Yahoo Finance MCP</h4>
+                      <h4 className="source-name">Yahoo Finance</h4>
                       <p className="source-desc">Comprehensive stock analysis</p>
                     </div>
                     <div className="source-status live"></div>
@@ -356,7 +356,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">🏛️</div>
                     <div className="source-info">
-                      <h4 className="source-name">SEC EDGAR MCP</h4>
+                      <h4 className="source-name">SEC EDGAR</h4>
                       <p className="source-desc">SEC filings & insider trading</p>
                     </div>
                     <div className="source-status live"></div>
@@ -364,7 +364,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">🏦</div>
                     <div className="source-info">
-                      <h4 className="source-name">Treasury MCP</h4>
+                      <h4 className="source-name">Treasury</h4>
                       <p className="source-desc">Treasury yields & federal debt</p>
                     </div>
                     <div className="source-status live"></div>
@@ -372,7 +372,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">📊</div>
                     <div className="source-info">
-                      <h4 className="source-name">Data.gov MCP</h4>
+                      <h4 className="source-name">Data.gov</h4>
                       <p className="source-desc">Government financial datasets</p>
                     </div>
                     <div className="source-status live"></div>
@@ -391,7 +391,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">🏦</div>
                     <div className="source-info">
-                      <h4 className="source-name">FRED MCP</h4>
+                      <h4 className="source-name">FRED</h4>
                       <p className="source-desc">Federal Reserve (800K+ series)</p>
                     </div>
                     <div className="source-status live"></div>
@@ -399,7 +399,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">👥</div>
                     <div className="source-info">
-                      <h4 className="source-name">BLS MCP</h4>
+                      <h4 className="source-name">BLS</h4>
                       <p className="source-desc">Employment & inflation data</p>
                     </div>
                     <div className="source-status live"></div>
@@ -407,7 +407,7 @@ export default function Home() {
                   <div className="data-source-card government">
                     <div className="source-icon">⚡</div>
                     <div className="source-info">
-                      <h4 className="source-name">EIA MCP</h4>
+                      <h4 className="source-name">EIA</h4>
                       <p className="source-desc">Energy market intelligence</p>
                     </div>
                     <div className="source-status live"></div>
@@ -426,7 +426,7 @@ export default function Home() {
                   <div className="data-source-card premium">
                     <div className="source-icon">🕷️</div>
                     <div className="source-info">
-                      <h4 className="source-name">Firecrawl MCP</h4>
+                      <h4 className="source-name">Firecrawl</h4>
                       <p className="source-desc">Web scraping & sentiment</p>
                     </div>
                     <div className="source-status live"></div>
@@ -434,7 +434,7 @@ export default function Home() {
                   <div className="data-source-card premium">
                     <div className="source-icon">🌐</div>
                     <div className="source-info">
-                      <h4 className="source-name">Dappier MCP</h4>
+                      <h4 className="source-name">Dappier</h4>
                       <p className="source-desc">Real-time web intelligence</p>
                     </div>
                     <div className="source-status live"></div>

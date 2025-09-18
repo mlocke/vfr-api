@@ -1,15 +1,15 @@
 /**
- * Admin API Endpoints - Individual Server Management
- * GET /api/admin/servers/[serverId] - Get detailed server configuration
+ * Admin API - Individual Data Source Management
+ * GET /api/admin/data-sources/[dataSourceId] - Get detailed data source configuration
  * Protected route requiring admin authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { serverConfigManager } from '../../../../services/admin/ServerConfigManager'
+import { dataSourceConfigManager } from '../../../../services/admin/DataSourceConfigManager'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> }
+  { params }: { params: Promise<{ dataSourceId: string }> }
 ) {
   try {
     // Extract authorization header
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     // Validate admin access
-    const isAdmin = await serverConfigManager.validateAdminAccess(token)
+    const isAdmin = await dataSourceConfigManager.validateAdminAccess(token)
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Administrator access required' },
@@ -32,20 +32,20 @@ export async function GET(
       )
     }
 
-    const { serverId } = await params
+    const { dataSourceId } = await params
 
     try {
-      const serverConfig = serverConfigManager.getServerConfiguration(serverId)
+      const dataSourceConfig = dataSourceConfigManager.getDataSourceConfiguration(dataSourceId)
 
       return NextResponse.json({
         success: true,
-        data: serverConfig
+        data: dataSourceConfig
       })
 
     } catch (error) {
       return NextResponse.json(
         {
-          error: 'Server not found',
+          error: 'Data source not found',
           details: error instanceof Error ? error.message : 'Unknown error'
         },
         { status: 404 }
@@ -53,10 +53,10 @@ export async function GET(
     }
 
   } catch (error) {
-    console.error('Error fetching server configuration:', error)
+    console.error('Error fetching data source configuration:', error)
     return NextResponse.json(
       {
-        error: 'Failed to fetch server configuration',
+        error: 'Failed to fetch data source configuration',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }

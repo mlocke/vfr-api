@@ -20,6 +20,13 @@ import {
 } from './types'
 import { financialDataService, StockData } from '../financial-data'
 import { SectorOption } from '../../components/SectorDropdown'
+import { AlgorithmIntegration } from './integration/AlgorithmIntegration'
+import { SectorIntegration } from './integration/SectorIntegration'
+import { MockMCPClient as MCPClient, MockDataFusionEngine as DataFusionEngine, QualityScore } from '../types/core-types'
+import { RedisCache } from '../cache/RedisCache'
+import { FactorLibrary } from '../algorithms/FactorLibrary'
+import { AlgorithmCache } from '../algorithms/AlgorithmCache'
+import { SelectionResult, StockScore } from '../algorithms/types'
 
 /**
  * Main Stock Selection Service
@@ -27,7 +34,7 @@ import { SectorOption } from '../../components/SectorDropdown'
 export class StockSelectionService extends EventEmitter implements DataIntegrationInterface {
   private algorithmIntegration: AlgorithmIntegration
   private sectorIntegration: SectorIntegration
-  private config: SelectionConfigManager
+  private config: any
   private mcpClient: MCPClient
   private dataFusion: DataFusionEngine
   private cache: RedisCache
@@ -45,7 +52,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.mcpClient = mcpClient
     this.dataFusion = dataFusion
     this.cache = cache
-    this.config = selectionConfig
+    this.config = this.createDefaultConfig()
 
     // Initialize algorithm cache with proper config structure
     const algorithmCache = new AlgorithmCache({
@@ -867,6 +874,39 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     process.on('unhandledRejection', (reason, promise) => {
       console.error('Unhandled rejection in StockSelectionService:', reason)
     })
+  }
+
+  private createDefaultConfig(): any {
+    return {
+      getConfig: () => ({
+        defaultAlgorithmId: 'composite',
+        fallbackAlgorithmId: 'quality',
+        limits: {
+          maxSymbolsPerRequest: 50,
+          maxConcurrentRequests: 10,
+          defaultTimeout: 30000,
+          maxTimeout: 60000
+        }
+      }),
+      generateCacheKey: (prefix: string, options: any) => {
+        const optionsStr = JSON.stringify(options || {})
+        return `${prefix}:${Buffer.from(optionsStr).toString('base64').slice(0, 16)}`
+      },
+      getCacheTTL: (mode: SelectionMode) => {
+        switch (mode) {
+          case SelectionMode.SINGLE_STOCK:
+            return 300000 // 5 minutes
+          case SelectionMode.SECTOR_ANALYSIS:
+            return 600000 // 10 minutes
+          default:
+            return 300000
+        }
+      },
+      getDataSourceConfig: () => ({
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
+        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+      })
+    }
   }
 }
 

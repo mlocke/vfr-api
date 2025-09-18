@@ -3,7 +3,7 @@
  * Integrates with existing DataFusionEngine for multi-source data quality
  */
 
-import { FusedMCPResponse, QualityScore } from '../mcp/types'
+import { FusedMCPResponse, QualityScore } from '../types/core-types'
 
 /**
  * Core algorithm types and interfaces

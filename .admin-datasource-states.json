@@ -1,0 +1,13 @@
+{
+  "enabledDataSources": [
+    "sec_edgar",
+    "treasury",
+    "fred",
+    "bls",
+    "eia",
+    "yahoo",
+    "polygon"
+  ],
+  "timestamp": 1758221142803,
+  "version": "1.0"
+}

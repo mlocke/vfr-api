@@ -1,11 +1,11 @@
 /**
  * Admin API Endpoints - Group Testing
- * POST /api/admin/test-groups - Test server groups
+ * POST /api/admin/test-groups - Test data source groups
  * Protected route requiring admin authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { serverConfigManager } from '../../../services/admin/ServerConfigManager'
+import { dataSourceConfigManager } from '../../../services/admin/DataSourceConfigManager'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate admin access
-    const isAdmin = await serverConfigManager.validateAdminAccess(token)
+    const isAdmin = await dataSourceConfigManager.validateAdminAccess(token)
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Administrator access required' },
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const testResult = await serverConfigManager.testServerGroup(groupType)
+      const testResult = await dataSourceConfigManager.testDataSourceGroup(groupType)
 
       return NextResponse.json({
         success: true,
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error testing server group:', error)
+    console.error('Error testing data source group:', error)
     return NextResponse.json(
       {
         error: 'Failed to execute group test',

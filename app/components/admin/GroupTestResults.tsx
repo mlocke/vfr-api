@@ -1,13 +1,13 @@
 /**
  * Group Test Results Component
- * Displays aggregate test results for server groups with glassmorphism styling
- * Includes success rates, response times, and individual server breakdowns
+ * Displays aggregate test results for data source groups with glassmorphism styling
+ * Includes success rates, response times, and individual data source breakdowns
  */
 
-import { ServerGroupTestResult } from '../../services/admin/ServerConfigManager'
+import { DataSourceGroupTestResult } from '../../services/admin/DataSourceConfigManager'
 
 interface GroupTestResultsProps {
-  results: ServerGroupTestResult[]
+  results: DataSourceGroupTestResult[]
   onRetestGroup?: (groupName: string) => void
   isTestRunning?: boolean
 }
@@ -96,23 +96,23 @@ export function GroupTestResults({
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-300">Servers Tested</span>
+                <span className="text-sm text-gray-300">Data Sources Tested</span>
                 <span className="text-sm font-medium text-white">
-                  {result.servers.length}
+                  {result.dataSources.length}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-300">Successful</span>
                 <span className="text-sm font-medium text-green-400">
-                  {result.servers.filter(s => s.success).length}
+                  {result.dataSources.filter(s => s.success).length}
                 </span>
               </div>
 
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-300">Failed</span>
                 <span className="text-sm font-medium text-red-400">
-                  {result.servers.filter(s => !s.success).length}
+                  {result.dataSources.filter(s => !s.success).length}
                 </span>
               </div>
             </div>
@@ -126,20 +126,20 @@ export function GroupTestResults({
               </div>
             </div>
 
-            {/* Individual Server Breakdown */}
+            {/* Individual Data Source Breakdown */}
             <div className="mt-4 pt-3 border-t border-white/10">
-              <div className="text-xs text-gray-400 mb-2">Server Status</div>
+              <div className="text-xs text-gray-400 mb-2">Data Source Status</div>
               <div className="space-y-1 max-h-32 overflow-y-auto">
-                {result.servers.map((server) => (
+                {result.dataSources.map((dataSourceResult) => (
                   <div
-                    key={server.serverId}
+                    key={dataSourceResult.dataSourceId}
                     className="flex justify-between items-center text-xs"
                   >
-                    <span className="text-gray-300 truncate">{server.serverId}</span>
+                    <span className="text-gray-300 truncate">{dataSourceResult.dataSourceId}</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-gray-400">{server.responseTime}ms</span>
-                      <span className={server.success ? 'text-green-400' : 'text-red-400'}>
-                        {server.success ? '●' : '●'}
+                      <span className="text-gray-400">{dataSourceResult.responseTime}ms</span>
+                      <span className={dataSourceResult.success ? 'text-green-400' : 'text-red-400'}>
+                        {dataSourceResult.success ? '●' : '●'}
                       </span>
                     </div>
                   </div>
@@ -155,21 +155,21 @@ export function GroupTestResults({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white/5 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-white">
-              {results.reduce((sum, r) => sum + r.servers.length, 0)}
+              {results.reduce((sum, r) => sum + r.dataSources.length, 0)}
             </div>
-            <div className="text-sm text-gray-300">Total Servers Tested</div>
+            <div className="text-sm text-gray-300">Total Data Sources Tested</div>
           </div>
 
           <div className="bg-white/5 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-green-400">
-              {results.reduce((sum, r) => sum + r.servers.filter(s => s.success).length, 0)}
+              {results.reduce((sum, r) => sum + r.dataSources.filter(s => s.success).length, 0)}
             </div>
             <div className="text-sm text-gray-300">Successful Tests</div>
           </div>
 
           <div className="bg-white/5 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-red-400">
-              {results.reduce((sum, r) => sum + r.servers.filter(s => !s.success).length, 0)}
+              {results.reduce((sum, r) => sum + r.dataSources.filter(s => !s.success).length, 0)}
             </div>
             <div className="text-sm text-gray-300">Failed Tests</div>
           </div>

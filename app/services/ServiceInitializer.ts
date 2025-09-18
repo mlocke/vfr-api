@@ -38,8 +38,8 @@ export class ServiceInitializer {
       // Initialize auth service (with fallbacks)
       await this.initializeAuthService()
 
-      // Initialize server config manager
-      await this.initializeServerConfigManager()
+      // Initialize data source config manager
+      await this.initializeDataSourceConfigManager()
 
       console.log('✅ All services initialized successfully')
     } catch (error) {
@@ -73,15 +73,15 @@ export class ServiceInitializer {
     }
   }
 
-  private async initializeServerConfigManager(): Promise<void> {
+  private async initializeDataSourceConfigManager(): Promise<void> {
     try {
-      const { serverConfigManager } = await import('../admin/ServerConfigManager')
-      // Server config manager doesn't have an explicit initialize method
-      // but we can verify it's working by getting the enabled servers
-      serverConfigManager.getEnabledServers()
-      console.log('✅ Server config manager initialized')
+      const { dataSourceConfigManager } = await import('../admin/DataSourceConfigManager')
+      // Data source config manager doesn't have an explicit initialize method
+      // but we can verify it's working by getting the enabled data sources
+      dataSourceConfigManager.getEnabledDataSources()
+      console.log('✅ Data source config manager initialized')
     } catch (error) {
-      console.warn('⚠️ Server config manager initialization failed:', error.message)
+      console.warn('⚠️ Data source config manager initialization failed:', error.message)
     }
   }
 
@@ -91,13 +91,13 @@ export class ServiceInitializer {
   async healthCheck(): Promise<{
     redis: boolean
     auth: boolean
-    serverConfig: boolean
+    dataSourceConfig: boolean
     overall: boolean
   }> {
     const health = {
       redis: false,
       auth: false,
-      serverConfig: false,
+      dataSourceConfig: false,
       overall: false
     }
 
@@ -119,14 +119,14 @@ export class ServiceInitializer {
     }
 
     try {
-      const { serverConfigManager } = await import('../admin/ServerConfigManager')
-      serverConfigManager.getEnabledServers()
-      health.serverConfig = true
+      const { dataSourceConfigManager } = await import('../admin/DataSourceConfigManager')
+      dataSourceConfigManager.getEnabledDataSources()
+      health.dataSourceConfig = true
     } catch {
-      health.serverConfig = false
+      health.dataSourceConfig = false
     }
 
-    health.overall = health.redis && health.auth && health.serverConfig
+    health.overall = health.redis && health.auth && health.dataSourceConfig
 
     return health
   }

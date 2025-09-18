@@ -5,7 +5,7 @@
 
 import { AlgorithmEngine } from './AlgorithmEngine'
 import { AlgorithmCache } from './AlgorithmCache'
-import { DataFusionEngine } from '../mcp/DataFusionEngine'
+import { MockDataFusionEngine as DataFusionEngine } from '../types/core-types'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,

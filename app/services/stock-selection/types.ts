@@ -5,7 +5,7 @@
 
 import { SectorOption } from '../../components/SectorDropdown'
 import { AlgorithmConfiguration, SelectionResult, StockScore } from '../algorithms/types'
-import { QualityScore } from '../mcp/types'
+import { QualityScore } from '../types/core-types'
 
 /**
  * Selection mode types

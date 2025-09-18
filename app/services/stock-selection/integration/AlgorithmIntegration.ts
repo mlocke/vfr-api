@@ -8,7 +8,7 @@ import { AlgorithmConfigManager } from '../../algorithms/AlgorithmConfigManager'
 import { MockConfigManager } from '../../algorithms/MockConfigManager'
 import { FactorLibrary } from '../../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../../algorithms/AlgorithmCache'
-import { DataFusionEngine } from '../../mcp/DataFusionEngine'
+import { MockDataFusionEngine as DataFusionEngine } from '../../types/core-types'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,
@@ -22,7 +22,7 @@ import {
   AlgorithmIntegrationInterface,
   SelectionOptions
 } from '../types'
-import { SelectionConfigManager } from '../config/SelectionConfig'
+// Note: SelectionConfigManager replaced with inline config
 
 /**
  * Algorithm integration and orchestration
@@ -31,7 +31,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
   private algorithmEngine: AlgorithmEngine
   private configManager: AlgorithmConfigManager
   private mockConfigManager: MockConfigManager
-  private selectionConfig: SelectionConfigManager
+  private selectionConfig: any
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
 
@@ -39,11 +39,11 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     dataFusion: DataFusionEngine,
     factorLibrary: FactorLibrary,
     cache: AlgorithmCache,
-    selectionConfig: SelectionConfigManager
+    selectionConfig?: any
   ) {
     this.factorLibrary = factorLibrary
     this.cache = cache
-    this.selectionConfig = selectionConfig
+    this.selectionConfig = selectionConfig || this.createDefaultConfig()
     this.configManager = new AlgorithmConfigManager(factorLibrary, cache)
     this.mockConfigManager = MockConfigManager.getInstance()
     this.algorithmEngine = new AlgorithmEngine(dataFusion, factorLibrary, cache)
@@ -408,6 +408,30 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     // Simple market hours check (US market: Mon-Fri, 9:30-16:00 ET)
     // This would be more sophisticated in real implementation
     return day >= 1 && day <= 5 && hour >= 9 && hour < 16
+  }
+
+  private createDefaultConfig(): any {
+    return {
+      getConfig: () => ({
+        defaultAlgorithmId: 'composite',
+        fallbackAlgorithmId: 'quality',
+        limits: {
+          maxSymbolsPerRequest: 50,
+          maxConcurrentRequests: 10,
+          defaultTimeout: 30000,
+          maxTimeout: 60000
+        }
+      }),
+      generateCacheKey: (prefix: string, options: any) => {
+        const optionsStr = JSON.stringify(options || {})
+        return `${prefix}:${Buffer.from(optionsStr).toString('base64').slice(0, 16)}`
+      },
+      getCacheTTL: (mode: any) => 300000, // 5 minutes default
+      getDataSourceConfig: () => ({
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
+        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+      })
+    }
   }
 
   /**

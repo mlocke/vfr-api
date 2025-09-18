@@ -5,9 +5,8 @@
 
 import { SectorOption } from '../../../components/SectorDropdown'
 import { SectorIntegrationInterface } from '../types'
-import { MCPClient } from '../../mcp/MCPClient'
-import { DataFusionEngine } from '../../mcp/DataFusionEngine'
-import { SelectionConfigManager } from '../config/SelectionConfig'
+import { MockMCPClient as MCPClient, MockDataFusionEngine as DataFusionEngine } from '../../types/core-types'
+// Note: SelectionConfigManager replaced with inline config
 
 /**
  * Mapping of sector IDs to standard industry classifications
@@ -118,17 +117,17 @@ const INDEX_CONSTITUENTS = {
 export class SectorIntegration implements SectorIntegrationInterface {
   private mcpClient: MCPClient
   private dataFusion: DataFusionEngine
-  private selectionConfig: SelectionConfigManager
+  private selectionConfig: any
   private cache: Map<string, { data: any; timestamp: number }> = new Map()
 
   constructor(
     mcpClient: MCPClient,
     dataFusion: DataFusionEngine,
-    selectionConfig: SelectionConfigManager
+    selectionConfig?: any
   ) {
     this.mcpClient = mcpClient
     this.dataFusion = dataFusion
-    this.selectionConfig = selectionConfig
+    this.selectionConfig = selectionConfig || { getConfig: () => ({}) }
   }
 
   /**

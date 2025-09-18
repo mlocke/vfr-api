@@ -14,7 +14,7 @@ import {
   SelectionMode,
   SelectionOptions
 } from '../types'
-import { QualityScore } from '../../mcp/types'
+import { QualityScore } from '../../types/core-types'
 
 interface CacheStrategy {
   name: string

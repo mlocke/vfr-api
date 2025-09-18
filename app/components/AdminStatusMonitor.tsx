@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface ServerStatus {
+interface DataSourceStatus {
   id: string
   name: string
   status: 'online' | 'offline' | 'degraded'
@@ -22,7 +22,7 @@ interface StatusMonitorProps {
 }
 
 export default function AdminStatusMonitor({ dataSources, updateInterval = 5000 }: StatusMonitorProps) {
-  const [dataSourceStatuses, setDataSourceStatuses] = useState<Map<string, ServerStatus>>(new Map())
+  const [dataSourceStatuses, setDataSourceStatuses] = useState<Map<string, DataSourceStatus>>(new Map())
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<number>(0)
 
@@ -44,7 +44,7 @@ export default function AdminStatusMonitor({ dataSources, updateInterval = 5000 
 
   // Initialize data source statuses
   useEffect(() => {
-    const initialStatuses = new Map<string, ServerStatus>()
+    const initialStatuses = new Map<string, DataSourceStatus>()
     dataSources.forEach(dataSourceId => {
       initialStatuses.set(dataSourceId, {
         id: dataSourceId,
@@ -238,7 +238,7 @@ export default function AdminStatusMonitor({ dataSources, updateInterval = 5000 
         </div>
       </div>
 
-      {/* Server List */}
+      {/* Data Source List */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',

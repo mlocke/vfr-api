@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-export interface ServerStatus {
+export interface DataSourceStatus {
   id: string
   name: string
   status: 'online' | 'offline' | 'degraded'
@@ -16,7 +16,7 @@ export interface ServerStatus {
 }
 
 export interface AdminDashboardState {
-  dataSources: ServerStatus[]
+  dataSources: DataSourceStatus[]
   isMonitoring: boolean
   lastUpdate: number
   globalStatus: 'healthy' | 'degraded' | 'critical'
@@ -32,7 +32,7 @@ export function useAdminDashboard() {
 
   // Initialize data source statuses
   useEffect(() => {
-    const initialDataSources: ServerStatus[] = [
+    const initialDataSources: DataSourceStatus[] = [
       { id: 'polygon', name: 'Polygon.io API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.8 },
       { id: 'alphavantage', name: 'Alpha Vantage API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.5 },
       { id: 'fmp', name: 'Financial Modeling Prep API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.2 },
@@ -65,7 +65,7 @@ export function useAdminDashboard() {
   }, [])
 
   // Update data source status
-  const updateDataSourceStatus = useCallback((dataSourceId: string, status: Partial<ServerStatus>) => {
+  const updateDataSourceStatus = useCallback((dataSourceId: string, status: Partial<DataSourceStatus>) => {
     setState(prev => ({
       ...prev,
       dataSources: prev.dataSources.map(dataSource =>

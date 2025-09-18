@@ -82,7 +82,7 @@ export default function DataSourceToggle({
     }}>
       {/* Status Text */}
       <div
-        data-testid="server-status"
+        data-testid="data-source-status"
         style={{
           fontSize: '0.8rem',
           fontWeight: '500',

@@ -35,9 +35,9 @@ const config = {
   coverageDirectory: 'docs/test-output/coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   collectCoverageFrom: [
-    'app/services/mcp/**/*.ts',
-    '!app/services/mcp/**/*.test.ts',
-    '!app/services/mcp/**/*.d.ts'
+    'app/services/**/*.ts',
+    '!app/services/**/*.test.ts',
+    '!app/services/**/*.d.ts'
   ],
 
   // Test results output (handled by reporters)

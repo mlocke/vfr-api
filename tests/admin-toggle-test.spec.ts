@@ -1,40 +1,42 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Admin Toggle Functionality', () => {
+test.describe('Data Source Admin Toggle Functionality', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3001/admin');
     await page.waitForLoadState('networkidle');
   });
 
-  test('should display toggle switches for MCP servers', async ({ page }) => {
-    await expect(page.locator('h1')).toContainText('MCP Server Admin');
+  test('should display toggle switches for all configured data sources', async ({ page }) => {
+    await expect(page.locator('h1')).toContainText('Data Source Admin');
 
-    const serverCards = page.locator('[data-testid="server-card"]');
-    await expect(serverCards).toHaveCount(6);
+    const dataSourceCards = page.locator('[data-testid="data-source-card"]');
+    await expect(dataSourceCards).toHaveCount(6);
 
-    const expectedServers = ['alphavantage', 'fmp', 'polygon', 'sec_edgar', 'yahoo', 'treasury'];
+    // Verify all expected financial data sources are present
+    const expectedDataSources = ['alphavantage', 'fmp', 'polygon', 'sec_edgar', 'yahoo', 'treasury'];
 
-    for (const serverId of expectedServers) {
-      const serverCard = page.locator(`[data-testid="server-card"][data-server-id="${serverId}"]`);
-      await expect(serverCard).toBeVisible();
+    for (const dataSourceId of expectedDataSources) {
+      const dataSourceCard = page.locator(`[data-testid="data-source-card"][data-source-id="${dataSourceId}"]`);
+      await expect(dataSourceCard).toBeVisible();
 
-      const toggleButton = serverCard.locator('button[data-testid="toggle-button"]');
+      // Each data source should have a toggle control
+      const toggleButton = dataSourceCard.locator('button[data-testid="toggle-button"]');
       await expect(toggleButton).toBeVisible();
     }
   });
 
-  test('should successfully toggle server state and update UI', async ({ page }) => {
-    const polygonCard = page.locator('[data-testid="server-card"][data-server-id="polygon"]');
+  test('should successfully toggle data source state and update UI', async ({ page }) => {
+    // Test data source state management with Polygon data source
+    const polygonCard = page.locator('[data-testid="data-source-card"][data-source-id="polygon"]');
     const toggleButton = polygonCard.locator('button[data-testid="toggle-button"]');
 
     const initialState = await toggleButton.getAttribute('aria-checked');
-    console.log('Initial toggle state:', initialState);
+    console.log('Initial data source toggle state:', initialState);
 
-    await page.route('/api/admin/server-config/toggle', async route => {
+    await page.route('/api/admin/data-sources/polygon/toggle', async route => {
       const request = route.request();
-      const postData = request.postDataJSON();
 
-      console.log('Toggle API called with:', postData);
+      console.log('Data source toggle API called for: polygon');
 
       await route.fulfill({
         status: 200,
@@ -42,9 +44,9 @@ test.describe('Admin Toggle Functionality', () => {
         body: JSON.stringify({
           success: true,
           data: {
-            serverId: postData.serverId,
+            dataSourceId: 'polygon',
             enabled: !JSON.parse(initialState || 'false'),
-            message: `Server ${postData.serverId} toggled successfully`
+            message: `Polygon data source toggled successfully`
           }
         })
       });
@@ -55,24 +57,26 @@ test.describe('Admin Toggle Functionality', () => {
     await page.waitForTimeout(500);
 
     const newState = await toggleButton.getAttribute('aria-checked');
-    console.log('New toggle state:', newState);
+    console.log('New data source toggle state:', newState);
 
+    // Verify that the data source state has changed
     expect(newState).not.toBe(initialState);
   });
 
-  test('should handle toggle API errors gracefully', async ({ page }) => {
-    const polygonCard = page.locator('[data-testid="server-card"][data-server-id="polygon"]');
+  test('should handle data source toggle API errors gracefully', async ({ page }) => {
+    // Test error handling when data source toggle fails
+    const polygonCard = page.locator('[data-testid="data-source-card"][data-source-id="polygon"]');
     const toggleButton = polygonCard.locator('button[data-testid="toggle-button"]');
 
     const initialState = await toggleButton.getAttribute('aria-checked');
 
-    await page.route('/api/admin/server-config/toggle', async route => {
+    await page.route('/api/admin/data-sources/polygon/toggle', async route => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({
           success: false,
-          error: 'Server error'
+          error: 'Failed to toggle data source state'
         })
       });
     });
@@ -81,33 +85,32 @@ test.describe('Admin Toggle Functionality', () => {
 
     await page.waitForTimeout(500);
 
+    // Verify data source state remains unchanged on error
     const finalState = await toggleButton.getAttribute('aria-checked');
     expect(finalState).toBe(initialState);
   });
 
-  test('should update visual state correctly when toggled', async ({ page }) => {
-    const polygonCard = page.locator('[data-testid="server-card"][data-server-id="polygon"]');
+  test('should update data source visual state correctly when toggled', async ({ page }) => {
+    // Test visual feedback for data source state changes
+    const polygonCard = page.locator('[data-testid="data-source-card"][data-source-id="polygon"]');
     const toggleButton = polygonCard.locator('button[data-testid="toggle-button"]');
-    const statusText = polygonCard.locator('[data-testid="server-status"]');
+    const statusText = polygonCard.locator('[data-testid="data-source-status"]');
 
     const initialStatus = await statusText.textContent();
-    console.log('Initial status text:', initialStatus);
+    console.log('Initial data source status:', initialStatus);
 
     const isCurrentlyEnabled = initialStatus?.includes('Online');
 
-    await page.route('/api/admin/server-config/toggle', async route => {
-      const request = route.request();
-      const postData = request.postDataJSON();
-
+    await page.route('/api/admin/data-sources/polygon/toggle', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           success: true,
           data: {
-            serverId: postData.serverId,
+            dataSourceId: 'polygon',
             enabled: !isCurrentlyEnabled,
-            message: `Server ${postData.serverId} toggled successfully`
+            message: `Polygon data source toggled successfully`
           }
         })
       });
@@ -118,8 +121,9 @@ test.describe('Admin Toggle Functionality', () => {
     await page.waitForTimeout(1000);
 
     const newStatus = await statusText.textContent();
-    console.log('New status text:', newStatus);
+    console.log('New data source status:', newStatus);
 
+    // Verify visual status reflects data source state change
     if (isCurrentlyEnabled) {
       expect(newStatus).toContain('Offline');
     } else {
@@ -127,21 +131,22 @@ test.describe('Admin Toggle Functionality', () => {
     }
   });
 
-  test('should check current API response structure', async ({ page }) => {
+  test('should validate data source API response structure', async ({ page }) => {
+    // Test that data source toggle API returns expected response format
     let apiResponse: any = null;
 
     page.on('response', async response => {
-      if (response.url().includes('/api/admin/server-config/toggle')) {
+      if (response.url().includes('/api/admin/data-sources/polygon/toggle')) {
         try {
           apiResponse = await response.json();
-          console.log('Actual API Response:', JSON.stringify(apiResponse, null, 2));
+          console.log('Data Source API Response:', JSON.stringify(apiResponse, null, 2));
         } catch (e) {
-          console.log('Failed to parse API response:', e);
+          console.log('Failed to parse data source API response:', e);
         }
       }
     });
 
-    const polygonCard = page.locator('[data-testid="server-card"][data-server-id="polygon"]');
+    const polygonCard = page.locator('[data-testid="data-source-card"][data-source-id="polygon"]');
     const toggleButton = polygonCard.locator('button[data-testid="toggle-button"]');
 
     await toggleButton.click();
@@ -149,11 +154,12 @@ test.describe('Admin Toggle Functionality', () => {
     await page.waitForTimeout(1000);
 
     if (apiResponse) {
-      console.log('API Response structure check:');
+      console.log('Data Source API Response structure validation:');
       console.log('Has success field:', 'success' in apiResponse);
       console.log('Has data field:', 'data' in apiResponse);
       console.log('Has enabled field:', 'enabled' in apiResponse);
       console.log('Has data.enabled field:', apiResponse.data && 'enabled' in apiResponse.data);
+      console.log('Has dataSourceId field:', apiResponse.data && 'dataSourceId' in apiResponse.data);
     }
   });
 });

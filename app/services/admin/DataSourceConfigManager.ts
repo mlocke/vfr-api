@@ -1,5 +1,5 @@
 /**
- * Server Configuration Manager Service
+ * Data Source Configuration Manager Service
  * Manages financial data API endpoints for admin dashboard monitoring
  * Provides testing, health checks, and configuration management capabilities
  */
@@ -7,7 +7,7 @@
 import { authService } from '../auth/AuthService'
 import { UserRole } from '../auth/types'
 
-export interface ServerInfo {
+export interface DataSourceInfo {
   id: string
   name: string
   type: 'commercial' | 'government' | 'free'
@@ -26,8 +26,8 @@ export interface ServerInfo {
   features: string[]
 }
 
-export interface ServerTestResult {
-  serverId: string
+export interface DataSourceTestResult {
+  dataSourceId: string
   success: boolean
   responseTime: number
   error?: string
@@ -36,38 +36,38 @@ export interface ServerTestResult {
   details?: any
 }
 
-export interface ServerGroupTestResult {
+export interface DataSourceGroupTestResult {
   groupName: string
-  servers: ServerTestResult[]
+  dataSources: DataSourceTestResult[]
   overallSuccess: boolean
   averageResponseTime: number
   successRate: number
   timestamp: number
 }
 
-export class ServerConfigManager {
-  private static instance: ServerConfigManager
-  private servers: Map<string, ServerInfo> = new Map()
-  private enabledServers: Set<string> = new Set()
+export class DataSourceConfigManager {
+  private static instance: DataSourceConfigManager
+  private dataSources: Map<string, DataSourceInfo> = new Map()
+  private enabledDataSources: Set<string> = new Set()
 
   constructor() {
-    this.initializeServerInfo()
-    this.loadEnabledServers()
+    this.initializeDataSourceInfo()
+    this.loadEnabledDataSources()
   }
 
-  static getInstance(): ServerConfigManager {
-    if (!ServerConfigManager.instance) {
-      ServerConfigManager.instance = new ServerConfigManager()
+  static getInstance(): DataSourceConfigManager {
+    if (!DataSourceConfigManager.instance) {
+      DataSourceConfigManager.instance = new DataSourceConfigManager()
     }
-    return ServerConfigManager.instance
+    return DataSourceConfigManager.instance
   }
 
   /**
-   * Initialize server information for direct API endpoints
+   * Initialize data source information for direct API endpoints
    */
-  private initializeServerInfo(): void {
-    // Government Data Servers (Free)
-    this.servers.set('sec_edgar', {
+  private initializeDataSourceInfo(): void {
+    // Government Data Sources (Free)
+    this.dataSources.set('sec_edgar', {
       id: 'sec_edgar',
       name: 'SEC EDGAR',
       type: 'government',
@@ -83,7 +83,7 @@ export class ServerConfigManager {
       features: ['company_filings', 'insider_trading', 'ownership_data', 'mutual_fund_holdings']
     })
 
-    this.servers.set('treasury', {
+    this.dataSources.set('treasury', {
       id: 'treasury',
       name: 'U.S. Treasury',
       type: 'government',
@@ -99,7 +99,7 @@ export class ServerConfigManager {
       features: ['treasury_rates', 'yield_curves', 'debt_data', 'auction_data']
     })
 
-    this.servers.set('fred', {
+    this.dataSources.set('fred', {
       id: 'fred',
       name: 'Federal Reserve Economic Data',
       type: 'government',
@@ -115,7 +115,7 @@ export class ServerConfigManager {
       features: ['economic_indicators', 'interest_rates', 'inflation_data', 'employment_data']
     })
 
-    this.servers.set('bls', {
+    this.dataSources.set('bls', {
       id: 'bls',
       name: 'Bureau of Labor Statistics',
       type: 'government',
@@ -131,7 +131,7 @@ export class ServerConfigManager {
       features: ['employment_data', 'inflation_data', 'wage_data', 'productivity_data']
     })
 
-    this.servers.set('eia', {
+    this.dataSources.set('eia', {
       id: 'eia',
       name: 'Energy Information Administration',
       type: 'government',
@@ -147,8 +147,8 @@ export class ServerConfigManager {
       features: ['energy_prices', 'oil_data', 'natural_gas', 'electricity_data']
     })
 
-    // Commercial Data Servers (when direct API integrations are implemented)
-    this.servers.set('alphavantage', {
+    // Commercial Data Sources (when direct API integrations are implemented)
+    this.dataSources.set('alphavantage', {
       id: 'alphavantage',
       name: 'Alpha Vantage',
       type: 'commercial',
@@ -164,7 +164,7 @@ export class ServerConfigManager {
       features: ['stock_quotes', 'forex', 'crypto', 'technical_indicators', 'earnings_data']
     })
 
-    this.servers.set('polygon', {
+    this.dataSources.set('polygon', {
       id: 'polygon',
       name: 'Polygon.io',
       type: 'commercial',
@@ -180,8 +180,8 @@ export class ServerConfigManager {
       features: ['real_time_quotes', 'historical_data', 'technical_indicators', 'company_details', 'market_holidays']
     })
 
-    // Free Stock Data Servers
-    this.servers.set('yahoo', {
+    // Free Stock Data Sources
+    this.dataSources.set('yahoo', {
       id: 'yahoo',
       name: 'Yahoo Finance',
       type: 'free',
@@ -199,76 +199,76 @@ export class ServerConfigManager {
   }
 
   /**
-   * Load enabled servers from storage
+   * Load enabled data sources from storage
    */
-  private loadEnabledServers(): void {
+  private loadEnabledDataSources(): void {
     try {
       const persistedState = this.loadPersistedState()
 
-      if (persistedState && persistedState.enabledServers) {
-        persistedState.enabledServers.forEach(id => this.enabledServers.add(id))
-        console.log('✅ Loaded server states from persistent storage:', persistedState.enabledServers)
+      if (persistedState && persistedState.enabledDataSources) {
+        persistedState.enabledDataSources.forEach(id => this.enabledDataSources.add(id))
+        console.log('✅ Loaded data source states from persistent storage:', persistedState.enabledDataSources)
       } else {
         // Initialize with safe defaults - only government and free sources enabled
-        this.enabledServers.add('sec_edgar')
-        this.enabledServers.add('treasury')
-        this.enabledServers.add('fred')
-        this.enabledServers.add('bls')
-        this.enabledServers.add('eia')
-        this.enabledServers.add('yahoo')
-        console.log('🔧 Initialized default server states (government and free sources enabled)')
+        this.enabledDataSources.add('sec_edgar')
+        this.enabledDataSources.add('treasury')
+        this.enabledDataSources.add('fred')
+        this.enabledDataSources.add('bls')
+        this.enabledDataSources.add('eia')
+        this.enabledDataSources.add('yahoo')
+        console.log('🔧 Initialized default data source states (government and free sources enabled)')
         this.savePersistedState()
       }
     } catch (error) {
-      console.error('❌ Error loading server states, using defaults:', error)
-      console.log('🔧 Fallback: Government and free servers enabled by default')
+      console.error('❌ Error loading data source states, using defaults:', error)
+      console.log('🔧 Fallback: Government and free data sources enabled by default')
     }
   }
 
   /**
-   * Get all servers with their current status
+   * Get all data sources with their current status
    */
-  async getAllServers(): Promise<ServerInfo[]> {
-    const servers = Array.from(this.servers.values())
+  async getAllDataSources(): Promise<DataSourceInfo[]> {
+    const dataSources = Array.from(this.dataSources.values())
 
     // Update status with latest health check data and enabled state
-    for (const server of servers) {
-      const healthStatus = await this.getServerHealth(server.id)
-      server.status = healthStatus.status
-      server.enabled = this.enabledServers.has(server.id)
-      server.lastHealthCheck = healthStatus.timestamp
-      server.responseTime = healthStatus.responseTime
-      server.errorRate = healthStatus.errorRate
+    for (const dataSource of dataSources) {
+      const healthStatus = await this.getDataSourceHealth(dataSource.id)
+      dataSource.status = healthStatus.status
+      dataSource.enabled = this.enabledDataSources.has(dataSource.id)
+      dataSource.lastHealthCheck = healthStatus.timestamp
+      dataSource.responseTime = healthStatus.responseTime
+      dataSource.errorRate = healthStatus.errorRate
 
-      // If server is disabled, override status to offline
-      if (!server.enabled) {
-        server.status = 'offline'
+      // If data source is disabled, override status to offline
+      if (!dataSource.enabled) {
+        dataSource.status = 'offline'
       }
     }
 
-    return servers
+    return dataSources
   }
 
   /**
-   * Get servers by category
+   * Get data sources by category
    */
-  async getServersByCategory(category: string): Promise<ServerInfo[]> {
-    const allServers = await this.getAllServers()
-    return allServers.filter(server => server.category === category)
+  async getDataSourcesByCategory(category: string): Promise<DataSourceInfo[]> {
+    const allDataSources = await this.getAllDataSources()
+    return allDataSources.filter(dataSource => dataSource.category === category)
   }
 
   /**
-   * Get servers by type
+   * Get data sources by type
    */
-  async getServersByType(type: 'commercial' | 'government' | 'free'): Promise<ServerInfo[]> {
-    const allServers = await this.getAllServers()
-    return allServers.filter(server => server.type === type)
+  async getDataSourcesByType(type: 'commercial' | 'government' | 'free'): Promise<DataSourceInfo[]> {
+    const allDataSources = await this.getAllDataSources()
+    return allDataSources.filter(dataSource => dataSource.type === type)
   }
 
   /**
-   * Test individual server connection and functionality
+   * Test individual data source connection and functionality
    */
-  async testServer(serverId: string, testType: 'connection' | 'health' | 'data_fetch' | 'rate_limit' = 'health'): Promise<ServerTestResult> {
+  async testDataSource(dataSourceId: string, testType: 'connection' | 'health' | 'data_fetch' | 'rate_limit' = 'health'): Promise<DataSourceTestResult> {
     const startTime = Date.now()
 
     try {
@@ -276,26 +276,26 @@ export class ServerConfigManager {
 
       switch (testType) {
         case 'connection':
-          result = await this.testConnection(serverId)
+          result = await this.testConnection(dataSourceId)
           break
 
         case 'health':
-          result = await this.performHealthCheck(serverId)
+          result = await this.performHealthCheck(dataSourceId)
           break
 
         case 'data_fetch':
-          result = await this.testDataFetch(serverId)
+          result = await this.testDataFetch(dataSourceId)
           break
 
         case 'rate_limit':
-          result = await this.testRateLimit(serverId)
+          result = await this.testRateLimit(dataSourceId)
           break
       }
 
       const responseTime = Date.now() - startTime
 
       return {
-        serverId,
+        dataSourceId,
         success: result.success || false,
         responseTime,
         timestamp: Date.now(),
@@ -307,7 +307,7 @@ export class ServerConfigManager {
       const responseTime = Date.now() - startTime
 
       return {
-        serverId,
+        dataSourceId,
         success: false,
         responseTime,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -318,27 +318,27 @@ export class ServerConfigManager {
   }
 
   /**
-   * Test multiple servers by group (commercial, government, etc.)
+   * Test multiple data sources by group (commercial, government, etc.)
    */
-  async testServerGroup(groupType: 'commercial' | 'government' | 'free' | 'all'): Promise<ServerGroupTestResult> {
-    let serversToTest: ServerInfo[]
+  async testDataSourceGroup(groupType: 'commercial' | 'government' | 'free' | 'all'): Promise<DataSourceGroupTestResult> {
+    let dataSourcesToTest: DataSourceInfo[]
     if (groupType === 'all') {
-      serversToTest = await this.getAllServers()
+      dataSourcesToTest = await this.getAllDataSources()
     } else {
-      serversToTest = await this.getServersByType(groupType)
+      dataSourcesToTest = await this.getDataSourcesByType(groupType)
     }
 
-    const testPromises = serversToTest.map(server =>
-      this.testServer(server.id, 'health')
+    const testPromises = dataSourcesToTest.map(dataSource =>
+      this.testDataSource(dataSource.id, 'health')
     )
 
     const results = await Promise.allSettled(testPromises)
-    const serverResults: ServerTestResult[] = results.map((result, index) => {
+    const dataSourceResults: DataSourceTestResult[] = results.map((result, index) => {
       if (result.status === 'fulfilled') {
         return result.value
       } else {
         return {
-          serverId: serversToTest[index].id,
+          dataSourceId: dataSourcesToTest[index].id,
           success: false,
           responseTime: 0,
           error: result.reason?.message || 'Test failed',
@@ -348,13 +348,13 @@ export class ServerConfigManager {
       }
     })
 
-    const successfulTests = serverResults.filter(r => r.success)
-    const averageResponseTime = serverResults.reduce((sum, r) => sum + r.responseTime, 0) / serverResults.length
-    const successRate = successfulTests.length / serverResults.length
+    const successfulTests = dataSourceResults.filter(r => r.success)
+    const averageResponseTime = dataSourceResults.reduce((sum, r) => sum + r.responseTime, 0) / dataSourceResults.length
+    const successRate = successfulTests.length / dataSourceResults.length
 
     return {
       groupName: groupType,
-      servers: serverResults,
+      dataSources: dataSourceResults,
       overallSuccess: successRate >= 0.7,
       averageResponseTime,
       successRate,
@@ -363,23 +363,23 @@ export class ServerConfigManager {
   }
 
   /**
-   * Get server health status using direct API calls
+   * Get data source health status using direct API calls
    */
-  private async getServerHealth(serverId: string): Promise<{
+  private async getDataSourceHealth(dataSourceId: string): Promise<{
     status: 'online' | 'offline' | 'degraded' | 'maintenance'
     timestamp: number
     responseTime?: number
     errorRate?: number
   }> {
     try {
-      const server = this.servers.get(serverId)
-      if (!server || !server.endpoint) {
+      const dataSource = this.dataSources.get(dataSourceId)
+      if (!dataSource || !dataSource.endpoint) {
         return { status: 'offline', timestamp: Date.now() }
       }
 
       // Simple connectivity test
       const startTime = Date.now()
-      const response = await fetch(server.endpoint, {
+      const response = await fetch(dataSource.endpoint, {
         method: 'HEAD',
         timeout: 5000
       })
@@ -402,15 +402,15 @@ export class ServerConfigManager {
   /**
    * Perform basic connectivity test
    */
-  private async testConnection(serverId: string): Promise<any> {
-    const server = this.servers.get(serverId)
-    if (!server || !server.endpoint) {
-      throw new Error(`Server ${serverId} not found or has no endpoint`)
+  private async testConnection(dataSourceId: string): Promise<any> {
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource || !dataSource.endpoint) {
+      throw new Error(`Data source ${dataSourceId} not found or has no endpoint`)
     }
 
-    const response = await fetch(server.endpoint, {
+    const response = await fetch(dataSource.endpoint, {
       method: 'HEAD',
-      timeout: server.timeout
+      timeout: dataSource.timeout
     })
 
     return {
@@ -421,40 +421,40 @@ export class ServerConfigManager {
   }
 
   /**
-   * Perform comprehensive health check for a server
+   * Perform comprehensive health check for a data source
    */
-  private async performHealthCheck(serverId: string): Promise<any> {
-    const server = this.servers.get(serverId)
-    if (!server) {
-      throw new Error(`Server ${serverId} not found`)
+  private async performHealthCheck(dataSourceId: string): Promise<any> {
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource) {
+      throw new Error(`Data source ${dataSourceId} not found`)
     }
 
     // For now, just do a basic connectivity test
     // In the future, this could be expanded to test specific API endpoints
-    return this.testConnection(serverId)
+    return this.testConnection(dataSourceId)
   }
 
   /**
    * Test data fetching capability (placeholder for future direct API integrations)
    */
-  private async testDataFetch(serverId: string): Promise<any> {
+  private async testDataFetch(dataSourceId: string): Promise<any> {
     // For now, fall back to health check
     // In the future, this would test actual data retrieval
-    return this.performHealthCheck(serverId)
+    return this.performHealthCheck(dataSourceId)
   }
 
   /**
    * Test rate limiting behavior
    */
-  private async testRateLimit(serverId: string): Promise<any> {
-    const server = this.servers.get(serverId)
-    if (!server) {
-      throw new Error(`Server ${serverId} not found`)
+  private async testRateLimit(dataSourceId: string): Promise<any> {
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource) {
+      throw new Error(`Data source ${dataSourceId} not found`)
     }
 
     // Make multiple rapid requests to test rate limiting
     const requests = Array(3).fill(null).map(() =>
-      this.testConnection(serverId)
+      this.testConnection(dataSourceId)
     )
 
     try {
@@ -505,108 +505,108 @@ export class ServerConfigManager {
   }
 
   /**
-   * Get detailed server configuration (admin only)
+   * Get detailed data source configuration (admin only)
    */
-  getServerConfiguration(serverId: string): any {
-    const server = this.servers.get(serverId)
-    if (!server) {
-      throw new Error(`Server ${serverId} not found`)
+  getDataSourceConfiguration(dataSourceId: string): any {
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource) {
+      throw new Error(`Data source ${dataSourceId} not found`)
     }
 
     return {
-      ...server,
-      apiKeyConfigured: server.hasApiKey,
-      endpoint: server.endpoint
+      ...dataSource,
+      apiKeyConfigured: dataSource.hasApiKey,
+      endpoint: dataSource.endpoint
     }
   }
 
   /**
-   * Toggle server enabled/disabled state
+   * Toggle data source enabled/disabled state
    */
-  async toggleServer(serverId: string): Promise<{ success: boolean; enabled: boolean; message: string }> {
-    const server = this.servers.get(serverId)
-    if (!server) {
+  async toggleDataSource(dataSourceId: string): Promise<{ success: boolean; enabled: boolean; message: string }> {
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource) {
       return {
         success: false,
         enabled: false,
-        message: `Server ${serverId} not found`
+        message: `Data source ${dataSourceId} not found`
       }
     }
 
     try {
-      const wasEnabled = this.enabledServers.has(serverId)
+      const wasEnabled = this.enabledDataSources.has(dataSourceId)
 
       if (wasEnabled) {
-        this.enabledServers.delete(serverId)
+        this.enabledDataSources.delete(dataSourceId)
       } else {
-        this.enabledServers.add(serverId)
+        this.enabledDataSources.add(dataSourceId)
       }
 
       const isNowEnabled = !wasEnabled
 
       // Save the state to persistent storage
-      await this.saveEnabledServers()
+      await this.saveEnabledDataSources()
 
-      console.log(`🔄 Server ${serverId} toggled: ${wasEnabled ? 'ENABLED' : 'DISABLED'} → ${isNowEnabled ? 'ENABLED' : 'DISABLED'}`)
+      console.log(`🔄 Data source ${dataSourceId} toggled: ${wasEnabled ? 'ENABLED' : 'DISABLED'} → ${isNowEnabled ? 'ENABLED' : 'DISABLED'}`)
 
       return {
         success: true,
         enabled: isNowEnabled,
-        message: `Server ${server.name} has been ${isNowEnabled ? 'enabled' : 'disabled'}`
+        message: `Data source ${dataSource.name} has been ${isNowEnabled ? 'enabled' : 'disabled'}`
       }
 
     } catch (error) {
       // Revert the change if saving failed
-      if (this.enabledServers.has(serverId)) {
-        this.enabledServers.delete(serverId)
+      if (this.enabledDataSources.has(dataSourceId)) {
+        this.enabledDataSources.delete(dataSourceId)
       } else {
-        this.enabledServers.add(serverId)
+        this.enabledDataSources.add(dataSourceId)
       }
 
       return {
         success: false,
-        enabled: this.enabledServers.has(serverId),
+        enabled: this.enabledDataSources.has(dataSourceId),
         message: error instanceof Error ? error.message : 'Unknown error occurred'
       }
     }
   }
 
   /**
-   * Check if a server is enabled
+   * Check if a data source is enabled
    */
-  isServerEnabled(serverId: string): boolean {
-    return this.enabledServers.has(serverId)
+  isDataSourceEnabled(dataSourceId: string): boolean {
+    return this.enabledDataSources.has(dataSourceId)
   }
 
   /**
-   * Get enabled server IDs
+   * Get enabled data source IDs
    */
-  getEnabledServers(): string[] {
-    return Array.from(this.enabledServers)
+  getEnabledDataSources(): string[] {
+    return Array.from(this.enabledDataSources)
   }
 
   /**
-   * Save enabled servers to storage
+   * Save enabled data sources to storage
    */
-  private async saveEnabledServers(): Promise<void> {
+  private async saveEnabledDataSources(): Promise<void> {
     try {
       await this.savePersistedState()
-      console.log('✅ Server enabled states saved:', Array.from(this.enabledServers))
+      console.log('✅ Data source enabled states saved:', Array.from(this.enabledDataSources))
     } catch (error) {
-      console.error('❌ Failed to save server states:', error)
+      console.error('❌ Failed to save data source states:', error)
     }
   }
 
   /**
-   * Load persisted server state from storage
+   * Load persisted data source state from storage
    */
-  private loadPersistedState(): { enabledServers: string[] } | null {
+  private loadPersistedState(): { enabledDataSources: string[] } | null {
     try {
       // For development/demo, use environment variable
-      const stateEnv = process.env.ADMIN_SERVER_STATES
+      const stateEnv = process.env.ADMIN_DATASOURCE_STATES
       if (stateEnv) {
         const state = JSON.parse(stateEnv)
-        if (state && Array.isArray(state.enabledServers)) {
+        if (state && Array.isArray(state.enabledDataSources)) {
           return state
         }
       }
@@ -616,13 +616,13 @@ export class ServerConfigManager {
         try {
           const fs = require('fs')
           const path = require('path')
-          const stateFile = path.join(process.cwd(), '.admin-server-states.json')
+          const stateFile = path.join(process.cwd(), '.admin-datasource-states.json')
 
           if (fs.existsSync(stateFile)) {
             const stateData = fs.readFileSync(stateFile, 'utf8')
             const state = JSON.parse(stateData)
 
-            if (state && Array.isArray(state.enabledServers)) {
+            if (state && Array.isArray(state.enabledDataSources)) {
               return state
             }
           }
@@ -631,18 +631,18 @@ export class ServerConfigManager {
         }
       }
     } catch (error) {
-      console.warn('Failed to load persisted server state:', error)
+      console.warn('Failed to load persisted data source state:', error)
     }
 
     return null
   }
 
   /**
-   * Save server state to persistent storage
+   * Save data source state to persistent storage
    */
   private async savePersistedState(): Promise<void> {
     const state = {
-      enabledServers: Array.from(this.enabledServers),
+      enabledDataSources: Array.from(this.enabledDataSources),
       timestamp: Date.now(),
       version: '1.0'
     }
@@ -652,20 +652,20 @@ export class ServerConfigManager {
         try {
           const fs = require('fs').promises
           const path = require('path')
-          const stateFile = path.join(process.cwd(), '.admin-server-states.json')
+          const stateFile = path.join(process.cwd(), '.admin-datasource-states.json')
 
           await fs.writeFile(stateFile, JSON.stringify(state, null, 2), 'utf8')
-          console.log('💾 Server states persisted to file')
+          console.log('💾 Data source states persisted to file')
         } catch (fsError) {
           console.warn('Failed to save to file, state will not persist across restarts:', fsError)
         }
       }
     } catch (error) {
-      console.error('Failed to save persisted server state:', error)
+      console.error('Failed to save persisted data source state:', error)
       throw error
     }
   }
 }
 
 // Export singleton instance
-export const serverConfigManager = ServerConfigManager.getInstance()
+export const dataSourceConfigManager = DataSourceConfigManager.getInstance()

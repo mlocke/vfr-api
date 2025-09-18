@@ -29,8 +29,8 @@ interface TestConfig {
 
 // Test result interface
 interface TestResult {
-  serverId: string
-  serverName: string
+  dataSourceId: string
+  dataSourceName: string
   success: boolean
   responseTime: number
   error?: string
@@ -169,8 +169,8 @@ export default function AdminDashboard() {
 
   // State management
   const [selectedDataSources, setSelectedDataSources] = useState<string[]>([])
-  const [enabledServers, setEnabledServers] = useState<Set<string>>(
-    new Set() // Start with no servers enabled by default
+  const [enabledDataSources, setEnabledDataSources] = useState<Set<string>>(
+    new Set() // Start with no data sources enabled by default
   )
   const [testConfig, setTestConfig] = useState<TestConfig>({
     selectedDataSources: [],
@@ -188,14 +188,14 @@ export default function AdminDashboard() {
     setTestConfig(prev => ({ ...prev, selectedDataSources }))
   }, [selectedDataSources])
 
-  // Load server states from API on component mount
+  // Load data source states from API on component mount
   useEffect(() => {
-    const loadServerStates = async () => {
+    const loadDataSourceStates = async () => {
       try {
         // Get auth token or use development token
         const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
 
-        const response = await fetch('/api/admin/data-source-config', {
+        const response = await fetch('/api/admin/data-sources/config', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
@@ -206,15 +206,15 @@ export default function AdminDashboard() {
           const contentType = response.headers.get('content-type')
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json()
-            setEnabledServers(new Set(data.enabledServers))
-            console.log('✅ Loaded server states:', data.enabledServers)
+            setEnabledDataSources(new Set(data.enabledDataSources))
+            console.log('✅ Loaded data source states:', data.enabledDataSources)
           } else {
             console.warn('⚠️ Expected JSON but received:', contentType)
             const text = await response.text()
             console.warn('Response text:', text.substring(0, 200))
           }
         } else {
-          console.warn('❌ Failed to load server states. Status:', response.status)
+          console.warn('❌ Failed to load data source states. Status:', response.status)
 
           // Try to parse error response
           try {
@@ -235,29 +235,29 @@ export default function AdminDashboard() {
           }
         }
       } catch (error) {
-        console.error('❌ Error loading server states:', error)
+        console.error('❌ Error loading data source states:', error)
         console.log('🔧 This may indicate service initialization issues in development')
       }
     }
 
-    loadServerStates()
+    loadDataSourceStates()
   }, [])
 
-  // Server selection handlers
-  const handleServerToggle = (serverId: string) => {
-    // Only allow selection of enabled servers
-    const server = dataSourceConfigs.find(s => s.id === serverId)
-    if (!server?.enabled) return
+  // Data source selection handlers
+  const handleDataSourceToggle = (dataSourceId: string) => {
+    // Only allow selection of enabled data sources
+    const dataSource = dataSourceConfigs.find(ds => ds.id === dataSourceId)
+    if (!dataSource?.enabled) return
 
     setSelectedDataSources(prev =>
-      prev.includes(serverId)
-        ? prev.filter(id => id !== serverId)
-        : [...prev, serverId]
+      prev.includes(dataSourceId)
+        ? prev.filter(id => id !== dataSourceId)
+        : [...prev, dataSourceId]
     )
   }
 
   const handleSelectAll = () => {
-    // Only select enabled servers
+    // Only select enabled data sources
     setSelectedDataSources(dataSourceConfigs.filter(dataSource => dataSource.enabled).map(dataSource => dataSource.id))
   }
 
@@ -277,26 +277,26 @@ export default function AdminDashboard() {
     })
   }
 
-  // Server enable/disable handler
-  const handleServerEnableToggle = async (serverId: string, enabled: boolean): Promise<void> => {
-    // Early return if trying to disable an already disabled server
-    if (!enabled && !enabledServers.has(serverId)) return
+  // Data source enable/disable handler
+  const handleDataSourceEnableToggle = async (dataSourceId: string, enabled: boolean): Promise<void> => {
+    // Early return if trying to disable an already disabled data source
+    if (!enabled && !enabledDataSources.has(dataSourceId)) return
 
     try {
       // Optimistic update
-      setEnabledServers(prev => {
+      setEnabledDataSources(prev => {
         const newSet = new Set(prev)
         if (enabled) {
-          newSet.add(serverId)
+          newSet.add(dataSourceId)
         } else {
-          newSet.delete(serverId)
+          newSet.delete(dataSourceId)
         }
         return newSet
       })
 
-      // Call the actual ServerConfigManager API
+      // Call the actual DataSourceConfigManager API
       const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
-      const response = await fetch(`/api/admin/data-sources/${serverId}/toggle`, {
+      const response = await fetch(`/api/admin/data-sources/${dataSourceId}/toggle`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
-        let errorMessage = 'Failed to toggle server'
+        let errorMessage = 'Failed to toggle data source'
         try {
           const contentType = response.headers.get('content-type')
           if (contentType && contentType.includes('application/json')) {
@@ -335,29 +335,29 @@ export default function AdminDashboard() {
       }
 
       const result = await response.json()
-      console.log(`Server ${serverId} toggle result:`, result)
+      console.log(`Data source ${dataSourceId} toggle result:`, result)
 
-      // Verify the optimistic update matches the server response
+      // Verify the optimistic update matches the API response
       // If there's a mismatch, correct it
-      setEnabledServers(prev => {
+      setEnabledDataSources(prev => {
         const newSet = new Set(prev)
         if (result.data?.enabled) {
-          newSet.add(serverId)
+          newSet.add(dataSourceId)
         } else {
-          newSet.delete(serverId)
+          newSet.delete(dataSourceId)
         }
         return newSet
       })
 
     } catch (error) {
-      console.error(`Failed to ${enabled ? 'enable' : 'disable'} server ${serverId}:`, error)
+      console.error(`Failed to ${enabled ? 'enable' : 'disable'} data source ${dataSourceId}:`, error)
       // Revert optimistic update on error
-      setEnabledServers(prev => {
+      setEnabledDataSources(prev => {
         const newSet = new Set(prev)
         if (!enabled) {
-          newSet.add(serverId)
+          newSet.add(dataSourceId)
         } else {
-          newSet.delete(serverId)
+          newSet.delete(dataSourceId)
         }
         return newSet
       })
@@ -373,11 +373,11 @@ export default function AdminDashboard() {
     setTestResults([])
 
     try {
-      console.log('🧪 Running tests for servers:', selectedDataSources)
+      console.log('🧪 Running tests for data sources:', selectedDataSources)
       console.log('🔧 Test configuration:', testConfig)
 
       // Call the data source testing API endpoint
-      const response = await fetch('/api/admin/test-data-sources', {
+      const response = await fetch('/api/admin/data-sources/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -413,16 +413,16 @@ export default function AdminDashboard() {
       console.log('🔄 Falling back to mock test data...')
       const results: TestResult[] = []
 
-      for (const serverId of selectedDataSources) {
-        const server = dataSourceConfigs.find(s => s.id === serverId)
-        if (!server) continue
+      for (const dataSourceId of selectedDataSources) {
+        const dataSource = dataSourceConfigs.find(ds => ds.id === dataSourceId)
+        if (!dataSource) continue
 
         // Simulate test execution with realistic timing
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 200))
 
         const result: TestResult = {
-          serverId,
-          serverName: dataSource.name,
+          dataSourceId: dataSourceId,
+          dataSourceName: dataSource.name,
           success: Math.random() > 0.15, // 85% success rate
           responseTime: Math.floor(Math.random() * dataSource.timeout * 0.6) + 150,
           data: {
@@ -637,7 +637,7 @@ export default function AdminDashboard() {
             className="admin-layout"
             >
 
-              {/* Left Panel - Server Selection */}
+              {/* Left Panel - Data Source Selection */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.08)',
                 backdropFilter: 'blur(10px)',
@@ -784,7 +784,7 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* Server List */}
+                {/* Data Source List */}
                 <div style={{
                   maxHeight: '400px',
                   overflowY: 'auto',
@@ -795,8 +795,8 @@ export default function AdminDashboard() {
                   {dataSourceConfigs.map((dataSource) => (
                     <div
                       key={dataSource.id}
-                      data-testid="server-card"
-                      data-server-id={dataSource.id}
+                      data-testid="data-source-card"
+                      data-datasource-id={dataSource.id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -816,7 +816,7 @@ export default function AdminDashboard() {
                       onClick={(e) => {
                         // Only toggle test selection if clicking on the main area, not the toggle component
                         if (!(e.target as HTMLElement).closest('[role="switch"]')) {
-                          handleServerToggle(dataSource.id)
+                          handleDataSourceToggle(dataSource.id)
                         }
                       }}
                       onMouseEnter={(e) => {
@@ -834,7 +834,7 @@ export default function AdminDashboard() {
                         type="checkbox"
                         checked={selectedDataSources.includes(dataSource.id)}
                         disabled={!dataSource.enabled}
-                        onChange={() => handleServerToggle(dataSource.id)}
+                        onChange={() => handleDataSourceToggle(dataSource.id)}
                         style={{
                           width: '16px',
                           height: '16px',
@@ -882,7 +882,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {/* Server Enable/Disable Toggle - Fixed alignment */}
+                        {/* Data Source Enable/Disable Toggle - Fixed alignment */}
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -892,9 +892,9 @@ export default function AdminDashboard() {
                           <DataSourceToggle
                             dataSourceId={dataSource.id}
                             dataSourceName={dataSource.name}
-                            enabled={enabledServers.has(dataSource.id)}
-                            status={enabledServers.has(dataSource.id) ? dataSource.status : 'offline'}
-                            onToggle={handleServerEnableToggle}
+                            enabled={enabledDataSources.has(dataSource.id)}
+                            status={enabledDataSources.has(dataSource.id) ? dataSource.status : 'offline'}
+                            onToggle={handleDataSourceEnableToggle}
                           />
                         </div>
                       </div>
@@ -1244,13 +1244,13 @@ export default function AdminDashboard() {
                       padding: '2rem 1rem',
                       color: 'rgba(255, 255, 255, 0.6)'
                     }}>
-                      {isRunningTests ? 'Running tests...' : 'No test results yet. Select servers and run tests to see results here.'}
+                      {isRunningTests ? 'Running tests...' : 'No test results yet. Select data sources and run tests to see results here.'}
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {testResults.map((result, index) => (
                         <div
-                          key={result.serverId}
+                          key={result.dataSourceId}
                           style={{
                             background: result.success
                               ? 'rgba(34, 197, 94, 0.1)'
@@ -1275,7 +1275,7 @@ export default function AdminDashboard() {
                                 ? 'rgba(34, 197, 94, 0.9)'
                                 : 'rgba(239, 68, 68, 0.9)'
                             }}>
-                              {result.serverName}
+                              {result.dataSourceName}
                             </div>
                             <div style={{
                               fontSize: '0.7rem',

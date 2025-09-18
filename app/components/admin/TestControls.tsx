@@ -1,6 +1,6 @@
 /**
  * Test Controls Component
- * Glassmorphism-styled controls for managing server tests
+ * Glassmorphism-styled controls for managing data source tests
  * Includes batch testing, group testing, and test configuration options
  */
 
@@ -26,7 +26,7 @@ export function TestControls({
   lastTestRun
 }: TestControlsProps) {
   const testTypes = [
-    { value: 'health', label: 'Health Check', icon: '❤️', description: 'Basic server health' },
+    { value: 'health', label: 'Health Check', icon: '❤️', description: 'Basic data source health' },
     { value: 'connection', label: 'Connection', icon: '🔌', description: 'Network connectivity' },
     { value: 'data_fetch', label: 'Data Fetch', icon: '📊', description: 'Data retrieval test' },
     { value: 'rate_limit', label: 'Rate Limit', icon: '⏱️', description: 'Rate limiting behavior' }
@@ -36,7 +36,7 @@ export function TestControls({
     { value: 'commercial', label: 'Commercial', icon: '🏢', color: 'purple' },
     { value: 'government', label: 'Government', icon: '🏛️', color: 'blue' },
     { value: 'free', label: 'Free', icon: '🆓', color: 'green' },
-    { value: 'all', label: 'All Servers', icon: '🌐', color: 'indigo' }
+    { value: 'all', label: 'All Data Sources', icon: '🌐', color: 'indigo' }
   ]
 
   const getGroupButtonColor = (color: string) => {
@@ -63,9 +63,9 @@ export function TestControls({
       {/* Selection Controls */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-300">Server Selection</span>
+          <span className="text-sm font-medium text-gray-300">Data Source Selection</span>
           <span className="text-sm text-blue-400 font-medium">
-            {selectedCount} server{selectedCount !== 1 ? 's' : ''} selected
+            {selectedCount} data source{selectedCount !== 1 ? 's' : ''} selected
           </span>
         </div>
 
@@ -133,7 +133,7 @@ export function TestControls({
           ) : (
             <div className="flex items-center justify-center space-x-2">
               <span>🚀</span>
-              <span>Test Selected Servers ({selectedCount})</span>
+              <span>Test Selected Data Sources ({selectedCount})</span>
             </div>
           )}
         </button>

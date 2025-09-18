@@ -64,11 +64,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }, { status: 400 })
         }
 
-        // Check if preferred data sources are disabled (for testing server toggle)
+        // Check if preferred data sources are disabled (for testing data source toggle)
         if (preferredSources.length > 0) {
-          const { serverConfigManager } = await import('../../../services/admin/ServerConfigManager')
+          const { dataSourceConfigManager } = await import('../../../services/admin/DataSourceConfigManager')
           for (const sourceId of preferredSources) {
-            const isEnabled = serverConfigManager.isServerEnabled(sourceId)
+            const isEnabled = dataSourceConfigManager.isDataSourceEnabled(sourceId)
             if (!isEnabled) {
               return NextResponse.json({
                 success: false,

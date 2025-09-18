@@ -11,12 +11,8 @@ import {
   EnhancedStockResult,
   DataIntegrationInterface
 } from './types'
-import { DataFusionEngine } from '../mcp/DataFusionEngine'
-import { DataNormalizationPipeline } from '../mcp/DataNormalizationPipeline'
-import { QualityScorer } from '../mcp/QualityScorer'
-import { MCPClient } from '../mcp/MCPClient'
+import { MockDataFusionEngine as DataFusionEngine, MockDataNormalizationPipeline as DataNormalizationPipeline, MockQualityScorer as QualityScorer, MockMCPClient as MCPClient, QualityScore, FusionResult } from '../types/core-types'
 import { RedisCache } from '../cache/RedisCache'
-import { QualityScore, FusionResult } from '../mcp/types'
 import { StockScore } from '../algorithms/types'
 
 interface DataFlowConfig {

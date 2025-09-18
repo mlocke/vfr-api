@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { serverConfigManager } from '../../../services/admin/ServerConfigManager'
+import { dataSourceConfigManager } from '../../../services/admin/DataSourceConfigManager'
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate admin access
-    const isAdmin = await serverConfigManager.validateAdminAccess(token)
+    const isAdmin = await dataSourceConfigManager.validateAdminAccess(token)
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Administrator access required' },
@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     // Fetch data sources based on filters
     let dataSources
     if (type) {
-      dataSources = await serverConfigManager.getServersByType(type)
+      dataSources = await dataSourceConfigManager.getDataSourcesByType(type)
     } else {
-      dataSources = await serverConfigManager.getAllServers()
+      dataSources = await dataSourceConfigManager.getAllDataSources()
     }
 
     // Apply category filter if specified

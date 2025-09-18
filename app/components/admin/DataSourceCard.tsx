@@ -1,29 +1,29 @@
 /**
- * Server Card Component
- * Glassmorphism-styled card for displaying individual server information
+ * Data Source Card Component
+ * Glassmorphism-styled card for displaying individual data source information
  * Includes status indicators, test controls, and configuration details
  */
 
 import { useState } from 'react'
-import { ServerInfo, ServerTestResult } from '../../services/admin/ServerConfigManager'
+import { DataSourceInfo, DataSourceTestResult } from '../../services/admin/DataSourceConfigManager'
 
-interface ServerCardProps {
-  server: ServerInfo
+interface DataSourceCardProps {
+  dataSource: DataSourceInfo
   isSelected: boolean
-  testResult?: ServerTestResult
+  testResult?: DataSourceTestResult
   isTestRunning: boolean
   onSelect: (selected: boolean) => void
   onTest: () => void
 }
 
-export function ServerCard({
-  server,
+export function DataSourceCard({
+  dataSource,
   isSelected,
   testResult,
   isTestRunning,
   onSelect,
   onTest
-}: ServerCardProps) {
+}: DataSourceCardProps) {
   const [showDetails, setShowDetails] = useState(false)
 
   const getStatusColor = (status: string) => {
@@ -83,26 +83,26 @@ export function ServerCard({
               />
             </div>
 
-            {/* Server Info */}
+            {/* Data Source Info */}
             <div className="flex-1">
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">{getCategoryIcon(server.category)}</span>
+                <span className="text-2xl">{getCategoryIcon(dataSource.category)}</span>
                 <div>
-                  <h3 className="text-xl font-bold text-white">{server.name}</h3>
-                  <p className="text-sm text-gray-300">{server.id}</p>
+                  <h3 className="text-xl font-bold text-white">{dataSource.name}</h3>
+                  <p className="text-sm text-gray-300">{dataSource.id}</p>
                 </div>
               </div>
 
               {/* Status and Type Badges */}
               <div className="flex items-center space-x-2 mt-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(server.status)}`}>
-                  ● {server.status.toUpperCase()}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(dataSource.status)}`}>
+                  ● {dataSource.status.toUpperCase()}
                 </span>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getTypeColor(server.type)}`}>
-                  {server.type.toUpperCase()}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getTypeColor(dataSource.type)}`}>
+                  {dataSource.type.toUpperCase()}
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-600/50 text-gray-200 border border-gray-400/30">
-                  {server.category.replace('_', ' ').toUpperCase()}
+                  {dataSource.category.replace('_', ' ').toUpperCase()}
                 </span>
               </div>
             </div>
@@ -127,7 +127,7 @@ export function ServerCard({
                   <span>Testing...</span>
                 </div>
               ) : (
-                'Test Server'
+                'Test Data Source'
               )}
             </button>
 
@@ -168,17 +168,17 @@ export function ServerCard({
         </div>
       )}
 
-      {/* Server Details */}
+      {/* Data Source Details */}
       {showDetails && (
         <div className="px-6 py-4 space-y-4">
           {/* Authentication Status */}
           <div className="flex items-center justify-between py-2 border-b border-white/10">
             <span className="text-sm text-gray-300">Authentication</span>
             <div className="flex items-center space-x-2">
-              {server.requiresAuth ? (
+              {dataSource.requiresAuth ? (
                 <>
-                  <span className={`text-sm ${server.hasApiKey ? 'text-green-400' : 'text-red-400'}`}>
-                    {server.hasApiKey ? '🔑 API Key Configured' : '❌ API Key Missing'}
+                  <span className={`text-sm ${dataSource.hasApiKey ? 'text-green-400' : 'text-red-400'}`}>
+                    {dataSource.hasApiKey ? '🔑 API Key Configured' : '❌ API Key Missing'}
                   </span>
                 </>
               ) : (
@@ -191,11 +191,11 @@ export function ServerCard({
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 rounded-lg p-3">
               <div className="text-xs text-gray-400 uppercase tracking-wide">Rate Limit</div>
-              <div className="text-lg font-bold text-white">{server.rateLimit}/min</div>
+              <div className="text-lg font-bold text-white">{dataSource.rateLimit}/min</div>
             </div>
             <div className="bg-white/5 rounded-lg p-3">
               <div className="text-xs text-gray-400 uppercase tracking-wide">Timeout</div>
-              <div className="text-lg font-bold text-white">{server.timeout}ms</div>
+              <div className="text-lg font-bold text-white">{dataSource.timeout}ms</div>
             </div>
           </div>
 
@@ -203,7 +203,7 @@ export function ServerCard({
           <div>
             <div className="text-sm text-gray-300 mb-2">Features</div>
             <div className="flex flex-wrap gap-2">
-              {server.features.map((feature) => (
+              {dataSource.features.map((feature) => (
                 <span
                   key={feature}
                   className="text-xs bg-blue-600/30 text-blue-200 px-2 py-1 rounded border border-blue-400/30"
@@ -215,19 +215,19 @@ export function ServerCard({
           </div>
 
           {/* Additional Metrics */}
-          {(server.responseTime || server.errorRate !== undefined) && (
+          {(dataSource.responseTime || dataSource.errorRate !== undefined) && (
             <div className="grid grid-cols-2 gap-4">
-              {server.responseTime && (
+              {dataSource.responseTime && (
                 <div className="bg-white/5 rounded-lg p-3">
                   <div className="text-xs text-gray-400 uppercase tracking-wide">Avg Response</div>
-                  <div className="text-lg font-bold text-white">{server.responseTime.toFixed(0)}ms</div>
+                  <div className="text-lg font-bold text-white">{dataSource.responseTime.toFixed(0)}ms</div>
                 </div>
               )}
-              {server.errorRate !== undefined && (
+              {dataSource.errorRate !== undefined && (
                 <div className="bg-white/5 rounded-lg p-3">
                   <div className="text-xs text-gray-400 uppercase tracking-wide">Error Rate</div>
-                  <div className={`text-lg font-bold ${server.errorRate > 0.1 ? 'text-red-400' : 'text-green-400'}`}>
-                    {(server.errorRate * 100).toFixed(1)}%
+                  <div className={`text-lg font-bold ${dataSource.errorRate > 0.1 ? 'text-red-400' : 'text-green-400'}`}>
+                    {(dataSource.errorRate * 100).toFixed(1)}%
                   </div>
                 </div>
               )}
@@ -235,9 +235,9 @@ export function ServerCard({
           )}
 
           {/* Last Health Check */}
-          {server.lastHealthCheck && (
+          {dataSource.lastHealthCheck && (
             <div className="text-xs text-gray-400 pt-2 border-t border-white/10">
-              Last health check: {new Date(server.lastHealthCheck).toLocaleString()}
+              Last health check: {new Date(dataSource.lastHealthCheck).toLocaleString()}
             </div>
           )}
         </div>

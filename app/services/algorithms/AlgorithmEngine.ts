@@ -14,8 +14,7 @@ import {
   FactorCalculator
 } from './types'
 
-import { DataFusionEngine } from '../mcp/DataFusionEngine'
-import { FusedMCPResponse, QualityScore, ConflictResolutionStrategy } from '../mcp/types'
+import { MockDataFusionEngine as DataFusionEngine, FusedMCPResponse, QualityScore, ConflictResolutionStrategy } from '../types/core-types'
 import { FactorLibrary } from './FactorLibrary'
 import { AlgorithmCache } from './AlgorithmCache'
 

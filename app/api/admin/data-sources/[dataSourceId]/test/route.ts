@@ -1,15 +1,15 @@
 /**
- * Admin API Endpoints - Server Testing
- * POST /api/admin/servers/[serverId]/test - Test individual server
+ * Admin API - Data Source Testing
+ * POST /api/admin/data-sources/[dataSourceId]/test - Test individual data source
  * Protected route requiring admin authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { serverConfigManager } from '../../../../../services/admin/ServerConfigManager'
+import { dataSourceConfigManager } from '../../../../../services/admin/DataSourceConfigManager'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ serverId: string }> }
+  { params }: { params: Promise<{ dataSourceId: string }> }
 ) {
   try {
     // Extract authorization header
@@ -24,7 +24,7 @@ export async function POST(
     }
 
     // Validate admin access
-    const isAdmin = await serverConfigManager.validateAdminAccess(token)
+    const isAdmin = await dataSourceConfigManager.validateAdminAccess(token)
     if (!isAdmin) {
       return NextResponse.json(
         { error: 'Administrator access required' },
@@ -32,7 +32,7 @@ export async function POST(
       )
     }
 
-    const { serverId } = await params
+    const { dataSourceId } = await params
     const body = await request.json().catch(() => ({}))
     const testType = body.testType || 'health'
 
@@ -46,7 +46,7 @@ export async function POST(
     }
 
     try {
-      const testResult = await serverConfigManager.testServer(serverId, testType)
+      const testResult = await dataSourceConfigManager.testDataSource(dataSourceId, testType)
 
       return NextResponse.json({
         success: true,
@@ -56,7 +56,7 @@ export async function POST(
     } catch (error) {
       return NextResponse.json(
         {
-          error: 'Server test failed',
+          error: 'Data source test failed',
           details: error instanceof Error ? error.message : 'Unknown error'
         },
         { status: 500 }
@@ -64,10 +64,10 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Error testing server:', error)
+    console.error('Error testing data source:', error)
     return NextResponse.json(
       {
-        error: 'Failed to execute server test',
+        error: 'Failed to execute data source test',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
