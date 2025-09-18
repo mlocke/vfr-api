@@ -51,7 +51,7 @@ src/
 ## Key Services
 
 **Stock Selection**: Multi-modal analysis (`app/services/stock-selection/StockSelectionService.ts`)
-**Data Sources**: 12+ APIs - Premium (Polygon, Alpha Vantage), Free (Yahoo), Government (SEC, Treasury, FRED)
+**Data Sources**: 12+ APIs - Premium (Polygon, Alpha Vantage, Financial Modeling Prep), Free (Yahoo), Government (SEC, Treasury, FRED)
 **Cache**: Redis primary, in-memory fallback (`app/services/cache/`)
 **Auth**: JWT-based (`app/services/auth/AuthService.ts`)
 

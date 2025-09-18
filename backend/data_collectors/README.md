@@ -65,13 +65,14 @@ economic_data = fred_collector.collect_batch(
 | **FRED**            | 800K+ economic indicators from Federal Reserve | ✅ Free          | 120 req/min |
 | **Treasury Direct** | US Treasury securities, bonds, auction data    | ❌ No            | 60 req/min  |
 
-### Market Data Sources (Commercial MCP & API)
+### Market Data Sources (Commercial APIs)
 
-| Collector             | Type    | Description                                | API Key Required | Rate Limit       | Status |
-| --------------------- | ------- | ------------------------------------------ | ---------------- | ---------------- | ------ |
-| **Alpha Vantage MCP** | MCP     | 79 AI-optimized financial analysis tools  | ✅ Paid          | 5 req/min (free) | ✅ Operational |
-| **Polygon.io MCP**    | MCP     | 40+ institutional-grade MCP tools         | ✅ Paid          | 5 req/min (free) | ✅ **Refactored** |
-| **IEX Cloud**         | API     | Professional market data                   | ✅ Paid          | Varies by plan   | Planned |
+| Collector                | Description                           | API Key Required | Rate Limit       | Status |
+| ------------------------ | ------------------------------------- | ---------------- | ---------------- | ------ |
+| **Alpha Vantage**        | Comprehensive financial data and indicators | ✅ Paid    | 5 req/min (free) | ✅ Operational |
+| **Polygon.io**           | Real-time and historical market data | ✅ Paid          | 5 req/min (free) | ✅ Operational |
+| **Financial Modeling Prep** | Financial statements, ratios, and analytics | ✅ Paid    | 250 req/day (free) | ✅ Operational |
+| **IEX Cloud**            | Professional market data             | ✅ Paid          | Varies by plan   | Planned |
 
 ### News & Sentiment Sources
 
@@ -82,19 +83,17 @@ economic_data = fred_collector.collect_batch(
 
 ## 🏗️ Architecture
 
-### MCP-First Four-Quadrant Design
+### API-First Architecture
 
-The collectors are organized into a revolutionary four-quadrant architecture:
+The collectors are organized into a streamlined two-tier architecture:
 
 ```
 Data Sources Architecture:
-├── Government Data
-│   ├── API Collectors: SEC, FRED, BEA, Treasury, BLS, EIA, FDIC
-│   └── MCP Collectors: Data.gov MCP (operational)
-├── Commercial Data  
-│   ├── MCP Collectors: Alpha Vantage MCP, Polygon.io MCP ⭐
-│   └── API Collectors: IEX Cloud (fallback)
-└── Unified Client Interface (protocol-agnostic)
+├── Government Data (API-based)
+│   └── API Collectors: SEC, FRED, BEA, Treasury, BLS, EIA, FDIC
+├── Commercial Data (API-based)
+│   └── API Collectors: Alpha Vantage, Polygon.io, Financial Modeling Prep, IEX Cloud
+└── Unified Client Interface (API key authentication)
 ```
 
 ### Base Interfaces
@@ -111,13 +110,13 @@ class DataCollectorInterface(ABC):
     def test_connection() -> Dict
 ```
 
-**MCP Collectors** inherit from `MCPCollectorBase` with additional capabilities:
+**Commercial Collectors** inherit from `CommercialCollectorInterface` with additional capabilities:
 ```python
-class MCPCollectorBase(CommercialCollectorInterface):
-    def get_tool_cost_map() -> Dict[str, float]
-    def call_mcp_tool(tool_name: str, arguments: Dict) -> Dict
-    def get_available_tools() -> List[Dict]
-    def batch_call_tools(tool_calls: List[Dict]) -> List[Dict]
+class CommercialCollectorInterface(DataCollectorInterface):
+    def get_cost_tracking() -> Dict[str, float]
+    def get_api_usage() -> Dict[str, int]
+    def get_rate_limit_status() -> Dict[str, bool]
+    def optimize_requests() -> bool
     # Plus all standard DataCollectorInterface methods
 ```
 
@@ -138,19 +137,16 @@ backend/data_collectors/
 │   ├── bls_collector.py              # Bureau of Labor Statistics
 │   ├── eia_collector.py              # Energy Information Administration
 │   ├── fdic_collector.py             # FDIC banking data
-│   └── mcp/                          # Government MCP collectors
-│       └── data_gov_mcp_collector.py # Data.gov MCP server ✅
 ├── commercial/                   # Commercial data sources
 │   ├── base/                         # Commercial collector interfaces
 │   │   ├── commercial_collector_interface.py
-│   │   ├── mcp_collector_base.py     # MCP protocol base class
 │   │   └── cost_tracker.py           # Usage and cost tracking
-│   ├── mcp/                          # MCP-based collectors (preferred)
-│   │   ├── alpha_vantage_mcp_collector.py  # Alpha Vantage MCP ✅
-│   │   └── polygon_mcp_collector.py        # Polygon.io MCP ⭐ REFACTORED
-│   └── api/                          # Traditional API collectors (fallback)
-│       └── iex_cloud_collector.py    # IEX Cloud API
-├── collector_router.py           # Four-quadrant smart routing system ✅
+│   └── api/                          # Direct API collectors
+│       ├── alpha_vantage_collector.py     # Alpha Vantage API ✅
+│       ├── polygon_collector.py           # Polygon.io API ✅
+│       ├── fmp_collector.py               # Financial Modeling Prep API ✅
+│       └── iex_cloud_collector.py         # IEX Cloud API
+├── collector_router.py           # Smart routing system for API selection ✅
 ├── examples/                     # Usage examples and demos
 └── tests/                        # Comprehensive test suite
 ```
@@ -165,11 +161,12 @@ Create a `.env` file with your API keys:
 # Government APIs (some require free registration)
 FRED_API_KEY=your_fred_api_key_here
 
-# Commercial MCP Servers (require paid subscriptions)  
+# Commercial APIs (require paid subscriptions)
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here
 POLYGON_API_KEY=your_polygon_api_key_here
+FMP_API_KEY=your_financial_modeling_prep_key_here
 
-# Traditional APIs (fallback/supplement)
+# Additional APIs
 IEX_CLOUD_API_KEY=your_iex_cloud_key_here
 NEWS_API_KEY=your_news_api_key_here
 ```
