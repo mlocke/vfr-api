@@ -64,7 +64,7 @@ const portfolioRequest = {
 }
 
 // Execute analysis
-const service = new StockSelectionService(mcpClient, dataFusion, factorLibrary, cache)
+const service = new StockSelectionService(financialDataService, dataFusion, factorLibrary, cache)
 const result = await service.selectStocks(singleStockRequest)
 ```
 
@@ -93,7 +93,7 @@ Environment-based configuration with production-ready defaults:
 - **AlgorithmEngine**: Core stock scoring and selection algorithms
 - **DataFusionEngine**: Multi-source data quality and fusion
 - **SectorDropdown**: UI component for sector selection
-- **MCPClient**: Data fetching from external sources
+- **FinancialDataService**: Direct API integration with financial data providers
 - **RedisCache**: High-performance caching layer
 
 ## Response Format
@@ -115,7 +115,7 @@ Environment-based configuration with production-ready defaults:
   // Execution metadata
   metadata: {
     algorithmUsed: "composite",
-    dataSourcesUsed: ["polygon", "firecrawl"],
+    dataSourcesUsed: ["polygon", "alphavantage", "fmp", "yahoo"],
     qualityScore: 0.85
   }
 }
