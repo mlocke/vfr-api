@@ -48,7 +48,9 @@
       "Bash(npm install:*)",
       "Bash(npx ts-node:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git merge:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
