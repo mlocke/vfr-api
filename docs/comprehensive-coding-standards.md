@@ -1,0 +1,206 @@
+# AI-Assisted Development Standards
+
+## 1. KISS Principles for AI Development
+
+### Core Philosophy
+AI tools excel at generating complex solutions - making KISS principles critical. Always explicitly prompt for simplicity.
+
+### Prompting for Simplicity
+```javascript
+// Instead of: "Build a user management system"
+// Use: "Build the simplest user management system with:
+// - Basic CRUD operations
+// - No unnecessary abstractions
+// - Prioritize readability over cleverness"
+```
+
+### Anti-patterns to Avoid
+- **Over-architecture**: Reject `UserManagerFactoryProvider` when `UserService` suffices
+- **Premature optimization**: Question optimizations unless measurably needed
+- **Framework overkill**: Avoid heavy frameworks for simple tasks
+
+## 2. Effective AI Prompting
+
+### Context-Rich Prompting
+- **Framework**: "Using Node.js with Express..."
+- **Error messages**: Include exact error text
+- **Expected vs Actual**: "Should return X when given Y, actually returns Z"
+- **Constraints**: "Must run in browser, no Node-specific APIs"
+
+### Claude Code Techniques
+- **Enhanced thinking**: `think` → `think hard` → `think harder` → `ultrathink`
+- **Research workflow**: Research → Plan → Implement → Verify
+
+## 3. QA Verification for AI Code
+
+### Review Checklist
+- [ ] **Functionality**: Solves intended problem
+- [ ] **Security**: No hardcoded credentials or injection vulnerabilities
+- [ ] **Performance**: No inefficient patterns or memory leaks
+- [ ] **Maintainability**: Follows team conventions
+- [ ] **Testing**: Appropriate test coverage
+- [ ] **Edge cases**: Handles error conditions
+
+### Quality Gates
+```properties
+# sonar-project.properties
+sonar.ai.code.maxDuplication=5
+sonar.ai.code.maxComplexity=10
+sonar.ai.code.minCoverage=80
+sonar.ai.code.securityHotspots=0
+```
+
+## 4. Modern Tech Stack (2024-2025)
+
+### Primary Frameworks
+- **Next.js 15**: Turbopack (76.7% faster startup)
+- **React 19**: Server Components, Concurrent features
+- **TypeScript 5+**: Default for all projects
+
+### Runtime Selection
+```javascript
+const runtime = {
+  stable: 'Node.js 22.x LTS',      // 94% usage, mature ecosystem
+  performance: 'Bun',              // Exceptional speed, built-in TS
+  security: 'Deno 2.0'             // Native permissions, web standards
+};
+```
+
+### Modern Tooling
+```json
+{
+  "styling": "Tailwind CSS v4.0",
+  "state": "Redux Toolkit or Zustand",
+  "api": "tRPC for type-safety, GraphQL for complex",
+  "testing": "Vitest + Playwright",
+  "bundler": "Vite",
+  "package-manager": "pnpm for monorepos"
+}
+```
+
+## 5. Security for AI Development
+
+### OWASP AI Security Framework
+- Prompt injection through crafted inputs
+- Insecure output handling without validation
+- Sensitive information disclosure in prompts
+- Supply chain vulnerabilities in AI tools
+- Overreliance on AI outputs
+
+### Data Protection
+- Never commit API keys (40% higher leak rate with AI)
+- Use environment variables exclusively
+- Implement secret scanning and push protection
+- Regular key rotation and access auditing
+
+## 6. Performance Optimization
+
+### Core Web Vitals Targets
+```javascript
+const performanceTargets = {
+  INP: 200,    // Interaction to Next Paint <200ms
+  LCP: 2500,   // Largest Contentful Paint <2.5s
+  CLS: 0.1     // Cumulative Layout Shift <0.1
+};
+```
+
+### Optimization Techniques
+```html
+<!-- LCP optimization -->
+<img src="hero.jpg" fetchpriority="high" loading="eager">
+
+<!-- INP optimization -->
+<script>
+  scheduler.yield(); // Yield to main thread
+</script>
+```
+
+## 7. Testing with AI
+
+### TDD Workflow
+```javascript
+// 1. AI generates test first
+describe('UserService', () => {
+  it('should validate email format', () => {
+    expect(validateEmail('test@example.com')).toBe(true);
+    expect(validateEmail('invalid')).toBe(false);
+  });
+});
+
+// 2. Then implementation
+function validateEmail(email) {
+  // AI generates implementation to pass tests
+}
+```
+
+### Testing Stack
+```json
+{
+  "unit": "Vitest or Jest",
+  "integration": "Testing Library",
+  "e2e": "Playwright",
+  "ai-testing": "Qodo (formerly Codium)",
+  "coverage": "80% minimum"
+}
+```
+
+## 8. Error Handling Template
+
+```javascript
+async function aiGeneratedFunction(data: unknown): Promise<Result> {
+  try {
+    // Input validation
+    if (!isValidInput(data)) {
+      throw new ValidationError('Invalid input format');
+    }
+
+    // Main logic with error boundaries
+    const result = await processData(data);
+
+    // Output validation
+    if (!validateResult(result)) {
+      throw new ProcessingError('Invalid result generated');
+    }
+
+    return result;
+
+  } catch (error) {
+    logger.error('AI function error:', error);
+    throw new CustomError('Operation failed', { cause: error });
+  }
+}
+```
+
+## 9. Git Workflow for AI Projects
+
+### Commit Message Standards
+```
+feat(auth): implement OAuth2 integration with Google
+- Add Google OAuth2 provider configuration
+- Create user authentication middleware
+- Implement session management
+# Generated by: Claude Code
+# Reviewed by: [Developer Name]
+```
+
+## 10. Quick Reference Commands
+
+```bash
+# Claude Code essentials
+claude-code init                    # Initialize project
+# Shift+Tab                         # Activate Plan Mode
+/review                            # Trigger code review
+/test                              # Generate tests
+/optimize                          # Performance analysis
+
+# Quality checks
+npm run lint                       # Linting
+npm run test:coverage              # Coverage report
+npm run typecheck                  # Type checking
+```
+
+## Success Metrics
+- **Development velocity**: 40-60% faster feature delivery
+- **Code quality**: <5% duplication, >80% test coverage
+- **Security**: Zero high-severity vulnerabilities
+- **Performance**: "Good" Core Web Vitals (>75th percentile)
