@@ -46,7 +46,9 @@
       "Bash(npm test:*)",
       "WebFetch(domain:github.com)",
       "Bash(npm install:*)",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
