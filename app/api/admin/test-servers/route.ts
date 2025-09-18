@@ -49,7 +49,13 @@ export async function POST(request: NextRequest) {
     const body: TestRequest = await request.json()
     const { serverIds, testType, timeout = 10000, maxRetries = 3, parallelRequests = true } = body
 
-    console.log('🧪 Admin API: Testing servers', { serverIds, testType, timeout, maxRetries, parallelRequests })
+    console.log('🧪 Admin API: Testing servers with REAL MCP calls', { serverIds, testType, timeout, maxRetries, parallelRequests })
+    console.log('📊 Data retrieval will use:', {
+      polygon: 'REAL mcp__polygon__get_aggs for AAPL',
+      yahoo: 'REAL getUnifiedStockPrice with Yahoo source',
+      alphavantage: 'REAL getUnifiedStockPrice with AlphaVantage source',
+      others: 'Mock data with clear labeling'
+    })
 
     if (!serverIds || !Array.isArray(serverIds) || serverIds.length === 0) {
       return NextResponse.json(
@@ -228,22 +234,67 @@ async function testServerConnection(mcpClient: MCPClient, serverId: string, time
   }
 }
 
-// Helper function to test data retrieval
+// Helper function to test data retrieval - REAL MCP CALLS
 async function testServerData(mcpClient: MCPClient, serverId: string, timeout: number): Promise<any> {
   try {
-    console.log(`📊 Testing data retrieval from ${serverId}...`)
+    console.log(`📊 Testing REAL data retrieval from ${serverId}...`)
 
-    // Simulate different data retrieval patterns based on server type
     let testData: any = null
 
     switch (serverId) {
+      case 'polygon':
+        // Test REAL Polygon.io MCP data
+        console.log('🔴 Making REAL Polygon MCP call...')
+        testData = await mcpClient.testPolygonData('aggregates')
+
+        if (testData.success) {
+          console.log('✅ REAL Polygon data retrieved successfully:', {
+            endpoint: testData.endpoint,
+            dataSize: JSON.stringify(testData.fullData).length,
+            responseTime: testData.responseTime
+          })
+        } else {
+          console.error('❌ REAL Polygon data retrieval failed:', testData.error)
+        }
+        break
+
       case 'yahoo':
-        // Test Yahoo Finance data
-        testData = {
-          symbol: 'AAPL',
-          price: 150.25 + Math.random() * 10,
-          change: (Math.random() - 0.5) * 5,
-          volume: Math.floor(Math.random() * 1000000) + 500000
+        // Test Yahoo Finance data - try real call first, fallback to mock
+        try {
+          console.log('🟡 Attempting real Yahoo Finance call...')
+          testData = await mcpClient.getUnifiedStockPrice('AAPL', { preferredSources: ['yahoo'] })
+          console.log('✅ REAL Yahoo data retrieved:', testData)
+        } catch (error) {
+          console.warn('⚠️ Yahoo real call failed, using mock data:', error)
+          testData = {
+            symbol: 'AAPL',
+            price: 150.25 + Math.random() * 10,
+            change: (Math.random() - 0.5) * 5,
+            volume: Math.floor(Math.random() * 1000000) + 500000,
+            source: 'yahoo-mock',
+            note: 'Mock data due to real API failure'
+          }
+        }
+        break
+
+      case 'alphavantage':
+        // Test Alpha Vantage data - try real call first, fallback to mock
+        try {
+          console.log('🟢 Attempting real Alpha Vantage call...')
+          testData = await mcpClient.getUnifiedStockPrice('AAPL', { preferredSources: ['alphavantage'] })
+          console.log('✅ REAL Alpha Vantage data retrieved:', testData)
+        } catch (error) {
+          console.warn('⚠️ Alpha Vantage real call failed, using mock data:', error)
+          testData = {
+            symbol: 'AAPL',
+            quote: {
+              price: 150.25 + Math.random() * 10,
+              change: (Math.random() - 0.5) * 5,
+              changePercent: (Math.random() - 0.5) * 3
+            },
+            source: 'alphavantage-mock',
+            note: 'Mock data due to real API failure'
+          }
         }
         break
 
@@ -253,7 +304,9 @@ async function testServerData(mcpClient: MCPClient, serverId: string, timeout: n
           series: 'GDP',
           value: 25000 + Math.random() * 1000,
           date: new Date().toISOString().split('T')[0],
-          units: 'Billions of Dollars'
+          units: 'Billions of Dollars',
+          source: 'fred-mock',
+          note: 'Mock economic data - real FRED MCP not yet implemented'
         }
         break
 
@@ -263,32 +316,40 @@ async function testServerData(mcpClient: MCPClient, serverId: string, timeout: n
           filing: '10-K',
           company: 'Test Corporation',
           date: new Date().toISOString().split('T')[0],
-          url: 'https://sec.gov/test'
+          url: 'https://sec.gov/test',
+          source: 'sec-mock',
+          note: 'Mock filing data - real SEC EDGAR MCP not yet implemented'
         }
         break
 
       default:
-        // Generic test data
+        // Generic fallback - still mock but clearly labeled
+        console.warn(`⚠️ No real MCP implementation for ${serverId}, using generic mock data`)
         testData = {
           status: 'ok',
           timestamp: Date.now(),
           server: serverId,
-          sampleValue: Math.random() * 100
+          sampleValue: Math.random() * 100,
+          source: 'generic-mock',
+          note: `Mock data - real ${serverId} MCP not yet implemented`
         }
     }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 300))
-
-    // 85% success rate for data retrieval
-    if (Math.random() < 0.15) {
-      throw new Error('Data retrieval failed')
+    // Add timing metadata
+    if (testData) {
+      testData.testTimestamp = Date.now()
+      testData.isRealData = serverId === 'polygon' && testData.success
     }
 
     return testData
   } catch (error) {
     console.error(`❌ Data test failed for ${serverId}:`, error)
-    return null
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      server: serverId,
+      source: 'error',
+      timestamp: Date.now()
+    }
   }
 }
 

@@ -3285,6 +3285,124 @@ export class MCPClient {
   }
 
   /**
+   * Test method for real Polygon.io MCP data retrieval
+   * Used by admin testing interface to verify MCP connections
+   */
+  async testPolygonData(testType: 'basic' | 'aggregates' | 'ticker_details' = 'basic'): Promise<any> {
+    console.log(`🧪 Testing real Polygon MCP data - Test type: ${testType}`)
+
+    try {
+      let result: any = null
+
+      switch (testType) {
+        case 'basic':
+          // Test basic ticker list
+          console.log('📈 Testing mcp__polygon__list_tickers...')
+          result = await this.executePolygonTool('list_tickers', {
+            limit: 5,
+            active: true,
+            market: 'stocks'
+          }, 10000, true) // bypass enabled check for testing
+          break
+
+        case 'aggregates':
+          // Test aggregate data for AAPL
+          console.log('📊 Testing mcp__polygon__get_aggs for AAPL...')
+          const endDate = new Date()
+          const startDate = new Date()
+          startDate.setDate(endDate.getDate() - 7) // Last 7 days
+
+          result = await this.executePolygonTool('get_aggs', {
+            ticker: 'AAPL',
+            multiplier: 1,
+            timespan: 'day',
+            from_: startDate.toISOString().split('T')[0],
+            to: endDate.toISOString().split('T')[0],
+            adjusted: true,
+            limit: 10
+          }, 15000, true)
+          break
+
+        case 'ticker_details':
+          // Test ticker details for AAPL
+          console.log('🍎 Testing mcp__polygon__get_ticker_details for AAPL...')
+          result = await this.executePolygonTool('get_ticker_details', {
+            ticker: 'AAPL'
+          }, 10000, true)
+          break
+
+        default:
+          throw new Error(`Unknown test type: ${testType}`)
+      }
+
+      if (result.success) {
+        console.log(`✅ Polygon test ${testType} successful:`, {
+          dataSize: JSON.stringify(result.data).length,
+          timestamp: result.timestamp,
+          source: result.source
+        })
+
+        return {
+          testType,
+          success: true,
+          endpoint: `mcp__polygon__${testType === 'basic' ? 'list_tickers' : testType === 'aggregates' ? 'get_aggs' : 'get_ticker_details'}`,
+          dataPreview: this.createDataPreview(result.data),
+          fullData: result.data,
+          responseTime: Date.now() - result.timestamp,
+          source: 'polygon-mcp-real',
+          timestamp: result.timestamp
+        }
+      } else {
+        throw new Error(result.error || 'Polygon MCP call failed')
+      }
+
+    } catch (error) {
+      console.error(`❌ Polygon MCP test failed for ${testType}:`, error)
+      return {
+        testType,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        source: 'polygon-mcp-real',
+        timestamp: Date.now()
+      }
+    }
+  }
+
+  /**
+   * Create a preview of data for testing display
+   */
+  private createDataPreview(data: any): any {
+    if (!data) return null
+
+    // Handle different Polygon response structures
+    if (data.results) {
+      const results = Array.isArray(data.results) ? data.results : [data.results]
+      return {
+        resultCount: results.length,
+        firstResult: results[0],
+        hasMore: data.next_url ? true : false,
+        status: data.status
+      }
+    }
+
+    if (data.results_count !== undefined) {
+      return {
+        resultsCount: data.results_count,
+        status: data.status,
+        queryCount: data.query_count,
+        adjustedData: data.adjusted
+      }
+    }
+
+    // For direct result objects
+    return {
+      status: data.status || 'unknown',
+      dataType: Array.isArray(data) ? 'array' : typeof data,
+      sampleFields: Object.keys(data).slice(0, 5)
+    }
+  }
+
+  /**
    * Helper: Check if current time is during market hours
    */
   private isMarketHours(): boolean {
