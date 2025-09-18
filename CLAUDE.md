@@ -1,3 +1,7 @@
+## Overriding Imperative
+**IMPORTANT:** Use KISS principles. Minimize token usage. Prioritize context efficiency.
+**IMPORTANT:** Do NOT over engineer. Follow existing patterns. Avoid unnecessary abstractions.
+**IMPORTANT:** Do NOT add marketing language, celebrations, or verbose descriptions.
 ## Documentation Standards for Claude Code
 
 **Context Efficiency Guidelines:**

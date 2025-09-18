@@ -59,7 +59,7 @@ export default function ServerToggle({
     if (disabled || isToggling) return
 
     setIsToggling(true)
-    const newEnabled = !enabled // Use enabled prop instead of localEnabled
+    const newEnabled = !localEnabled // Use local state for consistency
 
     try {
       // Let parent handle optimistic updates, we just call the toggle function
@@ -81,24 +81,27 @@ export default function ServerToggle({
       height: '32px' // Fixed height for perfect alignment
     }}>
       {/* Status Text */}
-      <div style={{
-        fontSize: '0.8rem',
-        fontWeight: '500',
-        color: getStatusColor(status, localEnabled),
-        minWidth: '70px',
-        maxWidth: '70px',
-        textAlign: 'right',
-        transition: 'color 0.3s ease',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap'
-      }}>
+      <div
+        data-testid="server-status"
+        style={{
+          fontSize: '0.8rem',
+          fontWeight: '500',
+          color: getStatusColor(status, localEnabled),
+          minWidth: '70px',
+          maxWidth: '70px',
+          textAlign: 'right',
+          transition: 'color 0.3s ease',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
         {getStatusText(status, localEnabled)}
       </div>
 
       {/* Toggle Switch */}
       <div
         role="switch"
+        data-testid="toggle-button"
         aria-checked={localEnabled}
         aria-label={`${localEnabled ? 'Disable' : 'Enable'} ${serverName}`}
         tabIndex={disabled ? -1 : 0}

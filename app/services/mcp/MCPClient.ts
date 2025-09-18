@@ -26,6 +26,8 @@ import { DataTransformationLayer } from './DataTransformationLayer'
 import { redisCache } from '../cache/RedisCache'
 import { treasuryFiscalService, TreasuryFiscalResponse } from './collectors/TreasuryFiscalService'
 
+// MCP Polygon functions are available globally when running in Claude Code environment
+
 interface MCPServerConfig {
   name: string
   endpoint?: string
@@ -419,59 +421,42 @@ export class MCPClient {
     }
 
     try {
-      // In production, these would call the actual MCP polygon tools
-      // For now, we simulate the call and return structured mock data
-      
       let result: any
-      
-      switch (toolName) {
-        case 'list_tickers':
-          // Simulate Polygon list_tickers response
-          result = {
-            results: [
-              { ticker: 'AAPL', name: 'Apple Inc.', primary_exchange: 'NASDAQ', type: 'CS' },
-              { ticker: 'MSFT', name: 'Microsoft Corporation', primary_exchange: 'NASDAQ', type: 'CS' },
-              { ticker: 'GOOGL', name: 'Alphabet Inc.', primary_exchange: 'NASDAQ', type: 'CS' }
-            ],
-            status: 'OK',
-            count: 3
-          }
-          break
-          
-        case 'get_ticker_details':
-          // Simulate Polygon ticker details response
-          result = {
-            results: {
-              ticker: params.ticker,
-              name: `${params.ticker} Company`,
-              market_cap: Math.floor(Math.random() * 1000000000000),
-              sic_description: 'Technology',
-              active: true
-            },
-            status: 'OK'
-          }
-          break
-          
-        case 'get_aggs':
-          // Simulate Polygon aggregates response
-          result = {
-            results: [{
-              o: 150 + Math.random() * 50,
-              c: 150 + Math.random() * 50,
-              h: 160 + Math.random() * 40,
-              l: 140 + Math.random() * 40,
-              v: Math.floor(Math.random() * 10000000),
-              t: Date.now()
-            }],
-            status: 'OK'
-          }
-          break
-          
-        default:
-          console.warn(`⚠️ Unsupported Polygon MCP tool: ${toolName}`)
-          throw new Error(`Unsupported Polygon MCP tool: ${toolName}`)
+
+      console.log(`🔌 Executing Polygon MCP tool: ${toolName} with params:`, JSON.stringify(params, null, 2))
+
+      // Check if we're in Claude Code environment with MCP functions available
+      const hasMCP = typeof globalThis !== 'undefined' &&
+                    typeof (globalThis as any).mcp__polygon__list_tickers === 'function'
+
+      console.log('🔍 MCP Environment Check:', hasMCP)
+      console.log('🔍 Global functions available:', Object.keys(globalThis).filter(k => k.startsWith('mcp__polygon')))
+
+      if (hasMCP) {
+        // Use real MCP functions
+        switch (toolName) {
+          case 'list_tickers':
+            console.log('🔍 Calling REAL mcp__polygon__list_tickers...')
+            result = await (globalThis as any).mcp__polygon__list_tickers(params)
+            break
+          case 'get_ticker_details':
+            console.log('🍎 Calling REAL mcp__polygon__get_ticker_details...')
+            result = await (globalThis as any).mcp__polygon__get_ticker_details(params)
+            break
+          case 'get_aggs':
+            console.log('📈 Calling REAL mcp__polygon__get_aggs...')
+            result = await (globalThis as any).mcp__polygon__get_aggs(params)
+            break
+          default:
+            throw new Error(`Unsupported Polygon MCP tool: ${toolName}`)
+        }
+        console.log(`✅ REAL MCP Result for ${toolName}:`, result)
+      } else {
+        // MCP functions not available - this should not happen in production
+        console.warn('⚠️ MCP functions not available - this indicates a configuration issue')
+        throw new Error(`MCP Polygon functions not available in environment. Tool: ${toolName}`)
       }
-      
+
       return {
         success: true,
         data: result,

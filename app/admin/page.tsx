@@ -341,7 +341,7 @@ export default function AdminDashboard() {
       // If there's a mismatch, correct it
       setEnabledServers(prev => {
         const newSet = new Set(prev)
-        if (result.enabled) {
+        if (result.data?.enabled) {
           newSet.add(serverId)
         } else {
           newSet.delete(serverId)
@@ -795,6 +795,8 @@ export default function AdminDashboard() {
                   {serverConfigs.map((server) => (
                     <div
                       key={server.id}
+                      data-testid="server-card"
+                      data-server-id={server.id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',

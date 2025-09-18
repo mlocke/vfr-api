@@ -56,3 +56,6 @@ __pycache__/
 
 # Admin state files
 .admin-server-states.json
+
+# Test results
+test-results/
