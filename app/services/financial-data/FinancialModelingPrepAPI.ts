@@ -7,13 +7,15 @@ import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse 
 
 export class FinancialModelingPrepAPI implements FinancialDataProvider {
   name = 'Financial Modeling Prep'
-  private baseUrl = 'https://financialmodelingprep.com/api'
+  private baseUrl = 'https://financialmodelingprep.com/stable'
   private apiKey: string
   private timeout: number
+  private throwErrors: boolean
 
-  constructor(apiKey?: string, timeout = 15000) {
+  constructor(apiKey?: string, timeout = 15000, throwErrors = false) {
     this.apiKey = apiKey || process.env.FMP_API_KEY || ''
     this.timeout = timeout
+    this.throwErrors = throwErrors
   }
 
   /**
@@ -22,13 +24,23 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
   async getStockPrice(symbol: string): Promise<StockData | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Financial Modeling Prep API key not configured')
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
-      const response = await this.makeRequest(`/v3/quote/${symbol.toUpperCase()}`)
+      const response = await this.makeRequest(`/quote?symbol=${symbol.toUpperCase()}`)
 
-      if (!response.success || !response.data || !Array.isArray(response.data) || response.data.length === 0) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        const error = new Error('Invalid response format from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -48,6 +60,7 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Financial Modeling Prep API error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -58,13 +71,23 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
   async getCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Financial Modeling Prep API key not configured')
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
-      const response = await this.makeRequest(`/v3/profile/${symbol.toUpperCase()}`)
+      const response = await this.makeRequest(`/profile?symbol=${symbol.toUpperCase()}`)
 
-      if (!response.success || !response.data || !Array.isArray(response.data) || response.data.length === 0) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        const error = new Error('Invalid company data response from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -81,6 +104,7 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Financial Modeling Prep company info error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -91,14 +115,24 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
   async getMarketData(symbol: string): Promise<MarketData | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Financial Modeling Prep API key not configured')
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
       // Use the historical price endpoint for OHLC data
-      const response = await this.makeRequest(`/v3/historical-price-full/${symbol.toUpperCase()}?limit=1`)
+      const response = await this.makeRequest(`/historical-price-full?symbol=${symbol.toUpperCase()}&limit=1`)
 
-      if (!response.success || !response.data?.historical || !Array.isArray(response.data.historical) || response.data.historical.length === 0) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data?.historical || !Array.isArray(response.data.historical) || response.data.historical.length === 0) {
+        const error = new Error('Invalid historical data response from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -116,6 +150,7 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Financial Modeling Prep market data error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -126,17 +161,24 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
   async healthCheck(): Promise<boolean> {
     try {
       if (!this.apiKey) {
+        console.warn('Financial Modeling Prep API key not configured')
         return false
       }
 
-      const response = await this.makeRequest('/v3/quote/AAPL')
+      const response = await this.makeRequest('/quote?symbol=AAPL')
+
+      if (!response.success) {
+        console.warn('Financial Modeling Prep health check failed:', response.error || 'Unknown error')
+        return false
+      }
 
       // Check for success, no error message, and presence of expected data structure
       return response.success &&
              Array.isArray(response.data) &&
              response.data.length > 0 &&
              !!response.data[0]?.price
-    } catch {
+    } catch (error) {
+      console.error('Financial Modeling Prep health check failed:', error instanceof Error ? error.message : error)
       return false
     }
   }
@@ -152,7 +194,7 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       }
 
       // Use stock screener endpoint to filter by sector
-      const response = await this.makeRequest(`/v3/stock-screener?sector=${encodeURIComponent(sector)}&limit=${limit}`)
+      const response = await this.makeRequest(`/stock-screener?sector=${encodeURIComponent(sector)}&limit=${limit}`)
 
       if (!response.success || !response.data || !Array.isArray(response.data)) {
         return []
