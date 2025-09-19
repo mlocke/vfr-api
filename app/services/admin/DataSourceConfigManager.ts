@@ -408,15 +408,24 @@ export class DataSourceConfigManager {
       throw new Error(`Data source ${dataSourceId} not found or has no endpoint`)
     }
 
-    const response = await fetch(dataSource.endpoint, {
-      method: 'HEAD',
-      timeout: dataSource.timeout
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), dataSource.timeout)
 
-    return {
-      success: response.ok,
-      status: response.status,
-      statusText: response.statusText
+    try {
+      const response = await fetch(dataSource.endpoint, {
+        method: 'HEAD',
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+      return {
+        success: response.ok,
+        status: response.status,
+        statusText: response.statusText
+      }
+    } catch (error) {
+      clearTimeout(timeoutId)
+      throw error
     }
   }
 
@@ -435,11 +444,46 @@ export class DataSourceConfigManager {
   }
 
   /**
-   * Test data fetching capability (placeholder for future direct API integrations)
+   * Test data fetching capability (with BLS API integration)
    */
   private async testDataFetch(dataSourceId: string): Promise<any> {
-    // For now, fall back to health check
-    // In the future, this would test actual data retrieval
+    const dataSource = this.dataSources.get(dataSourceId)
+    if (!dataSource) {
+      throw new Error(`Data source ${dataSourceId} not found`)
+    }
+
+    // Test BLS API specifically with unemployment rate series
+    if (dataSourceId === 'bls') {
+      try {
+        const { BLSAPI } = await import('../financial-data/BLSAPI')
+        const blsApi = new BLSAPI()
+        const healthCheck = await blsApi.healthCheck()
+
+        if (healthCheck) {
+          // Test fetching actual data
+          const testData = await blsApi.getLatestObservation('UNRATE')
+          return {
+            success: true,
+            hasData: !!testData,
+            testSeries: 'UNRATE',
+            latestValue: testData?.value || null,
+            timestamp: testData ? this.parseDate(testData.year, testData.period) : null
+          }
+        } else {
+          return {
+            success: false,
+            error: 'BLS API health check failed'
+          }
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'BLS API test failed'
+        }
+      }
+    }
+
+    // For other data sources, fall back to health check
     return this.performHealthCheck(dataSourceId)
   }
 
@@ -472,6 +516,26 @@ export class DataSourceConfigManager {
         success: false,
         error: error instanceof Error ? error.message : 'Rate limit test failed'
       }
+    }
+  }
+
+  /**
+   * Parse BLS date format for timestamp conversion
+   */
+  private parseDate(year: string, period: string): Date {
+    const yearNum = parseInt(year)
+
+    if (period.startsWith('M')) {
+      const month = parseInt(period.substring(1)) - 1
+      return new Date(yearNum, month, 1)
+    } else if (period.startsWith('Q')) {
+      const quarter = parseInt(period.substring(1))
+      const month = (quarter - 1) * 3
+      return new Date(yearNum, month, 1)
+    } else if (period === 'A01') {
+      return new Date(yearNum, 0, 1)
+    } else {
+      return new Date(yearNum, 0, 1)
     }
   }
 

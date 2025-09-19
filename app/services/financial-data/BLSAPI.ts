@@ -57,19 +57,37 @@ export class BLSAPI implements FinancialDataProvider {
 
   // Key BLS economic indicators for financial analysis
   private readonly POPULAR_SERIES: Record<string, string> = {
+    // === TIER 1: Core Economic Indicators ===
     // Employment & Unemployment
     'LNS14000000': 'Unemployment Rate (Seasonally Adjusted)',
-    'LNS13327709': 'Alternative Unemployment Rate (U-6)',
-    'LNU04000000': 'Unemployment Rate (Not Seasonally Adjusted)',
-    'CES0000000001': 'All Employees, Total Nonfarm',
-    'LNS12000000': 'Labor Force Participation Rate',
-    'LNS12300000': 'Employment-Population Ratio',
-    'JTS1000JOL': 'Job Openings: Total Nonfarm',
+    'CES0000000001': 'Total Nonfarm Payrolls',
+    'LNS12300000': 'Labor Force Participation Rate',
 
     // Inflation & Consumer Prices
-    'CUUR0000SA0': 'Consumer Price Index - All Urban Consumers (CPI-U)',
+    'CUUR0000SA0': 'Consumer Price Index (All Items)',
+    'CUUR0000SA0L1E': 'Core CPI (All Items Less Food and Energy)',
+    'CUUR0000SEHE': 'CPI Energy',
+
+    // === TIER 2: Market Sentiment Indicators ===
+    // Labor Market Dynamics
+    'JTS000000000000000JOL': 'Job Openings Rate (Total Nonfarm)',
+    'JTS000000000000000QUR': 'Quit Rate (Total Nonfarm)',
+    'CES0500000003': 'Average Hourly Earnings (Total Private)',
+
+    // Sector-Specific Employment
+    'CES6056132001': 'Professional and Business Services Employment',
+    'CES4142000001': 'Retail Trade Employment',
+    'CES3000000001': 'Manufacturing Employment',
+
+    // === LEGACY SERIES (Previously Configured) ===
+    // Employment & Unemployment
+    'LNS13327709': 'Alternative Unemployment Rate (U-6)',
+    'LNU04000000': 'Unemployment Rate (Not Seasonally Adjusted)',
+    'LNS12000000': 'Labor Force Participation Rate (Legacy)',
+    'JTS1000JOL': 'Job Openings: Total Nonfarm (Legacy)',
+
+    // Inflation & Consumer Prices
     'CUSR0000SA0': 'Consumer Price Index - All Urban Consumers (Seasonally Adjusted)',
-    'CUUR0000SA0L1E': 'CPI-U: All Items Less Food and Energy',
     'CUUR0000SETB01': 'CPI-U: Gasoline (All Types)',
     'CUUR0000SAH1': 'CPI-U: Shelter',
 
@@ -78,7 +96,6 @@ export class BLSAPI implements FinancialDataProvider {
     'WPUFD49104': 'PPI: Final Demand Less Food and Energy',
 
     // Wages & Earnings
-    'CES0500000003': 'Average Hourly Earnings: Total Private',
     'CES0500000008': 'Average Weekly Hours: Total Private',
     'CIS2020000000000I': 'Employment Cost Index: Total Compensation',
 
@@ -269,6 +286,67 @@ export class BLSAPI implements FinancialDataProvider {
       symbol,
       name
     }))
+  }
+
+  /**
+   * Get Tier 1 core economic indicators for individual investor decision-making
+   * These are the most critical indicators for BUY/SELL/HOLD decisions
+   */
+  getTier1Indicators(): Array<{symbol: string, name: string, category: string}> {
+    const tier1Series = {
+      // Employment & Unemployment
+      'LNS14000000': { name: 'Unemployment Rate (Seasonally Adjusted)', category: 'Employment' },
+      'CES0000000001': { name: 'Total Nonfarm Payrolls', category: 'Employment' },
+      'LNS12300000': { name: 'Labor Force Participation Rate', category: 'Employment' },
+
+      // Inflation & Consumer Prices
+      'CUUR0000SA0': { name: 'Consumer Price Index (All Items)', category: 'Inflation' },
+      'CUUR0000SA0L1E': { name: 'Core CPI (All Items Less Food and Energy)', category: 'Inflation' },
+      'CUUR0000SEHE': { name: 'CPI Energy', category: 'Inflation' }
+    }
+
+    return Object.entries(tier1Series).map(([symbol, info]) => ({
+      symbol,
+      name: info.name,
+      category: info.category
+    }))
+  }
+
+  /**
+   * Get Tier 2 market sentiment indicators for advanced analysis
+   * These provide deeper insight into market conditions and sentiment
+   */
+  getTier2Indicators(): Array<{symbol: string, name: string, category: string}> {
+    const tier2Series = {
+      // Labor Market Dynamics
+      'JTS000000000000000JOL': { name: 'Job Openings Rate (Total Nonfarm)', category: 'Labor Dynamics' },
+      'JTS000000000000000QUR': { name: 'Quit Rate (Total Nonfarm)', category: 'Labor Dynamics' },
+      'CES0500000003': { name: 'Average Hourly Earnings (Total Private)', category: 'Wages' },
+
+      // Sector-Specific Employment
+      'CES6056132001': { name: 'Professional and Business Services Employment', category: 'Sector Employment' },
+      'CES4142000001': { name: 'Retail Trade Employment', category: 'Sector Employment' },
+      'CES3000000001': { name: 'Manufacturing Employment', category: 'Sector Employment' }
+    }
+
+    return Object.entries(tier2Series).map(([symbol, info]) => ({
+      symbol,
+      name: info.name,
+      category: info.category
+    }))
+  }
+
+  /**
+   * Get all indicators organized by tier
+   */
+  getIndicatorsByTier(): {
+    tier1: Array<{symbol: string, name: string, category: string}>,
+    tier2: Array<{symbol: string, name: string, category: string}>
+  } {
+    return {
+      tier1: this.getTier1Indicators(),
+      tier2: this.getTier2Indicators()
+    }
   }
 
   async getMultipleSeries(seriesIds: string[], startYear?: number, endYear?: number): Promise<Map<string, BLSDataPoint[]>> {

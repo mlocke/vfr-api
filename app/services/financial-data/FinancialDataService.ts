@@ -10,6 +10,7 @@ import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { DataGovAPI } from './DataGovAPI'
+import { BLSAPI } from './BLSAPI'
 
 interface ProviderHealth {
   name: string
@@ -28,7 +29,8 @@ export class FinancialDataService {
       new AlphaVantageAPI(),
       new YahooFinanceAPI(),
       new FinancialModelingPrepAPI(),
-      new DataGovAPI()
+      new DataGovAPI(),
+      new BLSAPI()
     ]
   }
 

@@ -122,8 +122,8 @@ export default function AdminDashboard() {
       description: 'Employment & inflation data',
       status: 'online',
       enabled: true,
-      rateLimit: 100,
-      timeout: 15000
+      rateLimit: 500,
+      timeout: 10000
     },
     {
       id: 'eia',
