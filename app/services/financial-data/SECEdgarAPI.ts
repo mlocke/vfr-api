@@ -8,7 +8,7 @@ import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse 
 
 export class SECEdgarAPI implements FinancialDataProvider {
   name = 'SEC EDGAR'
-  private baseUrl = 'https://data.sec.gov/api'
+  private baseUrl = 'https://data.sec.gov'
   private timeout: number
   private userAgent: string
 
@@ -138,7 +138,7 @@ export class SECEdgarAPI implements FinancialDataProvider {
    */
   async getCompanyFacts(cik: string): Promise<any> {
     try {
-      const response = await this.makeRequest(`/xbrl/companyfacts/CIK${cik.padStart(10, '0')}.json`)
+      const response = await this.makeRequest(`/api/xbrl/companyfacts/CIK${cik.padStart(10, '0')}.json`)
       return response.success ? response.data : null
     } catch (error) {
       console.error(`SEC EDGAR company facts error for CIK ${cik}:`, error)
