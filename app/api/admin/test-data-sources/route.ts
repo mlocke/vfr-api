@@ -14,6 +14,7 @@ import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
 import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
 import { DataGovAPI } from '../../../services/financial-data/DataGovAPI'
 import { FREDAPI } from '../../../services/financial-data/FREDAPI'
+import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -256,7 +257,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -282,6 +283,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           break
         case 'fred':
           apiInstance = new FREDAPI(undefined, timeout, true)
+          break
+        case 'bls':
+          apiInstance = new BLSAPI(undefined, timeout, true)
           break
       }
       return await apiInstance.healthCheck()
@@ -351,6 +355,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await fredAPI.getStockPrice('UNRATE') // Unemployment Rate - updated
         break
 
+      case 'bls':
+        console.log('📊 Making real BLS API call...')
+        const blsAPI = new BLSAPI(undefined, timeout, true)
+        testData = await blsAPI.getStockPrice('LNS14000000') // Unemployment Rate from BLS
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -358,7 +368,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -564,7 +574,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -594,10 +604,13 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'fred':
           apiInstance = new FREDAPI(undefined, timeout, true)
           break
+        case 'bls':
+          apiInstance = new BLSAPI(undefined, timeout, true)
+          break
       }
 
       // Make 5 rapid requests to test performance
-      const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : 'AAPL'
+      const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : dataSourceId === 'bls' ? 'LNS14000000' : 'AAPL'
       for (let i = 0; i < 5; i++) {
         requests.push(
           apiInstance.getStockPrice(testSymbol)
