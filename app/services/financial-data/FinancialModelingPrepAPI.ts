@@ -121,8 +121,8 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         return null
       }
 
-      // Use the historical price endpoint for OHLC data
-      const response = await this.makeRequest(`/historical-price-full?symbol=${symbol.toUpperCase()}&limit=1`)
+      // Use the historical price endpoint for OHLC data - 1 year of data (~252 trading days)
+      const response = await this.makeRequest(`/historical-price-full?symbol=${symbol.toUpperCase()}&limit=365`)
 
       if (!response.success) {
         const error = new Error(response.error || 'Financial Modeling Prep API request failed')
@@ -136,7 +136,11 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         return null
       }
 
+      // Get the most recent trading day (first item in the historical array)
       const historical = response.data.historical[0]
+
+      // Store full historical data for future use (365 days now cached)
+      console.log(`📊 FMP: Fetched ${response.data.historical.length} days of historical data for ${symbol}`)
 
       return {
         symbol: symbol.toUpperCase(),
@@ -152,6 +156,53 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       console.error(`Financial Modeling Prep market data error for ${symbol}:`, error)
       if (this.throwErrors) throw error
       return null
+    }
+  }
+
+  /**
+   * Get historical data for a symbol (returns array of daily data)
+   * @param symbol Stock symbol
+   * @param limit Number of days to retrieve (default: 365)
+   */
+  async getHistoricalData(symbol: string, limit: number = 365): Promise<MarketData[]> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      const response = await this.makeRequest(`/historical-price-full?symbol=${symbol.toUpperCase()}&limit=${limit}`)
+
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      if (!response.data?.historical || !Array.isArray(response.data.historical)) {
+        const error = new Error('Invalid historical data response from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      // Convert all historical data to MarketData format
+      return response.data.historical.map((historical: any) => ({
+        symbol: symbol.toUpperCase(),
+        open: parseFloat(historical.open || '0'),
+        high: parseFloat(historical.high || '0'),
+        low: parseFloat(historical.low || '0'),
+        close: parseFloat(historical.close || '0'),
+        volume: parseInt(historical.volume || '0'),
+        timestamp: new Date(historical.date).getTime(),
+        source: 'fmp'
+      }))
+
+    } catch (error) {
+      console.error(`Financial Modeling Prep historical data error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return []
     }
   }
 

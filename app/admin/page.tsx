@@ -76,6 +76,16 @@ export default function AdminDashboard() {
       timeout: 8000
     },
     {
+      id: 'twelvedata',
+      name: 'TwelveData API',
+      category: 'financial',
+      description: 'TweleveData market data',
+      status: 'online',
+      enabled: true,
+      rateLimit: 300,
+      timeout: 8000
+    },
+    {
       id: 'yahoo',
       name: 'Yahoo Finance API',
       category: 'financial',
@@ -591,7 +601,7 @@ export default function AdminDashboard() {
                 maxWidth: '600px',
                 margin: '0 auto'
               }}>
-                Monitor and test connections to all 12 financial data APIs
+                Monitor and test connections to all 10 financial data APIs
               </p>
             </div>
 
