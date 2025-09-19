@@ -100,14 +100,36 @@ export async function POST(request: NextRequest) {
             break
 
           case 'comprehensive':
-            // Combined test
+            // Combined test - all four test types in succession
             const connectionTest = await testDataSourceConnection(dataSourceId, timeout)
             const dataTest = await testDataSourceData(dataSourceId, timeout)
-            success = connectionTest && !!dataTest
+            const endpointsTest = await listDataSourceEndpoints(dataSourceId)
+            const performanceTest = await testDataSourcePerformance(dataSourceId, timeout)
+
+            success = connectionTest && !!dataTest && !!endpointsTest && !!performanceTest
             testData = {
-              connection: connectionTest,
-              data: dataTest,
-              timestamp: Date.now()
+              connection: {
+                success: connectionTest,
+                testType: 'connection'
+              },
+              dataRetrieval: {
+                success: !!dataTest,
+                data: dataTest,
+                testType: 'data'
+              },
+              apiEndpoints: {
+                success: !!endpointsTest,
+                data: endpointsTest,
+                testType: 'list_api_endpoints'
+              },
+              performance: {
+                success: !!performanceTest,
+                data: performanceTest,
+                testType: 'performance'
+              },
+              overallSuccess: success,
+              timestamp: Date.now(),
+              testType: 'comprehensive'
             }
             break
 
@@ -217,10 +239,23 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo'].includes(dataSourceId)) {
-      const health = await financialDataService.healthCheck()
-      const dataSourceHealth = health.find(h => h.name.toLowerCase().includes(dataSourceId))
-      return dataSourceHealth?.healthy || false
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId)) {
+      let apiInstance: any
+      switch (dataSourceId) {
+        case 'polygon':
+          apiInstance = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+          break
+        case 'alphavantage':
+          apiInstance = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+          break
+        case 'yahoo':
+          apiInstance = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+          break
+        case 'fmp':
+          apiInstance = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+          break
+      }
+      return await apiInstance.healthCheck()
     }
 
     // For non-implemented data sources, simulate connection
@@ -248,17 +283,26 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
     switch (dataSourceId) {
       case 'polygon':
         console.log('🔴 Making real Polygon API call...')
-        testData = await financialDataService.getStockPrice('AAPL', 'polygon')
+        const polygonAPI = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+        testData = await polygonAPI.getStockPrice('AAPL')
         break
 
       case 'yahoo':
         console.log('🟡 Making real Yahoo Finance call...')
-        testData = await financialDataService.getStockPrice('AAPL', 'yahoo')
+        const yahooAPI = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+        testData = await yahooAPI.getStockPrice('AAPL')
         break
 
       case 'alphavantage':
         console.log('🟢 Making real Alpha Vantage call...')
-        testData = await financialDataService.getStockPrice('AAPL', 'alphavantage')
+        const alphaAPI = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+        testData = await alphaAPI.getStockPrice('AAPL')
+        break
+
+      case 'fmp':
+        console.log('🔵 Making real Financial Modeling Prep call...')
+        const fmpAPI = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+        testData = await fmpAPI.getStockPrice('AAPL')
         break
 
       default:
@@ -275,7 +319,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -481,13 +525,30 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId)) {
       const requests = []
+
+      // Get the appropriate API instance
+      let apiInstance: any
+      switch (dataSourceId) {
+        case 'polygon':
+          apiInstance = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+          break
+        case 'alphavantage':
+          apiInstance = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+          break
+        case 'yahoo':
+          apiInstance = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+          break
+        case 'fmp':
+          apiInstance = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+          break
+      }
 
       // Make 5 rapid requests to test performance
       for (let i = 0; i < 5; i++) {
         requests.push(
-          financialDataService.getStockPrice('AAPL', dataSourceId)
+          apiInstance.getStockPrice('AAPL')
             .then(result => ({
               request: i + 1,
               responseTime: Date.now() - startTime,

@@ -147,7 +147,10 @@ export class AlphaVantageAPI implements FinancialDataProvider {
         apikey: this.apiKey
       })
 
-      return response.success && !response.data?.['Error Message']
+      // Check for success, no error message, and presence of expected data structure
+      return response.success &&
+             !response.data?.['Error Message'] &&
+             !!response.data?.['Global Quote']
     } catch {
       return false
     }

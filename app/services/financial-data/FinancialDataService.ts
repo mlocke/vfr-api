@@ -8,6 +8,7 @@ import { StockData, CompanyInfo, MarketData, FinancialDataProvider } from './typ
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
+import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 
 interface ProviderHealth {
   name: string
@@ -24,7 +25,8 @@ export class FinancialDataService {
     this.providers = [
       new PolygonAPI(),
       new AlphaVantageAPI(),
-      new YahooFinanceAPI()
+      new YahooFinanceAPI(),
+      new FinancialModelingPrepAPI()
     ]
   }
 
@@ -42,7 +44,7 @@ export class FinancialDataService {
 
     // Try preferred provider first
     if (preferredProvider) {
-      const provider = this.providers.find(p => p.name.toLowerCase().includes(preferredProvider.toLowerCase()))
+      const provider = this.getProviderByIdentifier(preferredProvider)
       if (provider) {
         const result = await provider.getStockPrice(symbol)
         if (result) {
