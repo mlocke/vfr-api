@@ -416,11 +416,11 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         rateLimit: '250 requests per day (free tier)'
       },
       sec_edgar: {
-        baseUrl: 'https://data.sec.gov/api',
+        baseUrl: 'https://data.sec.gov',
         endpoints: [
-          { path: '/xbrl/companyfacts/CIK{cik}.json', description: 'Company facts', method: 'GET' },
-          { path: '/xbrl/companyconcept/CIK{cik}/us-gaap/{tag}.json', description: 'Company concept', method: 'GET' },
-          { path: '/xbrl/frames/us-gaap/{tag}/USD/{period}.json', description: 'XBRL frames', method: 'GET' },
+          { path: '/api/xbrl/companyfacts/CIK{cik}.json', description: 'Company facts', method: 'GET' },
+          { path: '/api/xbrl/companyconcept/CIK{cik}/us-gaap/{tag}.json', description: 'Company concept', method: 'GET' },
+          { path: '/api/xbrl/frames/us-gaap/{tag}/USD/{period}.json', description: 'XBRL frames', method: 'GET' },
           { path: '/submissions/CIK{cik}.json', description: 'Company submissions', method: 'GET' }
         ],
         authentication: 'User-Agent header required',
