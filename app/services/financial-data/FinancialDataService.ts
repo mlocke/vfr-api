@@ -9,6 +9,7 @@ import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import { DataGovAPI } from './DataGovAPI'
 
 interface ProviderHealth {
   name: string
@@ -26,7 +27,8 @@ export class FinancialDataService {
       new PolygonAPI(),
       new AlphaVantageAPI(),
       new YahooFinanceAPI(),
-      new FinancialModelingPrepAPI()
+      new FinancialModelingPrepAPI(),
+      new DataGovAPI()
     ]
   }
 
@@ -216,6 +218,15 @@ export class FinancialDataService {
    */
   clearCache(): void {
     this.cache.clear()
+  }
+
+  /**
+   * Get provider by name or identifier
+   */
+  private getProviderByIdentifier(identifier: string): FinancialDataProvider | null {
+    return this.providers.find(p =>
+      p.name.toLowerCase().includes(identifier.toLowerCase())
+    ) || null
   }
 
   /**

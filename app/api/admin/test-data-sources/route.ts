@@ -12,6 +12,7 @@ import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAP
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
 import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
+import { DataGovAPI } from '../../../services/financial-data/DataGovAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -254,7 +255,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -275,19 +276,15 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
         case 'treasury':
           apiInstance = new TreasuryAPI()
           break
+        case 'datagov':
+          apiInstance = new DataGovAPI()
+          break
       }
       return await apiInstance.healthCheck()
     }
 
-    // For non-implemented data sources, simulate connection
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 200))
-    const success = Math.random() > 0.3 // 70% success rate for legacy data sources
-
-    if (!success) {
-      throw new Error('Data source not implemented or connection refused')
-    }
-
-    return true
+    // Data source not recognized - return an error
+    throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
   } catch (error) {
     console.error(`❌ Connection test failed for ${dataSourceId}:`, error)
     throw error
@@ -338,21 +335,20 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await treasuryAPI.getStockPrice('AAPL')
         break
 
+      case 'datagov':
+        console.log('🟤 Making real Data.gov API call...')
+        const dataGovAPI = new DataGovAPI()
+        testData = await dataGovAPI.getStockPrice('UNEMPLOYMENT')
+        break
+
       default:
-        // Generate mock data for non-implemented data sources
-        testData = {
-          status: 'not_implemented',
-          timestamp: Date.now(),
-          dataSource: dataSourceId,
-          sampleValue: Math.random() * 100,
-          source: 'mock-api',
-          note: `Mock data - direct ${dataSourceId} API not yet implemented`
-        }
+        // Data source not recognized - return an error
+        throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
     }
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -558,7 +554,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -581,6 +577,9 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           break
         case 'treasury':
           apiInstance = new TreasuryAPI()
+          break
+        case 'datagov':
+          apiInstance = new DataGovAPI()
           break
       }
 
@@ -617,36 +616,8 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         isRealPerformanceTest: true
       }
     } else {
-      // For non-implemented data sources, simulate performance test
-      const requests = []
-      for (let i = 0; i < 5; i++) {
-        requests.push(new Promise(resolve => {
-          setTimeout(() => {
-            resolve({
-              request: i + 1,
-              responseTime: Math.random() * 500 + 100,
-              success: Math.random() > 0.3
-            })
-          }, Math.random() * 200)
-        }))
-      }
-
-      const responses = await Promise.all(requests)
-      const totalTime = Date.now() - startTime
-
-      const successfulRequests = responses.filter((r: any) => r.success).length
-      const avgResponseTime = responses.reduce((sum: number, r: any) => sum + r.responseTime, 0) / responses.length
-
-      return {
-        totalRequests: 5,
-        successfulRequests,
-        totalTime,
-        avgResponseTime: Math.round(avgResponseTime),
-        throughput: Math.round((successfulRequests / totalTime) * 1000),
-        timestamp: Date.now(),
-        isRealPerformanceTest: false,
-        note: `Mock performance test - ${dataSourceId} not implemented in direct architecture`
-      }
+      // Data source not recognized - return an error
+      throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
     }
   } catch (error) {
     console.error(`❌ Performance test failed for ${dataSourceId}:`, error)

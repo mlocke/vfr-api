@@ -106,16 +106,6 @@ export default function AdminDashboard() {
       timeout: 8000
     },
     {
-      id: 'datagov',
-      name: 'Data.gov API',
-      category: 'economic',
-      description: 'Government financial datasets',
-      status: 'online',
-      enabled: true,
-      rateLimit: 150,
-      timeout: 12000
-    },
-    {
       id: 'fred',
       name: 'FRED API',
       category: 'economic',

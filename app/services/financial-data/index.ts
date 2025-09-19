@@ -9,6 +9,7 @@ export * from './AlphaVantageAPI'
 export * from './YahooFinanceAPI'
 export * from './FinancialModelingPrepAPI'
 export * from './SECEdgarAPI'
+export * from './DataGovAPI'
 export * from './FinancialDataService'
 
 // Default export for convenience
