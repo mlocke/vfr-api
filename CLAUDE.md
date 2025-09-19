@@ -1,4 +1,5 @@
 # CLAUDE.md
+**IMPORTANT** Number 1 rule: NO MOCK DATA!! ANYWHERE!! EVER!!
 
 Veritak Financial Research LLC - A Next.js 15 cyberpunk-themed financial analysis platform aggregating 12+ data sources. See `docs/vision.md` for project vision.
 

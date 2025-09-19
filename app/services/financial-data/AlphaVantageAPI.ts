@@ -10,10 +10,12 @@ export class AlphaVantageAPI implements FinancialDataProvider {
   private baseUrl = 'https://www.alphavantage.co/query'
   private apiKey: string
   private timeout: number
+  private throwErrors: boolean
 
-  constructor(apiKey?: string, timeout = 15000) {
+  constructor(apiKey?: string, timeout = 15000, throwErrors = false) {
     this.apiKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || ''
     this.timeout = timeout
+    this.throwErrors = throwErrors
   }
 
   /**
@@ -22,7 +24,9 @@ export class AlphaVantageAPI implements FinancialDataProvider {
   async getStockPrice(symbol: string): Promise<StockData | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Alpha Vantage API key not configured')
+        const error = new Error('Alpha Vantage API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -32,7 +36,15 @@ export class AlphaVantageAPI implements FinancialDataProvider {
         apikey: this.apiKey
       })
 
-      if (!response.success || !response.data?.['Global Quote']) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Alpha Vantage API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data?.['Global Quote']) {
+        const error = new Error('Invalid response format from Alpha Vantage API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -52,6 +64,7 @@ export class AlphaVantageAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Alpha Vantage API error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -62,7 +75,9 @@ export class AlphaVantageAPI implements FinancialDataProvider {
   async getCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Alpha Vantage API key not configured')
+        const error = new Error('Alpha Vantage API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -72,7 +87,15 @@ export class AlphaVantageAPI implements FinancialDataProvider {
         apikey: this.apiKey
       })
 
-      if (!response.success || !response.data?.Symbol) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Alpha Vantage API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data?.Symbol) {
+        const error = new Error('Invalid company data response from Alpha Vantage API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -88,6 +111,7 @@ export class AlphaVantageAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Alpha Vantage company info error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -98,7 +122,9 @@ export class AlphaVantageAPI implements FinancialDataProvider {
   async getMarketData(symbol: string): Promise<MarketData | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Alpha Vantage API key not configured')
+        const error = new Error('Alpha Vantage API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -108,7 +134,15 @@ export class AlphaVantageAPI implements FinancialDataProvider {
         apikey: this.apiKey
       })
 
-      if (!response.success || !response.data?.['Time Series (Daily)']) {
+      if (!response.success) {
+        const error = new Error(response.error || 'Alpha Vantage API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data?.['Time Series (Daily)']) {
+        const error = new Error('Invalid time series data response from Alpha Vantage API')
+        if (this.throwErrors) throw error
         return null
       }
 
@@ -128,6 +162,7 @@ export class AlphaVantageAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`Alpha Vantage market data error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
       return null
     }
   }
@@ -138,6 +173,7 @@ export class AlphaVantageAPI implements FinancialDataProvider {
   async healthCheck(): Promise<boolean> {
     try {
       if (!this.apiKey) {
+        console.warn('Alpha Vantage API key not configured')
         return false
       }
 
@@ -147,11 +183,21 @@ export class AlphaVantageAPI implements FinancialDataProvider {
         apikey: this.apiKey
       })
 
+      // Check for rate limit error first
+      if (response.success && response.data?.['Information']) {
+        const info = response.data['Information']
+        if (info.includes('rate limit')) {
+          console.warn('Alpha Vantage API rate limit exceeded:', info)
+          throw new Error('Alpha Vantage API rate limit exceeded (25 requests/day)')
+        }
+      }
+
       // Check for success, no error message, and presence of expected data structure
       return response.success &&
              !response.data?.['Error Message'] &&
              !!response.data?.['Global Quote']
-    } catch {
+    } catch (error) {
+      console.error('Alpha Vantage health check failed:', error instanceof Error ? error.message : error)
       return false
     }
   }
@@ -212,7 +258,12 @@ export class AlphaVantageAPI implements FinancialDataProvider {
       }
 
       if (data['Note']) {
-        throw new Error('API rate limit exceeded')
+        throw new Error('Alpha Vantage API rate limit exceeded')
+      }
+
+      // Check for rate limit information message
+      if (data['Information'] && data['Information'].includes('rate limit')) {
+        throw new Error('Alpha Vantage API rate limit exceeded (25 requests/day)')
       }
 
       return {

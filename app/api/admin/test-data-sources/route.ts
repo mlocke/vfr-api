@@ -5,7 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { financialDataService } from '../../../services/financial-data'
+import { financialDataService } from '../../../services/financial-data/FinancialDataService'
+import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { AlphaVantageAPI } from '../../../services/financial-data/AlphaVantageAPI'
+import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAPI'
+import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
+import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -83,8 +88,17 @@ export async function POST(request: NextRequest) {
         switch (testType) {
           case 'connection':
             // Simple connection test
-            success = await testDataSourceConnection(dataSourceId, timeout)
-            testData = { testType: 'connection', timestamp: Date.now() }
+            try {
+              success = await testDataSourceConnection(dataSourceId, timeout)
+              testData = { testType: 'connection', timestamp: Date.now() }
+            } catch (error) {
+              success = false
+              testData = {
+                testType: 'connection',
+                timestamp: Date.now(),
+                error: error instanceof Error ? error.message : 'Connection failed'
+              }
+            }
             break
 
           case 'data':
@@ -239,20 +253,23 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
-          apiInstance = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+          apiInstance = new PolygonAPI()
           break
         case 'alphavantage':
-          apiInstance = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+          apiInstance = new AlphaVantageAPI(undefined, timeout, true)
           break
         case 'yahoo':
-          apiInstance = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+          apiInstance = new YahooFinanceAPI()
           break
         case 'fmp':
-          apiInstance = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+          apiInstance = new FinancialModelingPrepAPI(undefined, timeout, true)
+          break
+        case 'sec_edgar':
+          apiInstance = new SECEdgarAPI()
           break
       }
       return await apiInstance.healthCheck()
@@ -269,7 +286,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     return true
   } catch (error) {
     console.error(`❌ Connection test failed for ${dataSourceId}:`, error)
-    return false
+    throw error
   }
 }
 
@@ -283,26 +300,32 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
     switch (dataSourceId) {
       case 'polygon':
         console.log('🔴 Making real Polygon API call...')
-        const polygonAPI = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+        const polygonAPI = new PolygonAPI()
         testData = await polygonAPI.getStockPrice('AAPL')
         break
 
       case 'yahoo':
         console.log('🟡 Making real Yahoo Finance call...')
-        const yahooAPI = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+        const yahooAPI = new YahooFinanceAPI()
         testData = await yahooAPI.getStockPrice('AAPL')
         break
 
       case 'alphavantage':
         console.log('🟢 Making real Alpha Vantage call...')
-        const alphaAPI = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+        const alphaAPI = new AlphaVantageAPI(undefined, timeout, true)
         testData = await alphaAPI.getStockPrice('AAPL')
         break
 
       case 'fmp':
         console.log('🔵 Making real Financial Modeling Prep call...')
-        const fmpAPI = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+        const fmpAPI = new FinancialModelingPrepAPI(undefined, timeout, true)
         testData = await fmpAPI.getStockPrice('AAPL')
+        break
+
+      case 'sec_edgar':
+        console.log('🟠 Making real SEC EDGAR API call...')
+        const secAPI = new SECEdgarAPI()
+        testData = await secAPI.getStockPrice('AAPL')
         break
 
       default:
@@ -319,7 +342,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -380,16 +403,16 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         rateLimit: 'Rate limiting enforced by Yahoo'
       },
       fmp: {
-        baseUrl: 'https://financialmodelingprep.com/api',
+        baseUrl: 'https://financialmodelingprep.com/stable',
         endpoints: [
-          { path: '/v3/quote/{symbol}', description: 'Real-time stock quote', method: 'GET' },
-          { path: '/v3/income-statement/{symbol}', description: 'Income statement', method: 'GET' },
-          { path: '/v3/balance-sheet-statement/{symbol}', description: 'Balance sheet', method: 'GET' },
-          { path: '/v3/cash-flow-statement/{symbol}', description: 'Cash flow statement', method: 'GET' },
-          { path: '/v3/financial-ratios/{symbol}', description: 'Financial ratios', method: 'GET' }
+          { path: '/quote?symbol={symbol}', description: 'Real-time stock quote', method: 'GET' },
+          { path: '/income-statement?symbol={symbol}', description: 'Income statement', method: 'GET' },
+          { path: '/balance-sheet-statement?symbol={symbol}', description: 'Balance sheet', method: 'GET' },
+          { path: '/cash-flow-statement?symbol={symbol}', description: 'Cash flow statement', method: 'GET' },
+          { path: '/financial-ratios?symbol={symbol}', description: 'Financial ratios', method: 'GET' }
         ],
         authentication: 'API Key required',
-        documentation: 'https://financialmodelingprep.com/developer/docs',
+        documentation: 'https://site.financialmodelingprep.com/developer/docs',
         rateLimit: '250 requests per day (free tier)'
       },
       sec_edgar: {
@@ -525,23 +548,26 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
-          apiInstance = new (await import('../../../services/financial-data/PolygonAPI')).PolygonAPI()
+          apiInstance = new PolygonAPI()
           break
         case 'alphavantage':
-          apiInstance = new (await import('../../../services/financial-data/AlphaVantageAPI')).AlphaVantageAPI()
+          apiInstance = new AlphaVantageAPI(undefined, timeout, true)
           break
         case 'yahoo':
-          apiInstance = new (await import('../../../services/financial-data/YahooFinanceAPI')).YahooFinanceAPI()
+          apiInstance = new YahooFinanceAPI()
           break
         case 'fmp':
-          apiInstance = new (await import('../../../services/financial-data/FinancialModelingPrepAPI')).FinancialModelingPrepAPI()
+          apiInstance = new FinancialModelingPrepAPI(undefined, timeout, true)
+          break
+        case 'sec_edgar':
+          apiInstance = new SECEdgarAPI()
           break
       }
 

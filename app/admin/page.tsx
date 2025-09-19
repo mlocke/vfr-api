@@ -144,26 +144,6 @@ export default function AdminDashboard() {
       enabled: true,
       rateLimit: 200,
       timeout: 8000
-    },
-    {
-      id: 'firecrawl',
-      name: 'Firecrawl API',
-      category: 'intelligence',
-      description: 'Web scraping & sentiment',
-      status: 'online',
-      enabled: true,
-      rateLimit: 300,
-      timeout: 20000
-    },
-    {
-      id: 'dappier',
-      name: 'Dappier API',
-      category: 'intelligence',
-      description: 'Real-time web intelligence',
-      status: 'online',
-      enabled: true,
-      rateLimit: 500,
-      timeout: 10000
     }
   ]
 
@@ -195,7 +175,7 @@ export default function AdminDashboard() {
         // Get auth token or use development token
         const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
 
-        const response = await fetch('/api/admin/data-sources/config', {
+        const response = await fetch('/api/admin/data-sources', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
