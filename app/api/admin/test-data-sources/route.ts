@@ -11,6 +11,7 @@ import { AlphaVantageAPI } from '../../../services/financial-data/AlphaVantageAP
 import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
+import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -253,7 +254,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -270,6 +271,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           break
         case 'sec_edgar':
           apiInstance = new SECEdgarAPI()
+          break
+        case 'treasury':
+          apiInstance = new TreasuryAPI()
           break
       }
       return await apiInstance.healthCheck()
@@ -328,6 +332,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await secAPI.getStockPrice('AAPL')
         break
 
+      case 'treasury':
+        console.log('🟤 Making real Treasury API call...')
+        const treasuryAPI = new TreasuryAPI()
+        testData = await treasuryAPI.getStockPrice('AAPL')
+        break
+
       default:
         // Generate mock data for non-implemented data sources
         testData = {
@@ -342,7 +352,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -548,7 +558,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -568,6 +578,9 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           break
         case 'sec_edgar':
           apiInstance = new SECEdgarAPI()
+          break
+        case 'treasury':
+          apiInstance = new TreasuryAPI()
           break
       }
 
