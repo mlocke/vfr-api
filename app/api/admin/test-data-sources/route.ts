@@ -241,7 +241,10 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     // For implemented data sources, use real health checks
     if (['polygon', 'alphavantage', 'yahoo'].includes(dataSourceId)) {
       const health = await financialDataService.healthCheck()
-      const dataSourceHealth = health.find(h => h.name.toLowerCase().includes(dataSourceId))
+      const dataSourceHealth = health.find(h =>
+        h.name.toLowerCase().replace(/\s+/g, '').includes(dataSourceId.replace(/\s+/g, '')) ||
+        h.name.toLowerCase().includes(dataSourceId)
+      )
       return dataSourceHealth?.healthy || false
     }
 

@@ -3,11 +3,14 @@
  * Configures global test environment for memory optimization and leak prevention
  */
 
+// Load environment variables from .env file for tests
+require('dotenv').config()
+
 // Mock process.env to prevent environment variable leaks across tests
 const originalEnv = process.env
 
 beforeEach(() => {
-  // Restore original environment for each test
+  // Restore original environment for each test (with .env loaded)
   process.env = { ...originalEnv }
 })
 

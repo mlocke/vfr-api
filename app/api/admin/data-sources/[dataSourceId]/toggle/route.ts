@@ -15,7 +15,7 @@ interface RouteParams {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { dataSourceId } = params
+    const { dataSourceId } = await params
 
     // Extract authorization header
     const authHeader = request.headers.get('authorization')
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    console.error(`Error toggling data source ${params.dataSourceId}:`, error)
+    console.error(`Error toggling data source:`, error)
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { dataSourceId } = params
+    const { dataSourceId } = await params
 
     // Extract authorization header
     const authHeader = request.headers.get('authorization')
