@@ -379,10 +379,15 @@ export class DataSourceConfigManager {
 
       // Simple connectivity test
       const startTime = Date.now()
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
+
       const response = await fetch(dataSource.endpoint, {
         method: 'HEAD',
-        timeout: 5000
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
       const responseTime = Date.now() - startTime
 
       const status = response.ok ? 'online' : 'degraded'
@@ -479,6 +484,37 @@ export class DataSourceConfigManager {
         return {
           success: false,
           error: error instanceof Error ? error.message : 'BLS API test failed'
+        }
+      }
+    }
+
+    // Test EIA API specifically with WTI crude oil price series
+    if (dataSourceId === 'eia') {
+      try {
+        const { EIAAPI } = await import('../financial-data/EIAAPI')
+        const eiaApi = new EIAAPI()
+        const healthCheck = await eiaApi.healthCheck()
+
+        if (healthCheck) {
+          // Test fetching actual data with WTI crude oil price
+          const testData = await eiaApi.getLatestObservation('PET.RWTC.D')
+          return {
+            success: true,
+            hasData: !!testData,
+            testSeries: 'PET.RWTC.D',
+            latestValue: testData?.value || null,
+            timestamp: testData ? new Date(testData.period).getTime() : null
+          }
+        } else {
+          return {
+            success: false,
+            error: 'EIA API health check failed'
+          }
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'EIA API test failed'
         }
       }
     }

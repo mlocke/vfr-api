@@ -72,3 +72,4 @@ src/
 - Multiple dev servers supported (different ports)
 - Use `dev:clean` for port conflicts
 - See `docs/claude-standards.md` and `docs/comprehensive-coding-standards.md` for details
+- For server issues, or website down issues, before trying anything else: 1. Kill all httpd processes. 2. Restart Next.js dev server.

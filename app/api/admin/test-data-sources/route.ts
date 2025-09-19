@@ -15,6 +15,7 @@ import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
 import { DataGovAPI } from '../../../services/financial-data/DataGovAPI'
 import { FREDAPI } from '../../../services/financial-data/FREDAPI'
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
+import { EIAAPI } from '../../../services/financial-data/EIAAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -257,7 +258,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -286,6 +287,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           break
         case 'bls':
           apiInstance = new BLSAPI(undefined, timeout, true)
+          break
+        case 'eia':
+          apiInstance = new EIAAPI(undefined, timeout, true)
           break
       }
       return await apiInstance.healthCheck()
@@ -361,6 +365,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await blsAPI.getStockPrice('LNS14000000') // Unemployment Rate from BLS
         break
 
+      case 'eia':
+        console.log('⚡ Making real EIA API call...')
+        const eiaAPI = new EIAAPI(undefined, timeout, true)
+        testData = await eiaAPI.getStockPrice('PET.RWTC.D') // WTI Crude Oil Price from EIA
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -368,7 +378,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -574,7 +584,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -607,10 +617,13 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'bls':
           apiInstance = new BLSAPI(undefined, timeout, true)
           break
+        case 'eia':
+          apiInstance = new EIAAPI(undefined, timeout, true)
+          break
       }
 
       // Make 5 rapid requests to test performance
-      const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : dataSourceId === 'bls' ? 'LNS14000000' : 'AAPL'
+      const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : dataSourceId === 'bls' ? 'LNS14000000' : dataSourceId === 'eia' ? 'PET.RWTC.D' : 'AAPL'
       for (let i = 0; i < 5; i++) {
         requests.push(
           apiInstance.getStockPrice(testSymbol)

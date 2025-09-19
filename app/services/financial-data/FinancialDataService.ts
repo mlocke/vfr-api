@@ -11,6 +11,7 @@ import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { DataGovAPI } from './DataGovAPI'
 import { BLSAPI } from './BLSAPI'
+import { EIAAPI } from './EIAAPI'
 
 interface ProviderHealth {
   name: string
@@ -30,7 +31,8 @@ export class FinancialDataService {
       new YahooFinanceAPI(),
       new FinancialModelingPrepAPI(),
       new DataGovAPI(),
-      new BLSAPI()
+      new BLSAPI(),
+      new EIAAPI()
     ]
   }
 
