@@ -12,6 +12,7 @@ import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { DataGovAPI } from './DataGovAPI'
 import { BLSAPI } from './BLSAPI'
 import { EIAAPI } from './EIAAPI'
+import { TwelveDataAPI } from './TwelveDataAPI'
 
 interface ProviderHealth {
   name: string
@@ -32,7 +33,8 @@ export class FinancialDataService {
       new FinancialModelingPrepAPI(),
       new DataGovAPI(),
       new BLSAPI(),
-      new EIAAPI()
+      new EIAAPI(),
+      new TwelveDataAPI()
     ]
   }
 

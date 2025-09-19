@@ -16,6 +16,7 @@ import { DataGovAPI } from '../../../services/financial-data/DataGovAPI'
 import { FREDAPI } from '../../../services/financial-data/FREDAPI'
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
+import { TwelveDataAPI } from '../../../services/financial-data/TwelveDataAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -51,6 +52,7 @@ const DATA_SOURCE_CONFIGS = {
   fred: { name: 'FRED API', timeout: 10000 },
   bls: { name: 'BLS API', timeout: 15000 },
   eia: { name: 'EIA API', timeout: 8000 },
+  twelvedata: { name: 'TwelveData API', timeout: 8000 },
   firecrawl: { name: 'Firecrawl API', timeout: 20000 },
   dappier: { name: 'Dappier API', timeout: 10000 }
 }
@@ -258,7 +260,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -290,6 +292,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           break
         case 'eia':
           apiInstance = new EIAAPI(undefined, timeout, true)
+          break
+        case 'twelvedata':
+          apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
       }
       return await apiInstance.healthCheck()
@@ -371,6 +376,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await eiaAPI.getStockPrice('PET.RWTC.D') // WTI Crude Oil Price from EIA
         break
 
+      case 'twelvedata':
+        console.log('📊 Making real TwelveData API call...')
+        const twelveDataAPI = new TwelveDataAPI(undefined, timeout, true)
+        testData = await twelveDataAPI.getStockPrice('AAPL') // Apple stock price from TwelveData
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -378,7 +389,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -584,7 +595,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -619,6 +630,9 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           break
         case 'eia':
           apiInstance = new EIAAPI(undefined, timeout, true)
+          break
+        case 'twelvedata':
+          apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
       }
 
