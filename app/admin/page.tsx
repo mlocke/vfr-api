@@ -175,7 +175,7 @@ export default function AdminDashboard() {
         // Get auth token or use development token
         const authToken = localStorage.getItem('auth_token') || 'dev-admin-token'
 
-        const response = await fetch('/api/admin/data-sources/config', {
+        const response = await fetch('/api/admin/data-sources', {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`

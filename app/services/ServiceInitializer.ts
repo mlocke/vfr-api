@@ -55,7 +55,7 @@ export class ServiceInitializer {
 
   private async initializeRedisCache(): Promise<void> {
     try {
-      const { redisCache } = await import('../cache/RedisCache')
+      const { redisCache } = await import('./cache/RedisCache')
       await redisCache.ping()
       console.log('✅ Redis cache initialized')
     } catch (error) {
@@ -65,7 +65,7 @@ export class ServiceInitializer {
 
   private async initializeAuthService(): Promise<void> {
     try {
-      const { authService } = await import('../auth/AuthService')
+      const { authService } = await import('./auth/AuthService')
       await authService.initialize()
       console.log('✅ Auth service initialized')
     } catch (error) {
@@ -75,7 +75,7 @@ export class ServiceInitializer {
 
   private async initializeDataSourceConfigManager(): Promise<void> {
     try {
-      const { dataSourceConfigManager } = await import('../admin/DataSourceConfigManager')
+      const { dataSourceConfigManager } = await import('./admin/DataSourceConfigManager')
       // Data source config manager doesn't have an explicit initialize method
       // but we can verify it's working by getting the enabled data sources
       dataSourceConfigManager.getEnabledDataSources()
@@ -102,7 +102,7 @@ export class ServiceInitializer {
     }
 
     try {
-      const { redisCache } = await import('../cache/RedisCache')
+      const { redisCache } = await import('./cache/RedisCache')
       const pingResult = await redisCache.ping()
       health.redis = !pingResult.includes('fallback')
     } catch {
@@ -110,7 +110,7 @@ export class ServiceInitializer {
     }
 
     try {
-      const { authService } = await import('../auth/AuthService')
+      const { authService } = await import('./auth/AuthService')
       // Test auth service by validating a dev token
       await authService.validateToken('dev-admin-token')
       health.auth = true
@@ -119,7 +119,7 @@ export class ServiceInitializer {
     }
 
     try {
-      const { dataSourceConfigManager } = await import('../admin/DataSourceConfigManager')
+      const { dataSourceConfigManager } = await import('./admin/DataSourceConfigManager')
       dataSourceConfigManager.getEnabledDataSources()
       health.dataSourceConfig = true
     } catch {
