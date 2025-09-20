@@ -11,6 +11,9 @@ export class PolygonAPI implements FinancialDataProvider {
   private apiKey: string
   private timeout: number
   private previousCloseCache: Map<string, number> = new Map()
+  private requestQueue: Array<{ timestamp: number; endpoint: string }> = []
+  private readonly FREE_TIER_RATE_LIMIT = 5 // requests per minute
+  private readonly RATE_LIMIT_WINDOW = 60000 // 1 minute in milliseconds
 
   constructor(apiKey?: string, timeout = 10000) {
     this.apiKey = apiKey || process.env.POLYGON_API_KEY || ''
@@ -299,7 +302,29 @@ export class PolygonAPI implements FinancialDataProvider {
   }
 
   /**
-   * Get options chain for a symbol
+   * Check and enforce free tier rate limiting (5 requests per minute)
+   */
+  private checkRateLimit(endpoint: string): void {
+    const now = Date.now()
+
+    // Remove requests older than 1 minute
+    this.requestQueue = this.requestQueue.filter(req =>
+      now - req.timestamp < this.RATE_LIMIT_WINDOW
+    )
+
+    // Check if we're at the rate limit
+    if (this.requestQueue.length >= this.FREE_TIER_RATE_LIMIT) {
+      const oldestRequest = this.requestQueue[0]
+      const waitTime = this.RATE_LIMIT_WINDOW - (now - oldestRequest.timestamp)
+      throw new Error(`Rate limit exceeded. Polygon free tier allows ${this.FREE_TIER_RATE_LIMIT} requests per minute. Please wait ${Math.ceil(waitTime / 1000)} seconds.`)
+    }
+
+    // Add current request to queue
+    this.requestQueue.push({ timestamp: now, endpoint })
+  }
+
+  /**
+   * Get options chain for a symbol (optimized for free tier)
    */
   async getOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {
     try {
@@ -309,11 +334,14 @@ export class PolygonAPI implements FinancialDataProvider {
       }
 
       const upperSymbol = symbol.toUpperCase()
-      let endpoint = `/v3/reference/options/contracts?underlying_ticker=${upperSymbol}&limit=1000&apikey=${this.apiKey}`
+      let endpoint = `/v3/reference/options/contracts?underlying_ticker=${upperSymbol}&limit=250&apikey=${this.apiKey}`
 
       if (expiration) {
         endpoint += `&expiration_date=${expiration}`
       }
+
+      // Check rate limiting before making request
+      this.checkRateLimit(endpoint)
 
       const response = await this.makeRequest(endpoint)
 
@@ -349,9 +377,10 @@ export class PolygonAPI implements FinancialDataProvider {
         }
       }
 
-      // Get snapshot data for volume and open interest
+      // Get snapshot data for volume and open interest (with rate limiting)
+      this.checkRateLimit(`/v3/snapshot/options/${upperSymbol}`)
       const snapshotResponse = await this.makeRequest(
-        `/v3/snapshot/options/${upperSymbol}?limit=250&apikey=${this.apiKey}`
+        `/v3/snapshot/options/${upperSymbol}?limit=100&apikey=${this.apiKey}`
       )
 
       if (snapshotResponse.success && snapshotResponse.data?.results) {
@@ -361,29 +390,31 @@ export class PolygonAPI implements FinancialDataProvider {
         // Update contracts with snapshot data
         for (const call of calls) {
           const snapshot = snapshotMap.get(call.symbol)
-          if (snapshot) {
-            call.volume = snapshot.day?.volume || 0
-            call.openInterest = snapshot.open_interest || 0
-            call.impliedVolatility = snapshot.implied_volatility
-            call.bid = snapshot.details?.bid
-            call.ask = snapshot.details?.ask
-            call.lastPrice = snapshot.day?.last_price
-            call.change = snapshot.day?.change
-            call.changePercent = snapshot.day?.change_percent
+          if (snapshot && typeof snapshot === 'object' && snapshot !== null) {
+            const snapshotObj = snapshot as any
+            call.volume = snapshotObj.day?.volume || 0
+            call.openInterest = snapshotObj.open_interest || 0
+            call.impliedVolatility = snapshotObj.implied_volatility
+            call.bid = snapshotObj.details?.bid
+            call.ask = snapshotObj.details?.ask
+            call.lastPrice = snapshotObj.day?.last_price
+            call.change = snapshotObj.day?.change
+            call.changePercent = snapshotObj.day?.change_percent
           }
         }
 
         for (const put of puts) {
           const snapshot = snapshotMap.get(put.symbol)
-          if (snapshot) {
-            put.volume = snapshot.day?.volume || 0
-            put.openInterest = snapshot.open_interest || 0
-            put.impliedVolatility = snapshot.implied_volatility
-            put.bid = snapshot.details?.bid
-            put.ask = snapshot.details?.ask
-            put.lastPrice = snapshot.day?.last_price
-            put.change = snapshot.day?.change
-            put.changePercent = snapshot.day?.change_percent
+          if (snapshot && typeof snapshot === 'object' && snapshot !== null) {
+            const snapshotObj = snapshot as any
+            put.volume = snapshotObj.day?.volume || 0
+            put.openInterest = snapshotObj.open_interest || 0
+            put.impliedVolatility = snapshotObj.implied_volatility
+            put.bid = snapshotObj.details?.bid
+            put.ask = snapshotObj.details?.ask
+            put.lastPrice = snapshotObj.day?.last_price
+            put.change = snapshotObj.day?.change
+            put.changePercent = snapshotObj.day?.change_percent
           }
         }
       }
@@ -404,7 +435,7 @@ export class PolygonAPI implements FinancialDataProvider {
   }
 
   /**
-   * Calculate put/call ratio for a symbol
+   * Calculate put/call ratio for a symbol (optimized for free tier)
    */
   async getPutCallRatio(symbol: string): Promise<PutCallRatio | null> {
     try {
@@ -415,12 +446,25 @@ export class PolygonAPI implements FinancialDataProvider {
 
       const upperSymbol = symbol.toUpperCase()
 
-      // Get options snapshot for the symbol
+      // Check rate limiting before making request
+      this.checkRateLimit(`/v3/snapshot/options/${upperSymbol}`)
+
+      // Get options snapshot for the symbol (reduced limit for free tier)
       const response = await this.makeRequest(
-        `/v3/snapshot/options/${upperSymbol}?limit=1000&apikey=${this.apiKey}`
+        `/v3/snapshot/options/${upperSymbol}?limit=250&apikey=${this.apiKey}`
       )
 
-      if (!response.success || !response.data?.results) {
+      if (!response.success) {
+        // Handle specific free tier errors
+        if (response.error?.includes('UNAUTHORIZED') || response.error?.includes('403')) {
+          console.warn(`Polygon free tier may not support this endpoint: ${response.error}`)
+          return null
+        }
+        throw new Error(response.error || 'Failed to fetch options data')
+      }
+
+      if (!response.data?.results || response.data.results.length === 0) {
+        console.warn(`No options data available for ${upperSymbol}. This may be due to free tier limitations.`)
         return null
       }
 
@@ -428,12 +472,14 @@ export class PolygonAPI implements FinancialDataProvider {
       let totalCallVolume = 0
       let totalPutOpenInterest = 0
       let totalCallOpenInterest = 0
+      let processedContracts = 0
 
       for (const option of response.data.results) {
-        const contractType = option.details?.contract_type ||
-                           (option.underlying_ticker?.ticker?.includes('P') ? 'put' : 'call')
-        const volume = option.day?.volume || 0
-        const openInterest = option.open_interest || 0
+        const optionObj = option as any
+        const contractType = optionObj.details?.contract_type ||
+                           (optionObj.underlying_ticker?.ticker?.includes('P') ? 'put' : 'call')
+        const volume = optionObj.day?.volume || 0
+        const openInterest = optionObj.open_interest || 0
 
         if (contractType === 'put') {
           totalPutVolume += volume
@@ -442,7 +488,11 @@ export class PolygonAPI implements FinancialDataProvider {
           totalCallVolume += volume
           totalCallOpenInterest += openInterest
         }
+        processedContracts++
       }
+
+      // Add metadata about data completeness for free tier
+      const dataCompleteness = Math.min(processedContracts / 100, 1) // Expect at least 100 contracts for good data
 
       const volumeRatio = totalCallVolume > 0 ? totalPutVolume / totalCallVolume : 0
       const openInterestRatio = totalCallOpenInterest > 0 ? totalPutOpenInterest / totalCallOpenInterest : 0
@@ -457,7 +507,13 @@ export class PolygonAPI implements FinancialDataProvider {
         totalCallOpenInterest,
         date: new Date().toISOString().split('T')[0],
         timestamp: Date.now(),
-        source: 'polygon'
+        source: 'polygon',
+        metadata: {
+          dataCompleteness,
+          contractsProcessed: processedContracts,
+          freeTierOptimized: true,
+          rateLimitStatus: this.getRateLimitStatus()
+        }
       }
     } catch (error) {
       console.error(`Polygon put/call ratio error for ${symbol}:`, error)
@@ -498,7 +554,83 @@ export class PolygonAPI implements FinancialDataProvider {
   }
 
   /**
-   * Get options analysis with put/call ratios and sentiment
+   * Get simplified options analysis optimized for free tier
+   */
+  async getOptionsAnalysisFreeTier(symbol: string): Promise<OptionsAnalysis | null> {
+    try {
+      const currentRatio = await this.getPutCallRatio(symbol)
+      if (!currentRatio) {
+        console.warn(`No options data available for ${symbol}. Free tier may have limited options coverage.`)
+        return null
+      }
+
+      // For free tier, provide analysis based on current ratio only
+      const analysis = this.analyzeOptionsData(currentRatio)
+
+      return {
+        symbol: symbol.toUpperCase(),
+        currentRatio,
+        historicalRatios: [], // Limited for free tier
+        ...analysis,
+        timestamp: Date.now(),
+        source: 'polygon',
+        freeTierLimited: true
+      }
+    } catch (error) {
+      console.error(`Polygon options analysis error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Analyze options data for sentiment (shared logic)
+   */
+  private analyzeOptionsData(ratio: PutCallRatio): {
+    trend: 'bullish' | 'bearish' | 'neutral'
+    sentiment: 'fear' | 'greed' | 'balanced'
+    confidence: number
+    analysis: string
+  } {
+    let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+    let sentiment: 'fear' | 'greed' | 'balanced' = 'balanced'
+    let confidence = 0.5
+
+    // P/C ratio interpretation:
+    // < 0.7 = Bullish (more calls than puts)
+    // 0.7 - 1.3 = Neutral
+    // > 1.3 = Bearish (more puts than calls)
+    if (ratio.volumeRatio < 0.7) {
+      trend = 'bullish'
+      sentiment = 'greed'
+      confidence = Math.min(0.9, 0.5 + (0.7 - ratio.volumeRatio))
+    } else if (ratio.volumeRatio > 1.3) {
+      trend = 'bearish'
+      sentiment = 'fear'
+      confidence = Math.min(0.9, 0.5 + (ratio.volumeRatio - 1.3) * 0.3)
+    } else {
+      trend = 'neutral'
+      sentiment = 'balanced'
+      confidence = 0.6
+    }
+
+    let analysis = `Put/Call Volume Ratio: ${ratio.volumeRatio.toFixed(2)} | `
+    analysis += `Put/Call OI Ratio: ${ratio.openInterestRatio.toFixed(2)} | `
+    analysis += `Total Put Volume: ${ratio.totalPutVolume.toLocaleString()} | `
+    analysis += `Total Call Volume: ${ratio.totalCallVolume.toLocaleString()} | `
+
+    if (trend === 'bullish') {
+      analysis += 'Options flow indicates bullish sentiment with higher call activity.'
+    } else if (trend === 'bearish') {
+      analysis += 'Options flow indicates bearish sentiment with higher put activity.'
+    } else {
+      analysis += 'Options flow is relatively balanced between puts and calls.'
+    }
+
+    return { trend, sentiment, confidence, analysis }
+  }
+
+  /**
+   * Get options analysis with put/call ratios and sentiment (full version)
    */
   async getOptionsAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
     try {
@@ -508,57 +640,46 @@ export class PolygonAPI implements FinancialDataProvider {
       }
 
       const historicalRatios = await this.getHistoricalPutCallRatios(symbol, 5)
-
-      // Determine trend based on P/C ratio
-      let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
-      let sentiment: 'fear' | 'greed' | 'balanced' = 'balanced'
-      let confidence = 0.5
-
-      // P/C ratio interpretation:
-      // < 0.7 = Bullish (more calls than puts)
-      // 0.7 - 1.3 = Neutral
-      // > 1.3 = Bearish (more puts than calls)
-      if (currentRatio.volumeRatio < 0.7) {
-        trend = 'bullish'
-        sentiment = 'greed'
-        confidence = Math.min(0.9, 0.5 + (0.7 - currentRatio.volumeRatio))
-      } else if (currentRatio.volumeRatio > 1.3) {
-        trend = 'bearish'
-        sentiment = 'fear'
-        confidence = Math.min(0.9, 0.5 + (currentRatio.volumeRatio - 1.3) * 0.3)
-      } else {
-        trend = 'neutral'
-        sentiment = 'balanced'
-        confidence = 0.6
-      }
-
-      let analysis = `Put/Call Volume Ratio: ${currentRatio.volumeRatio.toFixed(2)} | `
-      analysis += `Put/Call OI Ratio: ${currentRatio.openInterestRatio.toFixed(2)} | `
-      analysis += `Total Put Volume: ${currentRatio.totalPutVolume.toLocaleString()} | `
-      analysis += `Total Call Volume: ${currentRatio.totalCallVolume.toLocaleString()} | `
-
-      if (trend === 'bullish') {
-        analysis += 'Options flow indicates bullish sentiment with higher call activity.'
-      } else if (trend === 'bearish') {
-        analysis += 'Options flow indicates bearish sentiment with higher put activity.'
-      } else {
-        analysis += 'Options flow is relatively balanced between puts and calls.'
-      }
+      const analysis = this.analyzeOptionsData(currentRatio)
 
       return {
         symbol: symbol.toUpperCase(),
         currentRatio,
         historicalRatios,
-        trend,
-        sentiment,
-        confidence,
-        analysis,
+        ...analysis,
         timestamp: Date.now(),
         source: 'polygon'
       }
     } catch (error) {
       console.error(`Polygon options analysis error for ${symbol}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Get rate limit status for monitoring
+   */
+  getRateLimitStatus(): {
+    requestsInLastMinute: number
+    remainingRequests: number
+    resetTime: number
+  } {
+    const now = Date.now()
+
+    // Clean old requests
+    this.requestQueue = this.requestQueue.filter(req =>
+      now - req.timestamp < this.RATE_LIMIT_WINDOW
+    )
+
+    const requestsInLastMinute = this.requestQueue.length
+    const remainingRequests = Math.max(0, this.FREE_TIER_RATE_LIMIT - requestsInLastMinute)
+    const oldestRequest = this.requestQueue[0]
+    const resetTime = oldestRequest ? oldestRequest.timestamp + this.RATE_LIMIT_WINDOW : now
+
+    return {
+      requestsInLastMinute,
+      remainingRequests,
+      resetTime
     }
   }
 

@@ -14,6 +14,7 @@ import { TreasuryAPI } from './TreasuryAPI'
 import { FREDAPI } from './FREDAPI'
 import { BLSAPI } from './BLSAPI'
 import { EIAAPI } from './EIAAPI'
+import { EODHDAPI } from './EODHDAPI'
 import { StockData, CompanyInfo, FinancialDataProvider, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 
 export type DataSourceProvider =
@@ -22,6 +23,7 @@ export type DataSourceProvider =
   | 'yahoo'
   | 'fmp'
   | 'twelvedata'
+  | 'eodhd'
   | 'sec_edgar'
   | 'treasury'
   | 'fred'
@@ -113,6 +115,16 @@ export class DataSourceManager {
       description: 'TwelveData - Good free tier, excellent paid plans',
       supportedDataTypes: ['stock_price', 'company_info', 'market_data', 'options_data', 'options_chain', 'put_call_ratio']
     },
+    eodhd: {
+      enabled: true,
+      priority: 3,
+      costTier: 'paid',
+      reliability: 0.92,
+      dataQuality: 0.94,
+      rateLimit: '100,000 req/day',
+      description: 'EODHD - Premium EOD data with options add-on subscription',
+      supportedDataTypes: ['stock_price', 'company_info', 'market_data', 'options_data', 'options_chain', 'put_call_ratio', 'options_analysis']
+    },
     sec_edgar: {
       enabled: true,
       priority: 6,
@@ -178,22 +190,22 @@ export class DataSourceManager {
     },
     options_data: {
       primary: 'polygon',
-      fallbacks: ['twelvedata'],
+      fallbacks: ['eodhd', 'twelvedata'],
       lastUpdated: Date.now()
     },
     options_chain: {
       primary: 'polygon',
-      fallbacks: ['twelvedata'],
+      fallbacks: ['eodhd', 'twelvedata'],
       lastUpdated: Date.now()
     },
     put_call_ratio: {
       primary: 'polygon',
-      fallbacks: ['twelvedata'],
+      fallbacks: ['eodhd', 'twelvedata'],
       lastUpdated: Date.now()
     },
     options_analysis: {
       primary: 'polygon',
-      fallbacks: ['twelvedata'],
+      fallbacks: ['eodhd', 'twelvedata'],
       lastUpdated: Date.now()
     },
     fundamentals: {
@@ -241,6 +253,7 @@ export class DataSourceManager {
     this.providers.set('yahoo', new YahooFinanceAPI())
     this.providers.set('fmp', new FinancialModelingPrepAPI())
     this.providers.set('twelvedata', new TwelveDataAPI())
+    this.providers.set('eodhd', new EODHDAPI())
     this.providers.set('sec_edgar', new SECEdgarAPI())
     this.providers.set('treasury', new TreasuryAPI())
     this.providers.set('fred', new FREDAPI())

@@ -6,17 +6,26 @@
 import { DataSourceManager, DataSourceProvider } from './DataSourceManager'
 import { PolygonAPI } from './PolygonAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
+import { AlphaVantageAPI } from './AlphaVantageAPI'
+import { YahooFinanceAPI } from './YahooFinanceAPI'
+import { EODHDAPI } from './EODHDAPI'
 import { OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 
 export class OptionsDataService {
   private dataSourceManager: DataSourceManager
   private polygonAPI: PolygonAPI
   private twelveDataAPI: TwelveDataAPI
+  private alphaVantageAPI: AlphaVantageAPI
+  private yahooFinanceAPI: YahooFinanceAPI
+  private eodhdAPI: EODHDAPI
 
   constructor(dataSourceManager?: DataSourceManager) {
     this.dataSourceManager = dataSourceManager || new DataSourceManager()
     this.polygonAPI = new PolygonAPI()
     this.twelveDataAPI = new TwelveDataAPI()
+    this.alphaVantageAPI = new AlphaVantageAPI()
+    this.yahooFinanceAPI = new YahooFinanceAPI()
+    this.eodhdAPI = new EODHDAPI()
   }
 
   /**
@@ -60,9 +69,24 @@ export class OptionsDataService {
             if (polygonRatio) return polygonRatio
             break
 
+          case 'eodhd':
+            const eodhdRatio = await this.eodhdAPI.getPutCallRatio(symbol)
+            if (eodhdRatio) return eodhdRatio
+            break
+
           case 'twelvedata':
             const twelveDataRatio = await this.getTwelveDataPutCallRatio(symbol)
             if (twelveDataRatio) return twelveDataRatio
+            break
+
+          case 'alphavantage':
+            const alphaVantageRatio = await this.alphaVantageAPI.getPutCallRatio(symbol)
+            if (alphaVantageRatio) return alphaVantageRatio
+            break
+
+          case 'yahoo':
+            const yahooRatio = await this.yahooFinanceAPI.getPutCallRatio(symbol)
+            if (yahooRatio) return yahooRatio
             break
 
           default:
@@ -82,11 +106,9 @@ export class OptionsDataService {
    * Get options analysis with automatic fallback
    */
   async getOptionsAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
-    const sources = [this.preferredSource, ...this.getAvailableProviders()]
+    const sources = this.dataSourceManager.getProvidersForDataType('options_analysis')
 
     for (const source of sources) {
-      if (!this.providers[source].enabled) continue
-
       try {
         console.log(`📈 Trying ${source} for options analysis...`)
 
@@ -96,10 +118,25 @@ export class OptionsDataService {
             if (polygonAnalysis) return polygonAnalysis
             break
 
+          case 'eodhd':
+            const eodhdAnalysis = await this.eodhdAPI.getOptionsAnalysisFreeTier(symbol)
+            if (eodhdAnalysis) return eodhdAnalysis
+            break
+
           case 'twelvedata':
             // TwelveData options analysis (ready for paid plan)
             const twelveDataAnalysis = await this.getTwelveDataOptionsAnalysis(symbol)
             if (twelveDataAnalysis) return twelveDataAnalysis
+            break
+
+          case 'alphavantage':
+            const alphaVantageAnalysis = await this.alphaVantageAPI.getOptionsAnalysisFreeTier(symbol)
+            if (alphaVantageAnalysis) return alphaVantageAnalysis
+            break
+
+          case 'yahoo':
+            const yahooAnalysis = await this.yahooFinanceAPI.getOptionsAnalysisFreeTier(symbol)
+            if (yahooAnalysis) return yahooAnalysis
             break
 
           default:
@@ -119,11 +156,9 @@ export class OptionsDataService {
    * Get options chain with automatic fallback
    */
   async getOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {
-    const sources = [this.preferredSource, ...this.getAvailableProviders()]
+    const sources = this.dataSourceManager.getProvidersForDataType('options_chain')
 
     for (const source of sources) {
-      if (!this.providers[source].enabled) continue
-
       try {
         console.log(`🔗 Trying ${source} for options chain...`)
 
@@ -133,10 +168,25 @@ export class OptionsDataService {
             if (polygonChain) return polygonChain
             break
 
+          case 'eodhd':
+            const eodhdChain = await this.eodhdAPI.getOptionsChain(symbol, expiration)
+            if (eodhdChain) return eodhdChain
+            break
+
           case 'twelvedata':
             // TwelveData options chain (ready for paid plan)
             const twelveDataChain = await this.getTwelveDataOptionsChain(symbol, expiration)
             if (twelveDataChain) return twelveDataChain
+            break
+
+          case 'alphavantage':
+            const alphaVantageChain = await this.alphaVantageAPI.getOptionsChain(symbol, expiration)
+            if (alphaVantageChain) return alphaVantageChain
+            break
+
+          case 'yahoo':
+            const yahooChain = await this.yahooFinanceAPI.getOptionsChain(symbol, expiration)
+            if (yahooChain) return yahooChain
             break
 
           default:
@@ -185,10 +235,12 @@ export class OptionsDataService {
   /**
    * Check if any options data source is available
    */
-  async checkOptionsAvailability(): Promise<{ [key in OptionsDataSource]: boolean }> {
-    const availability: { [key in OptionsDataSource]: boolean } = {
+  async checkOptionsAvailability(): Promise<{ [key: string]: boolean }> {
+    const availability: { [key: string]: boolean } = {
       polygon: false,
+      eodhd: false,
       twelvedata: false,
+      alphavantage: false,
       yahoo: false,
       disabled: false
     }
@@ -201,11 +253,32 @@ export class OptionsDataService {
       availability.polygon = false
     }
 
+    // Test EODHD (requires options add-on subscription)
+    try {
+      const eodhdAvailability = await this.eodhdAPI.checkOptionsAvailability()
+      availability.eodhd = (typeof eodhdAvailability.putCallRatio === 'boolean') ? eodhdAvailability.putCallRatio : false
+    } catch (error) {
+      availability.eodhd = false
+    }
+
     // Test TwelveData (will be false until paid plan)
     availability.twelvedata = false
 
-    // Yahoo disabled for now
-    availability.yahoo = false
+    // Test Alpha Vantage (will be false - premium required)
+    try {
+      const alphaVantageAvailability = await this.alphaVantageAPI.checkOptionsAvailability()
+      availability.alphavantage = (typeof alphaVantageAvailability.putCallRatio === 'boolean') ? alphaVantageAvailability.putCallRatio : false
+    } catch (error) {
+      availability.alphavantage = false
+    }
+
+    // Test Yahoo Finance (unofficial API - may work)
+    try {
+      const yahooAvailability = await this.yahooFinanceAPI.checkOptionsAvailability()
+      availability.yahoo = (typeof yahooAvailability.putCallRatio === 'boolean') ? yahooAvailability.putCallRatio : false
+    } catch (error) {
+      availability.yahoo = false
+    }
 
     return availability
   }

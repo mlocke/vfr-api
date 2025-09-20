@@ -121,6 +121,16 @@ export interface PutCallRatio {
   date: string // ISO date string
   timestamp: number
   source: string
+  metadata?: {
+    dataCompleteness?: number // 0-1 scale
+    contractsProcessed?: number
+    freeTierOptimized?: boolean
+    rateLimitStatus?: {
+      requestsInLastMinute: number
+      remainingRequests: number
+      resetTime: number
+    }
+  }
 }
 
 export interface OptionsAnalysis {
@@ -133,6 +143,7 @@ export interface OptionsAnalysis {
   analysis: string
   timestamp: number
   source: string
+  freeTierLimited?: boolean
 }
 
 export interface ApiResponse<T> {

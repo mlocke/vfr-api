@@ -68,7 +68,8 @@ src/
 
 ### Financial Data Layer
 - **Primary Sources**: Polygon.io, Alpha Vantage, Financial Modeling Prep (premium APIs)
-- **Secondary Sources**: Yahoo Finance, TwelveData (free APIs)
+- **Enhanced Sources**: EODHD (100k req/day), TwelveData (800 req/day free)
+- **Secondary Sources**: Yahoo Finance (backup/fallback)
 - **Government APIs**: SEC EDGAR, FRED (Treasury rates), Bureau of Labor Statistics, EIA
 - **Treasury Analysis**: Enhanced yield curve analysis via FRED API (unlimited/free)
 - **Fallback Strategy**: Automatic source switching with rate limiting and error handling
@@ -208,3 +209,6 @@ src/
 - **Admin Dashboard**: `/admin` for real-time API monitoring
 - **Test Scripts**: Various test files in root directory for debugging specific APIs
 - **Logs**: Development logs available via `npm run dev:monitor`
+
+### API Lookup  
+- For API documentation always use context7 MCP.

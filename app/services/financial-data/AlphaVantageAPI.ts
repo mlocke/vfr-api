@@ -1,9 +1,35 @@
 /**
  * Direct Alpha Vantage API implementation
  * Replaces MCP-based Alpha Vantage data fetching with direct REST API calls
+ *
+ * OPTIONS DATA LIMITATION NOTICE:
+ * ==============================
+ *
+ * Alpha Vantage options data is NOT available on the free tier:
+ * - Free tier: 25 requests/day, includes stocks, forex, crypto, fundamentals
+ * - Options data: Requires premium subscription ($75/month+)
+ * - Available endpoints (premium only):
+ *   • HISTORICAL_OPTIONS: Full historical options chain (15+ years)
+ *   • REALTIME_OPTIONS: Real-time options trending data
+ *   • Includes Greeks, implied volatility, JSON/CSV formats
+ *
+ * Current implementation status:
+ * - getPutCallRatio(): Returns null, logs premium requirement
+ * - getOptionsAnalysisFreeTier(): Returns null, shows premium structure
+ * - getOptionsChain(): Returns null, documents premium API format
+ * - checkOptionsAvailability(): Returns false for all options features
+ *
+ * Alternative free options sources:
+ * - Yahoo Finance unofficial API (implemented in YahooFinanceAPI.ts)
+ * - Polygon.io (free tier has limited options, 403 errors common)
+ * - TwelveData (requires paid plan for options)
+ *
+ * Future upgrade path:
+ * When Alpha Vantage premium is subscribed, methods are ready for implementation
+ * with proper endpoint structures documented in each method.
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 
 export class AlphaVantageAPI implements FinancialDataProvider {
   name = 'Alpha Vantage'
@@ -220,6 +246,107 @@ export class AlphaVantageAPI implements FinancialDataProvider {
     } catch (error) {
       console.error(`Alpha Vantage sector data error for ${sector}:`, error)
       return []
+    }
+  }
+
+  /**
+   * Get put/call ratio - NOT AVAILABLE on Alpha Vantage free tier
+   *
+   * Alpha Vantage options data requires premium subscription:
+   * - Realtime Options Trending (Premium)
+   * - Historical Options Trending (Premium)
+   *
+   * Free tier limitation: Options data is not included in the 25 requests/day free plan
+   * Alternative: Consider Yahoo Finance unofficial API or upgrade to premium plan
+   */
+  async getPutCallRatio(symbol: string): Promise<PutCallRatio | null> {
+    console.warn('🚫 Alpha Vantage options data requires premium subscription')
+    console.warn('📊 Free tier limitation: Put/call ratio not available')
+    console.warn('💡 Consider upgrading to Alpha Vantage premium or using alternative sources')
+
+    if (this.throwErrors) {
+      throw new Error('Alpha Vantage options data requires premium subscription')
+    }
+
+    return null
+  }
+
+  /**
+   * Get options analysis - NOT AVAILABLE on Alpha Vantage free tier
+   *
+   * Alpha Vantage provides advanced options analytics only in premium plans:
+   * - Full historical options chain (15+ years)
+   * - Options implied volatility and Greeks
+   * - Real-time options trending data
+   *
+   * This method serves as a placeholder for future premium implementation
+   */
+  async getOptionsAnalysisFreeTier(symbol: string): Promise<OptionsAnalysis | null> {
+    console.warn('🚫 Alpha Vantage options analysis requires premium subscription')
+    console.warn('📈 Free tier limitation: Advanced options analytics not available')
+    console.warn('🔧 Method ready for premium implementation when subscription is upgraded')
+
+    // For documentation purposes, show what the premium implementation would look like:
+    if (process.env.NODE_ENV === 'development') {
+      console.info('💡 Premium implementation would use these endpoints:')
+      console.info('   - Historical Options Trending: function=HISTORICAL_OPTIONS')
+      console.info('   - Realtime Options Trending: function=REALTIME_OPTIONS')
+      console.info('   - Parameters: symbol, date, require_greeks, contract')
+    }
+
+    if (this.throwErrors) {
+      throw new Error('Alpha Vantage options analysis requires premium subscription')
+    }
+
+    return null
+  }
+
+  /**
+   * Get options chain - NOT AVAILABLE on Alpha Vantage free tier
+   *
+   * Premium features that would be available with subscription:
+   * - Complete options chain for any symbol
+   * - Historical options data (15+ years)
+   * - Greeks and implied volatility
+   * - JSON and CSV output formats
+   *
+   * Implementation ready for premium upgrade
+   */
+  async getOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {
+    console.warn('🚫 Alpha Vantage options chain requires premium subscription')
+    console.warn('🔗 Free tier limitation: Options chain data not available')
+    console.warn('⏰ Premium would provide historical and realtime options chains')
+
+    // Document the premium API structure for future implementation:
+    if (process.env.NODE_ENV === 'development') {
+      console.info('💡 Premium API structure:')
+      console.info('   - Endpoint: HISTORICAL_OPTIONS or REALTIME_OPTIONS')
+      console.info('   - Required: symbol parameter')
+      console.info('   - Optional: date, require_greeks, contract')
+      console.info('   - Output: Complete options chain with strikes and expirations')
+    }
+
+    if (this.throwErrors) {
+      throw new Error('Alpha Vantage options chain requires premium subscription')
+    }
+
+    return null
+  }
+
+  /**
+   * Check if Alpha Vantage options features are available
+   *
+   * Returns availability status for options endpoints
+   * All options features require premium subscription
+   */
+  async checkOptionsAvailability(): Promise<{ [key: string]: boolean | string }> {
+    return {
+      putCallRatio: false,
+      optionsAnalysis: false,
+      optionsChain: false,
+      premiumRequired: true,
+      freeTierLimited: true,
+      message: 'Alpha Vantage options data requires premium subscription'
     }
   }
 

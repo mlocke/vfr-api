@@ -1,0 +1,291 @@
+{
+  "connection": {
+    "success": true,
+    "testType": "connection"
+  },
+  "dataRetrieval": {
+    "success": true,
+    "data": {
+      "priceData": {
+        "symbol": "SPY",
+        "price": 663.7,
+        "change": 1.37,
+        "changePercent": 0.21,
+        "volume": 97945620,
+        "timestamp": 1758312000000,
+        "source": "polygon"
+      },
+      "polygon": {
+        "directOptionsTest": {
+          "putCallRatio": null,
+          "optionsAnalysis": null,
+          "rateLimitStatus": {
+            "requestsInLastMinute": 2,
+            "remainingRequests": 3,
+            "resetTime": 1758404240934
+          },
+          "freeTierOptimized": true
+        },
+        "optionsSummary": {
+          "error": "No options data available - may be free tier limitation",
+          "rateLimitStatus": {
+            "requestsInLastMinute": 2,
+            "remainingRequests": 3,
+            "resetTime": 1758404240934
+          },
+          "suggestion": "Try again after rate limit resets or upgrade to paid plan"
+        }
+      },
+      "optionsService": {
+        "optionsAnalysis": null,
+        "putCallRatio": null,
+        "optionsServiceStatus": {
+          "dataTypePreferences": {
+            "stock_price": {
+              "primary": "polygon",
+              "fallbacks": [
+                "alphavantage",
+                "fmp",
+                "yahoo",
+                "twelvedata"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "company_info": {
+              "primary": "polygon",
+              "fallbacks": [
+                "alphavantage",
+                "fmp",
+                "sec_edgar",
+                "yahoo"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "options_data": {
+              "primary": "polygon",
+              "fallbacks": [
+                "twelvedata"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "options_chain": {
+              "primary": "polygon",
+              "fallbacks": [
+                "twelvedata"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "put_call_ratio": {
+              "primary": "polygon",
+              "fallbacks": [
+                "twelvedata"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "options_analysis": {
+              "primary": "polygon",
+              "fallbacks": [
+                "twelvedata"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "fundamentals": {
+              "primary": "fmp",
+              "fallbacks": [
+                "alphavantage",
+                "polygon",
+                "sec_edgar"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "market_data": {
+              "primary": "polygon",
+              "fallbacks": [
+                "alphavantage",
+                "fmp",
+                "twelvedata",
+                "yahoo"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "economic_data": {
+              "primary": "fred",
+              "fallbacks": [
+                "bls",
+                "eia",
+                "alphavantage"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "treasury_data": {
+              "primary": "fred",
+              "fallbacks": [
+                "treasury"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "earnings": {
+              "primary": "fmp",
+              "fallbacks": [
+                "sec_edgar",
+                "alphavantage"
+              ],
+              "lastUpdated": 1758404180999
+            },
+            "news": {
+              "primary": "alphavantage",
+              "fallbacks": [
+                "fmp"
+              ],
+              "lastUpdated": 1758404180999
+            }
+          },
+          "providerStatus": {
+            "polygon": {
+              "available": true,
+              "lastCheck": 1758404181135
+            },
+            "alphavantage": {
+              "available": false,
+              "lastCheck": 1758404182547
+            },
+            "yahoo": {
+              "available": true,
+              "lastCheck": 1758404182665
+            },
+            "fmp": {
+              "available": true,
+              "lastCheck": 1758404182795
+            },
+            "twelvedata": {
+              "available": true,
+              "lastCheck": 1758404182952
+            },
+            "sec_edgar": {
+              "available": true,
+              "lastCheck": 1758404183211
+            },
+            "treasury": {
+              "available": false,
+              "lastCheck": 1758404183211
+            },
+            "fred": {
+              "available": false,
+              "lastCheck": 1758404183325
+            },
+            "bls": {
+              "available": false,
+              "lastCheck": 1758404183325
+            },
+            "eia": {
+              "available": false,
+              "lastCheck": 1758404183325
+            }
+          },
+          "recommendations": [
+            "🔑 Check Alpha Vantage API key configuration"
+          ],
+          "summary": {
+            "totalProviders": 10,
+            "availableProviders": 5,
+            "dataTypesConfigured": 12
+          }
+        },
+        "optionsSummary": {
+          "message": "Options data requires paid plan upgrade",
+          "availableSources": [
+            "polygon",
+            "yahoo",
+            "fmp",
+            "twelvedata",
+            "sec_edgar"
+          ],
+          "recommendations": [
+            "🔑 Check Alpha Vantage API key configuration"
+          ]
+        }
+      },
+      "testType": "comprehensive_with_options_free_tier",
+      "testTimestamp": 1758404183325,
+      "isRealData": true
+    },
+    "testType": "data"
+  },
+  "apiEndpoints": {
+    "success": true,
+    "data": {
+      "dataSource": "polygon",
+      "baseUrl": "https://api.polygon.io",
+      "endpoints": [
+        {
+          "path": "/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}",
+          "description": "Stock aggregates (OHLC)",
+          "method": "GET"
+        },
+        {
+          "path": "/v3/reference/tickers",
+          "description": "List all tickers",
+          "method": "GET"
+        },
+        {
+          "path": "/v2/last/trade/{ticker}",
+          "description": "Last trade for ticker",
+          "method": "GET"
+        },
+        {
+          "path": "/v2/snapshot/locale/us/markets/stocks/tickers",
+          "description": "Market snapshot",
+          "method": "GET"
+        },
+        {
+          "path": "/v3/reference/financials",
+          "description": "Company financials",
+          "method": "GET"
+        },
+        {
+          "path": "/v3/reference/options/contracts",
+          "description": "Options contracts chain",
+          "method": "GET"
+        },
+        {
+          "path": "/v3/snapshot/options/{underlyingAsset}",
+          "description": "Options snapshot with volume/OI",
+          "method": "GET"
+        },
+        {
+          "path": "Custom: getPutCallRatio()",
+          "description": "Calculate Put/Call volume and OI ratios",
+          "method": "CUSTOM"
+        },
+        {
+          "path": "Custom: getOptionsAnalysis()",
+          "description": "Complete options sentiment analysis",
+          "method": "CUSTOM"
+        }
+      ],
+      "authentication": "API Key required",
+      "documentation": "https://polygon.io/docs",
+      "rateLimit": "5 requests per minute (free tier)",
+      "totalEndpoints": 9,
+      "timestamp": 1758404183325,
+      "testType": "list_api_endpoints"
+    },
+    "testType": "list_api_endpoints"
+  },
+  "performance": {
+    "success": true,
+    "data": {
+      "totalRequests": 5,
+      "successfulRequests": 3,
+      "totalTime": 173,
+      "avgResponseTime": 171,
+      "throughput": 17,
+      "timestamp": 1758404183499,
+      "isRealPerformanceTest": true
+    },
+    "testType": "performance"
+  },
+  "overallSuccess": true,
+  "timestamp": 1758404183499,
+  "testType": "comprehensive"
+}

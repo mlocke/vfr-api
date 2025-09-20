@@ -273,6 +273,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
       switch (dataSourceId) {
         case 'polygon':
           apiInstance = new PolygonAPI()
+          // Log rate limiting status during health check
+          const rateLimitInfo = apiInstance.getRateLimitStatus()
+          console.log('🔴 Polygon rate limit status:', rateLimitInfo)
           break
         case 'alphavantage':
           apiInstance = new AlphaVantageAPI(undefined, timeout, true)
@@ -335,7 +338,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         const polygonAPI = new PolygonAPI()
         const priceData = await polygonAPI.getStockPrice('SPY')
 
-        // Use OptionsDataService for options data
+        // Test both direct Polygon options and OptionsDataService
+        const directPutCallRatio = await polygonAPI.getPutCallRatio('SPY')
+        const directOptionsAnalysis = await polygonAPI.getOptionsAnalysisFreeTier('SPY')
+        const rateLimitStatus = polygonAPI.getRateLimitStatus()
+
+        // Use OptionsDataService for comparison
         const optionsService = new OptionsDataService()
         const optionsAnalysis = await optionsService.getOptionsAnalysis('SPY')
         const putCallRatio = await optionsService.getPutCallRatio('SPY')
@@ -343,23 +351,46 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
         testData = {
           priceData,
-          optionsAnalysis,
-          putCallRatio,
-          optionsServiceStatus: optionsServiceStatus,
-          optionsSummary: optionsAnalysis ? {
-            volumeRatio: optionsAnalysis.currentRatio.volumeRatio.toFixed(2),
-            openInterestRatio: optionsAnalysis.currentRatio.openInterestRatio.toFixed(2),
-            totalPutVolume: optionsAnalysis.currentRatio.totalPutVolume.toLocaleString(),
-            totalCallVolume: optionsAnalysis.currentRatio.totalCallVolume.toLocaleString(),
-            trend: optionsAnalysis.trend,
-            sentiment: optionsAnalysis.sentiment,
-            confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
-          } : {
-            message: 'Options data requires paid plan upgrade',
-            availableSources: Object.keys(serviceStatus.available).filter(k => serviceStatus.available[k as any]),
-            recommendations: serviceStatus.recommendations
+          polygon: {
+            directOptionsTest: {
+              putCallRatio: directPutCallRatio,
+              optionsAnalysis: directOptionsAnalysis,
+              rateLimitStatus,
+              freeTierOptimized: true
+            },
+            optionsSummary: directPutCallRatio ? {
+              volumeRatio: directPutCallRatio.volumeRatio.toFixed(2),
+              openInterestRatio: directPutCallRatio.openInterestRatio.toFixed(2),
+              totalPutVolume: directPutCallRatio.totalPutVolume.toLocaleString(),
+              totalCallVolume: directPutCallRatio.totalCallVolume.toLocaleString(),
+              dataCompleteness: directPutCallRatio.metadata?.dataCompleteness ? `${(directPutCallRatio.metadata.dataCompleteness * 100).toFixed(0)}%` : 'Unknown',
+              contractsProcessed: directPutCallRatio.metadata?.contractsProcessed || 0,
+              remainingApiCalls: rateLimitStatus.remainingRequests
+            } : {
+              error: 'No options data available - may be free tier limitation',
+              rateLimitStatus,
+              suggestion: 'Try again after rate limit resets or upgrade to paid plan'
+            }
           },
-          testType: 'comprehensive_with_options'
+          optionsService: {
+            optionsAnalysis,
+            putCallRatio,
+            optionsServiceStatus,
+            optionsSummary: optionsAnalysis ? {
+              volumeRatio: optionsAnalysis.currentRatio.volumeRatio.toFixed(2),
+              openInterestRatio: optionsAnalysis.currentRatio.openInterestRatio.toFixed(2),
+              totalPutVolume: optionsAnalysis.currentRatio.totalPutVolume.toLocaleString(),
+              totalCallVolume: optionsAnalysis.currentRatio.totalCallVolume.toLocaleString(),
+              trend: optionsAnalysis.trend,
+              sentiment: optionsAnalysis.sentiment,
+              confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
+            } : {
+              message: 'Options data requires paid plan upgrade',
+              availableSources: optionsServiceStatus?.providerStatus ? Object.keys(optionsServiceStatus.providerStatus).filter(k => optionsServiceStatus.providerStatus[k as any]?.available) : [],
+              recommendations: optionsServiceStatus?.recommendations || []
+            }
+          },
+          testType: 'comprehensive_with_options_free_tier'
         }
         break
 
@@ -597,7 +628,14 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         authentication: 'API Key required',
         documentation: 'https://polygon.io/docs',
         rateLimit: '5 requests per minute (free tier)',
-        optionsCapabilities: 'Full options chain, real-time volume/OI, Put/Call ratios, sentiment analysis'
+        optionsCapabilities: 'Full options chain, real-time volume/OI, Put/Call ratios, sentiment analysis',
+        freeTierFeatures: {
+          rateLimiting: 'Automatic 5 req/min compliance',
+          optionsData: 'End-of-day options data with volume/OI',
+          putCallRatios: 'Real-time P/C ratio calculations',
+          sentiment: 'Options sentiment analysis',
+          limitations: 'Reduced data limits, no historical data'
+        }
       },
       alphavantage: {
         baseUrl: 'https://www.alphavantage.co',

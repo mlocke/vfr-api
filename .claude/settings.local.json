@@ -51,7 +51,14 @@
       "Bash(git add:*)",
       "Bash(git merge:*)",
       "Bash(chmod:*)",
-      "WebFetch(domain:eodhd.com)"
+      "WebFetch(domain:eodhd.com)",
+      "WebFetch(domain:polygon.io)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:clean:*)",
+      "mcp__context7__get-library-docs",
+      "Bash(npm run type-check:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
