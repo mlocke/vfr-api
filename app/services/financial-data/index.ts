@@ -12,6 +12,7 @@ export * from './SECEdgarAPI'
 export * from './BLSAPI'
 export * from './EIAAPI'
 export * from './TwelveDataAPI'
+export * from './MarketIndicesService'
 export * from './FinancialDataService'
 
 // Default export for convenience

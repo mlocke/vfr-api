@@ -12,7 +12,7 @@
 - **Currency data** (DXY, sector-relevant currencies)
 - **Commodity prices** (gold, silver, sector-specific commodities)
 - **Bond yields** across the curve (2Y, 10Y, 30Y spreads)
-- **Volatility indices** (VIX, sector-specific volatility)
+- **Volatility indices** ✅ IMPLEMENTED (VIX via MarketIndicesService)
 
 ## Alternative Data Sources
 - **Satellite data** for retail/industrial activity
@@ -49,11 +49,12 @@ Validate your AI predictions.
 ## Key Data Points to Prioritize
 
 ### Immediate Implementation (High Impact)
+- **VIX and market indices** ✅ IMPLEMENTED - Risk and sentiment measurement
+- **Sector rotation analysis** ✅ IMPLEMENTED - Market regime detection
 - **Options flow data** - Strong predictive signal
 - **Institutional holdings changes** - Follow smart money
 - **Earnings surprise history** - Pattern recognition
 - **Analyst revision trends** - Sentiment momentum
-- **Cross-asset correlations** - Risk management
 
 ### Medium-term Additions
 - **Social sentiment analysis** - Retail investor psychology

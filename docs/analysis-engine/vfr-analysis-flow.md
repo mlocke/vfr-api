@@ -46,9 +46,9 @@ async function collectTier1Data(symbol: string) {
   // Parallel API calls for speed
   const dataPromises = {
     priceVolume: getPolygonData(symbol),        // ~200ms
-    fundamentals: getFMPFundamentals(symbol),   // ~400ms  
+    fundamentals: getFMPFundamentals(symbol),   // ~400ms
     options: getOptionsData(symbol),            // ~300ms
-    indices: getMarketIndices(),                // ~150ms (cached)
+    marketIndices: getMarketIndicesService(),   // ~300ms (VIX, SPY, QQQ, sectors)
     treasury: getTreasuryRates(),               // ~100ms (cached daily)
     analyst: getAnalystRatings(symbol)          // ~250ms
   };
@@ -114,7 +114,7 @@ const CACHE_RULES = {
   priceVolume: { ttl: 1 },      // 1 minute (real-time)
   fundamentals: { ttl: 1440 },  // 24 hours (daily updates)
   options: { ttl: 15 },         // 15 minutes
-  indices: { ttl: 5 },          // 5 minutes
+  marketIndices: { ttl: 1 },    // 1 minute (VIX, SPY, sectors - real-time)
   treasury: { ttl: 1440 },      // 24 hours
   analyst: { ttl: 720 }         // 12 hours
 };
@@ -152,8 +152,15 @@ async function prepareAnalysisData(rawData: RawTier1Data): Promise<AnalysisInput
       fundamentalRatios: calculateRatios(rawData.fmp.fundamentals),
       optionsFlow: processOptionsData(rawData.polygon.options),
       marketContext: {
-        vix: rawData.indices.vix,
-        spy: rawData.indices.spy,
+        vix: rawData.marketIndices.vix,
+        majorIndices: {
+          spy: rawData.marketIndices.spy,
+          qqq: rawData.marketIndices.qqq,
+          dia: rawData.marketIndices.dia,
+          iwm: rawData.marketIndices.iwm
+        },
+        sectorRotation: rawData.marketIndices.sectors,
+        marketConditions: rawData.marketIndices.analysis,
         treasuryYield: rawData.treasury.tenYear
       },
       analystSentiment: aggregateAnalystData(rawData.fmp.analyst)

@@ -17,6 +17,7 @@ import { TreasuryService } from '../../../services/financial-data/TreasuryServic
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
 import { TwelveDataAPI } from '../../../services/financial-data/TwelveDataAPI'
+import { MarketIndicesService } from '../../../services/financial-data/MarketIndicesService'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -48,6 +49,7 @@ const DATA_SOURCE_CONFIGS = {
   fmp: { name: 'Financial Modeling Prep API', timeout: 8000 },
   sec_edgar: { name: 'SEC EDGAR API', timeout: 15000 },
   treasury: { name: 'Treasury API', timeout: 8000 },
+  market_indices: { name: 'Market Indices Service', timeout: 10000 },
   treasury_service: { name: 'Treasury Service (FRED-based)', timeout: 10000 },
   fred: { name: 'FRED API', timeout: 10000 },
   bls: { name: 'BLS API', timeout: 15000 },
@@ -260,7 +262,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -295,6 +297,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           break
         case 'twelvedata':
           apiInstance = new TwelveDataAPI(undefined, timeout, true)
+          break
+        case 'market_indices':
+          apiInstance = new MarketIndicesService()
           break
       }
       return await apiInstance.healthCheck()
@@ -404,6 +409,25 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await twelveDataAPI.getStockPrice('AAPL') // Apple stock price from TwelveData
         break
 
+      case 'market_indices':
+        console.log('📈 Getting Market Indices data...')
+        const indicesService = new MarketIndicesService()
+        const indicesData = await indicesService.getAllIndices()
+        const marketConditions = await indicesService.analyzeMarketConditions()
+        testData = {
+          vix: indicesData.vix,
+          majorIndices: {
+            spy: indicesData.spy,
+            qqq: indicesData.qqq,
+            dia: indicesData.dia
+          },
+          marketConditions,
+          dataQuality: indicesData.dataQuality,
+          timestamp: indicesData.timestamp,
+          source: 'market_indices'
+        }
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -411,7 +435,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -563,6 +587,19 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         authentication: 'API Key required',
         documentation: 'https://docs.dappier.com/',
         rateLimit: 'Plan-based limits'
+      },
+      market_indices: {
+        baseUrl: 'Internal Service',
+        endpoints: [
+          { path: '/getAllIndices', description: 'Get all market indices (VIX, SPY, QQQ, etc.)', method: 'GET' },
+          { path: '/getVIX', description: 'Get VIX volatility index', method: 'GET' },
+          { path: '/getMajorIndices', description: 'Get SPY, QQQ, DIA', method: 'GET' },
+          { path: '/getSectorRotation', description: 'Get sector ETF performance', method: 'GET' },
+          { path: '/analyzeMarketConditions', description: 'Get market analysis', method: 'GET' }
+        ],
+        authentication: 'Uses configured API keys for underlying providers',
+        documentation: 'Internal service that aggregates data from Polygon, TwelveData, FMP, Yahoo',
+        rateLimit: 'Depends on underlying provider limits'
       }
     }
 
@@ -606,7 +643,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -645,24 +682,44 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'twelvedata':
           apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
+        case 'market_indices':
+          apiInstance = new MarketIndicesService()
+          break
       }
 
       // Make 5 rapid requests to test performance
       const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : dataSourceId === 'bls' ? 'LNS14000000' : dataSourceId === 'eia' ? 'PET.RWTC.D' : 'AAPL'
       for (let i = 0; i < 5; i++) {
-        requests.push(
-          apiInstance.getStockPrice(testSymbol)
-            .then(result => ({
-              request: i + 1,
-              responseTime: Date.now() - startTime,
-              success: !!result
-            }))
-            .catch(() => ({
-              request: i + 1,
-              responseTime: Date.now() - startTime,
-              success: false
-            }))
-        )
+        if (dataSourceId === 'market_indices') {
+          // Market indices service has different methods
+          requests.push(
+            apiInstance.getVIX()
+              .then(result => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: !!result
+              }))
+              .catch(() => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: false
+              }))
+          )
+        } else {
+          requests.push(
+            apiInstance.getStockPrice(testSymbol)
+              .then(result => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: !!result
+              }))
+              .catch(() => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: false
+              }))
+          )
+        }
       }
 
       const responses = await Promise.all(requests)
