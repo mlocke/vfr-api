@@ -17,7 +17,10 @@ import { TreasuryService } from '../../../services/financial-data/TreasuryServic
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
 import { TwelveDataAPI } from '../../../services/financial-data/TwelveDataAPI'
+import { EODHDAPI } from '../../../services/financial-data/EODHDAPI'
 import { MarketIndicesService } from '../../../services/financial-data/MarketIndicesService'
+import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
+import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -55,6 +58,9 @@ const DATA_SOURCE_CONFIGS = {
   bls: { name: 'BLS API', timeout: 15000 },
   eia: { name: 'EIA API', timeout: 8000 },
   twelvedata: { name: 'TwelveData API', timeout: 8000 },
+  eodhd: { name: 'EODHD API', timeout: 8000 },
+  options: { name: 'Options Data Service', timeout: 15000 },
+  enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
   firecrawl: { name: 'Firecrawl API', timeout: 20000 },
   dappier: { name: 'Dappier API', timeout: 10000 }
 }
@@ -262,7 +268,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -298,6 +304,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
         case 'twelvedata':
           apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
+        case 'eodhd':
+          apiInstance = new EODHDAPI(undefined, timeout, true)
+          break
         case 'market_indices':
           apiInstance = new MarketIndicesService()
           break
@@ -324,7 +333,34 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       case 'polygon':
         console.log('🔴 Making real Polygon API call...')
         const polygonAPI = new PolygonAPI()
-        testData = await polygonAPI.getStockPrice('AAPL')
+        const priceData = await polygonAPI.getStockPrice('SPY')
+
+        // Use OptionsDataService for options data
+        const optionsService = new OptionsDataService()
+        const optionsAnalysis = await optionsService.getOptionsAnalysis('SPY')
+        const putCallRatio = await optionsService.getPutCallRatio('SPY')
+        const optionsServiceStatus = await optionsService.getServiceStatus()
+
+        testData = {
+          priceData,
+          optionsAnalysis,
+          putCallRatio,
+          optionsServiceStatus: optionsServiceStatus,
+          optionsSummary: optionsAnalysis ? {
+            volumeRatio: optionsAnalysis.currentRatio.volumeRatio.toFixed(2),
+            openInterestRatio: optionsAnalysis.currentRatio.openInterestRatio.toFixed(2),
+            totalPutVolume: optionsAnalysis.currentRatio.totalPutVolume.toLocaleString(),
+            totalCallVolume: optionsAnalysis.currentRatio.totalCallVolume.toLocaleString(),
+            trend: optionsAnalysis.trend,
+            sentiment: optionsAnalysis.sentiment,
+            confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
+          } : {
+            message: 'Options data requires paid plan upgrade',
+            availableSources: Object.keys(serviceStatus.available).filter(k => serviceStatus.available[k as any]),
+            recommendations: serviceStatus.recommendations
+          },
+          testType: 'comprehensive_with_options'
+        }
         break
 
       case 'yahoo':
@@ -342,7 +378,13 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       case 'fmp':
         console.log('🔵 Making real Financial Modeling Prep call...')
         const fmpAPI = new FinancialModelingPrepAPI(undefined, timeout, true)
-        testData = await fmpAPI.getStockPrice('AAPL')
+        const fmpPrice = await fmpAPI.getStockPrice('AAPL')
+        const fmpRatios = await fmpAPI.getFundamentalRatios('AAPL')
+        testData = {
+          priceData: fmpPrice,
+          fundamentalRatios: fmpRatios,
+          testType: 'comprehensive_with_ratios'
+        }
         break
 
       case 'sec_edgar':
@@ -409,6 +451,12 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await twelveDataAPI.getStockPrice('AAPL') // Apple stock price from TwelveData
         break
 
+      case 'eodhd':
+        console.log('📊 Making real EODHD API call...')
+        const eodhdAPI = new EODHDAPI(undefined, timeout, true)
+        testData = await eodhdAPI.getStockPrice('AAPL') // Apple stock price from EODHD
+        break
+
       case 'market_indices':
         console.log('📈 Getting Market Indices data...')
         const indicesService = new MarketIndicesService()
@@ -428,6 +476,82 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         }
         break
 
+      case 'options':
+        console.log('📊 Testing Options Data Service...')
+        const optionsDataService = new OptionsDataService()
+        const optionsStatus = await optionsDataService.getServiceStatus()
+        const testSymbol = 'SPY'
+
+        const optionsPutCallRatio = await optionsDataService.getPutCallRatio(testSymbol)
+        const optionsFullAnalysis = await optionsDataService.getOptionsAnalysis(testSymbol)
+        const optionsChain = await optionsDataService.getOptionsChain(testSymbol)
+        const providerConfig = optionsDataService.getProviderConfig()
+
+        testData = {
+          serviceStatus: optionsStatus,
+          putCallRatio: optionsPutCallRatio,
+          optionsAnalysis: optionsFullAnalysis,
+          optionsChain: optionsChain ? {
+            symbol: optionsChain.symbol,
+            callsCount: optionsChain.calls.length,
+            putsCount: optionsChain.puts.length,
+            expirations: optionsChain.expirationDates.slice(0, 3),
+            strikes: optionsChain.strikes.slice(0, 10)
+          } : null,
+          providerConfiguration: providerConfig,
+          testSymbol,
+          currentTime: new Date().toISOString(),
+          testType: 'comprehensive_options_analysis'
+        }
+        break
+
+      case 'enhanced':
+        console.log('🚀 Testing Enhanced Data Service...')
+        const enhancedService = new EnhancedDataService()
+        const enhancedServiceStatus = await enhancedService.getServiceStatus()
+        const testSymbols = ['AAPL', 'SPY']
+
+        // Test multiple data types
+        const stockPriceTest = await enhancedService.getStockPrice(testSymbols[0])
+        const companyInfoTest = await enhancedService.getCompanyInfo(testSymbols[0])
+        const optionsTest = await enhancedService.getPutCallRatio(testSymbols[1])
+
+        const preferences = enhancedService.getDataSourcePreferences()
+        const providerConfigs = enhancedService.getProviderConfigs()
+        const switchingRecommendations = await enhancedService.getSwitchingRecommendations()
+
+        testData = {
+          serviceStatus: enhancedServiceStatus,
+          dataTests: {
+            stockPrice: stockPriceTest ? {
+              symbol: stockPriceTest.symbol,
+              price: stockPriceTest.price,
+              source: stockPriceTest.source
+            } : null,
+            companyInfo: companyInfoTest ? {
+              symbol: companyInfoTest.symbol,
+              name: companyInfoTest.name,
+              source: companyInfoTest.source
+            } : null,
+            optionsData: optionsTest ? {
+              symbol: optionsTest.symbol,
+              volumeRatio: optionsTest.volumeRatio.toFixed(2),
+              source: optionsTest.source
+            } : null
+          },
+          dataSourcePreferences: preferences,
+          providerConfigurations: providerConfigs,
+          switchingRecommendations,
+          testSymbols,
+          capabilities: {
+            totalDataTypes: Object.keys(preferences).length,
+            totalProviders: Object.keys(providerConfigs).length,
+            availableProviders: Object.values(enhancedServiceStatus.providerStatus).filter(s => s.available).length
+          },
+          testType: 'comprehensive_enhanced_service'
+        }
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -435,7 +559,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -464,11 +588,16 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
           { path: '/v3/reference/tickers', description: 'List all tickers', method: 'GET' },
           { path: '/v2/last/trade/{ticker}', description: 'Last trade for ticker', method: 'GET' },
           { path: '/v2/snapshot/locale/us/markets/stocks/tickers', description: 'Market snapshot', method: 'GET' },
-          { path: '/v3/reference/financials', description: 'Company financials', method: 'GET' }
+          { path: '/v3/reference/financials', description: 'Company financials', method: 'GET' },
+          { path: '/v3/reference/options/contracts', description: 'Options contracts chain', method: 'GET' },
+          { path: '/v3/snapshot/options/{underlyingAsset}', description: 'Options snapshot with volume/OI', method: 'GET' },
+          { path: 'Custom: getPutCallRatio()', description: 'Calculate Put/Call volume and OI ratios', method: 'CUSTOM' },
+          { path: 'Custom: getOptionsAnalysis()', description: 'Complete options sentiment analysis', method: 'CUSTOM' }
         ],
         authentication: 'API Key required',
         documentation: 'https://polygon.io/docs',
-        rateLimit: '5 requests per minute (free tier)'
+        rateLimit: '5 requests per minute (free tier)',
+        optionsCapabilities: 'Full options chain, real-time volume/OI, Put/Call ratios, sentiment analysis'
       },
       alphavantage: {
         baseUrl: 'https://www.alphavantage.co',
@@ -502,7 +631,9 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
           { path: '/income-statement?symbol={symbol}', description: 'Income statement', method: 'GET' },
           { path: '/balance-sheet-statement?symbol={symbol}', description: 'Balance sheet', method: 'GET' },
           { path: '/cash-flow-statement?symbol={symbol}', description: 'Cash flow statement', method: 'GET' },
-          { path: '/financial-ratios?symbol={symbol}', description: 'Financial ratios', method: 'GET' }
+          { path: '/financial-ratios?symbol={symbol}', description: 'Financial ratios', method: 'GET' },
+          { path: '/ratios-ttm?symbol={symbol}', description: 'TTM financial ratios (P/B, ROE, ROA, etc.)', method: 'GET' },
+          { path: '/key-metrics-ttm?symbol={symbol}', description: 'TTM key metrics (P/E, PEG, etc.)', method: 'GET' }
         ],
         authentication: 'API Key required',
         documentation: 'https://site.financialmodelingprep.com/developer/docs',
@@ -588,6 +719,31 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         documentation: 'https://docs.dappier.com/',
         rateLimit: 'Plan-based limits'
       },
+      twelvedata: {
+        baseUrl: 'https://api.twelvedata.com',
+        endpoints: [
+          { path: '/price?symbol={symbol}', description: 'Real-time stock price', method: 'GET' },
+          { path: '/quote?symbol={symbol}', description: 'Real-time quote', method: 'GET' },
+          { path: '/time_series?symbol={symbol}', description: 'Time series data', method: 'GET' },
+          { path: '/profile?symbol={symbol}', description: 'Company profile', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://twelvedata.com/docs',
+        rateLimit: '800 requests per day (free tier)'
+      },
+      eodhd: {
+        baseUrl: 'https://eodhd.com/api',
+        endpoints: [
+          { path: '/real-time/{symbol}.US', description: 'Real-time stock price', method: 'GET' },
+          { path: '/eod/{symbol}.US', description: 'End-of-day data', method: 'GET' },
+          { path: '/fundamentals/{symbol}.US', description: 'Company fundamentals', method: 'GET' },
+          { path: '/historical/{symbol}.US', description: 'Historical data', method: 'GET' },
+          { path: '/exchanges-list/', description: 'List of exchanges', method: 'GET' }
+        ],
+        authentication: 'API Key required',
+        documentation: 'https://eodhd.com/financial-apis/',
+        rateLimit: '100,000 requests per day'
+      },
       market_indices: {
         baseUrl: 'Internal Service',
         endpoints: [
@@ -643,7 +799,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'market_indices'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -681,6 +837,9 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           break
         case 'twelvedata':
           apiInstance = new TwelveDataAPI(undefined, timeout, true)
+          break
+        case 'eodhd':
+          apiInstance = new EODHDAPI(undefined, timeout, true)
           break
         case 'market_indices':
           apiInstance = new MarketIndicesService()

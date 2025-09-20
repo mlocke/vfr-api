@@ -3,7 +3,7 @@
  * Follows the same patterns as AlphaVantageAPI for consistency
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, FundamentalRatios } from './types'
 
 export class FinancialModelingPrepAPI implements FinancialDataProvider {
   name = 'Financial Modeling Prep'
@@ -231,6 +231,68 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
     } catch (error) {
       console.error('Financial Modeling Prep health check failed:', error instanceof Error ? error.message : error)
       return false
+    }
+  }
+
+  /**
+   * Get fundamental ratios for a stock
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      // Get both ratios and key metrics for comprehensive data
+      const [ratiosResponse, metricsResponse] = await Promise.all([
+        this.makeRequest(`/ratios-ttm?symbol=${symbol.toUpperCase()}`),
+        this.makeRequest(`/key-metrics-ttm?symbol=${symbol.toUpperCase()}`)
+      ])
+
+      if (!ratiosResponse.success && !metricsResponse.success) {
+        const error = new Error('Failed to fetch fundamental data from FMP')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      // Extract ratios data
+      const ratiosData = ratiosResponse.success && Array.isArray(ratiosResponse.data) && ratiosResponse.data[0]
+        ? ratiosResponse.data[0]
+        : {}
+
+      // Extract metrics data
+      const metricsData = metricsResponse.success && Array.isArray(metricsResponse.data) && metricsResponse.data[0]
+        ? metricsResponse.data[0]
+        : {}
+
+      return {
+        symbol: symbol.toUpperCase(),
+        peRatio: parseFloat(metricsData.peRatioTTM) || parseFloat(ratiosData.priceEarningsRatioTTM) || undefined,
+        pegRatio: parseFloat(metricsData.pegRatioTTM) || undefined,
+        pbRatio: parseFloat(metricsData.priceToBookRatioTTM) || parseFloat(ratiosData.priceToBookRatioTTM) || undefined,
+        priceToSales: parseFloat(metricsData.priceToSalesRatioTTM) || parseFloat(ratiosData.priceToSalesRatioTTM) || undefined,
+        priceToFreeCashFlow: parseFloat(metricsData.priceToFreeCashFlowsRatioTTM) || parseFloat(ratiosData.priceToFreeCashFlowsRatioTTM) || undefined,
+        debtToEquity: parseFloat(ratiosData.debtEquityRatioTTM) || undefined,
+        currentRatio: parseFloat(ratiosData.currentRatioTTM) || undefined,
+        quickRatio: parseFloat(ratiosData.quickRatioTTM) || undefined,
+        roe: parseFloat(ratiosData.returnOnEquityTTM) || undefined,
+        roa: parseFloat(ratiosData.returnOnAssetsTTM) || undefined,
+        grossProfitMargin: parseFloat(ratiosData.grossProfitMarginTTM) || undefined,
+        operatingMargin: parseFloat(ratiosData.operatingProfitMarginTTM) || undefined,
+        netProfitMargin: parseFloat(ratiosData.netProfitMarginTTM) || undefined,
+        dividendYield: parseFloat(metricsData.dividendYieldTTM) || parseFloat(ratiosData.dividendYieldTTM) || undefined,
+        payoutRatio: parseFloat(ratiosData.payoutRatioTTM) || undefined,
+        timestamp: Date.now(),
+        source: 'fmp',
+        period: 'ttm'
+      }
+    } catch (error) {
+      console.error(`Financial Modeling Prep fundamental ratios error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return null
     }
   }
 

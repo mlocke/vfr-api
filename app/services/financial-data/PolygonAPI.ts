@@ -3,7 +3,7 @@
  * Replaces MCP-based Polygon data fetching with direct REST API calls
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 
 export class PolygonAPI implements FinancialDataProvider {
   name = 'Polygon.io'
@@ -295,6 +295,270 @@ export class PolygonAPI implements FinancialDataProvider {
     } catch (error) {
       console.error(`Polygon sector data error for ${sector}:`, error)
       return []
+    }
+  }
+
+  /**
+   * Get options chain for a symbol
+   */
+  async getOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+      let endpoint = `/v3/reference/options/contracts?underlying_ticker=${upperSymbol}&limit=1000&apikey=${this.apiKey}`
+
+      if (expiration) {
+        endpoint += `&expiration_date=${expiration}`
+      }
+
+      const response = await this.makeRequest(endpoint)
+
+      if (!response.success || !response.data?.results) {
+        return null
+      }
+
+      const contracts = response.data.results
+      const calls: OptionsContract[] = []
+      const puts: OptionsContract[] = []
+      const expirationDates = new Set<string>()
+      const strikes = new Set<number>()
+
+      for (const contract of contracts) {
+        const optionContract: OptionsContract = {
+          symbol: contract.ticker,
+          strike: contract.strike_price,
+          expiration: contract.expiration_date,
+          type: contract.contract_type === 'call' ? 'call' : 'put',
+          volume: 0, // Will be populated from snapshot
+          openInterest: 0, // Will be populated from snapshot
+          timestamp: Date.now(),
+          source: 'polygon'
+        }
+
+        expirationDates.add(contract.expiration_date)
+        strikes.add(contract.strike_price)
+
+        if (contract.contract_type === 'call') {
+          calls.push(optionContract)
+        } else {
+          puts.push(optionContract)
+        }
+      }
+
+      // Get snapshot data for volume and open interest
+      const snapshotResponse = await this.makeRequest(
+        `/v3/snapshot/options/${upperSymbol}?limit=250&apikey=${this.apiKey}`
+      )
+
+      if (snapshotResponse.success && snapshotResponse.data?.results) {
+        const snapshots = snapshotResponse.data.results
+        const snapshotMap = new Map(snapshots.map((s: any) => [s.underlying_ticker?.ticker || s.details?.ticker, s]))
+
+        // Update contracts with snapshot data
+        for (const call of calls) {
+          const snapshot = snapshotMap.get(call.symbol)
+          if (snapshot) {
+            call.volume = snapshot.day?.volume || 0
+            call.openInterest = snapshot.open_interest || 0
+            call.impliedVolatility = snapshot.implied_volatility
+            call.bid = snapshot.details?.bid
+            call.ask = snapshot.details?.ask
+            call.lastPrice = snapshot.day?.last_price
+            call.change = snapshot.day?.change
+            call.changePercent = snapshot.day?.change_percent
+          }
+        }
+
+        for (const put of puts) {
+          const snapshot = snapshotMap.get(put.symbol)
+          if (snapshot) {
+            put.volume = snapshot.day?.volume || 0
+            put.openInterest = snapshot.open_interest || 0
+            put.impliedVolatility = snapshot.implied_volatility
+            put.bid = snapshot.details?.bid
+            put.ask = snapshot.details?.ask
+            put.lastPrice = snapshot.day?.last_price
+            put.change = snapshot.day?.change
+            put.changePercent = snapshot.day?.change_percent
+          }
+        }
+      }
+
+      return {
+        symbol: upperSymbol,
+        calls,
+        puts,
+        expirationDates: Array.from(expirationDates).sort(),
+        strikes: Array.from(strikes).sort((a, b) => a - b),
+        timestamp: Date.now(),
+        source: 'polygon'
+      }
+    } catch (error) {
+      console.error(`Polygon options chain error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate put/call ratio for a symbol
+   */
+  async getPutCallRatio(symbol: string): Promise<PutCallRatio | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured', { apiKey: this.apiKey })
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Get options snapshot for the symbol
+      const response = await this.makeRequest(
+        `/v3/snapshot/options/${upperSymbol}?limit=1000&apikey=${this.apiKey}`
+      )
+
+      if (!response.success || !response.data?.results) {
+        return null
+      }
+
+      let totalPutVolume = 0
+      let totalCallVolume = 0
+      let totalPutOpenInterest = 0
+      let totalCallOpenInterest = 0
+
+      for (const option of response.data.results) {
+        const contractType = option.details?.contract_type ||
+                           (option.underlying_ticker?.ticker?.includes('P') ? 'put' : 'call')
+        const volume = option.day?.volume || 0
+        const openInterest = option.open_interest || 0
+
+        if (contractType === 'put') {
+          totalPutVolume += volume
+          totalPutOpenInterest += openInterest
+        } else {
+          totalCallVolume += volume
+          totalCallOpenInterest += openInterest
+        }
+      }
+
+      const volumeRatio = totalCallVolume > 0 ? totalPutVolume / totalCallVolume : 0
+      const openInterestRatio = totalCallOpenInterest > 0 ? totalPutOpenInterest / totalCallOpenInterest : 0
+
+      return {
+        symbol: upperSymbol,
+        volumeRatio,
+        openInterestRatio,
+        totalPutVolume,
+        totalCallVolume,
+        totalPutOpenInterest,
+        totalCallOpenInterest,
+        date: new Date().toISOString().split('T')[0],
+        timestamp: Date.now(),
+        source: 'polygon'
+      }
+    } catch (error) {
+      console.error(`Polygon put/call ratio error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get historical put/call ratios
+   */
+  async getHistoricalPutCallRatios(symbol: string, days: number = 30): Promise<PutCallRatio[]> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return []
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - days)
+
+      const ratios: PutCallRatio[] = []
+
+      // For now, we'll return just the current ratio
+      // Polygon doesn't have a direct historical P/C ratio endpoint
+      // In production, you'd want to store daily ratios in a database
+      const currentRatio = await this.getPutCallRatio(symbol)
+      if (currentRatio) {
+        ratios.push(currentRatio)
+      }
+
+      return ratios
+    } catch (error) {
+      console.error(`Polygon historical P/C ratio error for ${symbol}:`, error)
+      return []
+    }
+  }
+
+  /**
+   * Get options analysis with put/call ratios and sentiment
+   */
+  async getOptionsAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
+    try {
+      const currentRatio = await this.getPutCallRatio(symbol)
+      if (!currentRatio) {
+        return null
+      }
+
+      const historicalRatios = await this.getHistoricalPutCallRatios(symbol, 5)
+
+      // Determine trend based on P/C ratio
+      let trend: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+      let sentiment: 'fear' | 'greed' | 'balanced' = 'balanced'
+      let confidence = 0.5
+
+      // P/C ratio interpretation:
+      // < 0.7 = Bullish (more calls than puts)
+      // 0.7 - 1.3 = Neutral
+      // > 1.3 = Bearish (more puts than calls)
+      if (currentRatio.volumeRatio < 0.7) {
+        trend = 'bullish'
+        sentiment = 'greed'
+        confidence = Math.min(0.9, 0.5 + (0.7 - currentRatio.volumeRatio))
+      } else if (currentRatio.volumeRatio > 1.3) {
+        trend = 'bearish'
+        sentiment = 'fear'
+        confidence = Math.min(0.9, 0.5 + (currentRatio.volumeRatio - 1.3) * 0.3)
+      } else {
+        trend = 'neutral'
+        sentiment = 'balanced'
+        confidence = 0.6
+      }
+
+      let analysis = `Put/Call Volume Ratio: ${currentRatio.volumeRatio.toFixed(2)} | `
+      analysis += `Put/Call OI Ratio: ${currentRatio.openInterestRatio.toFixed(2)} | `
+      analysis += `Total Put Volume: ${currentRatio.totalPutVolume.toLocaleString()} | `
+      analysis += `Total Call Volume: ${currentRatio.totalCallVolume.toLocaleString()} | `
+
+      if (trend === 'bullish') {
+        analysis += 'Options flow indicates bullish sentiment with higher call activity.'
+      } else if (trend === 'bearish') {
+        analysis += 'Options flow indicates bearish sentiment with higher put activity.'
+      } else {
+        analysis += 'Options flow is relatively balanced between puts and calls.'
+      }
+
+      return {
+        symbol: symbol.toUpperCase(),
+        currentRatio,
+        historicalRatios,
+        trend,
+        sentiment,
+        confidence,
+        analysis,
+        timestamp: Date.now(),
+        source: 'polygon'
+      }
+    } catch (error) {
+      console.error(`Polygon options analysis error for ${symbol}:`, error)
+      return null
     }
   }
 
