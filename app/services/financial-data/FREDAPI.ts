@@ -393,6 +393,173 @@ export class FREDAPI implements FinancialDataProvider {
   }
 
   /**
+   * Get treasury rates with analysis data for Tier 1 analysis
+   */
+  async getTreasuryRates(): Promise<{[key: string]: number} | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('FRED API key not configured')
+        return null
+      }
+
+      // Treasury rate series from FRED
+      const treasurySeries = {
+        '3M': 'DGS3MO',
+        '6M': 'DGS6MO',
+        '1Y': 'DGS1',
+        '2Y': 'DGS2',
+        '5Y': 'DGS5',
+        '10Y': 'DGS10',
+        '20Y': 'DGS20',
+        '30Y': 'DGS30'
+      }
+
+      const rates: {[key: string]: number} = {}
+
+      // Get all treasury rates in parallel
+      const promises = Object.entries(treasurySeries).map(async ([period, seriesId]) => {
+        try {
+          const observation = await this.getLatestObservation(seriesId)
+          if (observation && observation.value !== '.') {
+            rates[period] = parseFloat(observation.value)
+          }
+        } catch (error) {
+          console.warn(`Failed to get ${period} treasury rate:`, error)
+        }
+      })
+
+      await Promise.all(promises)
+
+      console.log('📊 Treasury rates collected:', rates)
+      return Object.keys(rates).length > 0 ? rates : null
+    } catch (error) {
+      console.error('FRED treasury rates error:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get enhanced treasury analysis data including changes and yield curve
+   */
+  async getTreasuryAnalysisData(): Promise<any> {
+    try {
+      if (!this.apiKey) {
+        console.warn('FRED API key not configured')
+        return null
+      }
+
+      // Key treasury series for analysis
+      const keySeries = {
+        '3M': 'DGS3MO',
+        '2Y': 'DGS2',
+        '10Y': 'DGS10',
+        '30Y': 'DGS30'
+      }
+
+      const analysisData: any = {
+        rates: {},
+        changes: {},
+        yieldCurve: {},
+        context: {}
+      }
+
+      // Get current and previous day data for each series
+      for (const [period, seriesId] of Object.entries(keySeries)) {
+        try {
+          const observations = await this.getRecentObservations(seriesId, 5) // Get last 5 days
+          if (observations && observations.length >= 2) {
+            const current = parseFloat(observations[0].value)
+            const previous = parseFloat(observations[1].value)
+
+            if (!isNaN(current) && !isNaN(previous)) {
+              analysisData.rates[period] = current
+              analysisData.changes[period] = current - previous // Basis point change
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to get analysis data for ${period}:`, error)
+        }
+      }
+
+      // Calculate yield curve slopes
+      if (analysisData.rates['10Y'] && analysisData.rates['2Y']) {
+        analysisData.yieldCurve.slope_10Y_2Y = analysisData.rates['10Y'] - analysisData.rates['2Y']
+        analysisData.yieldCurve.isInverted = analysisData.yieldCurve.slope_10Y_2Y < 0
+      }
+
+      if (analysisData.rates['10Y'] && analysisData.rates['3M']) {
+        analysisData.yieldCurve.slope_10Y_3M = analysisData.rates['10Y'] - analysisData.rates['3M']
+      }
+
+      if (analysisData.rates['30Y'] && analysisData.rates['10Y']) {
+        analysisData.yieldCurve.slope_30Y_10Y = analysisData.rates['30Y'] - analysisData.rates['10Y']
+      }
+
+      // Analyze rate momentum
+      const totalChanges = Object.values(analysisData.changes).filter(c => typeof c === 'number')
+      if (totalChanges.length > 0) {
+        const avgChange = totalChanges.reduce((sum: number, change: any) => sum + change, 0) / totalChanges.length
+
+        if (avgChange > 0.02) {
+          analysisData.context.momentum = 'rising'
+        } else if (avgChange < -0.02) {
+          analysisData.context.momentum = 'falling'
+        } else {
+          analysisData.context.momentum = 'stable'
+        }
+
+        analysisData.context.avgDailyChange = Math.round(avgChange * 100) / 100 // Round to 2 decimals
+      }
+
+      // Classify yield curve shape
+      if (analysisData.yieldCurve.slope_10Y_2Y !== undefined) {
+        if (analysisData.yieldCurve.slope_10Y_2Y < 0) {
+          analysisData.yieldCurve.shape = 'inverted'
+        } else if (analysisData.yieldCurve.slope_10Y_2Y < 0.5) {
+          analysisData.yieldCurve.shape = 'flat'
+        } else if (analysisData.yieldCurve.slope_10Y_2Y > 2.0) {
+          analysisData.yieldCurve.shape = 'steep'
+        } else {
+          analysisData.yieldCurve.shape = 'normal'
+        }
+      }
+
+      analysisData.context.lastUpdate = new Date().toISOString()
+      console.log('📈 Treasury analysis data:', analysisData)
+
+      return analysisData
+
+    } catch (error) {
+      console.error('FRED treasury analysis error:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get recent observations for a series (for trend analysis)
+   */
+  private async getRecentObservations(seriesId: string, limit: number = 5): Promise<FREDObservation[] | null> {
+    try {
+      const response = await this.makeRequest('series/observations', {
+        series_id: seriesId,
+        limit: limit.toString(),
+        sort_order: 'desc'
+      })
+
+      if (!response.success || !response.data?.observations) {
+        return null
+      }
+
+      // Filter out missing values (marked as '.')
+      const validObservations = response.data.observations.filter((obs: FREDObservation) => obs.value !== '.')
+      return validObservations.length > 0 ? validObservations : null
+    } catch (error) {
+      console.error(`Failed to get recent observations for ${seriesId}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Get popular economic indicators
    */
   getPopularIndicators(): Array<{symbol: string, name: string}> {

@@ -9,6 +9,10 @@ export interface StockData {
   change: number
   changePercent: number
   volume: number
+  averageVolume?: number
+  bid?: number
+  ask?: number
+  vwap?: number
   timestamp: number
   source: string
 }

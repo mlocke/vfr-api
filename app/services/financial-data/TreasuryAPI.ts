@@ -1,49 +1,104 @@
 /**
- * Direct Treasury Fiscal Data API implementation
- * Provides access to U.S. government fiscal and debt data
- * Documentation: https://fiscaldata.treasury.gov/api-documentation/
+ * Treasury API implementation using FRED for treasury rates
+ * Provides access to U.S. Treasury yield data via Federal Reserve Economic Data
+ * Documentation: https://fred.stlouisfed.org/docs/api/fred/
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { FREDAPI } from './FREDAPI'
 
 export class TreasuryAPI implements FinancialDataProvider {
-  name = 'Treasury API'
-  private baseUrl = 'https://api.fiscaldata.treasury.gov/services/api/fiscal_service'
+  name = 'Treasury API (via FRED)'
+  private fredAPI: FREDAPI
   private timeout: number
-  private userAgent: string
 
   constructor(timeout = 8000) {
     this.timeout = timeout
-    this.userAgent = process.env.TREASURY_USER_AGENT || 'VFR-API/1.0 (contact@veritak.com)'
+    this.fredAPI = new FREDAPI()
   }
 
   /**
-   * Get stock price data - Treasury doesn't provide stock prices
-   * Returns Treasury debt data as financial metric
+   * Get treasury yield data by symbol (10Y, 2Y, etc.)
+   * Returns treasury rate as StockData format for compatibility
    */
   async getStockPrice(symbol: string): Promise<StockData | null> {
     try {
-      // Treasury API doesn't provide stock prices
-      // We'll return debt data as a financial indicator
-      const debtData = await this.getLatestDebtData()
-      if (!debtData) {
+      // Map common symbols to FRED series
+      const fredSymbol = this.mapSymbolToFREDSeries(symbol)
+      if (!fredSymbol) {
+        console.warn(`Unknown treasury symbol: ${symbol}`)
         return null
       }
 
-      // Convert debt amount to a meaningful number (in trillions)
-      const debtInTrillions = parseFloat(debtData.tot_pub_debt_out_amt) / 1000000000000
+      // Get the rate from FRED
+      const stockData = await this.fredAPI.getStockPrice(fredSymbol)
+      if (!stockData) {
+        return null
+      }
 
+      // Return with treasury-specific formatting
       return {
-        symbol: 'US_DEBT',
-        price: debtInTrillions,
-        change: 0,
-        changePercent: 0,
-        volume: 0,
-        timestamp: Date.now(),
-        source: 'treasury'
+        symbol: symbol.toUpperCase(),
+        price: stockData.price, // This is the yield percentage
+        change: stockData.change,
+        changePercent: stockData.changePercent,
+        volume: 0, // Not applicable for treasury rates
+        timestamp: stockData.timestamp,
+        source: 'treasury-fred'
       }
     } catch (error) {
       console.error(`Treasury API error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Map common treasury symbols to FRED series IDs
+   */
+  private mapSymbolToFREDSeries(symbol: string): string | null {
+    const mapping: {[key: string]: string} = {
+      '3M': 'DGS3MO',
+      '6M': 'DGS6MO',
+      '1Y': 'DGS1',
+      '2Y': 'DGS2',
+      '5Y': 'DGS5',
+      '10Y': 'DGS10',
+      '20Y': 'DGS20',
+      '30Y': 'DGS30',
+      // Also support FRED series IDs directly
+      'DGS3MO': 'DGS3MO',
+      'DGS6MO': 'DGS6MO',
+      'DGS1': 'DGS1',
+      'DGS2': 'DGS2',
+      'DGS5': 'DGS5',
+      'DGS10': 'DGS10',
+      'DGS20': 'DGS20',
+      'DGS30': 'DGS30'
+    }
+
+    return mapping[symbol.toUpperCase()] || null
+  }
+
+  /**
+   * Get all treasury rates for Tier 1 analysis
+   */
+  async getTreasuryRates(): Promise<{[key: string]: number} | null> {
+    try {
+      return await this.fredAPI.getTreasuryRates()
+    } catch (error) {
+      console.error('Treasury rates error:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get enhanced treasury analysis data for the analysis engine
+   */
+  async getTreasuryAnalysisData(): Promise<any> {
+    try {
+      return await this.fredAPI.getTreasuryAnalysisData()
+    } catch (error) {
+      console.error('Treasury analysis data error:', error)
       return null
     }
   }
@@ -104,19 +159,13 @@ export class TreasuryAPI implements FinancialDataProvider {
   }
 
   /**
-   * Health check for Treasury API
+   * Health check for Treasury API (via FRED)
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/v2/accounting/od/debt_to_penny?limit=1`, {
-        headers: {
-          'User-Agent': this.userAgent,
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(this.timeout)
-      })
-
-      return response.ok
+      // Test by getting 10Y treasury rate
+      const rate = await this.getStockPrice('10Y')
+      return rate !== null && rate.price > 0
     } catch (error) {
       console.log('Treasury API health check failed:', error)
       return false

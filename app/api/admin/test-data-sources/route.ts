@@ -12,8 +12,8 @@ import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAP
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
 import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
-import { DataGovAPI } from '../../../services/financial-data/DataGovAPI'
 import { FREDAPI } from '../../../services/financial-data/FREDAPI'
+import { TreasuryService } from '../../../services/financial-data/TreasuryService'
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
 import { TwelveDataAPI } from '../../../services/financial-data/TwelveDataAPI'
@@ -48,7 +48,7 @@ const DATA_SOURCE_CONFIGS = {
   fmp: { name: 'Financial Modeling Prep API', timeout: 8000 },
   sec_edgar: { name: 'SEC EDGAR API', timeout: 15000 },
   treasury: { name: 'Treasury API', timeout: 8000 },
-  datagov: { name: 'Data.gov API', timeout: 12000 },
+  treasury_service: { name: 'Treasury Service (FRED-based)', timeout: 10000 },
   fred: { name: 'FRED API', timeout: 10000 },
   bls: { name: 'BLS API', timeout: 15000 },
   eia: { name: 'EIA API', timeout: 8000 },
@@ -260,7 +260,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -281,8 +281,8 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
         case 'treasury':
           apiInstance = new TreasuryAPI()
           break
-        case 'datagov':
-          apiInstance = new DataGovAPI()
+        case 'treasury_service':
+          apiInstance = new TreasuryService()
           break
         case 'fred':
           apiInstance = new FREDAPI(undefined, timeout, true)
@@ -349,13 +349,35 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       case 'treasury':
         console.log('🟤 Making real Treasury API call...')
         const treasuryAPI = new TreasuryAPI()
-        testData = await treasuryAPI.getStockPrice('AAPL')
+        // Get enhanced analysis data for the admin panel
+        const basicData = await treasuryAPI.getStockPrice('10Y')
+        const analysisData = await treasuryAPI.getTreasuryAnalysisData()
+
+        testData = {
+          basicRate: basicData,
+          enhancedAnalysis: analysisData,
+          testType: 'treasury_enhanced'
+        }
         break
 
-      case 'datagov':
-        console.log('🟤 Making real Data.gov API call...')
-        const dataGovAPI = new DataGovAPI()
-        testData = await dataGovAPI.getStockPrice('UNEMPLOYMENT')
+      case 'treasury_service':
+        console.log('💰 Making real Treasury Service call...')
+        const treasuryService = new TreasuryService()
+        const treasuryResult = await treasuryService.getTreasuryRates()
+        if (treasuryResult.success) {
+          testData = {
+            symbol: 'TREASURY_RATES',
+            price: treasuryResult.data?.rates['10Y'] || 0,
+            change: 0,
+            changePercent: 0,
+            volume: 0,
+            timestamp: Date.now(),
+            source: 'treasury_service',
+            treasuryData: treasuryResult.data
+          }
+        } else {
+          testData = null
+        }
         break
 
       case 'fred':
@@ -389,7 +411,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -520,17 +542,6 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         documentation: 'https://www.eia.gov/opendata/documentation.php',
         rateLimit: 'No strict limits mentioned'
       },
-      datagov: {
-        baseUrl: 'https://catalog.data.gov/api',
-        endpoints: [
-          { path: '/3/action/package_search', description: 'Search datasets', method: 'GET' },
-          { path: '/3/action/package_show', description: 'Get dataset details', method: 'GET' },
-          { path: '/3/action/resource_show', description: 'Get resource details', method: 'GET' }
-        ],
-        authentication: 'No API key required',
-        documentation: 'https://www.data.gov/developers/apis',
-        rateLimit: 'Standard web scraping limits'
-      },
       firecrawl: {
         baseUrl: 'https://api.firecrawl.dev',
         endpoints: [
@@ -595,7 +606,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'datagov', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -619,8 +630,8 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'treasury':
           apiInstance = new TreasuryAPI()
           break
-        case 'datagov':
-          apiInstance = new DataGovAPI()
+        case 'treasury_service':
+          apiInstance = new TreasuryService()
           break
         case 'fred':
           apiInstance = new FREDAPI(undefined, timeout, true)

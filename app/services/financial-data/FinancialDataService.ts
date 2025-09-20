@@ -9,10 +9,10 @@ import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
-import { DataGovAPI } from './DataGovAPI'
 import { BLSAPI } from './BLSAPI'
 import { EIAAPI } from './EIAAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
+import { FallbackDataService } from './FallbackDataService'
 
 interface ProviderHealth {
   name: string
@@ -22,16 +22,20 @@ interface ProviderHealth {
 
 export class FinancialDataService {
   private providers: FinancialDataProvider[]
+  private fallbackService: FallbackDataService
   private cache = new Map<string, { data: any; timestamp: number }>()
   private cacheTimeout = 5 * 60 * 1000 // 5 minutes
 
   constructor() {
+    // Smart fallback service for price/volume data (FREE sources with rate limiting)
+    this.fallbackService = new FallbackDataService()
+
+    // Original providers for other data types
     this.providers = [
       new PolygonAPI(),
       new AlphaVantageAPI(),
       new YahooFinanceAPI(),
       new FinancialModelingPrepAPI(),
-      new DataGovAPI(),
       new BLSAPI(),
       new EIAAPI(),
       new TwelveDataAPI()
@@ -39,7 +43,8 @@ export class FinancialDataService {
   }
 
   /**
-   * Get stock price with automatic fallback between providers
+   * Get stock price with smart FREE fallback chain
+   * Uses FallbackDataService for price/volume data with automatic failover
    */
   async getStockPrice(symbol: string, preferredProvider?: string): Promise<StockData | null> {
     const cacheKey = `stock_${symbol.toUpperCase()}`
@@ -50,20 +55,27 @@ export class FinancialDataService {
       return cached
     }
 
-    // Try preferred provider first
-    if (preferredProvider) {
-      const provider = this.getProviderByIdentifier(preferredProvider)
-      if (provider) {
-        const result = await provider.getStockPrice(symbol)
-        if (result) {
-          this.setCache(cacheKey, result)
-          return result
-        }
+    console.log(`🔍 Getting stock price for ${symbol} using smart fallback chain...`)
+
+    try {
+      // Use the smart fallback service for reliable, FREE price data
+      const result = await this.fallbackService.getStockPrice(symbol)
+
+      if (result) {
+        this.setCache(cacheKey, result)
+        console.log(`✅ Got ${symbol} price: $${result.price} from ${result.source}`)
+        return result
       }
+    } catch (error) {
+      console.error(`❌ Smart fallback failed for ${symbol}:`, error)
     }
 
-    // Try all providers in order until one succeeds
+    // Legacy fallback (if smart fallback completely fails)
+    console.log(`⚠️ Using legacy fallback for ${symbol}`)
+
     for (const provider of this.providers) {
+      if (!provider.getStockPrice) continue
+
       try {
         const result = await provider.getStockPrice(symbol)
         if (result) {
@@ -76,6 +88,7 @@ export class FinancialDataService {
       }
     }
 
+    console.error(`❌ All fallback methods failed for ${symbol}`)
     return null
   }
 
