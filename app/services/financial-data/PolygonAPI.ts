@@ -10,6 +10,7 @@ export class PolygonAPI implements FinancialDataProvider {
   private baseUrl = 'https://api.polygon.io'
   private apiKey: string
   private timeout: number
+  private previousCloseCache: Map<string, number> = new Map()
 
   constructor(apiKey?: string, timeout = 10000) {
     this.apiKey = apiKey || process.env.POLYGON_API_KEY || ''
@@ -26,25 +27,53 @@ export class PolygonAPI implements FinancialDataProvider {
         return null
       }
 
-      // Get previous close data
-      const response = await this.makeRequest(
-        `/v2/aggs/ticker/${symbol.toUpperCase()}/prev?adjusted=true&apikey=${this.apiKey}`
+      const upperSymbol = symbol.toUpperCase()
+
+      // Try to get real-time snapshot data first
+      const snapshotResponse = await this.makeRequest(
+        `/v2/snapshot/locale/us/markets/stocks/tickers/${upperSymbol}?apikey=${this.apiKey}`
       )
 
-      if (!response.success || !response.data?.results?.[0]) {
+      if (snapshotResponse.success && snapshotResponse.data?.ticker) {
+        const ticker = snapshotResponse.data.ticker
+        const price = ticker.day?.c || ticker.prevDay?.c || 0
+        const previousClose = ticker.prevDay?.c || 0
+        const change = price - previousClose
+        const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+
+        // Cache the previous close for future use
+        this.previousCloseCache.set(upperSymbol, previousClose)
+
+        return {
+          symbol: upperSymbol,
+          price: Number(price.toFixed(2)),
+          change: Number(change.toFixed(2)),
+          changePercent: Number(changePercent.toFixed(2)),
+          volume: ticker.day?.v || ticker.prevDay?.v || 0,
+          timestamp: ticker.updated || Date.now(),
+          source: 'polygon'
+        }
+      }
+
+      // Fallback to previous day data if snapshot fails
+      const prevResponse = await this.makeRequest(
+        `/v2/aggs/ticker/${upperSymbol}/prev?adjusted=true&apikey=${this.apiKey}`
+      )
+
+      if (!prevResponse.success || !prevResponse.data?.results?.[0]) {
         return null
       }
 
-      const result = response.data.results[0]
-
-      // Calculate change from previous day
+      const result = prevResponse.data.results[0]
       const price = result.c || 0
-      const previousClose = result.c || 0 // Previous close is the close price for prev day
-      const change = 0 // No intraday change available from this endpoint
-      const changePercent = 0
+
+      // Get cached previous close or use yesterday's open
+      const previousClose = this.previousCloseCache.get(upperSymbol) || result.o || price
+      const change = price - previousClose
+      const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
 
       return {
-        symbol: symbol.toUpperCase(),
+        symbol: upperSymbol,
         price: Number(price.toFixed(2)),
         change: Number(change.toFixed(2)),
         changePercent: Number(changePercent.toFixed(2)),
@@ -127,6 +156,95 @@ export class PolygonAPI implements FinancialDataProvider {
       console.error(`Polygon market data error for ${symbol}:`, error)
       return null
     }
+  }
+
+  /**
+   * Get latest trade price (most real-time data available)
+   */
+  async getLatestTrade(symbol: string): Promise<StockData | null> {
+    try {
+      if (!this.apiKey) {
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Get the latest trade
+      const response = await this.makeRequest(
+        `/v2/last/trade/${upperSymbol}?apikey=${this.apiKey}`
+      )
+
+      if (!response.success || !response.data?.results) {
+        return this.getStockPrice(symbol) // Fallback to snapshot
+      }
+
+      const trade = response.data.results
+      const price = trade.p || 0
+
+      // Get previous close from cache or fetch it
+      let previousClose = this.previousCloseCache.get(upperSymbol)
+      if (!previousClose) {
+        const prevData = await this.getStockPrice(symbol)
+        previousClose = prevData ? prevData.price : price
+      }
+
+      const change = price - previousClose
+      const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+
+      return {
+        symbol: upperSymbol,
+        price: Number(price.toFixed(2)),
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        volume: trade.s || 0, // Size of the trade
+        timestamp: trade.t || Date.now(),
+        source: 'polygon'
+      }
+    } catch (error) {
+      // Fallback to snapshot data
+      return this.getStockPrice(symbol)
+    }
+  }
+
+  /**
+   * Get batch stock prices (more efficient for multiple symbols)
+   */
+  async getBatchPrices(symbols: string[]): Promise<Map<string, StockData>> {
+    const results = new Map<string, StockData>()
+
+    try {
+      if (!this.apiKey || symbols.length === 0) {
+        return results
+      }
+
+      // Get all snapshots in one call
+      const response = await this.makeRequest(
+        `/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${symbols.join(',')}&apikey=${this.apiKey}`
+      )
+
+      if (response.success && response.data?.tickers) {
+        for (const ticker of response.data.tickers) {
+          const price = ticker.day?.c || ticker.prevDay?.c || 0
+          const previousClose = ticker.prevDay?.c || 0
+          const change = price - previousClose
+          const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+
+          results.set(ticker.ticker, {
+            symbol: ticker.ticker,
+            price: Number(price.toFixed(2)),
+            change: Number(change.toFixed(2)),
+            changePercent: Number(changePercent.toFixed(2)),
+            volume: ticker.day?.v || ticker.prevDay?.v || 0,
+            timestamp: ticker.updated || Date.now(),
+            source: 'polygon'
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Polygon batch price error:', error)
+    }
+
+    return results
   }
 
   /**

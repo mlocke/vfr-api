@@ -1,22 +1,17 @@
 /**
  * Economic Data API Endpoint
- * Provides access to government economic data via Data.gov and BLS API integration
+ * Provides access to government economic data via BLS API integration
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { DataGovAPI } from '../../services/financial-data/DataGovAPI'
 import { BLSAPI } from '../../services/financial-data/BLSAPI'
 
 // Request validation schema
 const RequestSchema = z.object({
-  type: z.enum(['indicator', 'search', 'indicators_list', 'bls_indicator', 'bls_indicators', 'bls_tier1', 'bls_tier2', 'bls_multiple']),
+  type: z.enum(['bls_indicator', 'bls_indicators', 'bls_tier1', 'bls_tier2', 'bls_multiple']),
   symbol: z.string().optional(),
   symbols: z.array(z.string()).optional(),
-  query: z.string().optional(),
-  tags: z.string().optional(),
-  dataset: z.string().optional(),
-  source: z.enum(['data_gov', 'bls', 'auto']).optional().default('auto'),
   startYear: z.number().optional(),
   endYear: z.number().optional()
 })
@@ -27,50 +22,20 @@ const RequestSchema = z.object({
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
-    const source = searchParams.get('source') || 'auto'
 
     // Health check endpoint
     if (searchParams.get('health') === 'true') {
-      if (source === 'bls' || source === 'auto') {
-        const blsAPI = new BLSAPI()
-        const blsHealthy = await blsAPI.healthCheck()
+      const blsAPI = new BLSAPI()
+      const blsHealthy = await blsAPI.healthCheck()
 
-        if (source === 'bls') {
-          return NextResponse.json({
-            success: true,
-            data: {
-              healthy: blsHealthy,
-              service: 'BLS API',
-              timestamp: Date.now()
-            }
-          })
+      return NextResponse.json({
+        success: true,
+        data: {
+          healthy: blsHealthy,
+          service: 'BLS API',
+          timestamp: Date.now()
         }
-
-        // Auto mode - check both APIs
-        const dataGovAPI = new DataGovAPI()
-        const dataGovHealthy = await dataGovAPI.healthCheck()
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            bls: { healthy: blsHealthy },
-            dataGov: { healthy: dataGovHealthy },
-            overall: blsHealthy && dataGovHealthy,
-            timestamp: Date.now()
-          }
-        })
-      } else {
-        const dataGovAPI = new DataGovAPI()
-        const isHealthy = await dataGovAPI.healthCheck()
-        return NextResponse.json({
-          success: true,
-          data: {
-            healthy: isHealthy,
-            service: 'Data.gov API',
-            timestamp: Date.now()
-          }
-        })
-      }
+      })
     }
 
     // BLS Tier 1 indicators
@@ -117,24 +82,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       })
     }
 
-    // Get list of available economic indicators (Data.gov)
-    if (searchParams.get('indicators') === 'true') {
-      const dataGovAPI = new DataGovAPI()
-      const indicators = await dataGovAPI.getEconomicIndicators()
-      return NextResponse.json({
-        success: true,
-        data: {
-          indicators,
-          count: indicators.length,
-          source: 'Data.gov API',
-          timestamp: Date.now()
-        }
-      })
-    }
-
     return NextResponse.json({
       success: false,
-      error: 'Invalid request. Available endpoints: ?health=true, ?indicators=true, ?bls_tier1=true, ?bls_tier2=true, ?bls_indicators=true'
+      error: 'Invalid request. Available endpoints: ?health=true, ?bls_tier1=true, ?bls_tier2=true, ?bls_indicators=true'
     }, { status: 400 })
 
   } catch (error) {
@@ -153,36 +103,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Parse and validate request
     const body = await request.json()
-    const { type, symbol, symbols, query, tags, dataset, source, startYear, endYear } = RequestSchema.parse(body)
+    const { type, symbol, symbols, startYear, endYear } = RequestSchema.parse(body)
 
     switch (type) {
-      case 'indicator': {
-        if (!symbol) {
-          return NextResponse.json({
-            success: false,
-            error: 'Symbol is required for indicator type'
-          }, { status: 400 })
-        }
-
-        const dataGovAPI = new DataGovAPI()
-        const [stockData, marketData, companyInfo] = await Promise.all([
-          dataGovAPI.getStockPrice(symbol),
-          dataGovAPI.getMarketData(symbol),
-          dataGovAPI.getCompanyInfo(symbol)
-        ])
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            indicator: symbol,
-            current: stockData,
-            market: marketData,
-            info: companyInfo,
-            source: 'data_gov',
-            timestamp: Date.now()
-          }
-        })
-      }
 
       case 'bls_indicator': {
         if (!symbol) {
@@ -295,44 +218,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         })
       }
 
-      case 'search': {
-        if (!query) {
-          return NextResponse.json({
-            success: false,
-            error: 'Query is required for search type'
-          }, { status: 400 })
-        }
-
-        const dataGovAPI = new DataGovAPI()
-        const results = await dataGovAPI.searchDatasets(query, tags)
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            query,
-            tags,
-            results,
-            count: results.length,
-            source: 'data_gov',
-            timestamp: Date.now()
-          }
-        })
-      }
-
-      case 'indicators_list': {
-        const dataGovAPI = new DataGovAPI()
-        const indicators = await dataGovAPI.getEconomicIndicators()
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            indicators,
-            count: indicators.length,
-            source: 'data_gov',
-            timestamp: Date.now()
-          }
-        })
-      }
 
       case 'bls_indicators': {
         const blsAPI = new BLSAPI()
@@ -352,7 +237,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       default:
         return NextResponse.json({
           success: false,
-          error: 'Invalid type. Available types: indicator, bls_indicator, bls_multiple, bls_tier1, bls_tier2, search, indicators_list, bls_indicators'
+          error: 'Invalid type. Available types: bls_indicator, bls_multiple, bls_tier1, bls_tier2, bls_indicators'
         }, { status: 400 })
     }
 
