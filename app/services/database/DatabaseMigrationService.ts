@@ -6,6 +6,7 @@
 import { Pool } from 'pg'
 import { financialDataService } from '../financial-data/FinancialDataService'
 import { historicalDataService, HistoricalMarketData } from './HistoricalDataService'
+import ErrorHandler from '../error-handling/ErrorHandler'
 
 export interface MigrationResult {
   success: boolean
@@ -117,11 +118,12 @@ export class DatabaseMigrationService {
 
     } catch (error) {
       console.error('Initial migration failed:', error)
+      const normalizedError = ErrorHandler.normalizeError(error)
       return {
         success: false,
-        message: `Migration failed: ${error.message}`,
+        message: `Migration failed: ${normalizedError.message}`,
         duration: Date.now() - startTime,
-        errors: [error.message]
+        errors: [normalizedError.message]
       }
     }
   }
@@ -164,7 +166,8 @@ export class DatabaseMigrationService {
             const processed = await this.backfillSymbol(symbol, options)
             totalProcessed += processed
           } catch (error) {
-            const errorMsg = `Failed to backfill ${symbol}: ${error.message}`
+            const normalizedError = ErrorHandler.normalizeError(error)
+            const errorMsg = `Failed to backfill ${symbol}: ${normalizedError.message}`
             errors.push(errorMsg)
             console.error(errorMsg)
           }
@@ -186,12 +189,13 @@ export class DatabaseMigrationService {
 
     } catch (error) {
       console.error('Backfill failed:', error)
+      const normalizedError = ErrorHandler.normalizeError(error)
       return {
         success: false,
-        message: `Backfill failed: ${error.message}`,
+        message: `Backfill failed: ${normalizedError.message}`,
         duration: Date.now() - startTime,
         recordsProcessed: totalProcessed,
-        errors: [...errors, error.message]
+        errors: [...errors, normalizedError.message]
       }
     }
   }
@@ -241,13 +245,15 @@ export class DatabaseMigrationService {
               break // Success - move to next timeframe
             }
           } catch (sourceError) {
-            console.warn(`Source ${source} failed for ${symbol}:`, sourceError.message)
+            const normalizedError = ErrorHandler.normalizeError(sourceError)
+            console.warn(`Source ${source} failed for ${symbol}:`, normalizedError.message)
             continue // Try next source
           }
         }
 
       } catch (timeframeError) {
-        console.error(`Failed to process ${symbol} ${timeframe}:`, timeframeError.message)
+        const normalizedError = ErrorHandler.normalizeError(timeframeError)
+        console.error(`Failed to process ${symbol} ${timeframe}:`, normalizedError.message)
       }
     }
 
@@ -306,11 +312,12 @@ export class DatabaseMigrationService {
 
     } catch (error) {
       console.error('Maintenance failed:', error)
+      const normalizedError = ErrorHandler.normalizeError(error)
       return {
         success: false,
-        message: `Maintenance failed: ${error.message}`,
+        message: `Maintenance failed: ${normalizedError.message}`,
         duration: Date.now() - startTime,
-        errors: [error.message]
+        errors: [normalizedError.message]
       }
     }
   }
@@ -446,11 +453,12 @@ export class DatabaseMigrationService {
 
     } catch (error) {
       console.error('Performance optimization failed:', error)
+      const normalizedError = ErrorHandler.normalizeError(error)
       return {
         success: false,
-        message: `Performance optimization failed: ${error.message}`,
+        message: `Performance optimization failed: ${normalizedError.message}`,
         duration: Date.now() - startTime,
-        errors: [error.message]
+        errors: [normalizedError.message]
       }
     }
   }
@@ -495,11 +503,12 @@ export class DatabaseMigrationService {
 
     } catch (error) {
       console.error('Backup failed:', error)
+      const normalizedError = ErrorHandler.normalizeError(error)
       return {
         success: false,
-        message: `Backup failed: ${error.message}`,
+        message: `Backup failed: ${normalizedError.message}`,
         duration: Date.now() - startTime,
-        errors: [error.message]
+        errors: [normalizedError.message]
       }
     }
   }
@@ -545,7 +554,7 @@ export class DatabaseMigrationService {
   ): Omit<HistoricalMarketData, 'id' | 'cacheCreatedAt' | 'lastUpdatedAt'> {
     return {
       symbol: marketData.symbol,
-      timestamp: new Date(marketData.timestamp),
+      timestamp: new Date(marketData.timestamp).getTime(),
       dateOnly: new Date(marketData.timestamp).toISOString().split('T')[0],
       timeframe,
       open: marketData.open,
@@ -553,6 +562,7 @@ export class DatabaseMigrationService {
       low: marketData.low,
       close: marketData.close,
       volume: marketData.volume,
+      source: source,
       primarySource: source,
       sourcePriority: this.getSourcePriority(source),
       dataQualityScore: 0.9,

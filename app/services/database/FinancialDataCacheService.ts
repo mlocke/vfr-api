@@ -438,7 +438,7 @@ export class FinancialDataCacheService {
   ): Promise<HistoricalMarketData> {
     const historicalData: Omit<HistoricalMarketData, 'id' | 'cacheCreatedAt' | 'lastUpdatedAt'> = {
       symbol: marketData.symbol,
-      timestamp: new Date(marketData.timestamp),
+      timestamp: new Date(marketData.timestamp).getTime(),
       dateOnly: new Date(marketData.timestamp).toISOString().split('T')[0],
       timeframe: request.timeframe || '1d',
       open: marketData.open,
@@ -446,6 +446,7 @@ export class FinancialDataCacheService {
       low: marketData.low,
       close: marketData.close,
       volume: marketData.volume,
+      source: marketData.source,
       primarySource: marketData.source,
       sourcePriority: this.getSourcePriority(marketData.source),
       dataQualityScore: 0.9, // Assume good quality for fresh API data
@@ -473,7 +474,7 @@ export class FinancialDataCacheService {
   private async cacheStockData(stockData: StockData): Promise<void> {
     const historicalData: Omit<HistoricalMarketData, 'id' | 'cacheCreatedAt' | 'lastUpdatedAt'> = {
       symbol: stockData.symbol,
-      timestamp: new Date(stockData.timestamp),
+      timestamp: new Date(stockData.timestamp).getTime(),
       dateOnly: new Date(stockData.timestamp).toISOString().split('T')[0],
       timeframe: '1d',
       open: stockData.price, // Limited data from stock price
@@ -481,6 +482,7 @@ export class FinancialDataCacheService {
       low: stockData.price,
       close: stockData.price,
       volume: stockData.volume,
+      source: stockData.source,
       primarySource: stockData.source,
       sourcePriority: this.getSourcePriority(stockData.source),
       dataQualityScore: 0.8,

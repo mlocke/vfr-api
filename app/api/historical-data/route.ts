@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { financialDataCacheService } from '../../services/database/FinancialDataCacheService'
 import { databaseMigrationService } from '../../services/database/DatabaseMigrationService'
+import ErrorHandler from '../../services/error-handling/ErrorHandler'
 
 // Initialize services
 let initialized = false
@@ -89,11 +90,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Historical data API error:', error)
+    const normalizedError = ErrorHandler.normalizeError(error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to retrieve historical data',
-        message: error.message
+        message: normalizedError.message
       },
       { status: 500 }
     )
@@ -170,11 +172,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Backfill API error:', error)
+    const normalizedError = ErrorHandler.normalizeError(error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to start backfill process',
-        message: error.message
+        message: normalizedError.message
       },
       { status: 500 }
     )
@@ -198,11 +201,12 @@ export async function GET_METRICS(request: NextRequest) {
 
   } catch (error) {
     console.error('Cache metrics API error:', error)
+    const normalizedError = ErrorHandler.normalizeError(error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to retrieve cache metrics',
-        message: error.message
+        message: normalizedError.message
       },
       { status: 500 }
     )
@@ -232,11 +236,12 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Cache clear API error:', error)
+    const normalizedError = ErrorHandler.normalizeError(error)
     return NextResponse.json(
       {
         success: false,
         error: 'Failed to clear cache',
-        message: error.message
+        message: normalizedError.message
       },
       { status: 500 }
     )

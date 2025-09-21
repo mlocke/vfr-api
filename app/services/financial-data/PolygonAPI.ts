@@ -191,8 +191,9 @@ export class PolygonAPI implements FinancialDataProvider {
         previousClose = prevData ? prevData.price : price
       }
 
-      const change = price - previousClose
-      const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+      const safePreviousClose = previousClose || price
+      const change = price - safePreviousClose
+      const changePercent = safePreviousClose > 0 ? (change / safePreviousClose) * 100 : 0
 
       return {
         symbol: upperSymbol,

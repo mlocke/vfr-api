@@ -4,6 +4,7 @@
  */
 
 import Redis from 'ioredis'
+import ErrorHandler from '../error-handling/ErrorHandler'
 
 interface CacheConfig {
   host: string
@@ -205,7 +206,8 @@ export class RedisCache {
       return entry.data
 
     } catch (error) {
-      console.warn(`⚠️ Cache get error for key ${key} (Redis may not be available):`, error.message)
+      const normalizedError = ErrorHandler.normalizeError(error)
+      console.warn(`⚠️ Cache get error for key ${key} (Redis may not be available):`, normalizedError.message)
       this.stats.errors++
       this.redisAvailable = false
       return null
@@ -537,7 +539,8 @@ export class RedisCache {
       }
       return await this.redis.ping()
     } catch (error) {
-      console.warn('⚠️ Redis ping failed (may not be available in development):', error.message)
+      const normalizedError = ErrorHandler.normalizeError(error)
+      console.warn('⚠️ Redis ping failed (may not be available in development):', normalizedError.message)
       this.redisAvailable = false
       return 'PONG (fallback)'
     }

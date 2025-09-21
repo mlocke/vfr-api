@@ -7,7 +7,7 @@ import { AlgorithmEngine } from '../../algorithms/AlgorithmEngine'
 import { AlgorithmConfigManager } from '../../algorithms/AlgorithmConfigManager'
 import { FactorLibrary } from '../../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../../algorithms/AlgorithmCache'
-// DataFusionEngine import removed - implement real engine
+import { FallbackDataService } from '../../financial-data/FallbackDataService'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,
@@ -34,7 +34,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
   private cache: AlgorithmCache
 
   constructor(
-    dataFusion: DataFusionEngine,
+    fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
     cache: AlgorithmCache,
     selectionConfig?: any
@@ -43,7 +43,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     this.cache = cache
     this.selectionConfig = selectionConfig || this.createDefaultConfig()
     this.configManager = new AlgorithmConfigManager(factorLibrary, cache)
-    this.algorithmEngine = new AlgorithmEngine(dataFusion, factorLibrary, cache)
+    this.algorithmEngine = new AlgorithmEngine(fallbackDataService, factorLibrary, cache)
   }
 
   /**

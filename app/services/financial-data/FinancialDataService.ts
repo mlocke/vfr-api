@@ -284,6 +284,42 @@ export class FinancialDataService {
   }
 
   /**
+   * Get historical OHLC data for technical analysis
+   */
+  async getHistoricalOHLC(symbol: string, days = 50): Promise<import('./types').HistoricalOHLC[]> {
+    const cacheKey = `ohlc_${symbol.toUpperCase()}_${days}`
+
+    // Check cache first (longer TTL for historical data)
+    const cached = this.getFromCache<import('./types').HistoricalOHLC[]>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    console.log(`🔍 Getting historical OHLC data for ${symbol} (${days} days)...`)
+
+    // Try providers that support historical data
+    for (const provider of this.providers) {
+      if (!provider.getHistoricalOHLC) continue
+
+      try {
+        const result = await provider.getHistoricalOHLC(symbol, days)
+        if (result && result.length > 0) {
+          // Cache with longer TTL for historical data
+          this.setCache(cacheKey, result)
+          console.log(`✅ Got ${result.length} OHLC records for ${symbol} from ${provider.name}`)
+          return result
+        }
+      } catch (error) {
+        console.warn(`Provider ${provider.name} failed for OHLC ${symbol}:`, error)
+        continue
+      }
+    }
+
+    console.error(`❌ No historical OHLC data found for ${symbol}`)
+    return []
+  }
+
+  /**
    * Health check for all providers
    */
   async healthCheck(): Promise<ProviderHealth[]> {

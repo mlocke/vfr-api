@@ -493,17 +493,52 @@ export class ErrorHandler {
     }
   }
 
-  private extractErrorMessage(error: any): string {
+  /**
+   * Type-safe error type narrowing utility
+   */
+  public static normalizeError(error: unknown): {
+    message: string
+    stack?: string
+    code?: string | number
+    status?: number
+    isError: boolean
+  } {
     if (error instanceof Error) {
-      return error.message
+      return {
+        message: error.message,
+        stack: error.stack,
+        code: (error as any).code,
+        status: (error as any).status || (error as any).statusCode,
+        isError: true
+      }
     }
+
     if (typeof error === 'string') {
-      return error
+      return {
+        message: error,
+        isError: false
+      }
     }
+
     if (error && typeof error === 'object') {
-      return error.message || error.error || error.statusText || 'Unknown error'
+      const errorObj = error as any
+      return {
+        message: errorObj.message || errorObj.error || errorObj.statusText || 'Unknown error',
+        stack: errorObj.stack,
+        code: errorObj.code,
+        status: errorObj.status || errorObj.statusCode,
+        isError: false
+      }
     }
-    return 'Unknown error occurred'
+
+    return {
+      message: 'Unknown error occurred',
+      isError: false
+    }
+  }
+
+  private extractErrorMessage(error: any): string {
+    return ErrorHandler.normalizeError(error).message
   }
 
   private extractErrorMetadata(error: any, type: ErrorType): any {

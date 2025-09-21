@@ -5,7 +5,7 @@
 
 import { SectorOption } from '../../../components/SectorDropdown'
 import { SectorIntegrationInterface } from '../types'
-import { MockMCPClient as MCPClient, MockDataFusionEngine as DataFusionEngine } from '../../types/core-types'
+import { FallbackDataService } from '../../financial-data/FallbackDataService'
 // Note: SelectionConfigManager replaced with inline config
 
 /**
@@ -115,18 +115,15 @@ const INDEX_CONSTITUENTS = {
  * Sector integration and analysis
  */
 export class SectorIntegration implements SectorIntegrationInterface {
-  private mcpClient: MCPClient
-  private dataFusion: DataFusionEngine
+  private fallbackDataService: FallbackDataService
   private selectionConfig: any
   private cache: Map<string, { data: any; timestamp: number }> = new Map()
 
   constructor(
-    mcpClient: MCPClient,
-    dataFusion: DataFusionEngine,
+    fallbackDataService: FallbackDataService,
     selectionConfig?: any
   ) {
-    this.mcpClient = mcpClient
-    this.dataFusion = dataFusion
+    this.fallbackDataService = fallbackDataService
     this.selectionConfig = selectionConfig || { getConfig: () => ({}) }
   }
 
@@ -214,22 +211,11 @@ export class SectorIntegration implements SectorIntegrationInterface {
         limit: 1000
       }
 
-      // This would use the actual MCP polygon client
-      const response = await this.mcpClient.executeRequest('polygon', 'list_tickers', polygonQuery)
+      // Use FallbackDataService to get stocks by sector
+      const stocksData = await this.fallbackDataService.getStocksBySector(sectorId, 100)
 
-      if (response.success && response.data?.results) {
-        return response.data.results
-          .filter((stock: any) => {
-            // Filter by sector if available in response
-            if (stock.sector) {
-              return classification.keywords.some((keyword: string) =>
-                stock.sector.toLowerCase().includes(keyword.toLowerCase())
-              )
-            }
-            return false
-          })
-          .map((stock: any) => stock.ticker)
-          .slice(0, 100) // Limit to top 100 by market cap
+      if (stocksData && stocksData.length > 0) {
+        return stocksData.map(stock => stock.symbol)
       }
 
     } catch (error) {
@@ -244,25 +230,15 @@ export class SectorIntegration implements SectorIntegrationInterface {
    */
   private async getWebSearchSectorStocks(sector: SectorOption, classification: any): Promise<string[]> {
     try {
-      // Use firecrawl MCP to search for sector information
-      const searchQuery = `${sector.label} sector stocks list major companies constituents`
+      // Use FallbackDataService to get stocks by sector (simplified implementation)
+      const stocksData = await this.fallbackDataService.getStocksBySector(sector.id, 50)
 
-      const searchResponse = await this.mcpClient.executeRequest('firecrawl', 'firecrawl_search', {
-        query: searchQuery,
-        limit: 5,
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true
-        }
-      })
-
-      if (searchResponse.success && searchResponse.data) {
-        // Extract stock symbols from search results
-        return this.extractSymbolsFromText(searchResponse.data)
+      if (stocksData && stocksData.length > 0) {
+        return stocksData.map(stock => stock.symbol)
       }
 
     } catch (error) {
-      console.error('Web search sector stocks error:', error)
+      console.error('Sector stocks retrieval error:', error)
     }
 
     return []
@@ -281,27 +257,7 @@ export class SectorIntegration implements SectorIntegrationInterface {
 
     try {
       // Search for official index constituent lists
-      const searchQuery = `${index.label} constituents list current holdings official`
-
-      const response = await this.mcpClient.executeRequest('firecrawl', 'firecrawl_search', {
-        query: searchQuery,
-        limit: 3,
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true
-        }
-      })
-
-      if (response.success && response.data) {
-        const symbols = this.extractSymbolsFromText(response.data)
-
-        // Validate expected count
-        if (symbols.length > indexInfo.approximateCount * 0.5) {
-          return symbols.slice(0, indexInfo.approximateCount)
-        }
-      }
-
-      // Fallback to known major constituents
+      // Use fallback to known major constituents since we're removing MCP dependencies
       return this.getFallbackIndexConstituents(index.id)
 
     } catch (error) {
@@ -315,20 +271,9 @@ export class SectorIntegration implements SectorIntegrationInterface {
    */
   private async getETFHoldings(etf: SectorOption): Promise<string[]> {
     try {
-      const searchQuery = `popular ETF holdings top funds SPY QQQ IWM VTI stocks`
-
-      const response = await this.mcpClient.executeRequest('firecrawl', 'firecrawl_search', {
-        query: searchQuery,
-        limit: 5,
-        scrapeOptions: {
-          formats: ['markdown'],
-          onlyMainContent: true
-        }
-      })
-
-      if (response.success && response.data) {
-        return this.extractSymbolsFromText(response.data)
-      }
+      // Since we're removing MCP dependencies, return known popular ETF symbols
+      // This could be enhanced later with real ETF holdings data
+      return ['SPY', 'QQQ', 'IWM', 'VTI', 'EFA', 'EEM', 'VNQ', 'GLD', 'TLT', 'HYG']
 
     } catch (error) {
       console.error('Error getting ETF holdings:', error)

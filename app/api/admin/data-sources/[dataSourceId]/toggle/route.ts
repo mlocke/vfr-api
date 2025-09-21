@@ -5,12 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { dataSourceConfigManager } from '../../../../../services/admin/DataSourceConfigManager'
+import { dataSourceConfigManager, DataSourceToggleResult } from '../../../../../services/admin/DataSourceConfigManager'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     dataSourceId: string
-  }
+  }>
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
@@ -38,11 +38,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Toggle the data source
-    const result = await dataSourceConfigManager.toggleDataSource(dataSourceId)
+    const result: DataSourceToggleResult = await dataSourceConfigManager.toggleDataSource(dataSourceId)
 
     if (!result.success) {
       return NextResponse.json(
-        { error: result.error || 'Failed to toggle data source' },
+        { error: result.message || 'Failed to toggle data source' },
         { status: 400 }
       )
     }
@@ -52,8 +52,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: {
         dataSourceId,
         enabled: result.enabled,
-        status: result.status || 'unknown',
-        message: `Data source ${result.enabled ? 'enabled' : 'disabled'} successfully`
+        message: result.message
       }
     })
 

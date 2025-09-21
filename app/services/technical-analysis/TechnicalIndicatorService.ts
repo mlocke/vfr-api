@@ -139,13 +139,16 @@ export class TechnicalIndicatorService {
     const smaResults: SMAResult[] = []
     for (const period of config.sma.periods) {
       const sma = new SMA(period)
-      closePrices.forEach(price => sma.update(price))
+      closePrices.forEach(price => sma.update(price, false))
       if (sma.isStable) {
-        smaResults.push({
-          value: sma.getResult(),
-          period,
-          timestamp: Date.now()
-        })
+        const result = sma.getResult()
+        if (result !== null) {
+          smaResults.push({
+            value: Number(result),
+            period,
+            timestamp: Date.now()
+          })
+        }
       }
     }
 
@@ -153,13 +156,16 @@ export class TechnicalIndicatorService {
     const emaResults: EMAResult[] = []
     for (const period of config.ema.periods) {
       const ema = new EMA(period)
-      closePrices.forEach(price => ema.update(price))
+      closePrices.forEach(price => ema.update(price, false))
       if (ema.isStable) {
-        emaResults.push({
-          value: ema.getResult(),
-          period,
-          timestamp: Date.now()
-        })
+        const result = ema.getResult()
+        if (result !== null) {
+          emaResults.push({
+            value: Number(result),
+            period,
+            timestamp: Date.now()
+          })
+        }
       }
     }
 
@@ -169,27 +175,33 @@ export class TechnicalIndicatorService {
     const signalEMA = new EMA(config.macd.signalPeriod)
     const macd = new MACD(fastEMA, slowEMA, signalEMA)
 
-    closePrices.forEach(price => macd.update(price))
+    closePrices.forEach(price => macd.update(price, false))
 
+    const macdCalculation = macd.isStable ? macd.getResult() : null
     const macdResult: MACDResult = {
-      macd: macd.isStable ? macd.getResult().macd : 0,
-      signal: macd.isStable ? macd.getResult().signal : 0,
-      histogram: macd.isStable ? macd.getResult().histogram : 0,
+      macd: macdCalculation ? Number(macdCalculation.macd) : 0,
+      signal: macdCalculation ? Number(macdCalculation.signal) : 0,
+      histogram: macdCalculation ? Number(macdCalculation.histogram) : 0,
       timestamp: Date.now(),
-      crossover: this.determineMACDCrossover(macd.isStable ? macd.getResult() : null)
+      crossover: this.determineMACDCrossover(macdCalculation)
     }
 
     // Bollinger Bands calculation
     const bollinger = new BollingerBands(config.bollinger.period, config.bollinger.standardDeviations)
-    closePrices.forEach(price => bollinger.update(price))
+    closePrices.forEach(price => bollinger.update(price, false))
 
     const currentPrice = closePrices[closePrices.length - 1]
+    const bollingerCalculation = bollinger.isStable ? bollinger.getResult() : null
     const bollingerResult: BollingerBandsResult = {
-      upper: bollinger.isStable ? bollinger.getResult().upper : currentPrice,
-      middle: bollinger.isStable ? bollinger.getResult().middle : currentPrice,
-      lower: bollinger.isStable ? bollinger.getResult().lower : currentPrice,
-      position: bollinger.isStable ? this.calculateBollingerPosition(currentPrice, bollinger.getResult()) : 0.5,
-      width: bollinger.isStable ? bollinger.getResult().upper - bollinger.getResult().lower : 0,
+      upper: bollingerCalculation ? Number(bollingerCalculation.upper) : currentPrice,
+      middle: bollingerCalculation ? Number(bollingerCalculation.middle) : currentPrice,
+      lower: bollingerCalculation ? Number(bollingerCalculation.lower) : currentPrice,
+      position: bollingerCalculation ? this.calculateBollingerPosition(currentPrice, {
+        upper: Number(bollingerCalculation.upper),
+        middle: Number(bollingerCalculation.middle),
+        lower: Number(bollingerCalculation.lower)
+      }) : 0.5,
+      width: bollingerCalculation ? Number(bollingerCalculation.upper) - Number(bollingerCalculation.lower) : 0,
       timestamp: Date.now()
     }
 
@@ -221,9 +233,10 @@ export class TechnicalIndicatorService {
 
     // RSI calculation
     const rsi = new RSI(config.rsi.period)
-    closePrices.forEach(price => rsi.update(price))
+    closePrices.forEach(price => rsi.update(price, false))
 
-    const rsiValue = rsi.isStable ? rsi.getResult() : 50
+    const rsiCalculation = rsi.isStable ? rsi.getResult() : null
+    const rsiValue = rsiCalculation ? Number(rsiCalculation) : 50
     const rsiResult: RSIResult = {
       value: rsiValue,
       period: config.rsi.period,
@@ -232,20 +245,22 @@ export class TechnicalIndicatorService {
     }
 
     // Stochastic calculation
-    const stochastic = new StochasticOscillator(config.stochastic.kPeriod, config.stochastic.dPeriod)
+    const stochastic = new StochasticOscillator(config.stochastic.kPeriod, config.stochastic.dPeriod, config.stochastic.dPeriod)
     for (let i = 0; i < ohlcData.length; i++) {
       stochastic.update({
         high: highPrices[i],
         low: lowPrices[i],
         close: closePrices[i]
-      })
+      }, false)
     }
 
-    const stochasticValue = stochastic.isStable ? stochastic.getResult() : 50
+    const stochasticCalculation = stochastic.isStable ? stochastic.getResult() : null
+    const stochasticKValue = stochasticCalculation ? Number(stochasticCalculation.stochK) : 50
+    const stochasticDValue = stochasticCalculation ? Number(stochasticCalculation.stochD) : stochasticKValue * 0.9
     const stochasticResult: StochasticResult = {
-      k: stochasticValue,
-      d: stochasticValue * 0.9, // Simplified D line calculation
-      signal: this.determineStochasticSignal(stochasticValue),
+      k: stochasticKValue,
+      d: stochasticDValue,
+      signal: this.determineStochasticSignal(stochasticKValue),
       timestamp: Date.now()
     }
 
@@ -259,10 +274,11 @@ export class TechnicalIndicatorService {
 
     // ROC calculation
     const roc = new ROC(config.roc.period)
-    closePrices.forEach(price => roc.update(price))
+    closePrices.forEach(price => roc.update(price, false))
 
+    const rocCalculation = roc.isStable ? roc.getResult() : null
     const rocResult: ROCResult = {
-      value: roc.isStable ? roc.getResult() : 0,
+      value: rocCalculation ? Number(rocCalculation) : 0,
       period: config.roc.period,
       timestamp: Date.now()
     }
@@ -294,12 +310,16 @@ export class TechnicalIndicatorService {
     const obv = new OBV()
     for (let i = 0; i < ohlcData.length; i++) {
       obv.update({
-        close: closePrices[i],
-        volume: volumes[i]
-      })
+        open: ohlcData[i].open,
+        high: ohlcData[i].high,
+        low: ohlcData[i].low,
+        close: ohlcData[i].close,
+        volume: ohlcData[i].volume
+      }, false)
     }
 
-    const obvValue = obv.isStable ? obv.getResult() : 0
+    const obvCalculation = obv.isStable ? obv.getResult() : null
+    const obvValue = obvCalculation ? Number(obvCalculation) : 0
     const obvResult: OBVResult = {
       value: obvValue,
       trend: this.determineOBVTrend(obvValue),
@@ -314,11 +334,12 @@ export class TechnicalIndicatorService {
         low: ohlcData[i].low,
         close: ohlcData[i].close,
         volume: ohlcData[i].volume
-      })
+      }, false)
     }
 
     const currentPrice = closePrices[closePrices.length - 1]
-    const vwapValue = vwap.isStable ? vwap.getResult() : currentPrice
+    const vwapCalculation = vwap.isStable ? vwap.getResult() : null
+    const vwapValue = vwapCalculation ? Number(vwapCalculation) : currentPrice
     const vwapResult: VWAPResult = {
       value: vwapValue,
       position: this.determineVWAPPosition(currentPrice, vwapValue),
@@ -350,11 +371,12 @@ export class TechnicalIndicatorService {
         high: ohlcData[i].high,
         low: ohlcData[i].low,
         close: ohlcData[i].close
-      })
+      }, false)
     }
 
+    const atrCalculation = atr.isStable ? atr.getResult() : null
     const atrResult: ATRResult = {
-      value: atr.isStable ? atr.getResult() : 0,
+      value: atrCalculation ? Number(atrCalculation) : 0,
       period: config.atr.period,
       timestamp: Date.now()
     }

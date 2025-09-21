@@ -3,6 +3,8 @@
  * Safely initializes services with proper error handling and fallbacks
  */
 
+import ErrorHandler from './error-handling/ErrorHandler'
+
 export class ServiceInitializer {
   private static instance: ServiceInitializer
   private initializationPromise: Promise<void> | null = null
@@ -59,7 +61,8 @@ export class ServiceInitializer {
       await redisCache.ping()
       console.log('✅ Redis cache initialized')
     } catch (error) {
-      console.warn('⚠️ Redis cache initialization failed, using fallback mode:', error.message)
+      const normalizedError = ErrorHandler.normalizeError(error)
+      console.warn('⚠️ Redis cache initialization failed, using fallback mode:', normalizedError.message)
     }
   }
 
@@ -69,7 +72,8 @@ export class ServiceInitializer {
       await authService.initialize()
       console.log('✅ Auth service initialized')
     } catch (error) {
-      console.warn('⚠️ Auth service initialization failed, using fallback mode:', error.message)
+      const normalizedError = ErrorHandler.normalizeError(error)
+      console.warn('⚠️ Auth service initialization failed, using fallback mode:', normalizedError.message)
     }
   }
 
@@ -81,7 +85,8 @@ export class ServiceInitializer {
       dataSourceConfigManager.getEnabledDataSources()
       console.log('✅ Data source config manager initialized')
     } catch (error) {
-      console.warn('⚠️ Data source config manager initialization failed:', error.message)
+      const normalizedError = ErrorHandler.normalizeError(error)
+      console.warn('⚠️ Data source config manager initialization failed:', normalizedError.message)
     }
   }
 

@@ -14,7 +14,8 @@ import {
   FactorCalculator
 } from './types'
 
-import { MockDataFusionEngine as DataFusionEngine, FusedMCPResponse, QualityScore, ConflictResolutionStrategy } from '../types/core-types'
+import { QualityScore, ConflictResolutionStrategy } from '../types/core-types'
+import { FallbackDataService } from '../financial-data/FallbackDataService'
 import { FactorLibrary } from './FactorLibrary'
 import { AlgorithmCache } from './AlgorithmCache'
 
@@ -39,17 +40,17 @@ interface FundamentalDataPoint {
 }
 
 export class AlgorithmEngine {
-  private dataFusion: DataFusionEngine
+  private fallbackDataService: FallbackDataService
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
-    dataFusion: DataFusionEngine,
+    fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
     cache: AlgorithmCache
   ) {
-    this.dataFusion = dataFusion
+    this.fallbackDataService = fallbackDataService
     this.factorLibrary = factorLibrary
     this.cache = cache
   }
@@ -116,7 +117,7 @@ export class AlgorithmEngine {
       execution.status = 'completed'
 
       // Cache result if enabled
-      if (config.dataFusion.cacheTTL > 0) {
+      if (config.dataFusion?.cacheTTL > 0) {
         await this.cache.setSelectionResult(config.id, result)
       }
 
@@ -216,45 +217,27 @@ export class AlgorithmEngine {
     try {
       // Check cache first
       const cached = await this.cache.getMarketData(symbol)
-      if (cached && Date.now() - cached.timestamp < config.dataFusion.cacheTTL) {
+      if (cached && Date.now() - cached.timestamp < (config.dataFusion?.cacheTTL || 300000)) {
         return cached
       }
 
-      // Fetch from multiple sources using DataFusionEngine
-      const sources = config.dataFusion.requiredSources
-      const dataPoints = await Promise.all(
-        sources.map(async source => {
-          const data = await this.fetchFromSource(source, symbol, 'market_data')
-          return {
-            source,
-            data,
-            quality: await this.assessDataQuality(data, source),
-            timestamp: Date.now(),
-            latency: 0 // This would be measured
-          }
-        })
-      )
+      // Fetch data using FallbackDataService (already has built-in fallback logic)
+      const stockData = await this.fallbackDataService.getStockPrice(symbol)
+      const marketData = await this.fallbackDataService.getMarketData(symbol)
+      const companyInfo = await this.fallbackDataService.getCompanyInfo(symbol)
 
-      // Fuse data from multiple sources
-      const fusedResult = await this.dataFusion.fuseData(dataPoints, {
-        strategy: config.dataFusion.conflictResolution as ConflictResolutionStrategy,
-        minQualityScore: config.dataFusion.minQualityScore,
-        validateData: true,
-        cacheFusion: true
-      })
-
-      if (!fusedResult.success || !fusedResult.data) {
+      if (!stockData) {
         console.warn(`Failed to get market data for ${symbol}`)
         return null
       }
 
       const marketDataPoint: MarketDataPoint = {
         symbol,
-        price: fusedResult.data.price || 0,
-        volume: fusedResult.data.volume || 0,
-        marketCap: fusedResult.data.marketCap || 0,
-        sector: fusedResult.data.sector || '',
-        exchange: fusedResult.data.exchange || '',
+        price: stockData.price || 0,
+        volume: stockData.volume || 0,
+        marketCap: companyInfo?.marketCap || 0,
+        sector: companyInfo?.sector || '',
+        exchange: companyInfo?.ticker || '',
         timestamp: Date.now()
       }
 
@@ -316,43 +299,38 @@ export class AlgorithmEngine {
     try {
       // Check cache (fundamentals change less frequently)
       const cached = await this.cache.getFundamentalData(symbol)
-      if (cached && Date.now() - cached.timestamp < config.dataFusion.cacheTTL * 10) {
+      if (cached && Date.now() - cached.timestamp < (config.dataFusion?.cacheTTL || 300000) * 10) {
         return cached.data
       }
 
-      const sources = config.dataFusion.requiredSources
-      const dataPoints = await Promise.all(
-        sources.map(async source => {
-          const data = await this.fetchFromSource(source, symbol, 'fundamental_data')
-          return {
-            source,
-            data,
-            quality: await this.assessDataQuality(data, source),
-            timestamp: Date.now(),
-            latency: 0
-          }
-        })
-      )
+      // Fetch fundamental ratios using FallbackDataService
+      const fundamentalRatios = await this.fallbackDataService.getFundamentalRatios(symbol)
+      const companyInfo = await this.fallbackDataService.getCompanyInfo(symbol)
 
-      const fusedResult = await this.dataFusion.fuseData(dataPoints, {
-        strategy: config.dataFusion.conflictResolution as ConflictResolutionStrategy,
-        minQualityScore: config.dataFusion.minQualityScore * 0.8, // Lower threshold for fundamentals
-        validateData: true,
-        cacheFusion: true
-      })
-
-      if (!fusedResult.success || !fusedResult.data) {
+      if (!fundamentalRatios) {
         return null
       }
 
       const fundamentalDataPoint: FundamentalDataPoint = {
         symbol,
-        peRatio: fusedResult.data.peRatio,
-        pbRatio: fusedResult.data.pbRatio,
-        debtToEquity: fusedResult.data.debtToEquity,
-        roe: fusedResult.data.roe,
-        revenueGrowth: fusedResult.data.revenueGrowth,
-        ...fusedResult.data
+        peRatio: fundamentalRatios.peRatio,
+        pbRatio: fundamentalRatios.pbRatio,
+        debtToEquity: fundamentalRatios.debtToEquity,
+        roe: fundamentalRatios.roe,
+        revenueGrowth: 0, // Not available in current interface
+        // Map additional fundamental data
+        priceToBookRatio: fundamentalRatios.pbRatio,
+        priceToSalesRatio: fundamentalRatios.priceToSales,
+        operatingMargin: fundamentalRatios.operatingMargin,
+        netProfitMargin: fundamentalRatios.netProfitMargin,
+        currentRatio: fundamentalRatios.currentRatio,
+        quickRatio: fundamentalRatios.quickRatio,
+        dividendYield: fundamentalRatios.dividendYield,
+        payoutRatio: fundamentalRatios.payoutRatio,
+        // Add from company info if available
+        marketCap: companyInfo?.marketCap,
+        sector: companyInfo?.sector,
+        industry: companyInfo?.sector // Use sector as industry since industry not available
       }
 
       // Cache with longer TTL
@@ -498,7 +476,7 @@ export class AlgorithmEngine {
   ): Promise<SelectionResult['selections']> {
     // Filter by minimum data quality
     const qualifiedScores = stockScores.filter(score =>
-      score.dataQuality.overall >= config.dataFusion.minQualityScore
+      score.dataQuality.overall >= (config.dataFusion?.minQualityScore || 0.7)
     )
 
     // Sort by overall score (descending)
@@ -849,7 +827,10 @@ export class AlgorithmEngine {
     return {
       activeExecutions: this.activeExecutions.size,
       cacheStats: this.cache.getStatistics(),
-      fusionStats: this.dataFusion.getStatistics()
+      dataServiceStats: {
+        healthy: true, // FallbackDataService has its own health check
+        name: this.fallbackDataService.name
+      }
     }
   }
 }

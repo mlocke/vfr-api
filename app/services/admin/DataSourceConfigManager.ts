@@ -45,6 +45,12 @@ export interface DataSourceGroupTestResult {
   timestamp: number
 }
 
+export interface DataSourceToggleResult {
+  success: boolean
+  enabled: boolean
+  message: string
+}
+
 export class DataSourceConfigManager {
   private static instance: DataSourceConfigManager
   private dataSources: Map<string, DataSourceInfo> = new Map()
@@ -670,7 +676,7 @@ export class DataSourceConfigManager {
   /**
    * Toggle data source enabled/disabled state
    */
-  async toggleDataSource(dataSourceId: string): Promise<{ success: boolean; enabled: boolean; message: string }> {
+  async toggleDataSource(dataSourceId: string): Promise<DataSourceToggleResult> {
     const dataSource = this.dataSources.get(dataSourceId)
     if (!dataSource) {
       return {

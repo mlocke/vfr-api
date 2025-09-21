@@ -25,7 +25,7 @@ interface RateLimitStatus {
   resetTime: number
 }
 
-export class SecurityValidator {
+class SecurityValidator {
   private static instance: SecurityValidator
   private rateLimitMap: Map<string, RateLimitStatus> = new Map()
 
@@ -69,6 +69,16 @@ export class SecurityValidator {
       }
     }
 
+    // Security checks on original input BEFORE sanitization
+    if (this.containsSuspiciousPatterns(symbol)) {
+      errors.push('Symbol contains suspicious patterns')
+    }
+
+    // Check for special characters BEFORE sanitization
+    if (/[^a-zA-Z0-9]/.test(symbol)) {
+      errors.push('Invalid symbol format - must be 1-5 uppercase letters/numbers')
+    }
+
     // Basic sanitization - remove any non-alphanumeric characters except allowed ones
     const sanitized = symbol.toUpperCase().replace(/[^A-Z0-9]/g, '')
 
@@ -84,11 +94,6 @@ export class SecurityValidator {
     // Pattern validation - US stock symbols are 1-5 uppercase alphanumeric characters
     if (!SecurityValidator.SYMBOL_PATTERN.test(sanitized)) {
       errors.push('Invalid symbol format - must be 1-5 uppercase letters/numbers')
-    }
-
-    // Additional security checks
-    if (this.containsSuspiciousPatterns(sanitized)) {
-      errors.push('Symbol contains suspicious patterns')
     }
 
     return {
@@ -137,7 +142,7 @@ export class SecurityValidator {
     }
 
     // Check for duplicates
-    const uniqueSymbols = [...new Set(sanitizedSymbols)]
+    const uniqueSymbols = Array.from(new Set(sanitizedSymbols))
     if (uniqueSymbols.length !== sanitizedSymbols.length) {
       errors.push('Duplicate symbols detected')
     }
@@ -340,7 +345,7 @@ export class SecurityValidator {
   public validateApiResponse(data: any, expectedFields: string[]): ValidationResult {
     const errors: string[] = []
 
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return {
         isValid: false,
         errors: ['Invalid response data structure']
@@ -393,10 +398,10 @@ export class SecurityValidator {
     if (isProduction) {
       // Remove API keys, tokens, and other sensitive data patterns
       message = message
-        .replace(/api[_-]?key[:\s=]+[\w\-]+/gi, 'api_key=***')
-        .replace(/token[:\s=]+[\w\-]+/gi, 'token=***')
-        .replace(/password[:\s=]+[\w\-]+/gi, 'password=***')
-        .replace(/secret[:\s=]+[\w\-]+/gi, 'secret=***')
+        .replace(/api[_-]?\s*key[:\s=]+[^\s,]+/gi, 'api_key=***')
+        .replace(/token[:\s=]+[^\s,]+/gi, 'token=***')
+        .replace(/password[:\s=]+[^\s,]+/gi, 'password=***')
+        .replace(/secret[:\s=]+[^\s,]+/gi, 'secret=***')
         .replace(/\b\d{4,}\b/g, '***') // Remove long numbers that might be sensitive
         .replace(/https?:\/\/[^\s]+/gi, '[URL]') // Remove URLs
 
@@ -472,4 +477,5 @@ export class SecurityValidator {
   }
 }
 
+export { SecurityValidator }
 export default SecurityValidator.getInstance()

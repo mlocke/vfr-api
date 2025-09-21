@@ -22,7 +22,8 @@ import { financialDataService, StockData } from '../financial-data'
 import { SectorOption } from '../../components/SectorDropdown'
 import { AlgorithmIntegration } from './integration/AlgorithmIntegration'
 import { SectorIntegration } from './integration/SectorIntegration'
-import { MockMCPClient as MCPClient, MockDataFusionEngine as DataFusionEngine, QualityScore } from '../types/core-types'
+import { QualityScore } from '../types/core-types'
+import { FallbackDataService } from '../financial-data/FallbackDataService'
 import { RedisCache } from '../cache/RedisCache'
 import { FactorLibrary } from '../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../algorithms/AlgorithmCache'
@@ -37,23 +38,20 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private algorithmIntegration: AlgorithmIntegration
   private sectorIntegration: SectorIntegration
   private config: any
-  private mcpClient: MCPClient
-  private dataFusion: DataFusionEngine
+  private fallbackDataService: FallbackDataService
   private cache: RedisCache
   private stats: SelectionServiceStats
   private activeRequests: Map<string, AbortController> = new Map()
 
   constructor(
-    mcpClient: MCPClient,
-    dataFusion: DataFusionEngine,
+    fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
     cache: RedisCache,
     technicalService?: TechnicalIndicatorService
   ) {
     super()
 
-    this.mcpClient = mcpClient
-    this.dataFusion = dataFusion
+    this.fallbackDataService = fallbackDataService
     this.cache = cache
     this.config = this.createDefaultConfig()
 
@@ -91,7 +89,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       // Initialize integration layers with enhanced FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(
-        dataFusion,
+        this.fallbackDataService,
         enhancedFactorLibrary,
         algorithmCache,
         this.config
@@ -99,7 +97,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     } else {
       // Initialize integration layers with standard FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(
-        dataFusion,
+        this.fallbackDataService,
         factorLibrary,
         algorithmCache,
         this.config
@@ -107,8 +105,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     }
 
     this.sectorIntegration = new SectorIntegration(
-      mcpClient,
-      dataFusion,
+      this.fallbackDataService,
       this.config
     )
 
@@ -718,18 +715,18 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
     try {
       // Check critical dependencies
-      const mcpHealthy = await this.mcpClient.performHealthChecks().then(() => true).catch(() => false)
+      const dataServiceHealthy = await this.fallbackDataService.healthCheck().catch(() => false)
       const cacheHealthy = await this.cache.ping() === 'PONG'
 
       const details = {
-        mcp: mcpHealthy,
+        dataService: dataServiceHealthy,
         cache: cacheHealthy,
         activeRequests: this.activeRequests.size,
         memoryUsage: this.getMemoryUsage(),
         stats: this.stats
       }
 
-      const healthy = mcpHealthy && cacheHealthy
+      const healthy = dataServiceHealthy && cacheHealthy
 
       return {
         status: healthy ? 'healthy' : 'unhealthy',
@@ -1462,13 +1459,12 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
  * Factory function to create StockSelectionService instance
  */
 export async function createStockSelectionService(
-  mcpClient: MCPClient,
-  dataFusion: DataFusionEngine,
+  fallbackDataService: FallbackDataService,
   factorLibrary: FactorLibrary,
   cache: RedisCache,
   technicalService?: TechnicalIndicatorService
 ): Promise<StockSelectionService> {
-  const service = new StockSelectionService(mcpClient, dataFusion, factorLibrary, cache, technicalService)
+  const service = new StockSelectionService(fallbackDataService, factorLibrary, cache, technicalService)
 
   // Perform any async initialization here
   const health = await service.healthCheck()

@@ -4,6 +4,7 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types.js'
+import ErrorHandler from '../error-handling/ErrorHandler'
 
 interface BLSDataPoint {
   year: string
@@ -435,13 +436,15 @@ export class BLSAPI implements FinancialDataProvider {
     } catch (error) {
       clearTimeout(timeoutId)
 
-      if (error.name === 'AbortError') {
+      const normalizedError = ErrorHandler.normalizeError(error)
+
+      if (normalizedError.isError && (error as Error).name === 'AbortError') {
         throw new Error(`BLS API request timeout after ${this.timeout}ms`)
       }
 
       return {
         success: false,
-        error: error.message,
+        error: normalizedError.message,
         source: 'bls',
         timestamp: Date.now()
       }

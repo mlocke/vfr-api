@@ -397,7 +397,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
               confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
             } : {
               message: 'Options data requires paid plan upgrade',
-              availableSources: optionsServiceStatus?.providerStatus ? Object.keys(optionsServiceStatus.providerStatus).filter(k => optionsServiceStatus.providerStatus[k as any]?.available) : [],
+              availableSources: optionsServiceStatus?.providerStatus ? Object.keys(optionsServiceStatus.providerStatus).filter((k: string) => optionsServiceStatus.providerStatus[k as keyof typeof optionsServiceStatus.providerStatus]?.available) : [],
               recommendations: optionsServiceStatus?.recommendations || []
             }
           },
@@ -614,7 +614,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
             companyInfo: companyInfoTest ? {
               symbol: companyInfoTest.symbol,
               name: companyInfoTest.name,
-              source: companyInfoTest.source
+              description: companyInfoTest.description
             } : null,
             optionsData: optionsTest ? {
               symbol: optionsTest.symbol,
@@ -959,7 +959,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           // Market indices service has different methods
           requests.push(
             apiInstance.getVIX()
-              .then(result => ({
+              .then((result: any) => ({
                 request: i + 1,
                 responseTime: Date.now() - startTime,
                 success: !!result
@@ -979,7 +979,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
               body: JSON.stringify({ symbols: ['AAPL'] }),
               signal: AbortSignal.timeout(timeout)
             })
-              .then(response => ({
+              .then((response: Response) => ({
                 request: i + 1,
                 responseTime: Date.now() - startTime,
                 success: response.ok
@@ -993,7 +993,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         } else {
           requests.push(
             apiInstance.getStockPrice(testSymbol)
-              .then(result => ({
+              .then((result: any) => ({
                 request: i + 1,
                 responseTime: Date.now() - startTime,
                 success: !!result

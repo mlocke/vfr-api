@@ -5,7 +5,7 @@
 
 import { AlgorithmEngine } from './AlgorithmEngine'
 import { AlgorithmCache } from './AlgorithmCache'
-import { MockDataFusionEngine as DataFusionEngine } from '../types/core-types'
+import { FallbackDataService } from '../financial-data/FallbackDataService'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,
@@ -52,7 +52,7 @@ interface SchedulerConfig {
 export class AlgorithmScheduler extends EventEmitter {
   private engine: AlgorithmEngine
   private cache: AlgorithmCache
-  private dataFusion: DataFusionEngine
+  private fallbackDataService: FallbackDataService
   private config: SchedulerConfig
 
   private scheduledAlgorithms = new Map<string, ScheduledExecution>()
@@ -74,14 +74,14 @@ export class AlgorithmScheduler extends EventEmitter {
   constructor(
     engine: AlgorithmEngine,
     cache: AlgorithmCache,
-    dataFusion: DataFusionEngine,
+    fallbackDataService: FallbackDataService,
     config: SchedulerConfig
   ) {
     super()
 
     this.engine = engine
     this.cache = cache
-    this.dataFusion = dataFusion
+    this.fallbackDataService = fallbackDataService
     this.config = config
 
     this.marketContext = {
@@ -561,8 +561,13 @@ export class AlgorithmScheduler extends EventEmitter {
   }
 
   private async getDataSourceStatus(): Promise<any> {
-    // Get status of data sources from DataFusionEngine
-    return this.dataFusion.getStatistics()
+    // Get status of data sources from FallbackDataService
+    const healthy = await this.fallbackDataService.healthCheck()
+    return {
+      healthy,
+      serviceName: this.fallbackDataService.name,
+      lastCheck: Date.now()
+    }
   }
 
   private async getCurrentPositions(algorithmId: string): Promise<any> {

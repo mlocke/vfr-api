@@ -105,11 +105,22 @@ export interface RatingChange {
   source: string
 }
 
+export interface HistoricalOHLC {
+  timestamp: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+  date: string // ISO date string for convenience
+}
+
 export interface FinancialDataProvider {
   name: string
   getStockPrice(symbol: string): Promise<StockData | null>
   getCompanyInfo(symbol: string): Promise<CompanyInfo | null>
   getMarketData(symbol: string): Promise<MarketData | null>
+  getHistoricalOHLC?(symbol: string, days?: number): Promise<HistoricalOHLC[]>
   getFundamentalRatios?(symbol: string): Promise<FundamentalRatios | null>
   getAnalystRatings?(symbol: string): Promise<AnalystRatings | null>
   getPriceTargets?(symbol: string): Promise<PriceTarget | null>

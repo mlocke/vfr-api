@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
+import { DataSourceProvider } from '../../../services/financial-data/DataSourceManager'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,26 +39,26 @@ export async function POST(request: NextRequest) {
 
         // Get current preferences to maintain fallbacks
         const currentPreferences = enhancedService.getDataSourcePreferences()
-        const currentPreference = currentPreferences[dataType]
+        const currentPreference: { fallbacks: string[] } | undefined = currentPreferences[dataType]
 
         if (currentPreference) {
           // Keep existing fallbacks, just change primary
-          const fallbacks = currentPreference.fallbacks.filter(f => f !== primary)
-          enhancedService.setDataSourcePreference(dataType, primary, fallbacks)
+          const fallbacks: DataSourceProvider[] = currentPreference.fallbacks.filter((f: string) => f !== primary) as DataSourceProvider[]
+          enhancedService.setDataSourcePreference(dataType, primary as DataSourceProvider, fallbacks)
         } else {
           // New preference, use default fallbacks based on provider configs
           const providerConfigs = enhancedService.getProviderConfigs()
-          const defaultFallbacks = Object.entries(providerConfigs)
-            .filter(([provider, config]) =>
+          const defaultFallbacks: DataSourceProvider[] = Object.entries(providerConfigs)
+            .filter(([provider, config]: [string, any]) =>
               provider !== primary &&
               config.enabled &&
               config.supportedDataTypes.includes(dataType)
             )
-            .sort((a, b) => b[1].priority - a[1].priority)
+            .sort((a: [string, any], b: [string, any]) => b[1].priority - a[1].priority)
             .slice(0, 2)
-            .map(([provider]) => provider)
+            .map(([provider]: [string, any]) => provider as DataSourceProvider)
 
-          enhancedService.setDataSourcePreference(dataType, primary, defaultFallbacks)
+          enhancedService.setDataSourcePreference(dataType, primary as DataSourceProvider, defaultFallbacks)
         }
         break
 

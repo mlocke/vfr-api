@@ -3,13 +3,13 @@
  * Comprehensive security testing for input validation and attack prevention
  */
 
-import SecurityValidator from '../SecurityValidator'
+import SecurityValidator, { SecurityValidator as SecurityValidatorClass } from '../SecurityValidator'
 
 describe('SecurityValidator', () => {
-  let validator: SecurityValidator
+  let validator: SecurityValidatorClass
 
   beforeEach(() => {
-    validator = SecurityValidator.getInstance()
+    validator = SecurityValidator
     validator.resetSecurityState()
   })
 
@@ -103,7 +103,7 @@ describe('SecurityValidator', () => {
         for (const input of pathInputs) {
           const result = validator.validateSymbol(input)
           expect(result.isValid).toBe(false)
-          expect(result.errors.some(err =>
+          expect(result.errors.some((err: string) =>
             err.includes('suspicious patterns') || err.includes('Invalid symbol format')
           )).toBe(true)
         }
@@ -220,7 +220,7 @@ describe('SecurityValidator', () => {
       const result = validator.validateSymbolBatch(maliciousBatch)
 
       expect(result.isValid).toBe(false)
-      expect(result.errors.some(err => err.includes('Symbol 2:'))).toBe(true)
+      expect(result.errors.some((err: string) => err.includes('Symbol 2:'))).toBe(true)
     })
   })
 
@@ -370,7 +370,7 @@ describe('SecurityValidator', () => {
 
       const result = validator.validateApiResponse(maliciousResponse, ['symbol'])
       expect(result.isValid).toBe(false)
-      expect(result.errors.some(err => err.includes('Suspicious property detected'))).toBe(true)
+      expect(result.errors.some((err: string) => err.includes('Suspicious property detected'))).toBe(true)
     })
 
     test('should reject responses with excessively long strings', () => {
@@ -435,7 +435,7 @@ describe('SecurityValidator', () => {
       const sanitized = validator.sanitizeErrorMessage(longError, true)
 
       expect(sanitized.length).toBeLessThanOrEqual(203) // 200 + '...'
-      expect(sanitized).toEndWith('...')
+      expect(sanitized.endsWith('...')).toBe(true)
     })
 
     test('should handle non-Error inputs', () => {

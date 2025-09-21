@@ -4,7 +4,7 @@
  */
 
 import { FallbackDataService } from '../FallbackDataService'
-import SecurityValidator from '../../security/SecurityValidator'
+import SecurityValidator, { SecurityValidator as SecurityValidatorClass } from '../../security/SecurityValidator'
 
 // Mock the providers to control test behavior
 jest.mock('../PolygonAPI')
@@ -15,12 +15,12 @@ jest.mock('../FinancialModelingPrepAPI')
 
 describe('FallbackDataService Security Integration', () => {
   let service: FallbackDataService
-  let validator: SecurityValidator
+  let validator: SecurityValidatorClass
 
   beforeEach(() => {
     // Create fresh instances for each test
     service = new FallbackDataService()
-    validator = SecurityValidator.getInstance()
+    validator = SecurityValidator
     validator.resetSecurityState()
 
     // Mock environment variables
@@ -341,7 +341,10 @@ describe('FallbackDataService Security Integration', () => {
   describe('Error Handling Security Tests', () => {
     test('should not leak sensitive information in error responses', async () => {
       const originalEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        configurable: true
+      })
 
       const symbol = 'AAPL'
 
@@ -371,7 +374,10 @@ describe('FallbackDataService Security Integration', () => {
       expect(errorMessages).not.toContain('mongodb://')
 
       consoleErrorSpy.mockRestore()
-      process.env.NODE_ENV = originalEnv
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        configurable: true
+      })
     })
 
     test('should limit error message length', async () => {

@@ -136,7 +136,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🧠</span>
-            <span className="hidden sm:inline">&nbsp;Deep Analysis</span>
+            <span className="hidden sm:inline">&nbsp;Analyze Stocks & Options</span>
           </span>
           <span style={{
             fontSize: '12px',
@@ -210,7 +210,7 @@ export default function Home() {
         >
           <span className="flex items-center">
             <span className="mr-2 text-lg">🔧</span>
-            <span className="hidden sm:inline">&nbsp;Admin</span>
+            <span className="hidden sm:inline">&nbsp;Real-Time Status</span>
           </span>
           <span style={{
             fontSize: '12px',
@@ -264,7 +264,7 @@ export default function Home() {
               </p>
               <Link href="/stock-intelligence" className="cta-button">
                 <span>🧠</span>
-                Deep Analysis
+                Analyze Stocks & Options
               </Link>
             </div>
             <div className="dashboard-preview">
@@ -306,7 +306,7 @@ export default function Home() {
         <section className="data-engines-section">
           <div className="data-engines-container">
             <div className="data-engines-header">
-              <h2 className="data-engines-title">Powered by 12 Premium Data Engines</h2>
+              <h2 className="data-engines-title">Powered by 14 Financial Data Sources</h2>
               <p className="data-engines-subtitle">
                 Institutional-grade data sources across the entire financial ecosystem
               </p>
@@ -369,11 +369,19 @@ export default function Home() {
                     </div>
                     <div className="source-status live"></div>
                   </div>
-                  <div className="data-source-card government">
+                  <div className="data-source-card premium">
                     <div className="source-icon">📊</div>
                     <div className="source-info">
-                      <h4 className="source-name">Data.gov</h4>
-                      <p className="source-desc">Government financial datasets</p>
+                      <h4 className="source-name">EODHD</h4>
+                      <p className="source-desc">100K req/day, fundamental ratios</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card free">
+                    <div className="source-icon">📈</div>
+                    <div className="source-info">
+                      <h4 className="source-name">TwelveData</h4>
+                      <p className="source-desc">800 req/day technical data</p>
                     </div>
                     <div className="source-status live"></div>
                   </div>
@@ -385,7 +393,7 @@ export default function Home() {
                 <div className="category-header">
                   <span className="category-icon">📊</span>
                   <h3 className="category-title">Economic Data</h3>
-                  <span className="category-count">3 Sources</span>
+                  <span className="category-count">4 Sources</span>
                 </div>
                 <div className="data-sources-grid">
                   <div className="data-source-card government">
@@ -419,23 +427,31 @@ export default function Home() {
               <div className="data-category">
                 <div className="category-header">
                   <span className="category-icon">🧠</span>
-                  <h3 className="category-title">Intelligence & Web Data</h3>
-                  <span className="category-count">2 Sources</span>
+                  <h3 className="category-title">Intelligence & Analytics</h3>
+                  <span className="category-count">3 Sources</span>
                 </div>
                 <div className="data-sources-grid">
                   <div className="data-source-card premium">
-                    <div className="source-icon">🕷️</div>
+                    <div className="source-icon">🔄</div>
                     <div className="source-info">
-                      <h4 className="source-name">Firecrawl</h4>
-                      <p className="source-desc">Web scraping & sentiment</p>
+                      <h4 className="source-name">Enhanced Data Service</h4>
+                      <p className="source-desc">Smart fallback switching</p>
                     </div>
                     <div className="source-status live"></div>
                   </div>
                   <div className="data-source-card premium">
-                    <div className="source-icon">🌐</div>
+                    <div className="source-icon">📊</div>
                     <div className="source-info">
-                      <h4 className="source-name">Dappier</h4>
-                      <p className="source-desc">Real-time web intelligence</p>
+                      <h4 className="source-name">Options Analysis</h4>
+                      <p className="source-desc">Put/call ratios & sentiment</p>
+                    </div>
+                    <div className="source-status live"></div>
+                  </div>
+                  <div className="data-source-card premium">
+                    <div className="source-icon">📈</div>
+                    <div className="source-info">
+                      <h4 className="source-name">Technical Indicators</h4>
+                      <p className="source-desc">50+ indicators & patterns</p>
                     </div>
                     <div className="source-status live"></div>
                   </div>
@@ -445,7 +461,7 @@ export default function Home() {
 
             <div className="data-engines-stats">
               <div className="stat-item">
-                <div className="stat-number">12</div>
+                <div className="stat-number">14</div>
                 <div className="stat-label">Data Sources</div>
               </div>
               <div className="stat-item">
@@ -453,12 +469,12 @@ export default function Home() {
                 <div className="stat-label">Data Series</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">Real-time</div>
-                <div className="stat-label">Updates</div>
+                <div className="stat-number">83.8%</div>
+                <div className="stat-label">Performance Gain</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">99.9%</div>
-                <div className="stat-label">Uptime</div>
+                <div className="stat-number">80%</div>
+                <div className="stat-label">Security Improvement</div>
               </div>
             </div>
 
@@ -477,28 +493,29 @@ export default function Home() {
             <div className="features-grid">
               <div className="feature-card">
                 <div className="feature-icon">📊</div>
-                <h3 className="feature-title">Technical Analysis</h3>
+                <h3 className="feature-title">50+ Technical Indicators & Pattern Recognition</h3>
                 <p className="feature-description">
-                  Advanced charting with 20+ technical indicators including Moving
-                  Averages, RSI, MACD, and Bollinger Bands. Real-time pattern
-                  recognition and signal detection.
+                  Real-time RSI, MACD, Bollinger Bands, Moving Averages, and momentum signals.
+                  Automatic trend detection and chart pattern recognition through
+                  SimpleTechnicalTestService.
                 </p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">🤖</div>
-                <h3 className="feature-title">AI-Powered Analysis</h3>
+                <h3 className="feature-title">Options Sentiment & Put/Call Analysis</h3>
                 <p className="feature-description">
-                  LSTM neural networks and ensemble methods provide price predictions
-                  with confidence intervals. Sentiment analysis from news and social
-                  media feeds.
+                  Real-time put/call volume ratios and options sentiment scoring.
+                  Market volatility analysis through VIX integration and options
+                  chain intelligence from Polygon.io.
                 </p>
               </div>
               <div className="feature-card">
                 <div className="feature-icon">⚖️</div>
-                <h3 className="feature-title">Fundamental Analysis</h3>
+                <h3 className="feature-title">Dual-Source Fundamental Ratios</h3>
                 <p className="feature-description">
-                  Deep-dive into financial statements, ratios, and peer comparisons.
-                  Automated screening based on value, growth, and quality metrics.
+                  15 key financial ratios from FMP + EODHD dual-source system.
+                  P/E, P/B, ROE, ROA, debt ratios, margins with automatic quality
+                  scoring and validation for enhanced reliability.
                 </p>
               </div>
               <div className="feature-card">

@@ -221,9 +221,9 @@ export class HistoricalDataService {
     const cacheKey = `hist_${symbol}_${timeframe}_${startDate?.toISOString()}_${endDate?.toISOString()}_${preferredSource}`
 
     // Check in-memory cache first
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<HistoricalMarketData[]>(cacheKey)
     if (cached) {
-      return cached
+      return Promise.resolve(cached)
     }
 
     let query = `
@@ -592,7 +592,7 @@ export class HistoricalDataService {
         if (priceVariance > 0.02 || volumeVariance > 0.1) { // 2% price or 10% volume variance
           await this.logDataConflict(
             newData.symbol,
-            newData.timestamp,
+            new Date(newData.timestamp),
             newData.timeframe,
             'price_variance',
             priceVariance,

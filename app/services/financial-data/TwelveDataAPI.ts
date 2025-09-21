@@ -340,6 +340,61 @@ export class TwelveDataAPI implements FinancialDataProvider {
   }
 
   /**
+   * Get historical OHLC data for technical analysis
+   */
+  async getHistoricalOHLC(symbol: string, days = 50): Promise<import('./types').HistoricalOHLC[]> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('TwelveData API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      // Get time series data with daily interval
+      const response = await this.makeRequest('time_series', {
+        symbol: symbol.toUpperCase(),
+        interval: '1day',
+        outputsize: Math.min(days, 100).toString(), // TwelveData free tier limits
+        apikey: this.apiKey
+      })
+
+      if (!response.success || !response.data?.values) {
+        console.warn(`TwelveData: No historical data for ${symbol}`)
+        return []
+      }
+
+      const timeSeries = response.data as TwelveDataTimeSeries
+      const values = timeSeries.values || []
+
+      // Convert TwelveData format to our OHLC format
+      const ohlcData = values.map((item: any) => ({
+        timestamp: new Date(item.datetime).getTime(),
+        open: parseFloat(item.open),
+        high: parseFloat(item.high),
+        low: parseFloat(item.low),
+        close: parseFloat(item.close),
+        volume: parseInt(item.volume) || 0,
+        date: item.datetime
+      })).filter(item =>
+        !isNaN(item.open) && !isNaN(item.high) &&
+        !isNaN(item.low) && !isNaN(item.close)
+      )
+
+      // Sort by timestamp (oldest first) for technical analysis
+      ohlcData.sort((a, b) => a.timestamp - b.timestamp)
+
+      console.log(`TwelveData: Retrieved ${ohlcData.length} OHLC records for ${symbol}`)
+      return ohlcData
+
+    } catch (error) {
+      console.error(`TwelveData historical OHLC error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return []
+    }
+  }
+
+  /**
    * Get analyst ratings (limited support - TwelveData doesn't have comprehensive analyst data)
    */
   async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
