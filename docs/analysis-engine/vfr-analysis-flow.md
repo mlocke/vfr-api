@@ -56,7 +56,7 @@ async function collectTier1Data(symbol: string) {
   const dataPromises = {
     priceVolume: getPolygonData(symbol),        // ~200ms -> ~120ms (optimized)
     fundamentals: getFMPFundamentals(symbol),   // ~400ms -> ~240ms (parallel)
-    fundamentalRatios: getFundamentalRatios(symbol), // ~300ms -> ~180ms (15 key ratios via FMP)
+    fundamentalRatios: getFundamentalRatios(symbol), // ~300ms -> ~180ms (15 key ratios via FMP + EODHD dual-source)
     options: getOptionsData(symbol),            // ~300ms -> ~180ms (circuit breaker)
     marketIndices: getMarketIndicesService(),   // ~300ms -> ~180ms (VIX, SPY, QQQ, sectors)
     treasury: getTreasuryRates(),               // ~100ms -> ~60ms (cached daily)
@@ -128,7 +128,7 @@ interface DataCacheEntry {
 const CACHE_RULES = {
   priceVolume: { ttl: 1 },      // 1 minute (real-time)
   fundamentals: { ttl: 1440 },  // 24 hours (daily updates)
-  fundamentalRatios: { ttl: 1440 }, // 24 hours (TTM ratios change slowly)
+  fundamentalRatios: { ttl: 1440 }, // 24 hours (TTM ratios change slowly) - dual-source FMP+EODHD
   options: { ttl: 15 },         // 15 minutes
   marketIndices: { ttl: 1 },    // 1 minute (VIX, SPY, sectors - real-time)
   treasury: { ttl: 1440 },      // 24 hours
@@ -165,7 +165,7 @@ async function prepareAnalysisData(rawData: RawTier1Data): Promise<AnalysisInput
     tier1Data: {
       currentPrice: rawData.polygon.price,
       volume: rawData.polygon.volume,
-      fundamentalRatios: rawData.fmp.fundamentalRatios, // Direct from FMP getFundamentalRatios()
+      fundamentalRatios: rawData.fundamentalRatios, // Dual-source: FMP primary, EODHD secondary via getFundamentalRatios()
       optionsFlow: processOptionsData(rawData.polygon.options),
       marketContext: {
         vix: rawData.marketIndices.vix,

@@ -21,6 +21,7 @@ import { EODHDAPI } from '../../../services/financial-data/EODHDAPI'
 import { MarketIndicesService } from '../../../services/financial-data/MarketIndicesService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
+import { ErrorHandler } from '../../../services/error-handling/ErrorHandler'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -507,7 +508,14 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       case 'eodhd':
         console.log('📊 Making real EODHD API call...')
         const eodhdAPI = new EODHDAPI(undefined, timeout, true)
-        testData = await eodhdAPI.getStockPrice('AAPL') // Apple stock price from EODHD
+        const eodhdPrice = await eodhdAPI.getStockPrice('AAPL')
+        const eodhdFundamentals = await eodhdAPI.getFundamentalRatios('AAPL')
+
+        testData = {
+          priceData: eodhdPrice,
+          fundamentalRatios: eodhdFundamentals,
+          testType: 'comprehensive_with_fundamentals'
+        }
         break
 
       case 'market_indices':

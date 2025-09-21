@@ -710,7 +710,7 @@ export class FallbackDataService implements FinancialDataProvider {
 
     // Get available sources that support fundamental ratios
     const fundamentalSources = this.dataSources.filter(source =>
-      ['Financial Modeling Prep'].includes(source.name) &&
+      ['Financial Modeling Prep', 'EODHD API'].includes(source.name) &&
       this.canMakeRequest(source) &&
       source.provider.getFundamentalRatios
     )

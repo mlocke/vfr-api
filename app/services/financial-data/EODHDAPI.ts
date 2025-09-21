@@ -4,7 +4,7 @@
  * API Documentation: https://eodhd.com/financial-apis/
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis, FundamentalRatios } from './types'
 
 interface EODHDQuote {
   code: string
@@ -146,6 +146,91 @@ export class EODHDAPI implements FinancialDataProvider {
       }
     } catch (error) {
       console.error(`❌ EODHD API: Error fetching company info for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get fundamental ratios for a stock using EODHD fundamentals API
+   * Provides comprehensive financial ratios and metrics
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    try {
+      console.log(`📊 EODHD API: Fetching fundamental ratios for ${symbol}`)
+
+      if (!this.apiKey) {
+        console.warn('⚠️ EODHD API: No API key provided for fundamental data')
+        return null
+      }
+
+      const normalizedSymbol = symbol.toUpperCase()
+      const url = `${this.baseUrl}/fundamentals/${normalizedSymbol}.US?api_token=${this.apiKey}&fmt=json`
+
+      const response = await this.makeRequest(url)
+
+      if (!response.success || !response.data) {
+        console.warn(`⚠️ EODHD API: No fundamental data received for ${symbol}`)
+        return null
+      }
+
+      const data = response.data as any
+
+      // Extract ratios from EODHD fundamentals response
+      const highlights = data.Highlights || {}
+      const technicals = data.Technicals || {}
+      const valuation = data.Valuation || {}
+      const sharesStats = data.SharesStats || {}
+      const ratios = data.Financials?.Balance_Sheet?.quarterly?.[0] || {}
+      const incomeStatement = data.Financials?.Income_Statement?.quarterly?.[0] || {}
+
+      // Helper function to safely parse numeric values
+      const parseNumeric = (value: any): number | undefined => {
+        if (value === null || value === undefined || value === '' || value === 'None' || value === 'N/A') {
+          return undefined
+        }
+        const parsed = typeof value === 'string' ? parseFloat(value) : Number(value)
+        return isNaN(parsed) ? undefined : parsed
+      }
+
+      // Map EODHD data to our standard FundamentalRatios format
+      const result: FundamentalRatios = {
+        symbol: normalizedSymbol,
+        // Valuation ratios
+        peRatio: parseNumeric(highlights.PERatio) ?? parseNumeric(valuation.TrailingPE),
+        pegRatio: parseNumeric(highlights.PEGRatio),
+        pbRatio: parseNumeric(highlights.PriceBookMRQ) ?? parseNumeric(valuation.PriceBookMRQ),
+        priceToSales: parseNumeric(highlights.PriceSalesTTM) ?? parseNumeric(valuation.PriceSalesTTM),
+        priceToFreeCashFlow: parseNumeric(valuation.PriceCashFlowMRQ),
+
+        // Financial strength ratios
+        debtToEquity: parseNumeric(highlights.DebtToEquity),
+        currentRatio: parseNumeric(highlights.CurrentRatio),
+        quickRatio: parseNumeric(highlights.QuickRatio),
+
+        // Profitability ratios
+        roe: parseNumeric(highlights.ReturnOnEquityTTM),
+        roa: parseNumeric(highlights.ReturnOnAssetsTTM),
+        grossProfitMargin: parseNumeric(highlights.GrossProfitMarginTTM),
+        operatingMargin: parseNumeric(highlights.OperatingMarginTTM),
+        netProfitMargin: parseNumeric(highlights.ProfitMarginTTM),
+
+        // Dividend ratios
+        dividendYield: parseNumeric(highlights.DividendYield),
+        payoutRatio: parseNumeric(highlights.PayoutRatio),
+
+        // Metadata
+        timestamp: Date.now(),
+        source: 'eodhd',
+        period: 'ttm' // EODHD provides trailing twelve months data
+      }
+
+      // Log successful retrieval with data quality info
+      const definedRatios = Object.values(result).filter(v => typeof v === 'number' && !isNaN(v)).length
+      console.log(`✅ EODHD API: Retrieved ${definedRatios} fundamental ratios for ${symbol}`)
+
+      return result
+    } catch (error) {
+      console.error(`❌ EODHD API: Error fetching fundamental ratios for ${symbol}:`, error)
       return null
     }
   }

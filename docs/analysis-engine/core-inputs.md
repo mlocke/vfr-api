@@ -35,15 +35,15 @@
 * Segment reporting data
 * Year-over-year growth rates
 
-**Key Ratios & Metrics:** ✅ IMPLEMENTED via FMP
+**Key Ratios & Metrics:** ✅ IMPLEMENTED via dual sources (FMP + EODHD)
 
-* P/E, P/B, P/S, EV/EBITDA ratios ✅ (P/E, P/B, P/S implemented)
-* ROE, ROA, ROIC ✅ (ROE, ROA implemented)
-* Debt-to-equity, current ratio, quick ratio ✅ IMPLEMENTED
-* Gross/operating/net profit margins ✅ IMPLEMENTED
-* Free cash flow yield ✅ (Price-to-FCF implemented)
-* PEG ratio ✅ IMPLEMENTED
-* Dividend yield and payout ratio ✅ IMPLEMENTED
+* P/E, P/B, P/S, EV/EBITDA ratios ✅ (P/E, P/B, P/S implemented via FMP + EODHD backup)
+* ROE, ROA, ROIC ✅ (ROE, ROA implemented via dual-source fallback)
+* Debt-to-equity, current ratio, quick ratio ✅ IMPLEMENTED (dual-source redundancy)
+* Gross/operating/net profit margins ✅ IMPLEMENTED (FMP primary, EODHD secondary)
+* Free cash flow yield ✅ (Price-to-FCF implemented via dual sources)
+* PEG ratio ✅ IMPLEMENTED (automatic fallback capability)
+* Dividend yield and payout ratio ✅ IMPLEMENTED (enhanced reliability)
 
 **Earnings Data:**
 
@@ -235,7 +235,7 @@
 ### **TIER 1 (Essential \- Start Here):**
 
 1. Real-time price/volume data ✅ IMPLEMENTED
-2. Basic fundamental ratios ✅ IMPLEMENTED (15 ratios via FMP)
+2. Basic fundamental ratios ✅ IMPLEMENTED (15 ratios via FMP + EODHD dual-source)
 3. Options put/call ratios ✅ IMPLEMENTED
 4. VIX and major indices ✅ IMPLEMENTED
 5. Treasury rates ✅ IMPLEMENTED

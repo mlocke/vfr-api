@@ -3,6 +3,12 @@
  * Centralized export for all error handling utilities
  */
 
+// Import for local use
+import ErrorHandlerClass from './ErrorHandler'
+import RetryHandlerClass from './RetryHandler'
+import TimeoutHandlerClass from './TimeoutHandler'
+import { createServiceLogger as createServiceLoggerFunc } from './Logger'
+
 // Core error handling
 export { default as ErrorHandler, ErrorType, ErrorCode, ErrorSeverity } from './ErrorHandler'
 export type { ErrorResponse, ErrorHandlerConfig } from './ErrorHandler'
@@ -33,10 +39,10 @@ export type { LogEntry, LoggerConfig } from './Logger'
 
 // Convenience factory functions
 export const createStandardizedErrorHandler = (serviceName: string) => {
-  const errorHandler = ErrorHandler.getInstance()
-  const logger = createServiceLogger(serviceName)
-  const retryHandler = RetryHandler.getInstance()
-  const timeoutHandler = TimeoutHandler.getInstance()
+  const errorHandler = ErrorHandlerClass.getInstance()
+  const logger = createServiceLoggerFunc(serviceName)
+  const retryHandler = RetryHandlerClass.getInstance()
+  const timeoutHandler = TimeoutHandlerClass.getInstance()
 
   return {
     errorHandler,
@@ -193,7 +199,7 @@ export const isRetryableError = (error: any): boolean => {
     return error.error.retryable
   }
 
-  const retryHandler = RetryHandler.getInstance()
+  const retryHandler = RetryHandlerClass.getInstance()
   const config = retryHandler.getDefaultConfig()
 
   // Simple check for common retryable error patterns
