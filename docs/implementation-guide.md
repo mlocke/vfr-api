@@ -67,6 +67,8 @@ DB_PASSWORD=your_secure_password
 POLYGON_API_KEY=your_polygon_key
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
 YAHOO_FINANCE_API_KEY=your_yahoo_key
+EODHD_API_KEY=your_eodhd_key  # For dual-source fundamental ratios (100k req/day when paid)
+FMP_API_KEY=your_fmp_key      # For fundamental ratios primary source (250 req/day)
 # ... other API keys
 ```
 
@@ -82,7 +84,44 @@ npm ls | grep -E "(pg|typescript|zod)"
 
 ## Step 3: Integration with Enhanced Services
 
-### 3.1 Enterprise Security Integration
+### 3.1 Dual-Source Fundamental Ratios Configuration
+
+The VFR platform now includes dual-source fundamental ratios capability for enhanced reliability:
+
+```typescript
+// Dual-source fundamental ratios configuration
+import { FallbackDataService } from '../financial-data/FallbackDataService'
+
+export class FundamentalRatiosService {
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    // Primary source: Financial Modeling Prep (250 req/day)
+    // Secondary source: EODHD (100k req/day when paid)
+
+    const ratios = await fallbackDataService.getFundamentalRatios(symbol);
+
+    if (ratios) {
+      console.log(`Fundamental ratios from ${ratios.source}: P/E=${ratios.peRatio}`);
+      return ratios;
+    }
+
+    console.warn(`No fundamental ratios available for ${symbol}`);
+    return null;
+  }
+}
+
+// 15 key fundamental metrics available:
+// P/E, PEG, P/B, Price-to-Sales, Price-to-FCF, Debt-to-Equity,
+// Current Ratio, Quick Ratio, ROE, ROA, Gross Margin,
+// Operating Margin, Net Margin, Dividend Yield, Payout Ratio
+```
+
+**Important Notes:**
+- FMP provides fundamental ratios on the free tier (250 requests/day)
+- EODHD fundamental ratios require a paid subscription (3-in-1 package)
+- On EODHD free tier, fundamental ratios return null (price data works)
+- Automatic fallback from FMP to EODHD when FMP limits are exceeded
+
+### 3.2 Enterprise Security Integration
 
 The VFR platform now includes comprehensive security services:
 

@@ -4,7 +4,7 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, FundamentalRatios, AnalystRatings, PriceTarget, RatingChange } from './types'
-import SecurityValidator from '../security/SecurityValidator'
+import securityValidator from '../security/SecurityValidator'
 import { BaseFinancialDataProvider } from './BaseFinancialDataProvider'
 import { createApiErrorHandler, ErrorType, ErrorCode } from '../error-handling'
 
@@ -273,9 +273,9 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
       ])
 
       if (!ratiosResponse.success && !metricsResponse.success) {
-        SecurityValidator.recordFailure(`fmp_fundamental_${sanitizedSymbol}`)
+        securityValidator.recordFailure(`fmp_fundamental_${sanitizedSymbol}`)
         const error = new Error('Failed to fetch fundamental data from FMP')
-        const sanitizedError = SecurityValidator.sanitizeErrorMessage(error)
+        const sanitizedError = securityValidator.sanitizeErrorMessage(error)
         console.error(sanitizedError)
         if (this.throwErrors) throw error
         return null
@@ -283,7 +283,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
 
     // Validate API response structures
     if (ratiosResponse.success) {
-      const ratiosValidation = SecurityValidator.validateApiResponse(ratiosResponse.data, [])
+      const ratiosValidation = securityValidator.validateApiResponse(ratiosResponse.data, [])
       if (!ratiosValidation.isValid) {
         this.errorHandler.logger.warn('Invalid ratios response structure', {
           errors: ratiosValidation.errors,
@@ -293,7 +293,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
     }
 
     if (metricsResponse.success) {
-      const metricsValidation = SecurityValidator.validateApiResponse(metricsResponse.data, [])
+      const metricsValidation = securityValidator.validateApiResponse(metricsResponse.data, [])
       if (!metricsValidation.isValid) {
         this.errorHandler.logger.warn('Invalid metrics response structure', {
           errors: metricsValidation.errors,
@@ -318,7 +318,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
           return undefined
         }
 
-        const validation = SecurityValidator.validateNumeric(value, {
+        const validation = securityValidator.validateNumeric(value, {
           allowNegative,
           allowZero: true,
           min: allowNegative ? undefined : 0,

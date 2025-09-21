@@ -74,7 +74,7 @@ src/
 - **Secondary Sources**: Yahoo Finance (backup/fallback)
 - **Government APIs**: SEC EDGAR, FRED (Treasury rates), Bureau of Labor Statistics, EIA
 - **Analyst Data**: Financial Modeling Prep (consensus ratings, price targets, rating changes)
-- **Fundamental Ratios**: Financial Modeling Prep (15 key ratios: P/E, P/B, ROE, ROA, debt ratios, margins, dividend metrics)
+- **Fundamental Ratios**: Dual-source capability - Financial Modeling Prep (250 req/day) + EODHD (100k req/day when paid) providing 15 key ratios: P/E, P/B, ROE, ROA, debt ratios, margins, dividend metrics
 - **Treasury Analysis**: Enhanced yield curve analysis via FRED API (unlimited/free)
 - **Enterprise Security**: SecurityValidator service with OWASP Top 10 protection (~80% risk reduction)
 - **Performance Optimization**: Promise.allSettled parallel execution (83.8% improvement)
@@ -87,7 +87,7 @@ src/
 - **Selection Service**: `app/services/stock-selection/StockSelectionService.ts`
 - **Real-time Processing**: Combines multiple data sources for comprehensive analysis
 - **Analyst Integration**: Real-time analyst ratings, price targets, and sentiment scoring
-- **Fundamental Analysis**: 15 key fundamental ratios integrated into analysis (P/E, P/B, ROE, margins, liquidity ratios)
+- **Fundamental Analysis**: 15 key fundamental ratios integrated into analysis (P/E, P/B, ROE, margins, liquidity ratios) with dual-source redundancy (FMP + EODHD)
 - **Intelligence Features**: Analyst-based and fundamental-based warnings, opportunities, and upside calculations
 
 ### Caching System
