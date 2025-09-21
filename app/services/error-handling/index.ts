@@ -8,6 +8,7 @@ import ErrorHandlerClass from './ErrorHandler'
 import RetryHandlerClass from './RetryHandler'
 import TimeoutHandlerClass from './TimeoutHandler'
 import { createServiceLogger as createServiceLoggerFunc } from './Logger'
+import type { ErrorResponse } from './ErrorHandler'
 
 // Core error handling
 export { default as ErrorHandler, ErrorType, ErrorCode, ErrorSeverity } from './ErrorHandler'

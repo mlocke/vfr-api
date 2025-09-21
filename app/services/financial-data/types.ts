@@ -206,6 +206,173 @@ export interface OptionsAnalysis {
   freeTierLimited?: boolean
 }
 
+/**
+ * Institutional Holdings Interface for 13F Filings
+ * Tracks quarterly holdings of institutional investment managers
+ */
+export interface InstitutionalHolding {
+  symbol: string
+  cusip: string
+  securityName: string
+  managerName: string
+  managerId: string // SEC CIK number
+  reportDate: string // ISO date string for quarter end
+  filingDate: string // ISO date string when filed
+  shares: number
+  marketValue: number // in USD
+  percentOfPortfolio: number // 0-100 percentage
+  sharesChange?: number // change from previous quarter
+  sharesChangePercent?: number // percentage change from previous quarter
+  valueChange?: number // dollar change from previous quarter
+  valueChangePercent?: number // percentage change from previous quarter
+  isNewPosition: boolean
+  isClosedPosition: boolean
+  rank: number // position rank in manager's portfolio
+  securityType: 'COM' | 'PRF' | 'PUT' | 'CALL' | 'NOTE' | 'BOND' | 'OTHER'
+  votingAuthority?: {
+    sole: number
+    shared: number
+    none: number
+  }
+  investmentDiscretion: 'SOLE' | 'SHARED' | 'OTHER'
+  timestamp: number
+  source: string
+  accessionNumber?: string // SEC filing identifier
+}
+
+/**
+ * Insider Transaction Interface for Form 4 Filings
+ * Tracks insider trading activity within companies
+ */
+export interface InsiderTransaction {
+  symbol: string
+  companyName: string
+  reportingOwnerName: string
+  reportingOwnerTitle?: string
+  reportingOwnerId: string // CIK or other identifier
+  relationship: string[] // Director, Officer, 10% Owner, etc.
+  transactionDate: string // ISO date string
+  filingDate: string // ISO date string
+  transactionCode: 'A' | 'D' | 'F' | 'G' | 'J' | 'K' | 'L' | 'M' | 'P' | 'S' | 'U' | 'V' | 'W' | 'X' | 'Z'
+  transactionType: 'BUY' | 'SELL' | 'GRANT' | 'EXERCISE' | 'GIFT' | 'OTHER'
+  securityTitle: string
+  shares: number
+  pricePerShare?: number
+  transactionValue?: number // shares * price
+  sharesOwnedAfter: number
+  ownershipType: 'D' | 'I' // Direct or Indirect
+  ownershipNature?: string // Nature of beneficial ownership
+  isAmendment: boolean
+  isDerivative: boolean
+  exercisePrice?: number // for derivative securities
+  expirationDate?: string // for derivative securities
+  underlyingSecurityTitle?: string // for derivative securities
+  underlyingShares?: number // for derivative securities
+  confidence: number // 0-1 confidence score for data quality
+  timestamp: number
+  source: string
+  accessionNumber?: string // SEC filing identifier
+  formType: '3' | '4' | '4/A' | '5' | '5/A'
+}
+
+/**
+ * Aggregated Institutional Sentiment for a Security
+ * Derived from multiple 13F filings and position changes
+ */
+export interface InstitutionalSentiment {
+  symbol: string
+  reportDate: string // quarter end date
+  totalInstitutions: number
+  totalShares: number
+  totalValue: number
+  averagePosition: number // average position size in USD
+  institutionalOwnership: number // percentage of float owned by institutions
+  quarterlyChange: {
+    newPositions: number // count of new institutional positions
+    closedPositions: number // count of closed institutional positions
+    increasedPositions: number // count of increased positions
+    decreasedPositions: number // count of decreased positions
+    netSharesChange: number // net change in institutional shares
+    netValueChange: number // net change in institutional value
+    flowScore: number // -1 to 1 sentiment score based on flows
+  }
+  topHolders: Array<{
+    managerName: string
+    managerId: string
+    shares: number
+    value: number
+    percentOfTotal: number
+    changeFromPrevious?: number
+  }>
+  sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  sentimentScore: number // 0-10 scale (0=Very Bearish, 10=Very Bullish)
+  confidence: number // 0-1 confidence score
+  timestamp: number
+  source: string
+}
+
+/**
+ * Aggregated Insider Sentiment for a Security
+ * Derived from Form 4 insider trading patterns
+ */
+export interface InsiderSentiment {
+  symbol: string
+  period: string // time period analyzed (e.g., '90D', '180D', '1Y')
+  totalTransactions: number
+  totalInsiders: number
+  netShares: number // net shares bought/sold
+  netValue: number // net dollar value bought/sold
+  buyTransactions: number
+  sellTransactions: number
+  buyValue: number
+  sellValue: number
+  averageTransactionSize: number
+  insiderTypes: {
+    officers: { transactions: number; netShares: number; netValue: number }
+    directors: { transactions: number; netShares: number; netValue: number }
+    tenPercentOwners: { transactions: number; netShares: number; netValue: number }
+    other: { transactions: number; netShares: number; netValue: number }
+  }
+  recentActivity: Array<{
+    date: string
+    insiderName: string
+    relationship: string
+    transactionType: 'BUY' | 'SELL'
+    shares: number
+    value?: number
+    significance: 'HIGH' | 'MEDIUM' | 'LOW' // based on size relative to position
+  }>
+  sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  sentimentScore: number // 0-10 scale (0=Very Bearish, 10=Very Bullish)
+  confidence: number // 0-1 confidence score
+  timestamp: number
+  source: string
+}
+
+/**
+ * Combined Institutional & Insider Intelligence
+ * Composite view for investment decision support
+ */
+export interface InstitutionalIntelligence {
+  symbol: string
+  reportDate: string
+  institutionalSentiment?: InstitutionalSentiment
+  insiderSentiment?: InsiderSentiment
+  compositeScore: number // 0-10 combined sentiment score
+  weightedSentiment: 'VERY_BULLISH' | 'BULLISH' | 'NEUTRAL' | 'BEARISH' | 'VERY_BEARISH'
+  keyInsights: string[] // array of narrative insights
+  riskFactors: string[] // potential concerns or risks
+  opportunities: string[] // potential opportunities
+  dataQuality: {
+    institutionalDataAvailable: boolean
+    insiderDataAvailable: boolean
+    dataFreshness: number // days since last update
+    completeness: number // 0-1 score for data completeness
+  }
+  timestamp: number
+  source: string
+}
+
 export interface ApiResponse<T> {
   success: boolean
   data?: T
@@ -213,4 +380,40 @@ export interface ApiResponse<T> {
   source: string
   timestamp: number
   cached?: boolean
+}
+
+// Missing types for InstitutionalDataService
+export interface InstitutionalAnalysis {
+  symbol: string
+  institutionalOwnership: number
+  topHolders: Array<{
+    name: string
+    shares: number
+    percentage: number
+    marketValue: number
+  }>
+  recentChanges: Array<{
+    institution: string
+    changeType: string
+    changeShares: number
+    changePercent: number
+    newPercentage: number
+  }>
+  insiderActivity: any
+  confidenceScore: number
+  lastUpdated: number
+  dataCompleteness: {
+    thirteenFCoverage: number
+    insiderCoverage: number
+    totalInstitutions: number
+    totalInsiders: number
+  }
+}
+
+export interface InsiderTrading {
+  type: 'BUY' | 'SELL'
+  shares: number
+  value: number
+  date: string
+  insider: string
 }

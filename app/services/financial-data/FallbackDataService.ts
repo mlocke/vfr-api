@@ -3,12 +3,13 @@
  * Implements a chain of free data sources with automatic failover
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios, InstitutionalIntelligence, InstitutionalHolding, InsiderTransaction } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import { InstitutionalDataService } from './InstitutionalDataService'
 import SecurityValidator from '../security/SecurityValidator'
 import { createServiceErrorHandler, ErrorType, ErrorCode } from '../error-handling'
 
@@ -27,8 +28,10 @@ export class FallbackDataService implements FinancialDataProvider {
   private requestCounts: Map<string, { count: number; resetTime: number }> = new Map()
   private dailyCounts: Map<string, { count: number; date: string }> = new Map()
   private errorHandler = createServiceErrorHandler('FallbackDataService')
+  private institutionalDataService: InstitutionalDataService
 
   constructor() {
+    this.institutionalDataService = new InstitutionalDataService()
     this.initializeDataSources()
   }
 
@@ -823,6 +826,87 @@ export class FallbackDataService implements FinancialDataProvider {
         error,
         symbol: sanitizedSymbol
       })
+      return null
+    }
+  }
+
+  /**
+   * Get institutional intelligence for a symbol
+   * Combines 13F holdings and Form 4 insider trading data
+   */
+  async getInstitutionalIntelligence(symbol: string): Promise<InstitutionalIntelligence | null> {
+    return this.errorHandler.validateAndExecute(
+      () => this.institutionalDataService.getInstitutionalIntelligence(symbol),
+      [symbol],
+      {
+        timeout: 45000,
+        retries: 1,
+        context: 'getInstitutionalIntelligence'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get institutional intelligence for ${symbol}`, { error })
+      return null
+    })
+  }
+
+  /**
+   * Get institutional holdings (13F filings) for a symbol
+   */
+  async getInstitutionalHoldings(symbol: string, quarters = 4): Promise<InstitutionalHolding[]> {
+    return this.errorHandler.validateAndExecute(
+      () => this.institutionalDataService.getInstitutionalHoldings(symbol, quarters),
+      [symbol],
+      {
+        timeout: 30000,
+        retries: 1,
+        context: 'getInstitutionalHoldings'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get institutional holdings for ${symbol}`, { error })
+      return []
+    })
+  }
+
+  /**
+   * Get insider transactions (Form 4 filings) for a symbol
+   */
+  async getInsiderTransactions(symbol: string, days = 180): Promise<InsiderTransaction[]> {
+    return this.errorHandler.validateAndExecute(
+      () => this.institutionalDataService.getInsiderTransactions(symbol, days),
+      [symbol],
+      {
+        timeout: 30000,
+        retries: 1,
+        context: 'getInsiderTransactions'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get insider transactions for ${symbol}`, { error })
+      return []
+    })
+  }
+
+  /**
+   * Get institutional sentiment for a symbol (via institutional intelligence)
+   */
+  async getInstitutionalSentiment(symbol: string) {
+    try {
+      const intelligence = await this.getInstitutionalIntelligence(symbol)
+      return intelligence?.institutionalSentiment || null
+    } catch (error) {
+      this.errorHandler.logger.warn(`Failed to get institutional sentiment for ${symbol}`, { error })
+      return null
+    }
+  }
+
+  /**
+   * Get insider sentiment for a symbol (via institutional intelligence)
+   */
+  async getInsiderSentiment(symbol: string) {
+    try {
+      const intelligence = await this.getInstitutionalIntelligence(symbol)
+      return intelligence?.insiderSentiment || null
+    } catch (error) {
+      this.errorHandler.logger.warn(`Failed to get insider sentiment for ${symbol}`, { error })
       return null
     }
   }

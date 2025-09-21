@@ -59,9 +59,6 @@ const config = {
   // Test timeout - reduced to prevent memory buildup
   testTimeout: 10000,
 
-  // Global setup/teardown
-  globalSetup: undefined,
-  globalTeardown: undefined,
 
   // Maximum worker processes
   maxWorkers: 1,
@@ -71,8 +68,6 @@ const config = {
   detectLeaks: false,  // Temporarily disabled until cleanup is complete
   workerIdleMemoryLimit: '512MB',
 
-  // Force garbage collection between tests
-  // Note: runInBand is deprecated in Jest 30+, but maxWorkers: 1 achieves serial execution
 
   // Additional memory optimization
   maxConcurrency: 5,

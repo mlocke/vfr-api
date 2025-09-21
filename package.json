@@ -2,7 +2,6 @@
 	"name": "veritak-financial-platform",
 	"version": "1.0.0",
 	"description": "Veritak Financial Research LLC - Cyberpunk-themed Financial Analysis & Stock Prediction Platform",
-	"main": "src/index.tsx",
 	"scripts": {
 		"dev": "next dev -p 3000",
 		"dev:api": "next dev -p 3002",
@@ -35,6 +34,7 @@
 		"bcrypt": "^6.0.0",
 		"d3": "^7.8.5",
 		"dotenv": "^17.2.2",
+		"fast-xml-parser": "^5.2.5",
 		"ioredis": "^5.7.0",
 		"jsonwebtoken": "^9.0.2",
 		"next": "^15.5.3",

@@ -1,10 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**AI Agent Instructions for VFR Financial Analysis Platform**
 
-**IMPORTANT** Number 1 rule: NO MOCK DATA!! ANYWHERE!! EVER!!
+## Quick Reference
+- **Rule #1**: NO MOCK DATA - Always use real APIs
+- **Platform**: Next.js 15 + TypeScript (App Router)
+- **Data Sources**: 12+ financial APIs with fallback patterns
+- **Architecture**: Service layer + caching + enterprise security
+- **Commands**: `npm run dev:clean` (ports), `npm test` (TDD), `npm run type-check`
+- **Key Paths**: `app/services/`, `app/api/`, `docs/`
 
-Veritak Financial Research LLC - A Next.js 15 cyberpunk-themed financial analysis platform aggregating 12+ data sources. See `docs/vision.md` for project vision.
+## Project Identity
+**Veritak Financial Research LLC** - Cyberpunk-themed financial analysis platform aggregating 12+ data sources for institutional-grade stock intelligence.
 
 ## Architecture
 
@@ -66,20 +73,24 @@ src/
 - `npm run dev:health` - Run daily health check
 - `./scripts/dev-clean.sh` - Clean development environment script
 
-## Key Services & Architecture
+## Data Sources & Services
 
-### Financial Data Layer
-- **Primary Sources**: Polygon.io, Alpha Vantage, Financial Modeling Prep (premium APIs)
-- **Enhanced Sources**: EODHD (100k req/day), TwelveData (800 req/day free)
-- **Secondary Sources**: Yahoo Finance (backup/fallback)
-- **Government APIs**: SEC EDGAR, FRED (Treasury rates), Bureau of Labor Statistics, EIA
-- **Analyst Data**: Financial Modeling Prep (consensus ratings, price targets, rating changes)
-- **Fundamental Ratios**: Dual-source capability - Financial Modeling Prep (250 req/day) + EODHD (100k req/day when paid) providing 15 key ratios: P/E, P/B, ROE, ROA, debt ratios, margins, dividend metrics
-- **Treasury Analysis**: Enhanced yield curve analysis via FRED API (unlimited/free)
-- **Enterprise Security**: SecurityValidator service with OWASP Top 10 protection (~80% risk reduction)
-- **Performance Optimization**: Promise.allSettled parallel execution (83.8% improvement)
-- **Fallback Strategy**: Automatic source switching with rate limiting and error handling
-- **Location**: `app/services/financial-data/` (individual API classes and FallbackDataService)
+### Financial Data APIs
+| Tier | Source | Rate Limit | Purpose | Files |
+|------|--------|------------|---------|-------|
+| Premium | Polygon.io, Alpha Vantage, FMP | 250-5000/day | Primary data | `app/services/financial-data/` |
+| Enhanced | EODHD, TwelveData | 100k/day, 800/day | Secondary + ratios | `FallbackDataService.ts` |
+| Government | SEC EDGAR, FRED, BLS, EIA | Unlimited | Institutional/macro | `SECEdgarAPI.ts` |
+| Backup | Yahoo Finance | N/A | Fallback only | Integrated |
+
+### Core Services
+| Service | Path | Purpose |
+|---------|------|---------|
+| StockSelectionService | `app/services/stock-selection/` | Multi-modal stock analysis |
+| InstitutionalDataService | `app/services/financial-data/InstitutionalDataService.ts` | 13F holdings + Form 4 insider trading |
+| SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
+| ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
+| CacheService | `app/services/cache/` | Redis + in-memory fallback |
 
 ### Stock Analysis Engine
 - **Multi-modal Input**: Single stocks, sectors, or multiple symbols
@@ -88,7 +99,8 @@ src/
 - **Real-time Processing**: Combines multiple data sources for comprehensive analysis
 - **Analyst Integration**: Real-time analyst ratings, price targets, and sentiment scoring
 - **Fundamental Analysis**: 15 key fundamental ratios integrated into analysis (P/E, P/B, ROE, margins, liquidity ratios) with dual-source redundancy (FMP + EODHD)
-- **Intelligence Features**: Analyst-based and fundamental-based warnings, opportunities, and upside calculations
+- **Institutional Intelligence**: 13F quarterly holdings analysis and Form 4 insider trading monitoring with real-time sentiment scoring
+- **Intelligence Features**: Analyst-based, fundamental-based, institutional, and insider warnings, opportunities, and upside calculations
 
 ### Caching System
 - **Primary**: Redis with configurable TTL (2min dev, 10min prod)
@@ -154,86 +166,74 @@ src/
 3. **Configuration Updates**: Persistent state changes for API availability
 4. **Performance Monitoring**: Live metrics for response times and success rates
 
-## Environment Configuration
+## Environment & Configuration
 
-### Development vs Production
-| Environment | Cache TTL | Rate Limits | Data Quality | Admin Access | Analyst Data |
-|-------------|-----------|-------------|--------------|--------------|---------------|
-| Development | 2 minutes | Relaxed     | Basic        | Auto-granted | Daily refresh |
-| Production  | 10 minutes| Strict      | Enhanced     | JWT Required | Daily refresh |
+| Environment | Cache TTL | Rate Limits | Admin Access | File |
+|-------------|-----------|-------------|--------------|------|
+| Development | 2 minutes | Relaxed | Auto-granted | `.env` |
+| Production | 10 minutes | Strict | JWT Required | `.env` |
 
-### Required Environment Variables
-- **API Keys**: Alpha Vantage, Polygon, Financial Modeling Prep, FRED, etc.
-- **Database URLs**: PostgreSQL, Redis, InfluxDB connections
-- **Security**: JWT secrets, bcrypt salt rounds
-- **Application**: Debug flags, log levels, rate limiting
+**Required Variables**: API keys (AV, Polygon, FMP, FRED), DB URLs (PostgreSQL, Redis), JWT secrets
 
-## Development Guidelines
+## Development Standards
 
-### Code Standards
-- **KISS Principles**: Avoid over-engineering, prioritize simplicity
-- **TypeScript Strict**: All code must pass TypeScript strict checks
-- **No Comments**: Code should be self-documenting
-- **Real Data**: Never use mock data - always connect to real APIs
-- **Performance First**: Optimize for Core Web Vitals and response times
+### Non-Negotiable Rules
+1. **NO MOCK DATA** - Always use real APIs
+2. **TypeScript Strict** - All code must pass strict checks
+3. **Real Data Only** - Connect to actual data sources
+4. **KISS Principles** - Avoid over-engineering
+5. **Performance First** - Optimize for Core Web Vitals
 
 ### Architecture Patterns
-- **Service Layer**: All business logic isolated in service classes
-- **Dependency Injection**: Services initialized through ServiceInitializer
-- **Error Handling**: Centralized ErrorHandler with standardized error types, codes, and severity levels
-- **Security First**: SecurityValidator integration across all API endpoints
-- **Performance Optimized**: Promise.allSettled parallel execution patterns (83.8% improvement)
-- **Production Ready**: Circuit breaker patterns and retry mechanisms with exponential backoff
-- **Caching Strategy**: Multi-layer caching with intelligent invalidation
-- **KISS Principles**: Clean architecture with single responsibility classes
+- **Service Layer**: Business logic in `app/services/`
+- **Error Handling**: Centralized via `ErrorHandler.ts`
+- **Security**: `SecurityValidator` on all endpoints
+- **Caching**: Redis + in-memory fallback
+- **Performance**: Promise.allSettled parallel execution (83.8% improvement)
 
-### Development Workflow
-1. Run `npm run dev:clean` for port conflicts or fresh start
-2. Use `npm run type-check` before committing
-3. Run test suite with `npm test` to ensure no regressions
-4. For server issues: Kill all httpd processes, then restart Next.js dev server
+### Workflow
+1. `npm run dev:clean` (port conflicts)
+2. `npm run type-check` (before commit)
+3. `npm test` (TDD approach)
+4. Kill httpd processes if server issues
 
-## Important File Locations
+## File Locations
 
-### Core Services
-- **Stock Selection**: `app/services/stock-selection/StockSelectionService.ts`
-- **Authentication**: `app/services/auth/AuthService.ts`
-- **Caching**: `app/services/cache/RedisCache.ts` and `InMemoryCache.ts`
-- **Data Sources**: `app/services/financial-data/` (individual API classes)
-- **Fallback Service**: `app/services/financial-data/FallbackDataService.ts`
-- **Security**: `app/services/security/SecurityValidator.ts` (enterprise-grade protection)
-- **Error Handling**: `app/services/error-handling/ErrorHandler.ts` (centralized error management)
-- **Base Provider**: `app/services/financial-data/BaseFinancialDataProvider.ts` (reusable API patterns)
-- **Logging**: `app/services/error-handling/Logger.ts` (structured logging with sanitization)
-- **Retry Logic**: `app/services/error-handling/RetryHandler.ts` (configurable retry mechanisms)
+### Critical Service Files
+| Component | File Path | Purpose |
+|-----------|-----------|---------|
+| Stock Analysis | `app/services/stock-selection/StockSelectionService.ts` | Multi-modal analysis |
+| Institutional Data | `app/services/financial-data/InstitutionalDataService.ts` | 13F + Form 4 parsing |
+| SEC EDGAR | `app/services/financial-data/SECEdgarAPI.ts` | Enhanced SEC integration |
+| Security | `app/services/security/SecurityValidator.ts` | OWASP protection |
+| Error Handling | `app/services/error-handling/ErrorHandler.ts` | Centralized errors |
+| Caching | `app/services/cache/RedisCache.ts` | Redis + fallback |
+| Authentication | `app/services/auth/AuthService.ts` | JWT + bcrypt |
+| Data Fallback | `app/services/financial-data/FallbackDataService.ts` | API switching |
 
-### Configuration Files
-- **Jest**: `jest.config.js` (memory optimization settings)
-- **TypeScript**: `tsconfig.json` (strict mode configuration)
-- **Next.js**: `next.config.js` (framework configuration)
-- **Environment**: `.env` (API keys and database URLs)
+### Config Files
+- `jest.config.js` - Memory optimization
+- `tsconfig.json` - TypeScript strict mode
+- `.env` - API keys and DB URLs
 
-### Documentation
-- **Vision**: `docs/vision.md` - Project goals and problem statement
-- **Standards**: `docs/claude-standards.md` and `docs/comprehensive-coding-standards.md`
-- **Architecture**: `docs/database-architecture.md` and `docs/implementation-guide.md`
-- **Security**: `docs/security-architecture.md` - Enterprise security implementation
-- **Performance**: `docs/performance-optimizations.md` - 83.8% performance improvements
-- **Error Handling**: `docs/error-handling-standards.md` - Standardized error management
+### Key Documentation
+- `docs/vision.md` - Project goals
+- `docs/security-architecture.md` - Security implementation
+- `docs/error-handling-standards.md` - Error management
 
 ## Troubleshooting
 
-### Common Issues
-- **Port Conflicts**: Use `npm run dev:clean` to reset development environment
-- **Redis Connection**: Application works with in-memory fallback if Redis unavailable
-- **API Rate Limits**: FallbackDataService automatically switches between sources
-- **Memory Issues**: Jest configured with memory optimization for stability
+| Issue | Solution | Command |
+|-------|----------|---------|
+| Port conflicts | Clean environment | `npm run dev:clean` |
+| Redis down | Uses in-memory fallback | Automatic |
+| Rate limits | Auto-switches sources | Via FallbackDataService |
+| Memory issues | Jest optimization | `maxWorkers: 1` |
+| Server issues | Kill httpd processes | Manual kill + restart |
 
-### Debug Tools
-- **Health Check**: `/api/health` endpoint for system status
-- **Admin Dashboard**: `/admin` for real-time API monitoring
-- **Test Scripts**: Various test files in root directory for debugging specific APIs
-- **Logs**: Development logs available via `npm run dev:monitor`
+### Debug Endpoints
+- `/api/health` - System status
+- `/admin` - Real-time API monitoring
+- `npm run dev:monitor` - Development logs
 
-### API Lookup  
-- For API documentation always use context7 MCP.
+**API Documentation**: Always use context7 MCP for API lookups

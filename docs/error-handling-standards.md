@@ -1,86 +1,44 @@
 # VFR Error Handling Standards
 
-## Centralized Error Management Architecture
+**Purpose**: Centralized error management with standardized types, structured logging, and enterprise security.
 
-The VFR financial analysis platform implements a comprehensive, standardized error handling system that provides consistent error management, structured logging, and production-ready reliability. This document outlines the error handling standards and implementation details.
-
-## ErrorHandler Service
-
-### Overview
-The `ErrorHandler` service (`app/services/error-handling/ErrorHandler.ts`) provides centralized error management with standardized error types, codes, severity levels, and automatic sanitization.
+## Quick Reference
 
 ### Core Components
+- **ErrorHandler**: `app/services/error-handling/ErrorHandler.ts` - Central error processing
+- **Logger**: `app/services/error-handling/Logger.ts` - Structured logging with sanitization
+- **RetryHandler**: `app/services/error-handling/RetryHandler.ts` - Exponential backoff retry logic
+- **TimeoutHandler**: Timeout management with AbortController
 
-#### Error Classification System
+## Error Classification
+
+### Error Types & Codes
+| Type | Code Range | Examples |
+|------|------------|----------|
+| VALIDATION | 1000-1999 | Invalid symbol (1001), missing field (1003) |
+| AUTHENTICATION | 2000-2999 | Unauthorized (2001), token expired (2003) |
+| RATE_LIMIT | 3000-3999 | Rate exceeded (3001), quota exceeded (3003) |
+| API_ERROR | 4000-4999 | Timeout (4001), unavailable (4002) |
+| SYSTEM | 5000-5999 | DB failed (5001), cache unavailable (5002) |
+
+### Severity Levels
+- **LOW**: Minor issues, system continues
+- **MEDIUM**: Some functionality affected
+- **HIGH**: Significant functionality affected
+- **CRITICAL**: System-threatening, immediate attention
+
+### StandardError Interface
 ```typescript
-export enum ErrorType {
-  VALIDATION = 'validation',
-  AUTHENTICATION = 'authentication',
-  AUTHORIZATION = 'authorization',
-  RATE_LIMIT = 'rate_limit',
-  API_TIMEOUT = 'api_timeout',
-  API_ERROR = 'api_error',
-  DATABASE = 'database',
-  CACHE = 'cache',
-  SECURITY = 'security',
-  BUSINESS_LOGIC = 'business_logic',
-  SYSTEM = 'system',
-  UNKNOWN = 'unknown'
-}
-
-export enum ErrorSeverity {
-  LOW = 'low',           // Minor issues, system continues normally
-  MEDIUM = 'medium',     // Notable issues, some functionality affected
-  HIGH = 'high',         // Major issues, significant functionality affected
-  CRITICAL = 'critical'  // System-threatening issues, immediate attention required
-}
-
-export enum ErrorCode {
-  // Validation Errors (1000-1999)
-  INVALID_SYMBOL = 1001,
-  INVALID_INPUT_FORMAT = 1002,
-  MISSING_REQUIRED_FIELD = 1003,
-  INPUT_TOO_LONG = 1004,
-
-  // Authentication/Authorization Errors (2000-2999)
-  UNAUTHORIZED = 2001,
-  FORBIDDEN = 2002,
-  TOKEN_EXPIRED = 2003,
-  INVALID_CREDENTIALS = 2004,
-
-  // Rate Limiting Errors (3000-3999)
-  RATE_LIMIT_EXCEEDED = 3001,
-  TOO_MANY_REQUESTS = 3002,
-  QUOTA_EXCEEDED = 3003,
-
-  // API Errors (4000-4999)
-  API_TIMEOUT = 4001,
-  API_UNAVAILABLE = 4002,
-  API_RATE_LIMITED = 4003,
-  INVALID_API_RESPONSE = 4004,
-
-  // System Errors (5000-5999)
-  DATABASE_CONNECTION_FAILED = 5001,
-  CACHE_UNAVAILABLE = 5002,
-  INTERNAL_SERVER_ERROR = 5003,
-  MEMORY_LIMIT_EXCEEDED = 5004
-}
-```
-
-#### Standardized Error Structure
-```typescript
-export interface StandardError {
-  id: string;                    // Unique error identifier
-  type: ErrorType;              // Error category
-  code: ErrorCode;              // Specific error code
+interface StandardError {
+  id: string;                    // Unique identifier
+  type: ErrorType;              // Category
+  code: ErrorCode;              // Specific code
   severity: ErrorSeverity;      // Impact level
   message: string;              // User-friendly message
-  details?: string;             // Technical details (sanitized)
-  timestamp: Date;              // When error occurred
-  context?: Record<string, any>; // Relevant context (sanitized)
-  stack?: string;               // Stack trace (development only)
-  correlationId?: string;       // Request correlation ID
-  source: string;               // Component that generated error
+  timestamp: Date;              // When occurred
+  context?: Record<string, any>; // Sanitized context
+  correlationId?: string;       // Request tracking
+  source: string;               // Component source
 }
 ```
 
