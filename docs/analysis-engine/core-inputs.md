@@ -35,13 +35,15 @@
 * Segment reporting data
 * Year-over-year growth rates
 
-**Key Ratios & Metrics:**
+**Key Ratios & Metrics:** ✅ IMPLEMENTED via FMP
 
-* P/E, P/B, P/S, EV/EBITDA ratios
-* ROE, ROA, ROIC
-* Debt-to-equity, current ratio, quick ratio
-* Gross/operating/net profit margins
-* Free cash flow yield
+* P/E, P/B, P/S, EV/EBITDA ratios ✅ (P/E, P/B, P/S implemented)
+* ROE, ROA, ROIC ✅ (ROE, ROA implemented)
+* Debt-to-equity, current ratio, quick ratio ✅ IMPLEMENTED
+* Gross/operating/net profit margins ✅ IMPLEMENTED
+* Free cash flow yield ✅ (Price-to-FCF implemented)
+* PEG ratio ✅ IMPLEMENTED
+* Dividend yield and payout ratio ✅ IMPLEMENTED
 
 **Earnings Data:**
 
@@ -232,12 +234,12 @@
 
 ### **TIER 1 (Essential \- Start Here):**
 
-1. Real-time price/volume data
-2. Basic fundamental ratios
-3. Options put/call ratios
-4. VIX and major indices
-5. Treasury rates
-6. Analyst ratings/targets
+1. Real-time price/volume data ✅ IMPLEMENTED
+2. Basic fundamental ratios ✅ IMPLEMENTED (15 ratios via FMP)
+3. Options put/call ratios ✅ IMPLEMENTED
+4. VIX and major indices ✅ IMPLEMENTED
+5. Treasury rates ✅ IMPLEMENTED
+6. Analyst ratings/targets ✅ IMPLEMENTED
 
 ### **TIER 2 (High Impact):**
 

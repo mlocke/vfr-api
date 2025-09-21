@@ -4,18 +4,25 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, FundamentalRatios, AnalystRatings, PriceTarget, RatingChange } from './types'
+import SecurityValidator from '../security/SecurityValidator'
+import { BaseFinancialDataProvider } from './BaseFinancialDataProvider'
+import { createApiErrorHandler, ErrorType, ErrorCode } from '../error-handling'
 
-export class FinancialModelingPrepAPI implements FinancialDataProvider {
+export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implements FinancialDataProvider {
   name = 'Financial Modeling Prep'
-  private baseUrl = 'https://financialmodelingprep.com/stable'
-  private apiKey: string
-  private timeout: number
-  private throwErrors: boolean
+  private errorHandler = createApiErrorHandler('financial-modeling-prep')
 
   constructor(apiKey?: string, timeout = 15000, throwErrors = false) {
-    this.apiKey = apiKey || process.env.FMP_API_KEY || ''
-    this.timeout = timeout
-    this.throwErrors = throwErrors
+    super({
+      apiKey: apiKey || process.env.FMP_API_KEY || '',
+      timeout,
+      throwErrors,
+      baseUrl: 'https://financialmodelingprep.com/stable'
+    })
+  }
+
+  protected getSourceIdentifier(): string {
+    return 'fmp'
   }
 
   /**
@@ -23,45 +30,28 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
    */
   async getStockPrice(symbol: string): Promise<StockData | null> {
     try {
-      if (!this.apiKey) {
-        const error = new Error('Financial Modeling Prep API key not configured')
-        console.warn(error.message)
-        if (this.throwErrors) throw error
-        return null
-      }
+      this.validateApiKey()
+      const normalizedSymbol = this.normalizeSymbol(symbol)
 
-      const response = await this.makeRequest(`/quote?symbol=${symbol.toUpperCase()}`)
+      const response = await this.makeRequest(`/quote?symbol=${normalizedSymbol}`)
 
-      if (!response.success) {
-        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
-        if (this.throwErrors) throw error
-        return null
-      }
-
-      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-        const error = new Error('Invalid response format from Financial Modeling Prep API')
-        if (this.throwErrors) throw error
+      if (!this.validateResponse(response, 'array')) {
         return null
       }
 
       const quote = response.data[0]
-      const price = parseFloat(quote.price || '0')
-      const change = parseFloat(quote.change || '0')
-      const changePercent = parseFloat(quote.changesPercentage || '0')
 
       return {
-        symbol: symbol.toUpperCase(),
-        price: Number(price.toFixed(2)),
-        change: Number(change.toFixed(2)),
-        changePercent: Number(changePercent.toFixed(2)),
-        volume: parseInt(quote.volume || '0'),
+        symbol: normalizedSymbol,
+        price: Number(this.parseNumeric(quote.price).toFixed(2)),
+        change: Number(this.parseNumeric(quote.change).toFixed(2)),
+        changePercent: Number(this.parseNumeric(quote.changesPercentage).toFixed(2)),
+        volume: this.parseInt(quote.volume),
         timestamp: quote.timestamp ? new Date(quote.timestamp * 1000).getTime() : Date.now(),
-        source: 'fmp'
+        source: this.getSourceIdentifier()
       }
     } catch (error) {
-      console.error(`Financial Modeling Prep API error for ${symbol}:`, error)
-      if (this.throwErrors) throw error
-      return null
+      return this.handleApiError(error, symbol, 'stock price', null)
     }
   }
 
@@ -70,42 +60,28 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
    */
   async getCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
     try {
-      if (!this.apiKey) {
-        const error = new Error('Financial Modeling Prep API key not configured')
-        console.warn(error.message)
-        if (this.throwErrors) throw error
-        return null
-      }
+      this.validateApiKey()
+      const normalizedSymbol = this.normalizeSymbol(symbol)
 
-      const response = await this.makeRequest(`/profile?symbol=${symbol.toUpperCase()}`)
+      const response = await this.makeRequest(`/profile?symbol=${normalizedSymbol}`)
 
-      if (!response.success) {
-        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
-        if (this.throwErrors) throw error
-        return null
-      }
-
-      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-        const error = new Error('Invalid company data response from Financial Modeling Prep API')
-        if (this.throwErrors) throw error
+      if (!this.validateResponse(response, 'array')) {
         return null
       }
 
       const profile = response.data[0]
 
       return {
-        symbol: symbol.toUpperCase(),
+        symbol: normalizedSymbol,
         name: profile.companyName || '',
         description: profile.description || '',
         sector: profile.sector || '',
-        marketCap: parseInt(profile.mktCap || '0'),
-        employees: parseInt(profile.fullTimeEmployees || '0'),
+        marketCap: this.parseInt(profile.mktCap),
+        employees: this.parseInt(profile.fullTimeEmployees),
         website: profile.website || ''
       }
     } catch (error) {
-      console.error(`Financial Modeling Prep company info error for ${symbol}:`, error)
-      if (this.throwErrors) throw error
-      return null
+      return this.handleApiError(error, symbol, 'company info', null)
     }
   }
 
@@ -140,7 +116,10 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       const historical = response.data.historical[0]
 
       // Store full historical data for future use (365 days now cached)
-      console.log(`📊 FMP: Fetched ${response.data.historical.length} days of historical data for ${symbol}`)
+      this.errorHandler.logger.info(`FMP: Fetched ${response.data.historical.length} days of historical data for ${symbol}`, {
+        symbol,
+        daysRetrieved: response.data.historical.length
+      })
 
       return {
         symbol: symbol.toUpperCase(),
@@ -153,7 +132,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         source: 'fmp'
       }
     } catch (error) {
-      console.error(`Financial Modeling Prep market data error for ${symbol}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'market_data',
+        error,
+        undefined,
+        { symbol }
+      )
       if (this.throwErrors) throw error
       return null
     }
@@ -200,7 +185,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       }))
 
     } catch (error) {
-      console.error(`Financial Modeling Prep historical data error for ${symbol}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'historical_data',
+        error,
+        undefined,
+        { symbol, limit }
+      )
       if (this.throwErrors) throw error
       return []
     }
@@ -211,89 +202,165 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      if (!this.apiKey) {
-        console.warn('Financial Modeling Prep API key not configured')
-        return false
-      }
-
-      const response = await this.makeRequest('/quote?symbol=AAPL')
-
-      if (!response.success) {
-        console.warn('Financial Modeling Prep health check failed:', response.error || 'Unknown error')
-        return false
-      }
-
-      // Check for success, no error message, and presence of expected data structure
-      return response.success &&
-             Array.isArray(response.data) &&
-             response.data.length > 0 &&
-             !!response.data[0]?.price
+      return await this.errorHandler.handleApiCall(
+        () => this.executeHealthCheck(),
+        {
+          timeout: 5000,
+          retries: 0,
+          context: 'healthCheck'
+        }
+      )
     } catch (error) {
-      console.error('Financial Modeling Prep health check failed:', error instanceof Error ? error.message : error)
+      this.errorHandler.logger.warn('Financial Modeling Prep health check failed', { error })
       return false
     }
   }
 
+  private async executeHealthCheck(): Promise<boolean> {
+    if (!this.apiKey) {
+      this.errorHandler.logger.warn('Financial Modeling Prep API key not configured')
+      return false
+    }
+
+    const response = await this.makeRequest('/quote?symbol=AAPL')
+
+    if (!response.success) {
+      this.errorHandler.logger.warn('Financial Modeling Prep health check failed', {
+        error: response.error || 'Unknown error'
+      })
+      return false
+    }
+
+    // Check for success, no error message, and presence of expected data structure
+    return response.success &&
+           Array.isArray(response.data) &&
+           response.data.length > 0 &&
+           !!response.data[0]?.price
+  }
+
   /**
-   * Get fundamental ratios for a stock
+   * Get fundamental ratios for a stock with comprehensive security validation
    */
   async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
     try {
-      if (!this.apiKey) {
-        const error = new Error('Financial Modeling Prep API key not configured')
-        console.warn(error.message)
-        if (this.throwErrors) throw error
-        return null
-      }
+      return await this.errorHandler.validateAndExecute(
+        () => this.executeGetFundamentalRatios(symbol),
+        [symbol],
+        {
+          timeout: this.timeout,
+          retries: 2,
+          context: 'getFundamentalRatios'
+        }
+      )
+    } catch (error) {
+      if (this.throwErrors) throw error
+      this.errorHandler.logger.warn(`Failed to get fundamental ratios for ${symbol}`, { error })
+      return null
+    }
+  }
+
+  private async executeGetFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    const sanitizedSymbol = symbol.toUpperCase()
+
+    if (!this.apiKey) {
+      throw new Error('Financial Modeling Prep API key not configured')
+    }
 
       // Get both ratios and key metrics for comprehensive data
       const [ratiosResponse, metricsResponse] = await Promise.all([
-        this.makeRequest(`/ratios-ttm?symbol=${symbol.toUpperCase()}`),
-        this.makeRequest(`/key-metrics-ttm?symbol=${symbol.toUpperCase()}`)
+        this.makeRequest(`/ratios-ttm?symbol=${sanitizedSymbol}`),
+        this.makeRequest(`/key-metrics-ttm?symbol=${sanitizedSymbol}`)
       ])
 
       if (!ratiosResponse.success && !metricsResponse.success) {
+        SecurityValidator.recordFailure(`fmp_fundamental_${sanitizedSymbol}`)
         const error = new Error('Failed to fetch fundamental data from FMP')
+        const sanitizedError = SecurityValidator.sanitizeErrorMessage(error)
+        console.error(sanitizedError)
         if (this.throwErrors) throw error
         return null
       }
 
-      // Extract ratios data
+    // Validate API response structures
+    if (ratiosResponse.success) {
+      const ratiosValidation = SecurityValidator.validateApiResponse(ratiosResponse.data, [])
+      if (!ratiosValidation.isValid) {
+        this.errorHandler.logger.warn('Invalid ratios response structure', {
+          errors: ratiosValidation.errors,
+          symbol: sanitizedSymbol
+        })
+      }
+    }
+
+    if (metricsResponse.success) {
+      const metricsValidation = SecurityValidator.validateApiResponse(metricsResponse.data, [])
+      if (!metricsValidation.isValid) {
+        this.errorHandler.logger.warn('Invalid metrics response structure', {
+          errors: metricsValidation.errors,
+          symbol: sanitizedSymbol
+        })
+      }
+    }
+
+      // Extract ratios data with validation
       const ratiosData = ratiosResponse.success && Array.isArray(ratiosResponse.data) && ratiosResponse.data[0]
         ? ratiosResponse.data[0]
         : {}
 
-      // Extract metrics data
+      // Extract metrics data with validation
       const metricsData = metricsResponse.success && Array.isArray(metricsResponse.data) && metricsResponse.data[0]
         ? metricsResponse.data[0]
         : {}
 
-      return {
-        symbol: symbol.toUpperCase(),
-        peRatio: parseFloat(metricsData.peRatioTTM) || parseFloat(ratiosData.priceEarningsRatioTTM) || undefined,
-        pegRatio: parseFloat(metricsData.pegRatioTTM) || undefined,
-        pbRatio: parseFloat(metricsData.priceToBookRatioTTM) || parseFloat(ratiosData.priceToBookRatioTTM) || undefined,
-        priceToSales: parseFloat(metricsData.priceToSalesRatioTTM) || parseFloat(ratiosData.priceToSalesRatioTTM) || undefined,
-        priceToFreeCashFlow: parseFloat(metricsData.priceToFreeCashFlowsRatioTTM) || parseFloat(ratiosData.priceToFreeCashFlowsRatioTTM) || undefined,
-        debtToEquity: parseFloat(ratiosData.debtEquityRatioTTM) || undefined,
-        currentRatio: parseFloat(ratiosData.currentRatioTTM) || undefined,
-        quickRatio: parseFloat(ratiosData.quickRatioTTM) || undefined,
-        roe: parseFloat(ratiosData.returnOnEquityTTM) || undefined,
-        roa: parseFloat(ratiosData.returnOnAssetsTTM) || undefined,
-        grossProfitMargin: parseFloat(ratiosData.grossProfitMarginTTM) || undefined,
-        operatingMargin: parseFloat(ratiosData.operatingProfitMarginTTM) || undefined,
-        netProfitMargin: parseFloat(ratiosData.netProfitMarginTTM) || undefined,
-        dividendYield: parseFloat(metricsData.dividendYieldTTM) || parseFloat(ratiosData.dividendYieldTTM) || undefined,
-        payoutRatio: parseFloat(ratiosData.payoutRatioTTM) || undefined,
+      // Securely parse and validate numeric values
+      const parseSecureNumeric = (value: any, fieldName: string, allowNegative: boolean = false): number | undefined => {
+        if (value === null || value === undefined || value === '') {
+          return undefined
+        }
+
+        const validation = SecurityValidator.validateNumeric(value, {
+          allowNegative,
+          allowZero: true,
+          min: allowNegative ? undefined : 0,
+          max: fieldName.includes('Margin') || fieldName === 'payoutRatio' ? 100 : undefined,
+          decimalPlaces: 6
+        })
+
+        if (!validation.isValid) {
+          this.errorHandler.logger.warn(`Invalid ${fieldName} value for ${sanitizedSymbol}`, {
+            fieldName,
+            value,
+            errors: validation.errors
+          })
+          return undefined
+        }
+
+        return parseFloat(value)
+      }
+
+      const result: FundamentalRatios = {
+        symbol: sanitizedSymbol,
+        peRatio: parseSecureNumeric(metricsData.peRatioTTM, 'peRatio') ?? parseSecureNumeric(ratiosData.priceEarningsRatioTTM, 'peRatio'),
+        pegRatio: parseSecureNumeric(metricsData.pegRatioTTM, 'pegRatio'),
+        pbRatio: parseSecureNumeric(metricsData.priceToBookRatioTTM, 'pbRatio') ?? parseSecureNumeric(ratiosData.priceToBookRatioTTM, 'pbRatio'),
+        priceToSales: parseSecureNumeric(metricsData.priceToSalesRatioTTM, 'priceToSales') ?? parseSecureNumeric(ratiosData.priceToSalesRatioTTM, 'priceToSales'),
+        priceToFreeCashFlow: parseSecureNumeric(metricsData.priceToFreeCashFlowsRatioTTM, 'priceToFreeCashFlow') ?? parseSecureNumeric(ratiosData.priceToFreeCashFlowsRatioTTM, 'priceToFreeCashFlow'),
+        debtToEquity: parseSecureNumeric(ratiosData.debtEquityRatioTTM, 'debtToEquity'),
+        currentRatio: parseSecureNumeric(ratiosData.currentRatioTTM, 'currentRatio'),
+        quickRatio: parseSecureNumeric(ratiosData.quickRatioTTM, 'quickRatio'),
+        roe: parseSecureNumeric(ratiosData.returnOnEquityTTM, 'roe', true),
+        roa: parseSecureNumeric(ratiosData.returnOnAssetsTTM, 'roa', true),
+        grossProfitMargin: parseSecureNumeric(ratiosData.grossProfitMarginTTM, 'grossProfitMargin', true),
+        operatingMargin: parseSecureNumeric(ratiosData.operatingProfitMarginTTM, 'operatingMargin', true),
+        netProfitMargin: parseSecureNumeric(ratiosData.netProfitMarginTTM, 'netProfitMargin', true),
+        dividendYield: parseSecureNumeric(metricsData.dividendYieldTTM, 'dividendYield') ?? parseSecureNumeric(ratiosData.dividendYieldTTM, 'dividendYield'),
+        payoutRatio: parseSecureNumeric(ratiosData.payoutRatioTTM, 'payoutRatio'),
         timestamp: Date.now(),
         source: 'fmp',
         period: 'ttm'
       }
-    } catch (error) {
-      console.error(`Financial Modeling Prep fundamental ratios error for ${symbol}:`, error)
-      if (this.throwErrors) throw error
-      return null
-    }
+
+    return result
   }
 
   /**
@@ -323,7 +390,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         source: 'fmp'
       })).filter(stock => stock.symbol && stock.price > 0).slice(0, limit)
     } catch (error) {
-      console.error(`Financial Modeling Prep sector data error for ${sector}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'sector_data',
+        error,
+        undefined,
+        { sector }
+      )
       return []
     }
   }
@@ -389,7 +462,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         source: 'fmp'
       }
     } catch (error) {
-      console.error(`Financial Modeling Prep analyst ratings error for ${symbol}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'analyst_ratings',
+        error,
+        undefined,
+        { symbol }
+      )
       if (this.throwErrors) throw error
       return null
     }
@@ -442,7 +521,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         source: 'fmp'
       }
     } catch (error) {
-      console.error(`Financial Modeling Prep price targets error for ${symbol}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'price_targets',
+        error,
+        undefined,
+        { symbol }
+      )
       if (this.throwErrors) throw error
       return null
     }
@@ -488,7 +573,13 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
         source: 'fmp'
       }))
     } catch (error) {
-      console.error(`Financial Modeling Prep rating changes error for ${symbol}:`, error)
+      this.errorHandler.logger.logApiError(
+        'GET',
+        'rating_changes',
+        error,
+        undefined,
+        { symbol }
+      )
       if (this.throwErrors) throw error
       return []
     }

@@ -28,6 +28,7 @@ import { FactorLibrary } from '../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../algorithms/AlgorithmCache'
 import { SelectionResult, StockScore } from '../algorithms/types'
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
+import SecurityValidator from '../security/SecurityValidator'
 
 /**
  * Main Stock Selection Service
@@ -125,9 +126,14 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     const startTime = Date.now()
     const requestId = request.requestId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
-    // Setup request tracking
+    // Setup request tracking with automatic cleanup
     const abortController = new AbortController()
     this.activeRequests.set(requestId, abortController)
+
+    // Auto-cleanup stale requests every 10 requests to prevent memory leaks
+    if (this.activeRequests.size % 10 === 0) {
+      this.cleanupStaleRequests()
+    }
 
     // Emit request start event
     this.emitEvent({
@@ -590,17 +596,53 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   }
 
   /**
-   * Data Integration Interface Implementation
+   * Data Integration Interface Implementation with streaming optimization
    */
   async fetchStockData(symbols: string[], options?: SelectionOptions): Promise<any> {
-    const results = await Promise.all(
-      symbols.map(symbol => this.fetchSingleStockData(symbol, options))
-    )
+    // Use chunked processing for large symbol sets to reduce memory pressure
+    const chunkSize = 20 // Process 20 symbols at a time
+    const results: { [symbol: string]: any } = {}
 
-    return results.reduce((acc, result, index) => {
-      acc[symbols[index]] = result
-      return acc
-    }, {})
+    if (symbols.length <= chunkSize) {
+      // Small batch - process all at once with Promise.allSettled
+      const promises = symbols.map(symbol => this.fetchSingleStockData(symbol, options))
+      const settledResults = await Promise.allSettled(promises)
+
+      settledResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          results[symbols[index]] = result.value
+        } else {
+          console.warn(`Failed to fetch data for ${symbols[index]}:`, result.reason)
+          results[symbols[index]] = null
+        }
+      })
+    } else {
+      // Large batch - process in chunks to manage memory and API rate limits
+      console.log(`Processing ${symbols.length} symbols in chunks of ${chunkSize}`)
+
+      for (let i = 0; i < symbols.length; i += chunkSize) {
+        const chunk = symbols.slice(i, i + chunkSize)
+        const chunkPromises = chunk.map(symbol => this.fetchSingleStockData(symbol, options))
+        const chunkResults = await Promise.allSettled(chunkPromises)
+
+        chunkResults.forEach((result, chunkIndex) => {
+          const symbol = chunk[chunkIndex]
+          if (result.status === 'fulfilled') {
+            results[symbol] = result.value
+          } else {
+            console.warn(`Failed to fetch data for ${symbol}:`, result.reason)
+            results[symbol] = null
+          }
+        })
+
+        // Brief pause between chunks to respect rate limits
+        if (i + chunkSize < symbols.length) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+    }
+
+    return results
   }
 
   async validateDataQuality(data: any): Promise<QualityScore> {
@@ -683,6 +725,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         mcp: mcpHealthy,
         cache: cacheHealthy,
         activeRequests: this.activeRequests.size,
+        memoryUsage: this.getMemoryUsage(),
         stats: this.stats
       }
 
@@ -701,7 +744,63 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   }
 
   /**
-   * Private utility methods
+   * Get current memory usage for performance monitoring
+   */
+  private getMemoryUsage(): { used: string; total: string; activeRequests: number } {
+    const memUsage = process.memoryUsage()
+    return {
+      used: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      total: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+      activeRequests: this.activeRequests.size
+    }
+  }
+
+  /**
+   * Performance monitoring method for tracking optimization impact
+   */
+  getPerformanceMetrics(): {
+    cacheHitRate: number
+    averageExecutionTime: number
+    activeRequestsCount: number
+    memoryUsage: ReturnType<typeof this.getMemoryUsage>
+    successRate: number
+  } {
+    return {
+      cacheHitRate: this.calculateCacheHitRate(),
+      averageExecutionTime: this.stats.averageExecutionTime,
+      activeRequestsCount: this.activeRequests.size,
+      memoryUsage: this.getMemoryUsage(),
+      successRate: this.stats.successRate
+    }
+  }
+
+  /**
+   * Cleanup stale requests to prevent memory leaks
+   */
+  private cleanupStaleRequests(): void {
+    const now = Date.now()
+    const staleThreshold = 5 * 60 * 1000 // 5 minutes
+
+    for (const [requestId, controller] of this.activeRequests.entries()) {
+      // Extract timestamp from requestId (format: req_timestamp_random)
+      const timestampMatch = requestId.match(/req_(\d+)_/)
+      if (timestampMatch) {
+        const requestTime = parseInt(timestampMatch[1])
+        if (now - requestTime > staleThreshold) {
+          this.errorHandler.logger.warn(`Cleaning up stale request: ${requestId}`, {
+            requestId,
+            age: now - requestTime,
+            threshold: staleThreshold
+          })
+          controller.abort()
+          this.activeRequests.delete(requestId)
+        }
+      }
+    }
+  }
+
+  /**
+   * Private utility methods with security validation
    */
   private validateRequest(request: SelectionRequest): void {
     if (!request.scope) {
@@ -710,8 +809,22 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     const config = this.config.getConfig()
 
-    if (request.scope.symbols && request.scope.symbols.length > config.limits.maxSymbolsPerRequest) {
-      throw new Error(`Too many symbols: max ${config.limits.maxSymbolsPerRequest}`)
+    // Validate symbols if provided
+    if (request.scope.symbols) {
+      const batchValidation = SecurityValidator.validateSymbolBatch(
+        request.scope.symbols,
+        config.limits.maxSymbolsPerRequest
+      )
+
+      if (!batchValidation.isValid) {
+        const sanitizedError = SecurityValidator.sanitizeErrorMessage(
+          `Invalid symbols in request: ${batchValidation.errors.join(', ')}`
+        )
+        throw new Error(sanitizedError)
+      }
+
+      // Replace with sanitized symbols
+      request.scope.symbols = JSON.parse(batchValidation.sanitized!)
     }
 
     if (this.activeRequests.size >= config.limits.maxConcurrentRequests) {
@@ -721,94 +834,281 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
   private async fetchSingleStockData(symbol: string, options?: SelectionOptions): Promise<any> {
     try {
-      // Fetch real market data using financialDataService
-      const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets] = await Promise.all([
-        financialDataService.getStockPrice(symbol),
-        financialDataService.getCompanyInfo(symbol),
-        financialDataService.getMarketData(symbol),
-        financialDataService.getFundamentalRatios ? financialDataService.getFundamentalRatios(symbol) : null,
-        financialDataService.getAnalystRatings ? financialDataService.getAnalystRatings(symbol) : null,
-        financialDataService.getPriceTargets ? financialDataService.getPriceTargets(symbol) : null
-      ])
+      const { sanitizedSymbol, serviceId } = this.validateAndPrepareSymbol(symbol)
+      this.checkRateLimits(serviceId, sanitizedSymbol)
 
-      if (!stockPrice || !companyInfo || !marketData) {
-        throw new Error(`Incomplete data for ${symbol}: missing core financial data`)
-      }
+      const rawData = await this.fetchRawStockData(sanitizedSymbol)
+      this.validateCoreData(rawData, serviceId, sanitizedSymbol)
 
-      // Calculate 24h changes from market data
-      const priceChange24h = stockPrice.change || 0
-      const volumeChange24h = marketData.volume && companyInfo.marketCap
-        ? (marketData.volume / (companyInfo.marketCap / stockPrice.price * 0.02)) - 1 // Rough volume change estimate
-        : 0
-
-      return {
-        symbol: stockPrice.symbol,
-        price: stockPrice.price,
-        volume: marketData.volume,
-        marketCap: companyInfo.marketCap,
-        sector: companyInfo.sector,
-        priceChange24h,
-        volumeChange24h,
-        beta: 1.0, // Would need additional API call for beta
-
-        // New analyst data integration
-        analystData: analystRatings ? {
-          consensus: analystRatings.consensus,
-          totalAnalysts: analystRatings.totalAnalysts,
-          sentimentScore: analystRatings.sentimentScore,
-          distribution: {
-            strongBuy: analystRatings.strongBuy,
-            buy: analystRatings.buy,
-            hold: analystRatings.hold,
-            sell: analystRatings.sell,
-            strongSell: analystRatings.strongSell
-          }
-        } : null,
-
-        priceTargets: priceTargets ? {
-          consensus: priceTargets.targetConsensus,
-          high: priceTargets.targetHigh,
-          low: priceTargets.targetLow,
-          upside: priceTargets.upside,
-          currentPrice: priceTargets.currentPrice
-        } : null,
-
-        // Fundamental ratios integration
-        fundamentalRatios: fundamentalRatios ? {
-          peRatio: fundamentalRatios.peRatio,
-          pegRatio: fundamentalRatios.pegRatio,
-          pbRatio: fundamentalRatios.pbRatio,
-          priceToSales: fundamentalRatios.priceToSales,
-          priceToFreeCashFlow: fundamentalRatios.priceToFreeCashFlow,
-          debtToEquity: fundamentalRatios.debtToEquity,
-          currentRatio: fundamentalRatios.currentRatio,
-          quickRatio: fundamentalRatios.quickRatio,
-          roe: fundamentalRatios.roe,
-          roa: fundamentalRatios.roa,
-          grossProfitMargin: fundamentalRatios.grossProfitMargin,
-          operatingMargin: fundamentalRatios.operatingMargin,
-          netProfitMargin: fundamentalRatios.netProfitMargin,
-          dividendYield: fundamentalRatios.dividendYield,
-          payoutRatio: fundamentalRatios.payoutRatio,
-          period: fundamentalRatios.period || 'ttm'
-        } : null,
-
-        // Data quality tracking
-        sourceBreakdown: {
-          stockPrice: stockPrice.source,
-          companyInfo: companyInfo ? 'available' : 'missing',
-          marketData: marketData.source,
-          fundamentalRatios: fundamentalRatios?.source || 'unavailable',
-          analystRatings: analystRatings?.source || 'unavailable',
-          priceTargets: priceTargets?.source || 'unavailable'
-        },
-
-        lastUpdated: Date.now()
-      }
+      SecurityValidator.recordSuccess(serviceId)
+      return this.transformStockData(rawData, sanitizedSymbol)
     } catch (error) {
-      console.error(`Error fetching real data for ${symbol}:`, error)
-      throw error
+      const sanitizedError = SecurityValidator.sanitizeErrorMessage(error)
+      console.error(`Error fetching real data: ${sanitizedError}`)
+      throw new Error(sanitizedError)
     }
+  }
+
+  /**
+   * Validate symbol and prepare service identifiers
+   */
+  private validateAndPrepareSymbol(symbol: string): { sanitizedSymbol: string; serviceId: string } {
+    const symbolValidation = SecurityValidator.validateSymbol(symbol)
+    if (!symbolValidation.isValid) {
+      const sanitizedError = SecurityValidator.sanitizeErrorMessage(
+        `Invalid symbol for stock data fetch: ${symbolValidation.errors.join(', ')}`
+      )
+      throw new Error(sanitizedError)
+    }
+
+    const sanitizedSymbol = symbolValidation.sanitized!
+    const serviceId = `stock_data_${sanitizedSymbol}`
+
+    return { sanitizedSymbol, serviceId }
+  }
+
+  /**
+   * Check rate limits for stock data requests
+   */
+  private checkRateLimits(serviceId: string, sanitizedSymbol: string): void {
+    const rateLimitCheck = SecurityValidator.checkRateLimit(serviceId)
+    if (!rateLimitCheck.allowed) {
+      const resetTime = rateLimitCheck.resetTime ? new Date(rateLimitCheck.resetTime).toISOString() : 'unknown'
+      throw new Error(`Rate limit exceeded for ${sanitizedSymbol}, reset at: ${resetTime}`)
+    }
+  }
+
+  /**
+   * Fetch all raw stock data in parallel
+   */
+  private async fetchRawStockData(sanitizedSymbol: string): Promise<any> {
+    const dataPromises = [
+      financialDataService.getStockPrice(sanitizedSymbol),
+      financialDataService.getCompanyInfo(sanitizedSymbol),
+      financialDataService.getMarketData(sanitizedSymbol),
+      financialDataService.getFundamentalRatios?.(sanitizedSymbol) ?? Promise.resolve(null),
+      financialDataService.getAnalystRatings?.(sanitizedSymbol) ?? Promise.resolve(null),
+      financialDataService.getPriceTargets?.(sanitizedSymbol) ?? Promise.resolve(null)
+    ]
+
+    const results = await Promise.allSettled(dataPromises)
+    return this.extractDataFromResults(results, sanitizedSymbol)
+  }
+
+  /**
+   * Extract fulfilled data values from Promise.allSettled results
+   */
+  private extractDataFromResults(results: PromiseSettledResult<any>[], sanitizedSymbol: string): any {
+    const dataTypes = ['stockPrice', 'companyInfo', 'marketData', 'fundamentalRatios', 'analystRatings', 'priceTargets']
+
+    return results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        const dataType = dataTypes[index]
+        const sanitizedError = SecurityValidator.sanitizeErrorMessage(result.reason)
+        console.warn(`Failed to fetch ${dataType} for ${sanitizedSymbol}: ${sanitizedError}`)
+        return null
+      }
+    })
+  }
+
+  /**
+   * Validate that core data requirements are met
+   */
+  private validateCoreData(rawData: any[], serviceId: string, sanitizedSymbol: string): void {
+    const [stockPrice, companyInfo, marketData] = rawData
+
+    if (!stockPrice || !companyInfo || !marketData) {
+      SecurityValidator.recordFailure(serviceId)
+      throw new Error(`Incomplete data for ${sanitizedSymbol}: missing core financial data`)
+    }
+  }
+
+  /**
+   * Transform raw data into standardized stock data format
+   */
+  private transformStockData(rawData: any[], sanitizedSymbol: string): any {
+    const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets] = rawData
+
+    return {
+      symbol: stockPrice.symbol,
+      price: stockPrice.price,
+      volume: marketData.volume,
+      marketCap: companyInfo.marketCap,
+      sector: companyInfo.sector,
+      ...this.calculatePriceChanges(stockPrice, marketData, companyInfo),
+      beta: 1.0,
+      analystData: this.formatAnalystData(analystRatings),
+      priceTargets: this.formatPriceTargets(priceTargets),
+      fundamentalRatios: fundamentalRatios ? this.validateFundamentalRatios(fundamentalRatios, sanitizedSymbol) : null,
+      sourceBreakdown: this.createSourceBreakdown(stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets),
+      lastUpdated: Date.now()
+    }
+  }
+
+  /**
+   * Calculate price and volume changes
+   */
+  private calculatePriceChanges(stockPrice: any, marketData: any, companyInfo: any): { priceChange24h: number; volumeChange24h: number } {
+    const priceChange24h = stockPrice.change || 0
+    const volumeChange24h = marketData.volume && companyInfo.marketCap
+      ? (marketData.volume / (companyInfo.marketCap / stockPrice.price * 0.02)) - 1
+      : 0
+
+    return { priceChange24h, volumeChange24h }
+  }
+
+  /**
+   * Format analyst data for response
+   */
+  private formatAnalystData(analystRatings: any): any {
+    if (!analystRatings) return null
+
+    return {
+      consensus: analystRatings.consensus,
+      totalAnalysts: analystRatings.totalAnalysts,
+      sentimentScore: analystRatings.sentimentScore,
+      distribution: {
+        strongBuy: analystRatings.strongBuy,
+        buy: analystRatings.buy,
+        hold: analystRatings.hold,
+        sell: analystRatings.sell,
+        strongSell: analystRatings.strongSell
+      }
+    }
+  }
+
+  /**
+   * Format price targets for response
+   */
+  private formatPriceTargets(priceTargets: any): any {
+    if (!priceTargets) return null
+
+    return {
+      consensus: priceTargets.targetConsensus,
+      high: priceTargets.targetHigh,
+      low: priceTargets.targetLow,
+      upside: priceTargets.upside,
+      currentPrice: priceTargets.currentPrice
+    }
+  }
+
+  /**
+   * Create source breakdown for data quality tracking
+   */
+  private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any): any {
+    return {
+      stockPrice: stockPrice.source,
+      companyInfo: companyInfo ? 'available' : 'missing',
+      marketData: marketData.source,
+      fundamentalRatios: fundamentalRatios?.source || 'unavailable',
+      analystRatings: analystRatings?.source || 'unavailable',
+      priceTargets: priceTargets?.source || 'unavailable'
+    }
+  }
+
+  /**
+   * Validate fundamental ratios data for security and data integrity
+   */
+  private validateFundamentalRatios(fundamentalRatios: any, symbol: string): any {
+    if (!this.validateFundamentalRatiosStructure(fundamentalRatios, symbol)) {
+      return null
+    }
+
+    return this.sanitizeFundamentalRatiosFields(fundamentalRatios, symbol)
+  }
+
+  /**
+   * Validate fundamental ratios response structure
+   */
+  private validateFundamentalRatiosStructure(fundamentalRatios: any, symbol: string): boolean {
+    if (!fundamentalRatios || typeof fundamentalRatios !== 'object') {
+      return false
+    }
+
+    const responseValidation = SecurityValidator.validateApiResponse(fundamentalRatios, [
+      'symbol', 'timestamp', 'source'
+    ])
+
+    if (!responseValidation.isValid) {
+      console.warn(`Invalid fundamental ratios structure for ${symbol}: ${responseValidation.errors.join(', ')}`)
+      return false
+    }
+
+    return true
+  }
+
+  /**
+   * Sanitize and validate all fundamental ratio numeric fields
+   */
+  private sanitizeFundamentalRatiosFields(fundamentalRatios: any, symbol: string): any {
+    const ratioFields = this.getFundamentalRatioFieldsConfig()
+    const sanitizedRatios: any = {}
+
+    ratioFields.forEach(({ field, allowNegative }) => {
+      sanitizedRatios[field] = this.validateRatioField(
+        fundamentalRatios[field],
+        field,
+        symbol,
+        allowNegative
+      )
+    })
+
+    sanitizedRatios.period = fundamentalRatios.period || 'ttm'
+    return sanitizedRatios
+  }
+
+  /**
+   * Get configuration for fundamental ratio fields
+   */
+  private getFundamentalRatioFieldsConfig(): Array<{ field: string; allowNegative: boolean }> {
+    return [
+      { field: 'peRatio', allowNegative: false },
+      { field: 'pegRatio', allowNegative: false },
+      { field: 'pbRatio', allowNegative: false },
+      { field: 'priceToSales', allowNegative: false },
+      { field: 'priceToFreeCashFlow', allowNegative: false },
+      { field: 'debtToEquity', allowNegative: false },
+      { field: 'currentRatio', allowNegative: false },
+      { field: 'quickRatio', allowNegative: false },
+      { field: 'roe', allowNegative: true },
+      { field: 'roa', allowNegative: true },
+      { field: 'grossProfitMargin', allowNegative: true },
+      { field: 'operatingMargin', allowNegative: true },
+      { field: 'netProfitMargin', allowNegative: true },
+      { field: 'dividendYield', allowNegative: false },
+      { field: 'payoutRatio', allowNegative: false }
+    ]
+  }
+
+  /**
+   * Validate and sanitize a single ratio field
+   */
+  private validateRatioField(
+    value: any,
+    fieldName: string,
+    symbol: string,
+    allowNegative: boolean = false
+  ): number | undefined {
+    if (value === null || value === undefined) {
+      return undefined
+    }
+
+    const validation = SecurityValidator.validateNumeric(value, {
+      allowNegative,
+      allowZero: true,
+      min: allowNegative ? undefined : 0,
+      max: fieldName.includes('Margin') || fieldName === 'payoutRatio' ? 100 : undefined,
+      decimalPlaces: 6
+    })
+
+    if (!validation.isValid) {
+      console.warn(`Invalid ${fieldName} for ${symbol}: ${validation.errors.join(', ')}`)
+      return undefined
+    }
+
+    return typeof value === 'number' ? value : parseFloat(value)
   }
 
   private async fetchAdditionalStockData(symbol: string, options?: SelectionOptions): Promise<any> {
@@ -1095,7 +1395,10 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled rejection in StockSelectionService:', reason)
+      this.errorHandler.logger.error('Unhandled rejection in StockSelectionService', {
+        reason,
+        promise: promise.toString()
+      })
     })
   }
 
@@ -1112,8 +1415,30 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         }
       }),
       generateCacheKey: (prefix: string, options: any) => {
-        const optionsStr = JSON.stringify(options || {})
-        return `${prefix}:${Buffer.from(optionsStr).toString('base64').slice(0, 16)}`
+        // Use simple hash for better performance
+        if (!options || Object.keys(options).length === 0) {
+          return prefix
+        }
+
+        // Create deterministic hash without heavy JSON operations
+        const keys = Object.keys(options).sort()
+        const hash = keys.reduce((acc, key) => {
+          const val = options[key]
+          if (val !== undefined && val !== null) {
+            acc += key + String(val)
+          }
+          return acc
+        }, '')
+
+        // Simple hash function for cache key
+        let hashCode = 0
+        for (let i = 0; i < hash.length; i++) {
+          const char = hash.charCodeAt(i)
+          hashCode = ((hashCode << 5) - hashCode) + char
+          hashCode = hashCode & hashCode // Convert to 32-bit integer
+        }
+
+        return `${prefix}:${Math.abs(hashCode).toString(16)}`
       },
       getCacheTTL: (mode: SelectionMode) => {
         switch (mode) {
