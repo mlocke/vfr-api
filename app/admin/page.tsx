@@ -202,6 +202,7 @@ export default function AdminDashboard() {
 	const [isRunningTests, setIsRunningTests] = useState(false);
 	const [testResults, setTestResults] = useState<TestResult[]>([]);
 	const [activeTab, setActiveTab] = useState<"results" | "raw" | "performance">("results");
+	const [copySuccess, setCopySuccess] = useState(false);
 
 	// Update test config when selected data sources change
 	useEffect(() => {
@@ -498,6 +499,55 @@ export default function AdminDashboard() {
 			}
 		} finally {
 			setIsRunningTests(false);
+		}
+	};
+
+	// Copy test results to clipboard
+	const handleCopyResults = async () => {
+		if (testResults.length === 0) return;
+
+		try {
+			let textToCopy = "";
+
+			if (activeTab === "results") {
+				textToCopy = testResults
+					.map(result => {
+						const status = result.success ? "✅ SUCCESS" : "❌ FAILED";
+						const quality = result.metadata ? ` (Quality: ${Math.round(result.metadata.dataQuality * 100)}%)` : "";
+						const cached = result.metadata?.cached ? " (Cached)" : "";
+						const error = result.error ? ` - Error: ${result.error}` : "";
+						return `${status} - ${result.dataSourceName} - ${result.responseTime}ms${quality}${cached}${error}`;
+					})
+					.join("\n");
+			} else if (activeTab === "raw") {
+				textToCopy = testResults
+					.map(result => `${result.dataSourceName}:\n${JSON.stringify(result.data, null, 2)}`)
+					.join("\n\n");
+			} else if (activeTab === "performance") {
+				textToCopy = testResults
+					.map(result => {
+						const quality = result.metadata ? `${Math.round(result.metadata.dataQuality * 100)}%` : "N/A";
+						const cached = result.metadata?.cached ? "Yes" : "No";
+						const timestamp = result.metadata ? new Date(result.metadata.timestamp).toLocaleString() : "N/A";
+						return `${result.dataSourceName}: ${result.responseTime}ms | Quality: ${quality} | Cached: ${cached} | Time: ${timestamp}`;
+					})
+					.join("\n");
+			}
+
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				await navigator.clipboard.writeText(textToCopy);
+			} else {
+				const textArea = document.createElement('textarea');
+				textArea.value = textToCopy;
+				document.body.appendChild(textArea);
+				textArea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textArea);
+			}
+			setCopySuccess(true);
+			setTimeout(() => setCopySuccess(false), 2000);
+		} catch (error) {
+			console.error("Failed to copy to clipboard:", error);
 		}
 	};
 
@@ -1399,19 +1449,85 @@ export default function AdminDashboard() {
 									flexDirection: "column",
 								}}
 							>
-								<h3
+								<div
 									style={{
-										fontSize: "1.4rem",
-										fontWeight: "600",
-										color: "white",
-										marginBottom: "1.5rem",
 										display: "flex",
 										alignItems: "center",
-										gap: "0.5rem",
+										justifyContent: "space-between",
+										marginBottom: "1.5rem",
 									}}
 								>
-									📊 Test Results
-								</h3>
+									<h3
+										style={{
+											fontSize: "1.4rem",
+											fontWeight: "600",
+											color: "white",
+											margin: 0,
+											display: "flex",
+											alignItems: "center",
+											gap: "0.5rem",
+										}}
+									>
+										📊 Test Results
+									</h3>
+									{testResults.length > 0 && (
+										<button
+											onClick={handleCopyResults}
+											style={{
+												background: copySuccess
+													? "rgba(34, 197, 94, 0.2)"
+													: "rgba(255, 255, 255, 0.1)",
+												border: copySuccess
+													? "1px solid rgba(34, 197, 94, 0.4)"
+													: "1px solid rgba(255, 255, 255, 0.2)",
+												borderRadius: "6px",
+												padding: "6px 8px",
+												cursor: "pointer",
+												transition: "all 0.3s ease",
+												display: "flex",
+												alignItems: "center",
+												gap: "4px",
+												fontSize: "12px",
+												color: copySuccess
+													? "rgba(34, 197, 94, 0.9)"
+													: "rgba(255, 255, 255, 0.7)",
+											}}
+											onMouseEnter={e => {
+												if (!copySuccess) {
+													e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
+													e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.3)";
+												}
+											}}
+											onMouseLeave={e => {
+												if (!copySuccess) {
+													e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+													e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+												}
+											}}
+										>
+											<svg
+												width="16"
+												height="16"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="2"
+												strokeLinecap="round"
+												strokeLinejoin="round"
+											>
+												{copySuccess ? (
+													<path d="M20 6L9 17l-5-5" />
+												) : (
+													<>
+														<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+														<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+													</>
+												)}
+											</svg>
+											{copySuccess ? "Copied!" : "Copy"}
+										</button>
+									)}
+								</div>
 
 								{/* Results Tabs */}
 								<div
