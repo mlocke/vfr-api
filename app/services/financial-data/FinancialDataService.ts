@@ -4,7 +4,7 @@
  * Replaces the complex MCP architecture with simple, direct API calls
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, AnalystRatings, PriceTarget, RatingChange } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
@@ -50,7 +50,7 @@ export class FinancialDataService {
     const cacheKey = `stock_${symbol.toUpperCase()}`
 
     // Check cache first
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<StockData>(cacheKey)
     if (cached) {
       return cached
     }
@@ -99,7 +99,7 @@ export class FinancialDataService {
     const cacheKey = `company_${symbol.toUpperCase()}`
 
     // Check cache first
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<CompanyInfo>(cacheKey)
     if (cached) {
       return cached
     }
@@ -140,7 +140,7 @@ export class FinancialDataService {
     const cacheKey = `market_${symbol.toUpperCase()}`
 
     // Check cache first
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<MarketData>(cacheKey)
     if (cached) {
       return cached
     }
@@ -197,6 +197,69 @@ export class FinancialDataService {
 
     const symbolsToFetch = sectorStocks.slice(0, limit)
     return this.getMultipleStocks(symbolsToFetch)
+  }
+
+  /**
+   * Get analyst ratings using fallback service
+   */
+  async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
+    const cacheKey = `analyst_${symbol.toUpperCase()}`
+
+    // Check cache first
+    const cached = this.getFromCache<AnalystRatings>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    // Use fallback service for analyst ratings
+    const result = await this.fallbackService.getAnalystRatings(symbol)
+    if (result) {
+      this.setCache(cacheKey, result)
+    }
+
+    return result
+  }
+
+  /**
+   * Get price targets using fallback service
+   */
+  async getPriceTargets(symbol: string): Promise<PriceTarget | null> {
+    const cacheKey = `targets_${symbol.toUpperCase()}`
+
+    // Check cache first
+    const cached = this.getFromCache<PriceTarget>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    // Use fallback service for price targets
+    const result = await this.fallbackService.getPriceTargets(symbol)
+    if (result) {
+      this.setCache(cacheKey, result)
+    }
+
+    return result
+  }
+
+  /**
+   * Get recent rating changes using fallback service
+   */
+  async getRecentRatingChanges(symbol: string, limit = 10): Promise<RatingChange[]> {
+    const cacheKey = `changes_${symbol.toUpperCase()}_${limit}`
+
+    // Check cache first
+    const cached = this.getFromCache<RatingChange[]>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    // Use fallback service for rating changes
+    const result = await this.fallbackService.getRecentRatingChanges(symbol, limit)
+    if (result && result.length > 0) {
+      this.setCache(cacheKey, result)
+    }
+
+    return result || []
   }
 
   /**

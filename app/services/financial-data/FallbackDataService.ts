@@ -3,7 +3,7 @@
  * Implements a chain of free data sources with automatic failover
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
@@ -382,6 +382,96 @@ export class FallbackDataService implements FinancialDataProvider {
       }
     }
 
+    return []
+  }
+
+  /**
+   * Get analyst ratings with fallback (FMP primary, limited TwelveData backup)
+   */
+  async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
+    // Prioritize sources that support analyst ratings
+    const analystSources = this.dataSources.filter(source =>
+      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
+    )
+
+    for (const source of analystSources) {
+      if (!this.canMakeRequest(source)) continue
+
+      try {
+        if (source.provider.getAnalystRatings) {
+          const data = await source.provider.getAnalystRatings(symbol)
+          if (data) {
+            this.recordRequest(source)
+            console.log(`📊 Analyst ratings from ${source.name} for ${symbol}: ${data.consensus} (${data.totalAnalysts} analysts)`)
+            return data
+          }
+        }
+      } catch (error) {
+        console.error(`${source.name} analyst ratings failed:`, error)
+      }
+    }
+
+    console.warn(`⚠️ No analyst ratings available for ${symbol}`)
+    return null
+  }
+
+  /**
+   * Get price targets with fallback (FMP primary, limited TwelveData backup)
+   */
+  async getPriceTargets(symbol: string): Promise<PriceTarget | null> {
+    // Prioritize sources that support price targets
+    const targetSources = this.dataSources.filter(source =>
+      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
+    )
+
+    for (const source of targetSources) {
+      if (!this.canMakeRequest(source)) continue
+
+      try {
+        if (source.provider.getPriceTargets) {
+          const data = await source.provider.getPriceTargets(symbol)
+          if (data) {
+            this.recordRequest(source)
+            console.log(`🎯 Price targets from ${source.name} for ${symbol}: $${data.targetConsensus} (${data.upside?.toFixed(1) || 'N/A'}% upside)`)
+            return data
+          }
+        }
+      } catch (error) {
+        console.error(`${source.name} price targets failed:`, error)
+      }
+    }
+
+    console.warn(`⚠️ No price targets available for ${symbol}`)
+    return null
+  }
+
+  /**
+   * Get recent rating changes with fallback (FMP primary, limited TwelveData backup)
+   */
+  async getRecentRatingChanges(symbol: string, limit = 10): Promise<RatingChange[]> {
+    // Prioritize sources that support rating changes
+    const changeSources = this.dataSources.filter(source =>
+      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
+    )
+
+    for (const source of changeSources) {
+      if (!this.canMakeRequest(source)) continue
+
+      try {
+        if (source.provider.getRecentRatingChanges) {
+          const data = await source.provider.getRecentRatingChanges(symbol, limit)
+          if (data && data.length > 0) {
+            this.recordRequest(source)
+            console.log(`📈 Rating changes from ${source.name} for ${symbol}: ${data.length} recent changes`)
+            return data
+          }
+        }
+      } catch (error) {
+        console.error(`${source.name} rating changes failed:`, error)
+      }
+    }
+
+    console.warn(`⚠️ No rating changes available for ${symbol}`)
     return []
   }
 }

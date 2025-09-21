@@ -50,7 +50,7 @@ async function collectTier1Data(symbol: string) {
     options: getOptionsData(symbol),            // ~300ms
     marketIndices: getMarketIndicesService(),   // ~300ms (VIX, SPY, QQQ, sectors)
     treasury: getTreasuryRates(),               // ~100ms (cached daily)
-    analyst: getAnalystRatings(symbol)          // ~250ms
+    analyst: getAnalystRatings(symbol)          // ~250ms (FMP consensus + targets)
   };
   
   // Wait for all with timeout
@@ -116,7 +116,7 @@ const CACHE_RULES = {
   options: { ttl: 15 },         // 15 minutes
   marketIndices: { ttl: 1 },    // 1 minute (VIX, SPY, sectors - real-time)
   treasury: { ttl: 1440 },      // 24 hours
-  analyst: { ttl: 720 }         // 12 hours
+  analyst: { ttl: 1440 }        // 24 hours (daily updates)
 };
 ```
 
@@ -133,7 +133,7 @@ interface AnalysisInput {
     fundamentalRatios: FundamentalRatios;
     optionsFlow: OptionsData;
     marketContext: MarketContext;
-    analystSentiment: AnalystData;
+    analystSentiment: AnalystData; // Consensus ratings, price targets, upside
   };
   metadata: {
     dataQuality: number;        // 0-1 confidence score
@@ -163,7 +163,13 @@ async function prepareAnalysisData(rawData: RawTier1Data): Promise<AnalysisInput
         marketConditions: rawData.marketIndices.analysis,
         treasuryYield: rawData.treasury.tenYear
       },
-      analystSentiment: aggregateAnalystData(rawData.fmp.analyst)
+      analystSentiment: {
+        consensus: rawData.fmp.analyst.consensus,
+        priceTarget: rawData.fmp.analyst.averageTarget,
+        upside: rawData.fmp.analyst.upside,
+        sentimentScore: rawData.fmp.analyst.sentimentScore,
+        ratingCount: rawData.fmp.analyst.ratingCount
+      }
     },
     metadata: {
       dataQuality: calculateDataQuality(rawData),

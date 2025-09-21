@@ -36,7 +36,7 @@ analysis-engine/
 - **40%** - Technical & price action signals
 - **25%** - Fundamental analysis & financial health
 - **20%** - Macroeconomic context & sector rotation
-- **10%** - Sentiment & institutional flow
+- **10%** - Sentiment & institutional flow (includes analyst ratings ✅ IMPLEMENTED)
 - **5%** - Alternative data & special situations
 
 ## Development Commands (From Root Directory)

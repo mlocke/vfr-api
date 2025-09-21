@@ -58,7 +58,8 @@
       "Bash(npm run dev:clean:*)",
       "mcp__context7__get-library-docs",
       "Bash(npm run type-check:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "mcp__context7__resolve-library-id"
     ],
     "deny": [],
     "ask": []

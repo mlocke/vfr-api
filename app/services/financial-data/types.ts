@@ -60,12 +60,61 @@ export interface FundamentalRatios {
   period?: 'annual' | 'quarterly' | 'ttm'
 }
 
+export interface AnalystRatings {
+  symbol: string
+  consensus: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell'
+  strongBuy: number
+  buy: number
+  hold: number
+  sell: number
+  strongSell: number
+  totalAnalysts: number
+  sentimentScore: number // 1-5 scale (1=Strong Sell, 5=Strong Buy)
+  timestamp: number
+  source: string
+}
+
+export interface PriceTarget {
+  symbol: string
+  targetHigh: number
+  targetLow: number
+  targetConsensus: number
+  targetMedian: number
+  currentPrice?: number
+  upside?: number // percentage upside to consensus target
+  lastMonthCount?: number
+  lastQuarterCount?: number
+  lastYearCount?: number
+  timestamp: number
+  source: string
+}
+
+export interface RatingChange {
+  symbol: string
+  publishedDate: string
+  analystName: string
+  analystCompany: string
+  newGrade?: string
+  previousGrade?: string
+  action: 'upgrade' | 'downgrade' | 'initiate' | 'maintain'
+  priceTarget?: number
+  priceWhenPosted?: number
+  newsTitle?: string
+  newsURL?: string
+  timestamp: number
+  source: string
+}
+
 export interface FinancialDataProvider {
   name: string
   getStockPrice(symbol: string): Promise<StockData | null>
   getCompanyInfo(symbol: string): Promise<CompanyInfo | null>
   getMarketData(symbol: string): Promise<MarketData | null>
   getFundamentalRatios?(symbol: string): Promise<FundamentalRatios | null>
+  getAnalystRatings?(symbol: string): Promise<AnalystRatings | null>
+  getPriceTargets?(symbol: string): Promise<PriceTarget | null>
+  getRecentRatingChanges?(symbol: string, limit?: number): Promise<RatingChange[]>
+  getStocksBySector?(sector: string, limit?: number): Promise<StockData[]>
   healthCheck(): Promise<boolean>
 }
 

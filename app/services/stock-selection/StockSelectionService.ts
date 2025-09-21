@@ -27,6 +27,7 @@ import { RedisCache } from '../cache/RedisCache'
 import { FactorLibrary } from '../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../algorithms/AlgorithmCache'
 import { SelectionResult, StockScore } from '../algorithms/types'
+import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
 
 /**
  * Main Stock Selection Service
@@ -45,7 +46,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     mcpClient: MCPClient,
     dataFusion: DataFusionEngine,
     factorLibrary: FactorLibrary,
-    cache: RedisCache
+    cache: RedisCache,
+    technicalService?: TechnicalIndicatorService
   ) {
     super()
 
@@ -81,13 +83,27 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     })
 
-    // Initialize integration layers
-    this.algorithmIntegration = new AlgorithmIntegration(
-      dataFusion,
-      factorLibrary,
-      algorithmCache,
-      this.config
-    )
+    // Initialize FactorLibrary with technical service if available
+    if (technicalService) {
+      // Create enhanced FactorLibrary with technical analysis
+      const enhancedFactorLibrary = new FactorLibrary(technicalService)
+
+      // Initialize integration layers with enhanced FactorLibrary
+      this.algorithmIntegration = new AlgorithmIntegration(
+        dataFusion,
+        enhancedFactorLibrary,
+        algorithmCache,
+        this.config
+      )
+    } else {
+      // Initialize integration layers with standard FactorLibrary
+      this.algorithmIntegration = new AlgorithmIntegration(
+        dataFusion,
+        factorLibrary,
+        algorithmCache,
+        this.config
+      )
+    }
 
     this.sectorIntegration = new SectorIntegration(
       mcpClient,
@@ -371,13 +387,27 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         marketCap: stockScore.marketData.marketCap,
         priceChange24h: additionalData.priceChange24h,
         volumeChange24h: additionalData.volumeChange24h,
-        beta: additionalData.beta
+        beta: additionalData.beta,
+
+        // Analyst sentiment integration
+        analystConsensus: additionalData.analystData?.consensus || null,
+        analystSentimentScore: additionalData.analystData?.sentimentScore || null,
+        totalAnalysts: additionalData.analystData?.totalAnalysts || 0,
+
+        // Price target integration
+        priceTargetConsensus: additionalData.priceTargets?.consensus || null,
+        priceTargetUpside: additionalData.priceTargets?.upside || null,
+        priceTargetRange: additionalData.priceTargets ? {
+          high: additionalData.priceTargets.high,
+          low: additionalData.priceTargets.low
+        } : null
       },
 
       reasoning: {
         primaryFactors: this.extractPrimaryFactors(stockScore),
-        warnings: this.identifyWarnings(stockScore),
-        opportunities: this.identifyOpportunities(stockScore)
+        warnings: this.identifyWarnings(stockScore, additionalData),
+        opportunities: this.identifyOpportunities(stockScore, additionalData),
+        analystInsights: this.generateAnalystInsights(additionalData)
       },
 
       dataQuality: {
@@ -690,16 +720,72 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   }
 
   private async fetchSingleStockData(symbol: string, options?: SelectionOptions): Promise<any> {
-    // Implementation would fetch comprehensive stock data
-    return {
-      symbol,
-      price: 100 + Math.random() * 200,
-      volume: Math.floor(Math.random() * 1000000),
-      marketCap: Math.floor(Math.random() * 500000000000),
-      sector: 'Technology',
-      priceChange24h: (Math.random() - 0.5) * 10,
-      volumeChange24h: (Math.random() - 0.5) * 0.5,
-      beta: 0.5 + Math.random() * 1.5
+    try {
+      // Fetch real market data using financialDataService
+      const [stockPrice, companyInfo, marketData, analystRatings, priceTargets] = await Promise.all([
+        financialDataService.getStockPrice(symbol),
+        financialDataService.getCompanyInfo(symbol),
+        financialDataService.getMarketData(symbol),
+        financialDataService.getAnalystRatings ? financialDataService.getAnalystRatings(symbol) : null,
+        financialDataService.getPriceTargets ? financialDataService.getPriceTargets(symbol) : null
+      ])
+
+      if (!stockPrice || !companyInfo || !marketData) {
+        throw new Error(`Incomplete data for ${symbol}: missing core financial data`)
+      }
+
+      // Calculate 24h changes from market data
+      const priceChange24h = stockPrice.change || 0
+      const volumeChange24h = marketData.volume && companyInfo.marketCap
+        ? (marketData.volume / (companyInfo.marketCap / stockPrice.price * 0.02)) - 1 // Rough volume change estimate
+        : 0
+
+      return {
+        symbol: stockPrice.symbol,
+        price: stockPrice.price,
+        volume: marketData.volume,
+        marketCap: companyInfo.marketCap,
+        sector: companyInfo.sector,
+        priceChange24h,
+        volumeChange24h,
+        beta: 1.0, // Would need additional API call for beta
+
+        // New analyst data integration
+        analystData: analystRatings ? {
+          consensus: analystRatings.consensus,
+          totalAnalysts: analystRatings.totalAnalysts,
+          sentimentScore: analystRatings.sentimentScore,
+          distribution: {
+            strongBuy: analystRatings.strongBuy,
+            buy: analystRatings.buy,
+            hold: analystRatings.hold,
+            sell: analystRatings.sell,
+            strongSell: analystRatings.strongSell
+          }
+        } : null,
+
+        priceTargets: priceTargets ? {
+          consensus: priceTargets.targetConsensus,
+          high: priceTargets.targetHigh,
+          low: priceTargets.targetLow,
+          upside: priceTargets.upside,
+          currentPrice: priceTargets.currentPrice
+        } : null,
+
+        // Data quality tracking
+        sourceBreakdown: {
+          stockPrice: stockPrice.source,
+          companyInfo: companyInfo ? 'available' : 'missing',
+          marketData: marketData.source,
+          analystRatings: analystRatings?.source || 'unavailable',
+          priceTargets: priceTargets?.source || 'unavailable'
+        },
+
+        lastUpdated: Date.now()
+      }
+    } catch (error) {
+      console.error(`Error fetching real data for ${symbol}:`, error)
+      throw error
     }
   }
 
@@ -716,7 +802,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return factors
   }
 
-  private identifyWarnings(stockScore: StockScore): string[] {
+  private identifyWarnings(stockScore: StockScore, additionalData?: any): string[] {
     const warnings = []
 
     if (stockScore.dataQuality.overall < 0.6) {
@@ -727,17 +813,82 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       warnings.push('Low trading volume')
     }
 
+    // Analyst-based warnings
+    if (additionalData?.analystData) {
+      const { sentimentScore, totalAnalysts, distribution } = additionalData.analystData
+
+      if (sentimentScore < 2.5 && totalAnalysts >= 3) {
+        warnings.push('Analysts are bearish on this stock')
+      }
+
+      if (distribution.sell + distribution.strongSell > distribution.buy + distribution.strongBuy) {
+        warnings.push('More sell recommendations than buy recommendations')
+      }
+
+      if (totalAnalysts < 3) {
+        warnings.push('Limited analyst coverage - higher uncertainty')
+      }
+    }
+
+    // Price target warnings
+    if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside < -15) {
+      warnings.push('Stock trading significantly above analyst price targets')
+    }
+
     return warnings
   }
 
-  private identifyOpportunities(stockScore: StockScore): string[] {
+  private identifyOpportunities(stockScore: StockScore, additionalData?: any): string[] {
     const opportunities = []
 
     if (stockScore.overallScore > 0.8) {
       opportunities.push('Strong fundamental performance')
     }
 
+    // Analyst-based opportunities
+    if (additionalData?.analystData) {
+      const { sentimentScore, totalAnalysts, distribution } = additionalData.analystData
+
+      if (sentimentScore >= 4.0 && totalAnalysts >= 5) {
+        opportunities.push('Strong analyst consensus with high conviction')
+      }
+
+      if (distribution.strongBuy > distribution.hold + distribution.sell + distribution.strongSell) {
+        opportunities.push('Dominated by Strong Buy recommendations')
+      }
+    }
+
+    // Price target opportunities
+    if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside > 20) {
+      opportunities.push(`Significant upside potential: ${additionalData.priceTargets.upside.toFixed(1)}%`)
+    }
+
     return opportunities
+  }
+
+  private generateAnalystInsights(additionalData: any): string[] {
+    const insights = []
+
+    if (!additionalData?.analystData) {
+      insights.push('No analyst coverage available')
+      return insights
+    }
+
+    const { consensus, totalAnalysts, sentimentScore, distribution } = additionalData.analystData
+
+    insights.push(`${totalAnalysts} analysts covering with ${consensus} consensus`)
+    insights.push(`Sentiment score: ${sentimentScore}/5.0`)
+
+    if (additionalData.priceTargets) {
+      const { consensus: target, upside } = additionalData.priceTargets
+      insights.push(`Price target: $${target} (${upside > 0 ? '+' : ''}${upside?.toFixed(1)}% upside)`)
+    }
+
+    // Distribution insights
+    const buyPercent = ((distribution.strongBuy + distribution.buy) / totalAnalysts * 100).toFixed(0)
+    insights.push(`${buyPercent}% of analysts recommend Buy or Strong Buy`)
+
+    return insights
   }
 
   private calculateAverageScore(selections: any[]): number {
@@ -917,9 +1068,10 @@ export async function createStockSelectionService(
   mcpClient: MCPClient,
   dataFusion: DataFusionEngine,
   factorLibrary: FactorLibrary,
-  cache: RedisCache
+  cache: RedisCache,
+  technicalService?: TechnicalIndicatorService
 ): Promise<StockSelectionService> {
-  const service = new StockSelectionService(mcpClient, dataFusion, factorLibrary, cache)
+  const service = new StockSelectionService(mcpClient, dataFusion, factorLibrary, cache, technicalService)
 
   // Perform any async initialization here
   const health = await service.healthCheck()

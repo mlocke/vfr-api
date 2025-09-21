@@ -1,11 +1,11 @@
 ### TIER 1 (Essential - Start Here):
 
-- Real-time price/volume data
-- Basic fundamental ratios
-- Options put/call ratios
+- Real-time price/volume data ✅ IMPLEMENTED
+- Basic fundamental ratios ✅ IMPLEMENTED
+- Options put/call ratios ✅ IMPLEMENTED
 - **VIX and major indices** ✅ IMPLEMENTED via MarketIndicesService
-- Treasury rates
-- Analyst ratings/targets
+- Treasury rates ✅ IMPLEMENTED
+- **Analyst ratings/targets** ✅ IMPLEMENTED via Financial Modeling Prep
 
 #### Mapping to Data Sources:
 Tier 1 Data Sources Mapping to Your APIs
@@ -60,3 +60,40 @@ Based on your implemented APIs, here's exactly where to source each Tier 1 data 
    - Automatic provider failover
    - Data quality scoring (0-1)
    - Performance monitoring
+
+3. **Analyst Ratings and Price Targets** ✅ IMPLEMENTED
+   - **Primary Source**: Financial Modeling Prep (comprehensive analyst coverage)
+   - **Fallback Source**: TwelveData (limited analyst data)
+
+   **IMPLEMENTED FEATURES:**
+   - **Consensus Ratings**: Strong Buy/Buy/Hold/Sell/Strong Sell
+   - **Price Targets**: Average, high, low targets with upside calculations
+   - **Rating Changes**: Recent upgrades/downgrades tracking
+   - **Sentiment Scoring**: 1-5 scale based on consensus ratings
+   - **Integration**: Analyst-based warnings and opportunities in stock analysis
+
+   ```typescript
+   // FinancialModelingPrepAPI analyst methods
+   const fmpAPI = new FinancialModelingPrepAPI();
+
+   // Get consensus ratings
+   const consensus = await fmpAPI.getAnalystConsensus('AAPL');
+
+   // Get price targets
+   const priceTargets = await fmpAPI.getPriceTargets('AAPL');
+
+   // Get recent rating changes
+   const ratingChanges = await fmpAPI.getRatingChanges('AAPL');
+   ```
+
+   **API ENDPOINTS USED:**
+   - `/upgrades-downgrades-consensus` - Rating consensus data
+   - `/price-target-consensus` - Average price targets
+   - `/price-target-latest-news` - Recent target changes
+
+   **DATA FEATURES:**
+   - Daily cache TTL for analyst data
+   - Real API integration (no mock data)
+   - Upside percentage calculations
+   - Type-safe implementations with comprehensive error handling
+   - Automatic fallback to TwelveData when FMP unavailable

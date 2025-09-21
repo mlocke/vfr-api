@@ -3,7 +3,7 @@
  * Follows the same patterns as AlphaVantageAPI for consistency
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, FundamentalRatios } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, FundamentalRatios, AnalystRatings, PriceTarget, RatingChange } from './types'
 
 export class FinancialModelingPrepAPI implements FinancialDataProvider {
   name = 'Financial Modeling Prep'
@@ -326,6 +326,202 @@ export class FinancialModelingPrepAPI implements FinancialDataProvider {
       console.error(`Financial Modeling Prep sector data error for ${sector}:`, error)
       return []
     }
+  }
+
+  /**
+   * Get analyst ratings and consensus for a stock
+   */
+  async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      const response = await this.makeRequest(`/upgrades-downgrades-consensus-bulk`)
+
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        const error = new Error('No analyst ratings data available from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      // Filter for the specific symbol since bulk endpoint returns all symbols
+      const ratings = response.data.find((item: any) => item.symbol === symbol.toUpperCase())
+      if (!ratings) {
+        const error = new Error(`No analyst ratings found for symbol ${symbol}`)
+        if (this.throwErrors) throw error
+        return null
+      }
+      const strongBuy = parseInt(ratings.strongBuy || '0')
+      const buy = parseInt(ratings.buy || '0')
+      const hold = parseInt(ratings.hold || '0')
+      const sell = parseInt(ratings.sell || '0')
+      const strongSell = parseInt(ratings.strongSell || '0')
+      const totalAnalysts = strongBuy + buy + hold + sell + strongSell
+
+      // Calculate sentiment score (1-5 scale)
+      let sentimentScore = 3 // neutral default
+      if (totalAnalysts > 0) {
+        const weightedScore = (strongBuy * 5 + buy * 4 + hold * 3 + sell * 2 + strongSell * 1) / totalAnalysts
+        sentimentScore = Number(weightedScore.toFixed(1))
+      }
+
+      return {
+        symbol: symbol.toUpperCase(),
+        consensus: ratings.consensus || 'Hold',
+        strongBuy,
+        buy,
+        hold,
+        sell,
+        strongSell,
+        totalAnalysts,
+        sentimentScore,
+        timestamp: Date.now(),
+        source: 'fmp'
+      }
+    } catch (error) {
+      console.error(`Financial Modeling Prep analyst ratings error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return null
+    }
+  }
+
+  /**
+   * Get price targets for a stock
+   */
+  async getPriceTargets(symbol: string): Promise<PriceTarget | null> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      const response = await this.makeRequest(`/price-target-consensus?symbol=${symbol.toUpperCase()}`)
+
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
+        const error = new Error('No price target data available from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
+        return null
+      }
+
+      const target = response.data[0]
+
+      // Get current price for upside calculation
+      const currentStock = await this.getStockPrice(symbol)
+      const currentPrice = currentStock?.price
+      const upside = currentPrice && target.targetConsensus
+        ? Number(((target.targetConsensus - currentPrice) / currentPrice * 100).toFixed(2))
+        : undefined
+
+      return {
+        symbol: symbol.toUpperCase(),
+        targetHigh: parseFloat(target.targetHigh || '0'),
+        targetLow: parseFloat(target.targetLow || '0'),
+        targetConsensus: parseFloat(target.targetConsensus || '0'),
+        targetMedian: parseFloat(target.targetMedian || '0'),
+        currentPrice,
+        upside,
+        timestamp: Date.now(),
+        source: 'fmp'
+      }
+    } catch (error) {
+      console.error(`Financial Modeling Prep price targets error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return null
+    }
+  }
+
+  /**
+   * Get recent rating changes for a stock
+   */
+  async getRecentRatingChanges(symbol: string, limit = 10): Promise<RatingChange[]> {
+    try {
+      if (!this.apiKey) {
+        const error = new Error('Financial Modeling Prep API key not configured')
+        console.warn(error.message)
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      const response = await this.makeRequest(`/price-target-latest-news?_symbol_=${symbol.toUpperCase()}&_limit_=${limit}`)
+
+      if (!response.success) {
+        const error = new Error(response.error || 'Financial Modeling Prep API request failed')
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      if (!response.data || !Array.isArray(response.data)) {
+        const error = new Error('No rating changes data available from Financial Modeling Prep API')
+        if (this.throwErrors) throw error
+        return []
+      }
+
+      return response.data.map((change: any) => ({
+        symbol: symbol.toUpperCase(),
+        publishedDate: change.publishedDate || '',
+        analystName: change.analystName || '',
+        analystCompany: change.analystCompany || '',
+        action: this.determineRatingAction(change),
+        priceTarget: change.priceTarget ? parseFloat(change.priceTarget) : undefined,
+        priceWhenPosted: change.priceWhenPosted ? parseFloat(change.priceWhenPosted) : undefined,
+        newsTitle: change.newsTitle || '',
+        newsURL: change.newsURL || '',
+        timestamp: change.publishedDate ? new Date(change.publishedDate).getTime() : Date.now(),
+        source: 'fmp'
+      }))
+    } catch (error) {
+      console.error(`Financial Modeling Prep rating changes error for ${symbol}:`, error)
+      if (this.throwErrors) throw error
+      return []
+    }
+  }
+
+  /**
+   * Determine the type of rating action from news data
+   */
+  private determineRatingAction(change: any): 'upgrade' | 'downgrade' | 'initiate' | 'maintain' {
+    const title = (change.newsTitle || '').toLowerCase()
+    const analyst = (change.analystName || '').toLowerCase()
+
+    if (title.includes('upgrade') || title.includes('raises') || title.includes('lifted')) {
+      return 'upgrade'
+    }
+    if (title.includes('downgrade') || title.includes('lowers') || title.includes('cuts')) {
+      return 'downgrade'
+    }
+    if (title.includes('initiate') || title.includes('coverage')) {
+      return 'initiate'
+    }
+    if (title.includes('maintain') || title.includes('reaffirm')) {
+      return 'maintain'
+    }
+
+    // Default based on target price vs current price if available
+    if (change.priceTarget && change.priceWhenPosted) {
+      const targetChange = (change.priceTarget - change.priceWhenPosted) / change.priceWhenPosted
+      if (targetChange > 0.05) return 'upgrade'
+      if (targetChange < -0.05) return 'downgrade'
+    }
+
+    return 'maintain'
   }
 
   /**

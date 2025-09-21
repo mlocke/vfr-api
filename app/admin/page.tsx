@@ -9,7 +9,7 @@ import DataSourceToggle from "../components/ui/DataSourceToggle";
 interface DataSourceConfig {
 	id: string;
 	name: string;
-	category: "financial" | "economic" | "intelligence";
+	category: "financial" | "economic" | "intelligence" | "technical";
 	description: string;
 	status: "online" | "offline" | "degraded" | "idle" | "processing" | "maintenance";
 	enabled: boolean;
@@ -174,6 +174,16 @@ export default function AdminDashboard() {
 			enabled: true,
 			rateLimit: 500,
 			timeout: 15000,
+		},
+		{
+			id: "technical_indicators",
+			name: "Technical Indicators Service",
+			category: "technical",
+			description: "50+ technical indicators and pattern recognition",
+			status: "online",
+			enabled: true,
+			rateLimit: 1000,
+			timeout: 5000,
 		},
 	];
 
@@ -512,6 +522,8 @@ export default function AdminDashboard() {
 				return "📊";
 			case "intelligence":
 				return "🧠";
+			case "technical":
+				return "⚡";
 			default:
 				return "📋";
 		}
@@ -679,7 +691,7 @@ export default function AdminDashboard() {
 									margin: "0 auto",
 								}}
 							>
-								Monitor and test connections to all 13 financial data APIs
+								Monitor and test connections to all 14 financial data APIs
 							</p>
 						</div>
 
@@ -754,11 +766,10 @@ export default function AdminDashboard() {
 									>
 										Select All ({dataSourceConfigs.length})
 									</button>
-									<div style={{ display: "flex", gap: "0.5rem" }}>
+									<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
 										<button
 											onClick={() => handleSelectByCategory("financial")}
 											style={{
-												flex: 1,
 												padding: "6px 8px",
 												background: "rgba(34, 197, 94, 0.2)",
 												border: "1px solid rgba(34, 197, 94, 0.4)",
@@ -783,7 +794,6 @@ export default function AdminDashboard() {
 										<button
 											onClick={() => handleSelectByCategory("economic")}
 											style={{
-												flex: 1,
 												padding: "6px 8px",
 												background: "rgba(251, 191, 36, 0.2)",
 												border: "1px solid rgba(251, 191, 36, 0.4)",
@@ -808,7 +818,6 @@ export default function AdminDashboard() {
 										<button
 											onClick={() => handleSelectByCategory("intelligence")}
 											style={{
-												flex: 1,
 												padding: "6px 8px",
 												background: "rgba(168, 85, 247, 0.2)",
 												border: "1px solid rgba(168, 85, 247, 0.4)",
@@ -829,6 +838,30 @@ export default function AdminDashboard() {
 											}}
 										>
 											🧠 Intel
+										</button>
+										<button
+											onClick={() => handleSelectByCategory("technical")}
+											style={{
+												padding: "6px 8px",
+												background: "rgba(6, 182, 212, 0.2)",
+												border: "1px solid rgba(6, 182, 212, 0.4)",
+												borderRadius: "6px",
+												color: "rgba(6, 182, 212, 0.9)",
+												fontSize: "0.8rem",
+												fontWeight: "500",
+												cursor: "pointer",
+												transition: "all 0.3s ease",
+											}}
+											onMouseEnter={e => {
+												e.currentTarget.style.background =
+													"rgba(6, 182, 212, 0.3)";
+											}}
+											onMouseLeave={e => {
+												e.currentTarget.style.background =
+													"rgba(6, 182, 212, 0.2)";
+											}}
+										>
+											⚡ Technical
 										</button>
 									</div>
 									<button

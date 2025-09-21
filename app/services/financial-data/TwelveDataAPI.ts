@@ -4,7 +4,7 @@
  * API Documentation: https://twelvedata.com/docs
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types.js'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange } from './types.js'
 
 interface TwelveDataPrice {
   price: string
@@ -337,6 +337,30 @@ export class TwelveDataAPI implements FinancialDataProvider {
       if (this.throwErrors) throw error
       return []
     }
+  }
+
+  /**
+   * Get analyst ratings (limited support - TwelveData doesn't have comprehensive analyst data)
+   */
+  async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
+    console.warn(`TwelveData: Analyst ratings not supported for ${symbol}. Use Financial Modeling Prep as primary source.`)
+    return null
+  }
+
+  /**
+   * Get price targets (limited support - TwelveData doesn't have comprehensive price target data)
+   */
+  async getPriceTargets(symbol: string): Promise<PriceTarget | null> {
+    console.warn(`TwelveData: Price targets not supported for ${symbol}. Use Financial Modeling Prep as primary source.`)
+    return null
+  }
+
+  /**
+   * Get recent rating changes (not supported by TwelveData)
+   */
+  async getRecentRatingChanges(symbol: string, limit = 10): Promise<RatingChange[]> {
+    console.warn(`TwelveData: Rating changes not supported for ${symbol}. Use Financial Modeling Prep as primary source.`)
+    return []
   }
 
   /**

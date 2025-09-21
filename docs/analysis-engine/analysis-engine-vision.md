@@ -6,13 +6,14 @@
 - **Institutional holdings changes** (13F filings)
 - **Short interest data**
 - **Social sentiment analysis** (Reddit, Twitter, financial news)
-- **Analyst upgrades/downgrades** and price targets
+- **Analyst upgrades/downgrades** and price targets ✅ IMPLEMENTED via FMP
 
 ## Cross-Asset Correlations
 - **Currency data** (DXY, sector-relevant currencies)
 - **Commodity prices** (gold, silver, sector-specific commodities)
 - **Bond yields** across the curve (2Y, 10Y, 30Y spreads)
 - **Volatility indices** ✅ IMPLEMENTED (VIX via MarketIndicesService)
+- **Analyst sentiment data** ✅ IMPLEMENTED (consensus ratings, price targets via FMP)
 
 ## Alternative Data Sources
 - **Satellite data** for retail/industrial activity

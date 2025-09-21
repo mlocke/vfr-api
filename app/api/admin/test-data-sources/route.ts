@@ -61,6 +61,7 @@ const DATA_SOURCE_CONFIGS = {
   eodhd: { name: 'EODHD API', timeout: 8000 },
   options: { name: 'Options Data Service', timeout: 15000 },
   enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
+  technical_indicators: { name: 'Technical Indicators Service', timeout: 5000 },
   firecrawl: { name: 'Firecrawl API', timeout: 20000 },
   dappier: { name: 'Dappier API', timeout: 10000 }
 }
@@ -268,7 +269,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -313,6 +314,15 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
         case 'market_indices':
           apiInstance = new MarketIndicesService()
           break
+        case 'technical_indicators':
+          // Technical indicators service uses direct API endpoint
+          const response = await fetch('http://localhost:3000/api/admin/test-technical-indicators', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbols: ['AAPL'] }),
+            signal: AbortSignal.timeout(timeout)
+          })
+          return response.ok
       }
       return await apiInstance.healthCheck()
     }
@@ -411,10 +421,22 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         const fmpAPI = new FinancialModelingPrepAPI(undefined, timeout, true)
         const fmpPrice = await fmpAPI.getStockPrice('AAPL')
         const fmpRatios = await fmpAPI.getFundamentalRatios('AAPL')
+
+        // Test new analyst rating functionality
+        console.log('📊 Testing analyst ratings integration...')
+        const analystRatings = await fmpAPI.getAnalystRatings('AAPL')
+        const priceTargets = await fmpAPI.getPriceTargets('AAPL')
+        const ratingChanges = await fmpAPI.getRecentRatingChanges('AAPL', 3)
+
         testData = {
           priceData: fmpPrice,
           fundamentalRatios: fmpRatios,
-          testType: 'comprehensive_with_ratios'
+          analystData: {
+            ratings: analystRatings,
+            priceTargets: priceTargets,
+            recentChanges: ratingChanges
+          },
+          testType: 'comprehensive_with_ratios_and_analyst_data'
         }
         break
 
@@ -507,6 +529,28 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         }
         break
 
+      case 'technical_indicators':
+        console.log('⚡ Testing Technical Indicators Service...')
+        const techResponse = await fetch('http://localhost:3000/api/admin/test-technical-indicators', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbols: ['AAPL', 'SPY'] }),
+          signal: AbortSignal.timeout(timeout)
+        })
+        if (techResponse.ok) {
+          const techData = await techResponse.json()
+          testData = {
+            testResults: techData.results,
+            summary: techData.summary,
+            dataQuality: techData.success ? 1.0 : 0.0,
+            timestamp: techData.summary?.timestamp || Date.now(),
+            source: 'technical_indicators'
+          }
+        } else {
+          throw new Error(`Technical indicators API returned ${techResponse.status}`)
+        }
+        break
+
       case 'options':
         console.log('📊 Testing Options Data Service...')
         const optionsDataService = new OptionsDataService()
@@ -590,7 +634,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -671,7 +715,10 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
           { path: '/cash-flow-statement?symbol={symbol}', description: 'Cash flow statement', method: 'GET' },
           { path: '/financial-ratios?symbol={symbol}', description: 'Financial ratios', method: 'GET' },
           { path: '/ratios-ttm?symbol={symbol}', description: 'TTM financial ratios (P/B, ROE, ROA, etc.)', method: 'GET' },
-          { path: '/key-metrics-ttm?symbol={symbol}', description: 'TTM key metrics (P/E, PEG, etc.)', method: 'GET' }
+          { path: '/key-metrics-ttm?symbol={symbol}', description: 'TTM key metrics (P/E, PEG, etc.)', method: 'GET' },
+          { path: '/upgrades-downgrades-consensus?symbol={symbol}', description: 'Analyst consensus ratings', method: 'GET' },
+          { path: '/price-target-consensus?symbol={symbol}', description: 'Price target consensus', method: 'GET' },
+          { path: '/price-target-latest-news?_symbol_={symbol}', description: 'Recent analyst rating changes', method: 'GET' }
         ],
         authentication: 'API Key required',
         documentation: 'https://site.financialmodelingprep.com/developer/docs',
@@ -794,6 +841,19 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         authentication: 'Uses configured API keys for underlying providers',
         documentation: 'Internal service that aggregates data from Polygon, TwelveData, FMP, Yahoo',
         rateLimit: 'Depends on underlying provider limits'
+      },
+      technical_indicators: {
+        baseUrl: 'Internal Service',
+        endpoints: [
+          { path: '/api/admin/test-technical-indicators', description: 'Test technical indicators with symbols', method: 'POST' },
+          { path: '/TechnicalIndicatorService.calculateAllIndicators', description: 'Calculate 50+ technical indicators', method: 'GET' },
+          { path: '/TechnicalIndicatorService.analyzeTrends', description: 'Analyze price trends', method: 'GET' },
+          { path: '/TechnicalIndicatorService.detectPatterns', description: 'Detect chart patterns', method: 'GET' },
+          { path: '/TechnicalIndicatorService.getMomentumSignals', description: 'Get momentum indicators', method: 'GET' }
+        ],
+        authentication: 'Internal service - no external API keys required',
+        documentation: 'Technical analysis service using existing market data and SimpleTechnicalTestService',
+        rateLimit: '1000 requests per hour'
       }
     }
 
@@ -837,7 +897,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -895,6 +955,26 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
                 request: i + 1,
                 responseTime: Date.now() - startTime,
                 success: !!result
+              }))
+              .catch(() => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: false
+              }))
+          )
+        } else if (dataSourceId === 'technical_indicators') {
+          // Technical indicators service uses API endpoint
+          requests.push(
+            fetch('http://localhost:3000/api/admin/test-technical-indicators', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ symbols: ['AAPL'] }),
+              signal: AbortSignal.timeout(timeout)
+            })
+              .then(response => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: response.ok
               }))
               .catch(() => ({
                 request: i + 1,

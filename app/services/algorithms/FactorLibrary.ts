@@ -4,6 +4,8 @@
  */
 
 import { FactorCalculator } from './types'
+import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
+import { TechnicalAnalysisResult, OHLCData } from '../technical-analysis/types'
 
 interface MarketDataPoint {
   symbol: string
@@ -46,6 +48,14 @@ interface HistoricalPrice {
 export class FactorLibrary {
   private factorCache = new Map<string, { value: number; timestamp: number }>()
   private historicalDataCache = new Map<string, HistoricalPrice[]>()
+  private technicalService?: TechnicalIndicatorService
+
+  /**
+   * Initialize with optional technical indicator service
+   */
+  constructor(technicalService?: TechnicalIndicatorService) {
+    this.technicalService = technicalService
+  }
 
   /**
    * Core factor calculation method
@@ -143,6 +153,76 @@ export class FactorLibrary {
           result = await this.calculateBollingerPosition(symbol, marketData)
           break
 
+        // ==================== ENHANCED TECHNICAL FACTORS ====================
+        // Trend factors
+        case 'sma_alignment':
+          result = await this.calculateSMAAlignment(symbol)
+          break
+        case 'ema_trend':
+          result = await this.calculateEMATrend(symbol)
+          break
+        case 'macd_histogram':
+          result = await this.calculateMACDHistogram(symbol)
+          break
+        case 'bollinger_squeeze':
+          result = await this.calculateBollingerSqueeze(symbol)
+          break
+
+        // Advanced momentum factors
+        case 'stochastic_signal':
+          result = await this.calculateStochasticSignal(symbol)
+          break
+        case 'williams_r':
+          result = await this.calculateWilliamsR(symbol)
+          break
+        case 'roc_momentum':
+          result = await this.calculateROCMomentum(symbol)
+          break
+        case 'momentum_convergence':
+          result = await this.calculateMomentumConvergence(symbol)
+          break
+
+        // Volume factors
+        case 'obv_trend':
+          result = await this.calculateOBVTrend(symbol)
+          break
+        case 'vwap_position':
+          result = await this.calculateVWAPPosition(symbol)
+          break
+        case 'volume_confirmation':
+          result = await this.calculateVolumeConfirmation(symbol)
+          break
+
+        // Volatility factors
+        case 'atr_volatility':
+          result = await this.calculateATRVolatility(symbol)
+          break
+        case 'volatility_breakout':
+          result = await this.calculateVolatilityBreakout(symbol)
+          break
+
+        // Pattern factors
+        case 'candlestick_patterns':
+          result = await this.calculateCandlestickPatterns(symbol)
+          break
+        case 'chart_patterns':
+          result = await this.calculateChartPatterns(symbol)
+          break
+        case 'support_resistance':
+          result = await this.calculateSupportResistance(symbol)
+          break
+
+        // Composite technical factors
+        case 'technical_momentum_composite':
+          result = await this.calculateTechnicalMomentumComposite(symbol)
+          break
+        case 'technical_trend_composite':
+          result = await this.calculateTechnicalTrendComposite(symbol)
+          break
+        case 'technical_overall_score':
+          result = await this.calculateTechnicalOverallScore(symbol)
+          break
+
         // ==================== VOLATILITY FACTORS ====================
         case 'volatility_30d':
           result = await this.calculateVolatilityScore(symbol, 30)
@@ -232,6 +312,744 @@ export class FactorLibrary {
 
     // Return higher score when price is below MA (reversion opportunity)
     return 1 / (1 + Math.exp(deviation * 5))
+  }
+
+  // ==================== ENHANCED TECHNICAL CALCULATIONS ====================
+
+  /**
+   * Calculate SMA alignment score - higher when shorter SMA > longer SMA
+   */
+  private async calculateSMAAlignment(symbol: string): Promise<number | null> {
+    if (!this.technicalService) {
+      console.warn('Technical service not available for SMA alignment calculation')
+      return null
+    }
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 250)
+      if (!historicalData || historicalData.length < 50) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const smaResults = technicalResult.trend.indicators.sma
+      if (smaResults.length < 2) return 0.5
+
+      // Find short and long SMAs
+      const shortSMA = smaResults.find(s => s.period === 20)
+      const longSMA = smaResults.find(s => s.period === 50)
+
+      if (!shortSMA || !longSMA) return 0.5
+
+      // Higher score when short SMA > long SMA (bullish alignment)
+      const alignmentRatio = shortSMA.value / longSMA.value
+      return Math.max(0, Math.min(1, (alignmentRatio - 0.95) / 0.1))
+
+    } catch (error) {
+      console.error(`Error calculating SMA alignment for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate EMA trend strength
+   */
+  private async calculateEMATrend(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 26) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      return technicalResult.trend.strength
+
+    } catch (error) {
+      console.error(`Error calculating EMA trend for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate MACD histogram strength
+   */
+  private async calculateMACDHistogram(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 26) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const macdResult = technicalResult.trend.indicators.macd
+
+      // Normalize histogram value to 0-1 scale
+      const normalizedHistogram = Math.max(0, Math.min(1, (macdResult.histogram + 1) / 2))
+      return normalizedHistogram
+
+    } catch (error) {
+      console.error(`Error calculating MACD histogram for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate Bollinger Band squeeze (low volatility)
+   */
+  private async calculateBollingerSqueeze(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 20) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const bollinger = technicalResult.trend.indicators.bollinger
+      const currentPrice = ohlcData[ohlcData.length - 1].close
+
+      // Calculate band width as percentage of middle band
+      const bandWidth = bollinger.width / bollinger.middle
+
+      // Lower band width indicates squeeze (higher opportunity score)
+      return Math.max(0, Math.min(1, 1 - (bandWidth * 20)))
+
+    } catch (error) {
+      console.error(`Error calculating Bollinger squeeze for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate Stochastic signal strength
+   */
+  private async calculateStochasticSignal(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 14) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const stochastic = technicalResult.momentum.indicators.stochastic
+
+      // Calculate signal strength based on oversold/overbought conditions
+      if (stochastic.signal === 'oversold') return 0.8
+      if (stochastic.signal === 'overbought') return 0.2
+
+      // Neutral zone scoring
+      return 0.5
+
+    } catch (error) {
+      console.error(`Error calculating Stochastic signal for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate Williams %R signal
+   */
+  private async calculateWilliamsR(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 14) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const williams = technicalResult.momentum.indicators.williams
+
+      // Convert Williams %R to 0-1 scale (inverted since Williams %R is negative)
+      return Math.max(0, Math.min(1, (williams.value + 100) / 100))
+
+    } catch (error) {
+      console.error(`Error calculating Williams %R for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate ROC momentum strength
+   */
+  private async calculateROCMomentum(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 10) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const roc = technicalResult.momentum.indicators.roc
+
+      // Normalize ROC to 0-1 scale (sigmoid transformation)
+      return 1 / (1 + Math.exp(-roc.value / 5))
+
+    } catch (error) {
+      console.error(`Error calculating ROC momentum for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate momentum convergence across multiple indicators
+   */
+  private async calculateMomentumConvergence(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 26) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const momentum = technicalResult.momentum
+
+      // Check for convergence in momentum signals
+      let convergenceScore = 0
+      let signals = 0
+
+      // RSI signal
+      if (momentum.indicators.rsi.signal !== 'neutral') {
+        signals++
+        convergenceScore += momentum.indicators.rsi.signal === 'oversold' ? 1 : 0
+      }
+
+      // Stochastic signal
+      if (momentum.indicators.stochastic.signal !== 'neutral') {
+        signals++
+        convergenceScore += momentum.indicators.stochastic.signal === 'oversold' ? 1 : 0
+      }
+
+      // Williams %R signal
+      if (momentum.indicators.williams.signal !== 'neutral') {
+        signals++
+        convergenceScore += momentum.indicators.williams.signal === 'oversold' ? 1 : 0
+      }
+
+      return signals > 0 ? convergenceScore / signals : 0.5
+
+    } catch (error) {
+      console.error(`Error calculating momentum convergence for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate OBV trend strength
+   */
+  private async calculateOBVTrend(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 20) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const obv = technicalResult.volume.indicators.obv
+
+      // Convert trend to numeric score
+      if (obv.trend === 'rising') return 0.8
+      if (obv.trend === 'falling') return 0.2
+      return 0.5
+
+    } catch (error) {
+      console.error(`Error calculating OBV trend for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate VWAP position score
+   */
+  private async calculateVWAPPosition(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 20) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const vwap = technicalResult.volume.indicators.vwap
+
+      // Convert position to numeric score
+      if (vwap.position === 'above') return 0.7
+      if (vwap.position === 'below') return 0.3
+      return 0.5
+
+    } catch (error) {
+      console.error(`Error calculating VWAP position for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate volume confirmation score
+   */
+  private async calculateVolumeConfirmation(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 20) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      return technicalResult.volume.confirmation ? 0.8 : 0.2
+
+    } catch (error) {
+      console.error(`Error calculating volume confirmation for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate ATR-based volatility score
+   */
+  private async calculateATRVolatility(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 14) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const atr = technicalResult.volatility.indicators.atr
+      const currentPrice = ohlcData[ohlcData.length - 1].close
+
+      // Calculate ATR as percentage of price
+      const atrPercent = atr.value / currentPrice
+
+      // Lower volatility gets higher score for quality strategies
+      return Math.max(0, Math.min(1, 1 - (atrPercent * 10)))
+
+    } catch (error) {
+      console.error(`Error calculating ATR volatility for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate volatility breakout potential
+   */
+  private async calculateVolatilityBreakout(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 20) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      // Low volatility followed by volume increase suggests breakout potential
+      const volatilityLevel = technicalResult.volatility.level
+      const volumeTrend = technicalResult.volume.trend
+
+      if (volatilityLevel === 'low' && volumeTrend === 'increasing') return 0.8
+      if (volatilityLevel === 'medium' && volumeTrend === 'increasing') return 0.6
+      return 0.3
+
+    } catch (error) {
+      console.error(`Error calculating volatility breakout for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate candlestick patterns score
+   */
+  private async calculateCandlestickPatterns(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 50)
+      if (!historicalData || historicalData.length < 10) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const patterns = technicalResult.patterns.candlestick
+
+      if (patterns.length === 0) return 0.5
+
+      // Calculate average pattern strength, weighted by bullish/bearish direction
+      let totalScore = 0
+      patterns.forEach(pattern => {
+        let score = pattern.strength
+        if (pattern.direction === 'bullish') score *= 1.2
+        if (pattern.direction === 'bearish') score *= 0.8
+        totalScore += score
+      })
+
+      return Math.max(0, Math.min(1, totalScore / patterns.length))
+
+    } catch (error) {
+      console.error(`Error calculating candlestick patterns for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate chart patterns score
+   */
+  private async calculateChartPatterns(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 100)
+      if (!historicalData || historicalData.length < 50) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      const patterns = technicalResult.patterns.chart
+
+      if (patterns.length === 0) return 0.5
+
+      // Calculate average pattern strength, weighted by bullish/bearish direction
+      let totalScore = 0
+      patterns.forEach(pattern => {
+        let score = pattern.strength
+        if (pattern.direction === 'bullish') score *= 1.2
+        if (pattern.direction === 'bearish') score *= 0.8
+        totalScore += score
+      })
+
+      return Math.max(0, Math.min(1, totalScore / patterns.length))
+
+    } catch (error) {
+      console.error(`Error calculating chart patterns for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate support/resistance levels score
+   */
+  private async calculateSupportResistance(symbol: string): Promise<number | null> {
+    const historicalData = await this.getHistoricalData(symbol, 100)
+    if (!historicalData || historicalData.length < 50) return null
+
+    const prices = historicalData.map(h => h.close)
+    const currentPrice = prices[0]
+
+    // Find potential support/resistance levels
+    const levels = this.findSupportResistanceLevels(prices)
+
+    // Calculate proximity to key levels
+    let score = 0.5
+
+    levels.forEach(level => {
+      const distance = Math.abs(currentPrice - level) / currentPrice
+      if (distance < 0.02) { // Within 2% of S/R level
+        score += 0.2
+      }
+    })
+
+    return Math.max(0, Math.min(1, score))
+  }
+
+  /**
+   * Calculate composite technical momentum score
+   */
+  private async calculateTechnicalMomentumComposite(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const factors = await Promise.all([
+        this.calculateStochasticSignal(symbol),
+        this.calculateWilliamsR(symbol),
+        this.calculateROCMomentum(symbol),
+        this.calculateMomentumConvergence(symbol)
+      ])
+
+      const validFactors = factors.filter((f): f is number => f !== null)
+      if (validFactors.length === 0) return null
+
+      return validFactors.reduce((sum, f) => sum + f, 0) / validFactors.length
+
+    } catch (error) {
+      console.error(`Error calculating technical momentum composite for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate composite technical trend score
+   */
+  private async calculateTechnicalTrendComposite(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const factors = await Promise.all([
+        this.calculateSMAAlignment(symbol),
+        this.calculateEMATrend(symbol),
+        this.calculateMACDHistogram(symbol),
+        this.calculateBollingerSqueeze(symbol)
+      ])
+
+      const validFactors = factors.filter((f): f is number => f !== null)
+      if (validFactors.length === 0) return null
+
+      return validFactors.reduce((sum, f) => sum + f, 0) / validFactors.length
+
+    } catch (error) {
+      console.error(`Error calculating technical trend composite for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate overall technical analysis score
+   */
+  private async calculateTechnicalOverallScore(symbol: string): Promise<number | null> {
+    if (!this.technicalService) return null
+
+    try {
+      const historicalData = await this.getHistoricalData(symbol, 250)
+      if (!historicalData || historicalData.length < 50) return null
+
+      const ohlcData: OHLCData[] = historicalData.map(h => ({
+        timestamp: h.timestamp,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume
+      }))
+
+      const technicalResult = await this.technicalService.calculateAllIndicators({
+        symbol,
+        ohlcData
+      })
+
+      // Return normalized score (0-1 scale from 0-100 scale)
+      return technicalResult.score.total / 100
+
+    } catch (error) {
+      console.error(`Error calculating technical overall score for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Helper method to find support/resistance levels
+   */
+  private findSupportResistanceLevels(prices: number[]): number[] {
+    const levels: number[] = []
+    const window = 10
+
+    for (let i = window; i < prices.length - window; i++) {
+      const price = prices[i]
+      let isSupport = true
+      let isResistance = true
+
+      // Check if this is a local minimum (support)
+      for (let j = i - window; j <= i + window; j++) {
+        if (prices[j] < price) {
+          isSupport = false
+          break
+        }
+      }
+
+      // Check if this is a local maximum (resistance)
+      for (let j = i - window; j <= i + window; j++) {
+        if (prices[j] > price) {
+          isResistance = false
+          break
+        }
+      }
+
+      if (isSupport || isResistance) {
+        levels.push(price)
+      }
+    }
+
+    return levels
   }
 
   private async calculateVolumeReversion(
@@ -638,7 +1456,14 @@ export class FactorLibrary {
   requiresTechnicalData(factorName: string): boolean {
     const technicalFactors = [
       'rsi_14d', 'macd_signal', 'bollinger_position',
-      'momentum_composite'
+      'momentum_composite',
+      // Enhanced technical factors
+      'sma_alignment', 'ema_trend', 'macd_histogram', 'bollinger_squeeze',
+      'stochastic_signal', 'williams_r', 'roc_momentum', 'momentum_convergence',
+      'obv_trend', 'vwap_position', 'volume_confirmation',
+      'atr_volatility', 'volatility_breakout',
+      'candlestick_patterns', 'chart_patterns', 'support_resistance',
+      'technical_momentum_composite', 'technical_trend_composite', 'technical_overall_score'
     ]
 
     return technicalFactors.includes(factorName)
@@ -667,6 +1492,13 @@ export class FactorLibrary {
       // Technical
       'rsi_14d', 'macd_signal', 'bollinger_position',
 
+      // Enhanced Technical Factors
+      'sma_alignment', 'ema_trend', 'macd_histogram', 'bollinger_squeeze',
+      'stochastic_signal', 'williams_r', 'roc_momentum', 'momentum_convergence',
+      'obv_trend', 'vwap_position', 'volume_confirmation',
+      'atr_volatility', 'volatility_breakout',
+      'candlestick_patterns', 'chart_patterns', 'support_resistance',
+
       // Volatility
       'volatility_30d', 'volatility_ratio', 'beta',
 
@@ -674,7 +1506,10 @@ export class FactorLibrary {
       'dividend_yield', 'dividend_growth', 'payout_ratio',
 
       // Composite
-      'quality_composite', 'momentum_composite', 'value_composite'
+      'quality_composite', 'momentum_composite', 'value_composite',
+
+      // Technical Composite
+      'technical_momentum_composite', 'technical_trend_composite', 'technical_overall_score'
     ]
   }
 

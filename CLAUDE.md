@@ -71,6 +71,7 @@ src/
 - **Enhanced Sources**: EODHD (100k req/day), TwelveData (800 req/day free)
 - **Secondary Sources**: Yahoo Finance (backup/fallback)
 - **Government APIs**: SEC EDGAR, FRED (Treasury rates), Bureau of Labor Statistics, EIA
+- **Analyst Data**: Financial Modeling Prep (consensus ratings, price targets, rating changes)
 - **Treasury Analysis**: Enhanced yield curve analysis via FRED API (unlimited/free)
 - **Fallback Strategy**: Automatic source switching with rate limiting and error handling
 - **Location**: `app/services/financial-data/` (individual API classes and FallbackDataService)
@@ -80,6 +81,8 @@ src/
 - **Analysis Algorithms**: Located in `app/services/algorithms/`
 - **Selection Service**: `app/services/stock-selection/StockSelectionService.ts`
 - **Real-time Processing**: Combines multiple data sources for comprehensive analysis
+- **Analyst Integration**: Real-time analyst ratings, price targets, and sentiment scoring
+- **Intelligence Features**: Analyst-based warnings, opportunities, and upside calculations
 
 ### Caching System
 - **Primary**: Redis with configurable TTL (2min dev, 10min prod)
@@ -144,10 +147,10 @@ src/
 ## Environment Configuration
 
 ### Development vs Production
-| Environment | Cache TTL | Rate Limits | Data Quality | Admin Access |
-|-------------|-----------|-------------|--------------|--------------|
-| Development | 2 minutes | Relaxed     | Basic        | Auto-granted |
-| Production  | 10 minutes| Strict      | Enhanced     | JWT Required |
+| Environment | Cache TTL | Rate Limits | Data Quality | Admin Access | Analyst Data |
+|-------------|-----------|-------------|--------------|--------------|---------------|
+| Development | 2 minutes | Relaxed     | Basic        | Auto-granted | Daily refresh |
+| Production  | 10 minutes| Strict      | Enhanced     | JWT Required | Daily refresh |
 
 ### Required Environment Variables
 - **API Keys**: Alpha Vantage, Polygon, Financial Modeling Prep, FRED, etc.
