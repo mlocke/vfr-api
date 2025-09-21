@@ -5,8 +5,11 @@
     "fred",
     "bls",
     "eia",
-    "yahoo"
+    "yahoo",
+    "polygon",
+    "alphavantage",
+    "twelvedata"
   ],
-  "timestamp": 1758241235623,
+  "timestamp": 1758426513950,
   "version": "1.0"
 }
