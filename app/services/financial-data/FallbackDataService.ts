@@ -3,12 +3,14 @@
  * Implements a chain of free data sources with automatic failover
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import SecurityValidator from '../security/SecurityValidator'
+import { createServiceErrorHandler, ErrorType, ErrorCode } from '../error-handling'
 
 interface DataSourceConfig {
   name: string
@@ -24,6 +26,7 @@ export class FallbackDataService implements FinancialDataProvider {
   private dataSources: DataSourceConfig[] = []
   private requestCounts: Map<string, { count: number; resetTime: number }> = new Map()
   private dailyCounts: Map<string, { count: number; date: string }> = new Map()
+  private errorHandler = createServiceErrorHandler('FallbackDataService')
 
   constructor() {
     this.initializeDataSources()
@@ -93,9 +96,13 @@ export class FallbackDataService implements FinancialDataProvider {
     // Sort by priority
     this.dataSources.sort((a, b) => a.priority - b.priority)
 
-    console.log(`📊 Fallback Data Service initialized with ${this.dataSources.length} free sources:`)
-    this.dataSources.forEach(ds => {
-      console.log(`  ${ds.priority}. ${ds.name} (${ds.rateLimit} req/min${ds.dailyLimit ? `, ${ds.dailyLimit}/day` : ''})`)
+    this.errorHandler.logger.info(`Fallback Data Service initialized with ${this.dataSources.length} free sources`, {
+      sources: this.dataSources.map(ds => ({
+        priority: ds.priority,
+        name: ds.name,
+        rateLimit: ds.rateLimit,
+        dailyLimit: ds.dailyLimit
+      }))
     })
   }
 
@@ -159,9 +166,25 @@ export class FallbackDataService implements FinancialDataProvider {
   }
 
   /**
-   * Get stock price with automatic fallback
+   * Get stock price with automatic fallback and security controls
    */
   async getStockPrice(symbol: string): Promise<StockData | null> {
+    return this.errorHandler.validateAndExecute(
+      () => this.executeGetStockPrice(symbol),
+      [symbol],
+      {
+        timeout: 30000,
+        retries: 2,
+        context: 'getStockPrice'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get stock price for ${symbol}`, { error })
+      return null
+    })
+  }
+
+  private async executeGetStockPrice(symbol: string): Promise<StockData | null> {
+    const sanitizedSymbol = symbol.toUpperCase()
     const errors: string[] = []
 
     for (const source of this.dataSources) {
@@ -172,16 +195,57 @@ export class FallbackDataService implements FinancialDataProvider {
       }
 
       try {
-        console.log(`🔄 Trying ${source.name} for ${symbol}...`)
+        this.errorHandler.logger.debug(`Trying ${source.name} for ${sanitizedSymbol}`)
 
         const startTime = Date.now()
-        const data = await source.provider.getStockPrice(symbol)
-        const responseTime = Date.now() - startTime
+        const data = await this.errorHandler.handleApiCall(
+          () => source.provider.getStockPrice(sanitizedSymbol),
+          {
+            timeout: 15000,
+            retries: 1,
+            context: `${source.name}_getStockPrice`
+          }
+        )
 
         if (data) {
-          this.recordRequest(source)
-          console.log(`✅ ${source.name} succeeded for ${symbol} (${responseTime}ms)`)
+          // Validate response structure
+          const responseValidation = SecurityValidator.validateApiResponse(data, [
+            'symbol', 'price', 'timestamp', 'source'
+          ])
 
+          if (!responseValidation.isValid) {
+            this.errorHandler.logger.warn(`Invalid stock price response from ${source.name}`, {
+              errors: responseValidation.errors,
+              symbol: sanitizedSymbol
+            })
+            continue
+          }
+
+          // Validate numeric values
+          const priceValidation = SecurityValidator.validateNumeric(data.price, {
+            min: 0,
+            max: 100000,
+            decimalPlaces: 4
+          })
+
+          if (!priceValidation.isValid) {
+            this.errorHandler.logger.warn(`Invalid price value for ${sanitizedSymbol}`, {
+              errors: priceValidation.errors,
+              price: data.price
+            })
+            continue
+          }
+
+          this.recordRequest(source)
+          const responseTime = Date.now() - startTime
+          this.errorHandler.logger.logPerformance(
+            `${source.name}_getStockPrice`,
+            responseTime,
+            undefined,
+            { symbol: sanitizedSymbol, source: source.name }
+          )
+
+          this.errorHandler.errorHandler.recordSuccess(`stock_price_${sanitizedSymbol}`)
           // Add metadata about which source was used
           return {
             ...data,
@@ -191,14 +255,29 @@ export class FallbackDataService implements FinancialDataProvider {
           errors.push(`${source.name}: No data returned`)
         }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-        errors.push(`${source.name}: ${errorMsg}`)
-        console.error(`❌ ${source.name} failed:`, errorMsg)
+        const errorInfo = this.errorHandler.errorHandler.createErrorResponse(
+          error,
+          source.name,
+          undefined
+        )
+        errors.push(`${source.name}: ${errorInfo.error.message}`)
+        this.errorHandler.logger.logApiError(
+          'GET',
+          'stock_price',
+          error,
+          undefined,
+          { symbol: sanitizedSymbol, source: source.name }
+        )
       }
     }
 
     // All sources failed
-    console.error(`❌ All data sources failed for ${symbol}:`, errors)
+    this.errorHandler.errorHandler.recordFailure(`stock_price_${sanitizedSymbol}`)
+    this.errorHandler.logger.error(`All data sources failed for ${sanitizedSymbol}`, {
+      errors,
+      symbolSanitized: sanitizedSymbol,
+      sourcesAttempted: this.dataSources.length
+    })
     return null
   }
 
@@ -206,17 +285,45 @@ export class FallbackDataService implements FinancialDataProvider {
    * Get company info with fallback
    */
   async getCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
+    return this.errorHandler.validateAndExecute(
+      () => this.executeGetCompanyInfo(symbol),
+      [symbol],
+      {
+        timeout: 20000,
+        retries: 1,
+        context: 'getCompanyInfo'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get company info for ${symbol}`, { error })
+      return null
+    })
+  }
+
+  private async executeGetCompanyInfo(symbol: string): Promise<CompanyInfo | null> {
     for (const source of this.dataSources) {
       if (!this.canMakeRequest(source)) continue
 
       try {
-        const data = await source.provider.getCompanyInfo(symbol)
+        const data = await this.errorHandler.handleApiCall(
+          () => source.provider.getCompanyInfo(symbol),
+          {
+            timeout: 15000,
+            retries: 1,
+            context: `${source.name}_getCompanyInfo`
+          }
+        )
         if (data) {
           this.recordRequest(source)
           return data
         }
       } catch (error) {
-        console.error(`${source.name} company info failed:`, error)
+        this.errorHandler.logger.logApiError(
+          'GET',
+          'company_info',
+          error,
+          undefined,
+          { symbol, source: source.name }
+        )
       }
     }
     return null
@@ -226,68 +333,154 @@ export class FallbackDataService implements FinancialDataProvider {
    * Get market data with fallback
    */
   async getMarketData(symbol: string): Promise<MarketData | null> {
+    return this.errorHandler.validateAndExecute(
+      () => this.executeGetMarketData(symbol),
+      [symbol],
+      {
+        timeout: 20000,
+        retries: 1,
+        context: 'getMarketData'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get market data for ${symbol}`, { error })
+      return null
+    })
+  }
+
+  private async executeGetMarketData(symbol: string): Promise<MarketData | null> {
     for (const source of this.dataSources) {
       if (!this.canMakeRequest(source)) continue
 
       try {
-        const data = await source.provider.getMarketData(symbol)
+        const data = await this.errorHandler.handleApiCall(
+          () => source.provider.getMarketData(symbol),
+          {
+            timeout: 15000,
+            retries: 1,
+            context: `${source.name}_getMarketData`
+          }
+        )
         if (data) {
           this.recordRequest(source)
           return data
         }
       } catch (error) {
-        console.error(`${source.name} market data failed:`, error)
+        this.errorHandler.logger.logApiError(
+          'GET',
+          'market_data',
+          error,
+          undefined,
+          { symbol, source: source.name }
+        )
       }
     }
     return null
   }
 
   /**
-   * Batch get stock prices with optimal source selection
+   * Batch get stock prices with security controls and parallel optimization
    */
   async getBatchPrices(symbols: string[]): Promise<Map<string, StockData>> {
+    // Validate batch request
+    const batchValidation = SecurityValidator.validateSymbolBatch(symbols, 50)
+    if (!batchValidation.isValid) {
+      const sanitizedError = SecurityValidator.sanitizeErrorMessage(
+        `Invalid batch request: ${batchValidation.errors.join(', ')}`
+      )
+      console.warn(sanitizedError)
+      return new Map()
+    }
+
+    const sanitizedSymbols = JSON.parse(batchValidation.sanitized!) as string[]
+    const serviceId = `batch_prices_${sanitizedSymbols.length}`
     const results = new Map<string, StockData>()
 
-    // Try to use sources with batch capabilities first
-    for (const source of this.dataSources) {
-      if (!this.canMakeRequest(source)) continue
+    // Check rate limiting for batch operation
+    const rateLimitCheck = SecurityValidator.checkRateLimit(serviceId)
+    if (!rateLimitCheck.allowed) {
+      const resetTime = rateLimitCheck.resetTime ? new Date(rateLimitCheck.resetTime).toISOString() : 'unknown'
+      console.warn(`Rate limit exceeded for batch prices, reset at: ${resetTime}`)
+      return new Map()
+    }
 
-      // Check if provider has batch method
-      if ('getBatchPrices' in source.provider && typeof source.provider.getBatchPrices === 'function') {
+    // Get available sources with batch capabilities
+    const batchSources = this.dataSources.filter(source =>
+      this.canMakeRequest(source) &&
+      'getBatchPrices' in source.provider &&
+      typeof (source.provider as any).getBatchPrices === 'function'
+    )
+
+    // Try batch sources in parallel for fastest response
+    if (batchSources.length > 0) {
+      const batchPromises = batchSources.map(async (source) => {
         try {
-          console.log(`🔄 Trying batch fetch from ${source.name} for ${symbols.length} symbols...`)
-          const batchData = await source.provider.getBatchPrices(symbols)
+          console.log(`🔄 Trying batch fetch from ${source.name} for ${sanitizedSymbols.length} symbols...`)
+          const batchData = await (source.provider as any).getBatchPrices(sanitizedSymbols)
 
           if (batchData.size > 0) {
             this.recordRequest(source)
-            batchData.forEach((data, symbol) => {
-              results.set(symbol, {
-                ...data,
-                source: source.name.toLowerCase().replace(/\s+/g, '_')
-              })
-            })
-
-            // If we got all symbols, return
-            if (results.size === symbols.length) {
-              console.log(`✅ ${source.name} batch fetch complete`)
-              return results
-            }
+            console.log(`✅ ${source.name} batch fetch returned ${batchData.size} symbols`)
+            return { data: batchData, source }
           }
+          return null
         } catch (error) {
-          console.error(`${source.name} batch fetch failed:`, error)
+          const sanitizedError = SecurityValidator.sanitizeErrorMessage(error)
+          console.error(`${source.name} batch fetch failed:`, sanitizedError)
+          return null
+        }
+      })
+
+      // Use Promise.allSettled to get best available data
+      const batchResults = await Promise.allSettled(batchPromises)
+
+      // Merge successful batch results (prioritize by data source priority)
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled' && result.value?.data) {
+          const { data: batchData, source } = result.value
+          batchData.forEach((data, symbol) => {
+            if (!results.has(symbol)) { // Don't overwrite higher priority data
+              // Validate each stock data item
+              const validation = SecurityValidator.validateApiResponse(data, [
+                'symbol', 'price', 'timestamp'
+              ])
+
+              if (validation.isValid) {
+                results.set(symbol, {
+                  ...data,
+                  source: source.name.toLowerCase().replace(/\s+/g, '_')
+                })
+              }
+            }
+          })
         }
       }
     }
 
-    // Fallback to individual requests for missing symbols
-    const missingSymbols = symbols.filter(s => !results.has(s))
-    for (const symbol of missingSymbols) {
-      const data = await this.getStockPrice(symbol)
-      if (data) {
-        results.set(symbol, data)
+    // Parallel fallback for missing symbols using individual requests
+    const missingSymbols = sanitizedSymbols.filter(s => !results.has(s))
+    if (missingSymbols.length > 0 && missingSymbols.length <= 10) { // Limit parallel individual requests
+      const individualPromises = missingSymbols.map(async (symbol) => {
+        const data = await this.getStockPrice(symbol)
+        return data ? { symbol, data } : null
+      })
+
+      const individualResults = await Promise.allSettled(individualPromises)
+      individualResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+          results.set(result.value.symbol, result.value.data)
+        }
+      })
+    } else if (missingSymbols.length > 10) {
+      // Sequential fallback for large batches to avoid overwhelming APIs
+      for (const symbol of missingSymbols) {
+        const data = await this.getStockPrice(symbol)
+        if (data) {
+          results.set(symbol, data)
+        }
       }
     }
 
+    SecurityValidator.recordSuccess(serviceId)
     return results
   }
 
@@ -295,17 +488,36 @@ export class FallbackDataService implements FinancialDataProvider {
    * Health check - returns true if at least one source is available
    */
   async healthCheck(): Promise<boolean> {
-    for (const source of this.dataSources) {
-      try {
-        const isHealthy = await source.provider.healthCheck()
-        if (isHealthy && this.canMakeRequest(source)) {
-          return true
+    try {
+      return await this.errorHandler.handleApiCall(
+        () => this.executeHealthCheck(),
+        {
+          timeout: 10000,
+          retries: 0,
+          context: 'healthCheck'
         }
-      } catch {
-        // Continue to next source
-      }
+      )
+    } catch (error) {
+      this.errorHandler.logger.warn('Health check failed', { error })
+      return false
     }
-    return false
+  }
+
+  private async executeHealthCheck(): Promise<boolean> {
+    const healthChecks = this.dataSources.map(async (source) => {
+      try {
+        const isHealthy = await this.errorHandler.timeoutHandler.withTimeout(
+          source.provider.healthCheck(),
+          5000
+        )
+        return isHealthy && this.canMakeRequest(source)
+      } catch {
+        return false
+      }
+    })
+
+    const results = await Promise.allSettled(healthChecks)
+    return results.some(result => result.status === 'fulfilled' && result.value === true)
   }
 
   /**
@@ -473,5 +685,145 @@ export class FallbackDataService implements FinancialDataProvider {
 
     console.warn(`⚠️ No rating changes available for ${symbol}`)
     return []
+  }
+
+  /**
+   * Get fundamental ratios with comprehensive security controls
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    return this.errorHandler.validateAndExecute(
+      () => this.executeGetFundamentalRatios(symbol),
+      [symbol],
+      {
+        timeout: 30000,
+        retries: 2,
+        context: 'getFundamentalRatios'
+      }
+    ).catch(error => {
+      this.errorHandler.logger.warn(`Failed to get fundamental ratios for ${symbol}`, { error })
+      return null
+    })
+  }
+
+  private async executeGetFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    const sanitizedSymbol = symbol.toUpperCase()
+
+    // Get available sources that support fundamental ratios
+    const fundamentalSources = this.dataSources.filter(source =>
+      ['Financial Modeling Prep'].includes(source.name) &&
+      this.canMakeRequest(source) &&
+      source.provider.getFundamentalRatios
+    )
+
+    if (fundamentalSources.length === 0) {
+      this.errorHandler.errorHandler.recordFailure(`fundamental_ratios_${sanitizedSymbol}`)
+      this.errorHandler.logger.warn(`No available fundamental ratio sources for ${sanitizedSymbol}`)
+      return null
+    }
+
+    try {
+      // Try all available sources in parallel for fastest response
+      const promises = fundamentalSources.map(async (source) => {
+        try {
+          const data = await this.errorHandler.handleApiCall(
+            () => source.provider.getFundamentalRatios!(sanitizedSymbol),
+            {
+              timeout: 20000,
+              retries: 1,
+              context: `${source.name}_getFundamentalRatios`
+            }
+          )
+
+          if (data) {
+            // Validate API response structure
+            const responseValidation = SecurityValidator.validateApiResponse(data, [
+              'symbol', 'timestamp', 'source'
+            ])
+
+            if (!responseValidation.isValid) {
+              this.errorHandler.logger.warn(`Invalid fundamental ratios response structure from ${source.name}`, {
+                errors: responseValidation.errors,
+                symbol: sanitizedSymbol
+              })
+              return null
+            }
+
+            // Validate numeric fields to prevent data corruption
+            const numericFields = ['peRatio', 'pegRatio', 'pbRatio', 'priceToSales', 'priceToFreeCashFlow',
+                                 'debtToEquity', 'currentRatio', 'quickRatio', 'roe', 'roa',
+                                 'grossProfitMargin', 'operatingMargin', 'netProfitMargin',
+                                 'dividendYield', 'payoutRatio']
+
+            for (const field of numericFields) {
+              const value = data[field as keyof FundamentalRatios]
+              if (value !== undefined && value !== null) {
+                const validation = SecurityValidator.validateNumeric(value, {
+                  allowNegative: ['roe', 'roa', 'grossProfitMargin', 'operatingMargin', 'netProfitMargin'].includes(field),
+                  allowZero: true,
+                  min: field.includes('Ratio') ? 0 : undefined,
+                  max: field.includes('Margin') || field === 'payoutRatio' ? 100 : undefined,
+                  decimalPlaces: 4
+                })
+
+                if (!validation.isValid) {
+                  this.errorHandler.logger.warn(`Invalid ${field} value for ${sanitizedSymbol}`, {
+                    field,
+                    value,
+                    errors: validation.errors
+                  })
+                  // Set to undefined rather than rejecting entire response
+                  (data as any)[field] = undefined
+                }
+              }
+            }
+
+            this.recordRequest(source)
+            this.errorHandler.logger.info(`Fundamental ratios from ${source.name} for ${sanitizedSymbol}`, {
+              peRatio: data.peRatio?.toFixed(2) || 'N/A',
+              pbRatio: data.pbRatio?.toFixed(2) || 'N/A',
+              source: source.name
+            })
+            return { data, source: source.name }
+          }
+          return null
+        } catch (error) {
+          this.errorHandler.logger.logApiError(
+            'GET',
+            'fundamental_ratios',
+            error,
+            undefined,
+            { symbol: sanitizedSymbol, source: source.name }
+          )
+          return null
+        }
+      })
+
+      // Use Promise.allSettled to wait for all attempts
+      const results = await Promise.allSettled(promises)
+
+      // Return first successful result
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value?.data) {
+          this.errorHandler.errorHandler.recordSuccess(`fundamental_ratios_${sanitizedSymbol}`)
+          return result.value.data
+        }
+      }
+
+      // All sources failed
+      this.errorHandler.errorHandler.recordFailure(`fundamental_ratios_${sanitizedSymbol}`)
+      this.errorHandler.logger.warn(`No fundamental ratios available for ${sanitizedSymbol}`, {
+        sourcesAttempted: fundamentalSources.length,
+        symbol: sanitizedSymbol
+      })
+      return null
+
+    } catch (error) {
+      this.errorHandler.errorHandler.recordFailure(`fundamental_ratios_${sanitizedSymbol}`)
+      this.errorHandler.logger.error(`Fundamental ratios service error for ${sanitizedSymbol}`, {
+        error,
+        symbol: sanitizedSymbol
+      })
+      return null
+    }
   }
 }

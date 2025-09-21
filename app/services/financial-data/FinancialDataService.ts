@@ -4,7 +4,7 @@
  * Replaces the complex MCP architecture with simple, direct API calls
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, AnalystRatings, PriceTarget, RatingChange } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
@@ -260,6 +260,27 @@ export class FinancialDataService {
     }
 
     return result || []
+  }
+
+  /**
+   * Get fundamental ratios using fallback service
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    const cacheKey = `fundamental_${symbol.toUpperCase()}`
+
+    // Check cache first (longer TTL for fundamental data)
+    const cached = this.getFromCache<FundamentalRatios>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    // Use fallback service for fundamental ratios
+    const result = await this.fallbackService.getFundamentalRatios(symbol)
+    if (result) {
+      this.setCache(cacheKey, result)
+    }
+
+    return result
   }
 
   /**
