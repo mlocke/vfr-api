@@ -722,10 +722,11 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private async fetchSingleStockData(symbol: string, options?: SelectionOptions): Promise<any> {
     try {
       // Fetch real market data using financialDataService
-      const [stockPrice, companyInfo, marketData, analystRatings, priceTargets] = await Promise.all([
+      const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets] = await Promise.all([
         financialDataService.getStockPrice(symbol),
         financialDataService.getCompanyInfo(symbol),
         financialDataService.getMarketData(symbol),
+        financialDataService.getFundamentalRatios ? financialDataService.getFundamentalRatios(symbol) : null,
         financialDataService.getAnalystRatings ? financialDataService.getAnalystRatings(symbol) : null,
         financialDataService.getPriceTargets ? financialDataService.getPriceTargets(symbol) : null
       ])
@@ -772,11 +773,32 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
           currentPrice: priceTargets.currentPrice
         } : null,
 
+        // Fundamental ratios integration
+        fundamentalRatios: fundamentalRatios ? {
+          peRatio: fundamentalRatios.peRatio,
+          pegRatio: fundamentalRatios.pegRatio,
+          pbRatio: fundamentalRatios.pbRatio,
+          priceToSales: fundamentalRatios.priceToSales,
+          priceToFreeCashFlow: fundamentalRatios.priceToFreeCashFlow,
+          debtToEquity: fundamentalRatios.debtToEquity,
+          currentRatio: fundamentalRatios.currentRatio,
+          quickRatio: fundamentalRatios.quickRatio,
+          roe: fundamentalRatios.roe,
+          roa: fundamentalRatios.roa,
+          grossProfitMargin: fundamentalRatios.grossProfitMargin,
+          operatingMargin: fundamentalRatios.operatingMargin,
+          netProfitMargin: fundamentalRatios.netProfitMargin,
+          dividendYield: fundamentalRatios.dividendYield,
+          payoutRatio: fundamentalRatios.payoutRatio,
+          period: fundamentalRatios.period || 'ttm'
+        } : null,
+
         // Data quality tracking
         sourceBreakdown: {
           stockPrice: stockPrice.source,
           companyInfo: companyInfo ? 'available' : 'missing',
           marketData: marketData.source,
+          fundamentalRatios: fundamentalRatios?.source || 'unavailable',
           analystRatings: analystRatings?.source || 'unavailable',
           priceTargets: priceTargets?.source || 'unavailable'
         },
@@ -830,6 +852,31 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
+    // Fundamental ratio warnings
+    if (additionalData?.fundamentalRatios) {
+      const ratios = additionalData.fundamentalRatios
+
+      if (ratios.peRatio && ratios.peRatio > 40) {
+        warnings.push('High P/E ratio suggests potential overvaluation')
+      }
+
+      if (ratios.debtToEquity && ratios.debtToEquity > 2.0) {
+        warnings.push('High debt-to-equity ratio indicates financial risk')
+      }
+
+      if (ratios.currentRatio && ratios.currentRatio < 1.0) {
+        warnings.push('Poor liquidity - current ratio below 1.0')
+      }
+
+      if (ratios.roe && ratios.roe < 0) {
+        warnings.push('Negative return on equity indicates poor profitability')
+      }
+
+      if (ratios.grossProfitMargin && ratios.grossProfitMargin < 0.1) {
+        warnings.push('Low gross profit margin suggests pricing pressure')
+      }
+    }
+
     // Price target warnings
     if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside < -15) {
       warnings.push('Stock trading significantly above analyst price targets')
@@ -861,6 +908,31 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // Price target opportunities
     if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside > 20) {
       opportunities.push(`Significant upside potential: ${additionalData.priceTargets.upside.toFixed(1)}%`)
+    }
+
+    // Fundamental ratio opportunities
+    if (additionalData?.fundamentalRatios) {
+      const ratios = additionalData.fundamentalRatios
+
+      if (ratios.peRatio && ratios.pegRatio && ratios.pegRatio < 1.0 && ratios.peRatio < 20) {
+        opportunities.push('Attractive PEG ratio suggests undervalued growth stock')
+      }
+
+      if (ratios.roe && ratios.roe > 0.15) {
+        opportunities.push('Strong return on equity indicates efficient management')
+      }
+
+      if (ratios.currentRatio && ratios.currentRatio > 2.0 && ratios.quickRatio && ratios.quickRatio > 1.5) {
+        opportunities.push('Strong liquidity position provides financial flexibility')
+      }
+
+      if (ratios.grossProfitMargin && ratios.grossProfitMargin > 0.4) {
+        opportunities.push('High gross margin indicates strong pricing power')
+      }
+
+      if (ratios.dividendYield && ratios.dividendYield > 0.03 && ratios.payoutRatio && ratios.payoutRatio < 0.6) {
+        opportunities.push('Attractive dividend yield with sustainable payout ratio')
+      }
     }
 
     return opportunities

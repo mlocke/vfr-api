@@ -3,7 +3,7 @@
  * Implements a chain of free data sources with automatic failover
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
 import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
@@ -473,5 +473,35 @@ export class FallbackDataService implements FinancialDataProvider {
 
     console.warn(`⚠️ No rating changes available for ${symbol}`)
     return []
+  }
+
+  /**
+   * Get fundamental ratios with fallback (FMP primary)
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    // Prioritize sources that support fundamental ratios
+    const fundamentalSources = this.dataSources.filter(source =>
+      ['Financial Modeling Prep'].includes(source.name)
+    )
+
+    for (const source of fundamentalSources) {
+      if (!this.canMakeRequest(source)) continue
+
+      try {
+        if (source.provider.getFundamentalRatios) {
+          const data = await source.provider.getFundamentalRatios(symbol)
+          if (data) {
+            this.recordRequest(source)
+            console.log(`📊 Fundamental ratios from ${source.name} for ${symbol}: P/E=${data.peRatio?.toFixed(2) || 'N/A'}, P/B=${data.pbRatio?.toFixed(2) || 'N/A'}`)
+            return data
+          }
+        }
+      } catch (error) {
+        console.error(`${source.name} fundamental ratios failed:`, error)
+      }
+    }
+
+    console.warn(`⚠️ No fundamental ratios available for ${symbol}`)
+    return null
   }
 }
