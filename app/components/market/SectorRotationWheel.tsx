@@ -23,10 +23,7 @@ export default function SectorRotationWheel({ className = '' }: SectorRotationWh
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    fetchSectorData()
-    const interval = setInterval(fetchSectorData, 120000) // Update every 2 minutes
-
-    return () => clearInterval(interval)
+    fetchSectorData() // Only fetch on initial load
   }, [])
 
   useEffect(() => {
@@ -159,8 +156,12 @@ export default function SectorRotationWheel({ className = '' }: SectorRotationWh
     }
   }
 
-  const handleSectorClick = (sector: SectorData) => {
+  const handleSectorClick = async (sector: SectorData) => {
     setSelectedSector(selectedSector?.symbol === sector.symbol ? null : sector)
+
+    // Refresh data when a sector is clicked
+    // This provides updated data on-demand without constant polling
+    await fetchSectorData()
   }
 
   const formatMarketCap = (value: number): string => {

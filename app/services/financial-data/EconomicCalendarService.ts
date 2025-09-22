@@ -427,59 +427,78 @@ export class EconomicCalendarService {
    */
   private calculateEventDates(eventTemplate: any, startDate: Date, endDate: Date): Date[] {
     const dates: Date[] = []
-    const current = new Date(startDate)
 
-    while (current <= endDate) {
-      let eventDate: Date | null = null
+    // For monthly events, iterate month by month
+    if (eventTemplate.schedule === 'monthly' || eventTemplate.schedule === 'first_friday' ||
+        eventTemplate.schedule === 'last_tuesday' || eventTemplate.schedule === 'quarterly') {
 
-      switch (eventTemplate.schedule) {
-        case 'monthly':
-          if (eventTemplate.dayRange) {
-            // Find date within day range for current month
-            for (let day = eventTemplate.dayRange[0]; day <= eventTemplate.dayRange[1]; day++) {
-              const testDate = new Date(current.getFullYear(), current.getMonth(), day)
-              if (testDate >= startDate && testDate <= endDate && this.isWeekday(testDate)) {
-                eventDate = testDate
-                break
+      const currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+      const endMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0)
+
+      while (currentMonth <= endMonth) {
+        let eventDate: Date | null = null
+
+        switch (eventTemplate.schedule) {
+          case 'monthly':
+            if (eventTemplate.dayRange) {
+              // Find date within day range for current month
+              for (let day = eventTemplate.dayRange[0]; day <= eventTemplate.dayRange[1]; day++) {
+                const testDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+                if (testDate >= startDate && testDate <= endDate && this.isWeekday(testDate)) {
+                  eventDate = testDate
+                  break
+                }
               }
             }
-          }
-          break
+            break
 
-        case 'first_friday':
-          eventDate = this.getFirstFridayOfMonth(current)
-          break
+          case 'first_friday':
+            eventDate = this.getFirstFridayOfMonth(currentMonth)
+            break
 
-        case 'last_tuesday':
-          eventDate = this.getLastTuesdayOfMonth(current)
-          break
+          case 'last_tuesday':
+            eventDate = this.getLastTuesdayOfMonth(currentMonth)
+            break
 
-        case 'weekly_thursday':
-          if (current.getDay() === 4) { // Thursday
-            eventDate = new Date(current)
-          }
-          break
+          case 'quarterly':
+            // GDP releases are typically 30 days after quarter end
+            const month = currentMonth.getMonth()
+            const isGDPReleaseMonth = month === 3 || month === 6 || month === 9 || month === 0 // Apr, Jul, Oct, Jan
+            if (isGDPReleaseMonth) {
+              // Set to end of month for GDP releases
+              eventDate = new Date(currentMonth.getFullYear(), month, 28)
+              while (!this.isWeekday(eventDate) && eventDate.getDate() > 25) {
+                eventDate.setDate(eventDate.getDate() - 1)
+              }
+            }
+            break
+        }
 
-        case 'quarterly':
-          // GDP releases are typically 30 days after quarter end
-          // Check if we're in the right month and it's a reasonable release date
-          const month = current.getMonth()
-          const isGDPReleaseMonth = month === 3 || month === 6 || month === 9 || month === 0 // Apr, Jul, Oct, Jan
-          if (isGDPReleaseMonth && current.getDate() >= 25 && current.getDate() <= 31 && this.isWeekday(current)) {
-            eventDate = new Date(current)
-          }
-          break
+        if (eventDate && eventDate >= startDate && eventDate <= endDate) {
+          // Set the time
+          const [hours, minutes] = eventTemplate.time.split(':')
+          eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          dates.push(new Date(eventDate))
+        }
+
+        // Move to next month
+        currentMonth.setMonth(currentMonth.getMonth() + 1)
       }
 
-      if (eventDate && eventDate >= startDate && eventDate <= endDate) {
-        // Set the time
-        const [hours, minutes] = eventTemplate.time.split(':')
-        eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-        dates.push(new Date(eventDate))
-      }
+    } else if (eventTemplate.schedule === 'weekly_thursday') {
+      // For weekly events, iterate day by day
+      const current = new Date(startDate)
 
-      // Move to next day
-      current.setDate(current.getDate() + 1)
+      while (current <= endDate) {
+        if (current.getDay() === 4) { // Thursday
+          const eventDate = new Date(current)
+          const [hours, minutes] = eventTemplate.time.split(':')
+          eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          dates.push(eventDate)
+        }
+        // Move to next day
+        current.setDate(current.getDate() + 1)
+      }
     }
 
     return dates
