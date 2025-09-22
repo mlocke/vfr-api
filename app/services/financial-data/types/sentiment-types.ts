@@ -278,3 +278,58 @@ export interface RedditAPIResponse {
     }>
   }
 }
+
+// Enhanced Reddit API Types for Multi-Subreddit Analysis
+export interface SubredditConfig {
+  name: string
+  weight: number // 0-1, higher weight = more influence on final score
+  analysisQuality: 'high' | 'medium' | 'low' // Quality of financial analysis
+  postLimit: number // Number of posts to fetch per search
+  enabled: boolean
+}
+
+export interface MultiSubredditSentimentData extends RedditSentimentData {
+  subredditBreakdown: Array<{
+    subreddit: string
+    sentiment: number
+    confidence: number
+    postCount: number
+    weight: number
+    contributionScore: number // weighted contribution to final score
+  }>
+  weightedSentiment: number // Final weighted sentiment across all subreddits
+  totalWeight: number // Sum of all active subreddit weights
+  diversityScore: number // 0-1, how diverse sentiment is across subreddits
+}
+
+export interface SubredditAnalysisResult {
+  subreddit: string
+  success: boolean
+  data?: RedditSentimentData
+  error?: string
+  responseTime: number
+  weight: number
+}
+
+export interface EnhancedRedditConfig {
+  subreddits: SubredditConfig[]
+  parallelProcessing: {
+    maxConcurrency: number
+    timeoutPerRequest: number // milliseconds
+    retryAttempts: number
+  }
+  rateLimiting: {
+    requestsPerMinute: number
+    burstLimit: number
+    cooldownPeriod: number // milliseconds
+  }
+  analysis: {
+    minimumPostsThreshold: number
+    confidenceThreshold: number
+    diversityWeighting: boolean
+  }
+  fallback: {
+    enableSingleSubredditFallback: boolean
+    fallbackSubreddit: string
+  }
+}
