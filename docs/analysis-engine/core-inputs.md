@@ -105,7 +105,7 @@
 
 **Social Media Sentiment:**
 
-* Reddit mentions and sentiment (WallStreetBets, investing subreddits)
+* Reddit mentions and sentiment (WallStreetBets, investing subreddits) ✅ IMPLEMENTED (WSB sentiment API with performance testing)
 * Twitter/X financial discussions
 * Discord and Telegram trading groups
 * StockTwits sentiment scores
@@ -246,7 +246,7 @@
 1. Institutional holdings (13F data)
 2. Insider trading data
 3. Earnings estimates/surprises
-4. Social sentiment scores
+4. Social sentiment scores ✅ IMPLEMENTED (Reddit WSB sentiment analysis with admin dashboard performance testing)
 5. Sector rotation data
 6. Economic indicators (GDP, CPI, unemployment)
 

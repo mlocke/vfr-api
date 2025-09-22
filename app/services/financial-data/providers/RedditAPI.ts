@@ -11,6 +11,7 @@ import {
   RedditAPIResponse,
   SentimentAnalysisConfig
 } from '../types/sentiment-types'
+import { SecurityValidator } from '../../security/SecurityValidator'
 
 export class RedditAPI implements FinancialDataProvider {
   name = 'RedditAPI'
@@ -23,6 +24,7 @@ export class RedditAPI implements FinancialDataProvider {
   private tokenExpiry: number = 0
   private timeout: number
   private throwErrors: boolean
+  private securityValidator: SecurityValidator
 
   constructor(
     clientId?: string,
@@ -36,6 +38,7 @@ export class RedditAPI implements FinancialDataProvider {
     this.userAgent = userAgent || process.env.REDDIT_USER_AGENT || 'VFR-API/1.0'
     this.timeout = timeout
     this.throwErrors = throwErrors
+    this.securityValidator = SecurityValidator.getInstance()
 
     if (!this.clientId || !this.clientSecret) {
       console.warn('Reddit API credentials missing. Set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET.')
@@ -76,7 +79,7 @@ export class RedditAPI implements FinancialDataProvider {
       this.accessToken = data.access_token
       this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000 // 1 min buffer
 
-      return this.accessToken
+      return this.accessToken!
     } catch (error) {
       console.error('Reddit OAuth error:', error)
       throw new Error('Failed to authenticate with Reddit API')
@@ -226,7 +229,20 @@ export class RedditAPI implements FinancialDataProvider {
    */
   async getWSBSentiment(symbol: string): Promise<ApiResponse<RedditSentimentData>> {
     try {
-      const posts = await this.searchWSBPosts(symbol, 20)
+      // Validate symbol to prevent injection attacks
+      const validation = this.securityValidator.validateSymbol(symbol)
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: `Invalid symbol: ${validation.errors.join(', ')}`,
+          source: this.name,
+          timestamp: Date.now()
+        }
+      }
+
+      // Use sanitized symbol for search
+      const sanitizedSymbol = validation.sanitized || symbol
+      const posts = await this.searchWSBPosts(sanitizedSymbol, 20)
 
       if (!posts.success || !posts.data) {
         throw new Error('Failed to fetch WSB posts')
@@ -234,6 +250,30 @@ export class RedditAPI implements FinancialDataProvider {
 
       // Basic sentiment analysis based on Reddit metrics
       const totalPosts = posts.data.length
+
+      // Handle case where no posts are found to prevent NaN values
+      if (totalPosts === 0) {
+        const sentimentData: RedditSentimentData = {
+          symbol,
+          sentiment: 0.5, // Neutral sentiment when no data available
+          confidence: 0, // Zero confidence with no posts
+          postCount: 0,
+          avgScore: 0,
+          avgUpvoteRatio: 0.5, // Neutral upvote ratio
+          totalComments: 0,
+          timeframe: '7d',
+          lastUpdated: Date.now(),
+          topPosts: []
+        }
+
+        return {
+          success: true,
+          data: sentimentData,
+          source: this.name,
+          timestamp: Date.now()
+        }
+      }
+
       const avgScore = posts.data.reduce((sum, post) => sum + post.score, 0) / totalPosts
       const avgUpvoteRatio = posts.data.reduce((sum, post) => sum + post.upvote_ratio, 0) / totalPosts
       const totalComments = posts.data.reduce((sum, post) => sum + post.num_comments, 0)

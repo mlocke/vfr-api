@@ -955,7 +955,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -1000,6 +1000,9 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'market_indices':
           apiInstance = new MarketIndicesService()
           break
+        case 'reddit':
+          apiInstance = new RedditAPI(undefined, undefined, undefined, timeout, true)
+          break
       }
 
       // Make 5 rapid requests to test performance
@@ -1033,6 +1036,23 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
                 request: i + 1,
                 responseTime: Date.now() - startTime,
                 success: response.ok
+              }))
+              .catch(() => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: false
+              }))
+          )
+        } else if (dataSourceId === 'reddit') {
+          // Reddit uses sentiment analysis instead of stock price
+          const testSymbols = ['AAPL', 'TSLA', 'GME', 'NVDA', 'MSFT']
+          const testSymbol = testSymbols[i % testSymbols.length] // Rotate through symbols
+          requests.push(
+            apiInstance.getWSBSentiment(testSymbol)
+              .then((result: any) => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: !!(result && result.success)
               }))
               .catch(() => ({
                 request: i + 1,

@@ -3,7 +3,7 @@
  * Tests the connection between economic data and stock analysis
  */
 
-import MacroeconomicAnalysisService from './app/services/financial-data/MacroeconomicAnalysisService.js'
+import { MacroeconomicAnalysisService } from './app/services/financial-data/MacroeconomicAnalysisService.js'
 import { FREDAPI } from './app/services/financial-data/FREDAPI.js'
 import { BLSAPI } from './app/services/financial-data/BLSAPI.js'
 import { EIAAPI } from './app/services/financial-data/EIAAPI.js'

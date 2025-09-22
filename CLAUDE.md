@@ -94,6 +94,7 @@ src/
 | Premium | Polygon.io, Alpha Vantage, FMP | 250-5000/day | Primary data | `app/services/financial-data/` |
 | Enhanced | EODHD, TwelveData | 100k/day, 800/day | Secondary + ratios | `FallbackDataService.ts` |
 | Government | SEC EDGAR, FRED, BLS, EIA | Unlimited | Institutional/macro | `SECEdgarAPI.ts` |
+| Social Intelligence | Reddit WSB Sentiment | Unlimited | Social sentiment analysis | `RedditAPI.ts` |
 | Backup | Yahoo Finance | N/A | Fallback only | Integrated |
 
 ### Core Services
@@ -103,6 +104,7 @@ src/
 | InstitutionalDataService | `app/services/financial-data/InstitutionalDataService.ts` | 13F holdings + Form 4 insider trading |
 | MacroeconomicAnalysisService | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA macroeconomic data integration |
 | CurrencyDataService | `app/services/financial-data/CurrencyDataService.ts` | International currency data and analysis |
+| RedditAPI | `app/services/financial-data/providers/RedditAPI.ts` | WSB sentiment analysis with performance testing |
 | SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
 | CacheService | `app/services/cache/` | Redis + in-memory fallback |
@@ -135,8 +137,9 @@ src/
 
 ### Admin Management
 - **Data Source Control**: Toggle APIs on/off, test connections, monitor health
-- **Real-time Testing**: Direct API calls with comprehensive test types
+- **Real-time Testing**: Direct API calls with comprehensive test types (connection, data, performance, comprehensive)
 - **Performance Monitoring**: Response times, success rates, error tracking
+- **Reddit WSB Integration**: Full performance testing support with sentiment analysis across multiple symbols ['AAPL', 'TSLA', 'GME', 'NVDA', 'MSFT']
 - **Configuration**: Persistent state management in `.admin-datasource-states.json`
 
 ## Database Architecture
@@ -242,6 +245,7 @@ src/
 | FRED API | `app/services/financial-data/FREDAPI.ts` | Enhanced Federal Reserve data |
 | BLS API | `app/services/financial-data/BLSAPI.ts` | Bureau of Labor Statistics data |
 | EIA API | `app/services/financial-data/EIAAPI.ts` | Energy Information Administration data |
+| Reddit WSB API | `app/services/financial-data/providers/RedditAPI.ts` | WSB sentiment analysis with performance testing |
 | Security | `app/services/security/SecurityValidator.ts` | OWASP protection |
 | Error Handling | `app/services/error-handling/ErrorHandler.ts` | Centralized errors |
 | Caching | `app/services/cache/RedisCache.ts` | Redis + fallback |

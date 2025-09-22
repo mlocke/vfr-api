@@ -161,35 +161,32 @@ export default function DeepAnalysisPage() {
     setAnalysisResult(null)
 
     try {
-      // Build request based on analysis type
-      const request: AnalysisRequest = {
-        scope: {
-          mode: analysisType === 'sector' ? SelectionMode.SECTOR_ANALYSIS :
-                (tickerInput.split(',').filter(t => t.trim()).length === 1 ? SelectionMode.SINGLE_STOCK : SelectionMode.MULTIPLE_STOCKS),
-          maxResults: analysisType === 'sector' ? 20 : undefined
-        },
-        options: {
-          useRealTimeData: true,
-          includeSentiment: true,
-          includeNews: true,
-          timeout: analysisType === 'sector' ? 30000 :
-                   (tickerInput.split(',').filter(t => t.trim()).length === 1 ? 5000 : 30000)
-        }
-      }
+      // Build request in the format expected by the API
+      let request: any = {}
 
-      // Add sector or symbols based on analysis type
       if (analysisType === 'sector' && selectedSector) {
-        request.scope.sector = {
-          id: selectedSector.id,
-          label: selectedSector.label,
-          description: selectedSector.description,
-          category: selectedSector.category
+        request = {
+          mode: 'sector',
+          sector: selectedSector.id,
+          limit: 20
         }
       } else if (analysisType === 'tickers' && tickerInput.trim()) {
         const symbols = tickerInput.split(',')
           .map(t => t.trim().toUpperCase())
           .filter(t => t.length > 0)
-        request.scope.symbols = symbols
+
+        if (symbols.length === 1) {
+          request = {
+            mode: 'single',
+            symbols: symbols
+          }
+        } else {
+          request = {
+            mode: 'multiple',
+            symbols: symbols,
+            limit: Math.min(symbols.length, 10)
+          }
+        }
       }
 
       console.log('🚀 Sending analysis request:', request)

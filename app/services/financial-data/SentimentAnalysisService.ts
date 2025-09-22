@@ -7,6 +7,7 @@
 import NewsAPI from './providers/NewsAPI'
 import RedditAPI from './providers/RedditAPI'
 import { RedisCache } from '../cache/RedisCache'
+import { SecurityValidator } from '../security/SecurityValidator'
 import {
   SentimentIndicators,
   SentimentScore,
@@ -24,6 +25,7 @@ export class SentimentAnalysisService {
   private redditAPI: RedditAPI | null
   private cache: RedisCache
   private config: SentimentConfig
+  private securityValidator: SecurityValidator
 
   constructor(
     newsAPI: NewsAPI,
@@ -34,6 +36,7 @@ export class SentimentAnalysisService {
     this.redditAPI = redditAPI || null
     this.cache = cache
     this.config = this.createDefaultConfig()
+    this.securityValidator = new SecurityValidator()
 
     // Initialize Reddit API if credentials are available
     if (!this.redditAPI && process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
@@ -51,10 +54,19 @@ export class SentimentAnalysisService {
    */
   async analyzeStockSentimentImpact(symbol: string, sector: string, baseScore: number): Promise<StockSentimentImpact | null> {
     try {
-      console.log(`📰 Analyzing sentiment impact for ${symbol} (${sector})`)
+      // Validate symbol first to prevent injection attacks
+      const validation = this.securityValidator.validateSymbol(symbol)
+      if (!validation.isValid) {
+        console.warn(`Invalid symbol rejected: ${validation.errors.join(', ')}`)
+        return null
+      }
+
+      // Use sanitized symbol
+      const sanitizedSymbol = validation.sanitized || symbol
+      console.log(`📰 Analyzing sentiment impact for ${sanitizedSymbol} (${sector})`)
 
       // Get current sentiment indicators
-      const indicators = await this.getSentimentIndicators(symbol)
+      const indicators = await this.getSentimentIndicators(sanitizedSymbol)
       if (!indicators) {
         console.warn('Unable to get sentiment indicators')
         return null
@@ -145,8 +157,18 @@ export class SentimentAnalysisService {
    */
   async getSentimentIndicators(symbol: string): Promise<SentimentIndicators | null> {
     try {
+      // Validate symbol first to prevent injection attacks
+      const validation = this.securityValidator.validateSymbol(symbol)
+      if (!validation.isValid) {
+        console.warn(`Invalid symbol rejected: ${validation.errors.join(', ')}`)
+        return null
+      }
+
+      // Use sanitized symbol
+      const sanitizedSymbol = validation.sanitized || symbol
+
       // Check cache first
-      const cacheKey = `sentiment:indicators:${symbol}`
+      const cacheKey = `sentiment:indicators:${sanitizedSymbol}`
       const cached = await this.getCachedData(cacheKey)
       if (cached) {
         return cached
@@ -155,26 +177,40 @@ export class SentimentAnalysisService {
       console.log('📊 Fetching fresh sentiment indicators...')
 
       // Fetch news sentiment
-      const newsData = await this.getNewsSentiment(symbol)
+      const newsData = await this.getNewsSentiment(sanitizedSymbol)
 
       // Fetch Reddit sentiment if available
       let redditData: RedditSentimentData | undefined
       if (this.redditAPI) {
         try {
           console.log('📱 Fetching WSB sentiment from Reddit...')
-          const redditResponse = await this.redditAPI.getWSBSentiment(symbol)
+          const redditResponse = await this.redditAPI.getWSBSentiment(sanitizedSymbol)
+
+          // Check for validation errors (security failures)
+          if (!redditResponse.success && redditResponse.error?.includes('Invalid symbol')) {
+            // Symbol validation failed - likely injection attempt
+            console.warn('Symbol validation failed - potential security issue')
+            return null
+          }
+
           if (redditResponse.success && redditResponse.data) {
             redditData = redditResponse.data
             console.log(`✅ Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts)`)
+
+            // Filter out Reddit data with zero confidence (no posts found)
+            if (redditData.confidence === 0) {
+              console.log('📊 Reddit data has zero confidence, excluding from analysis')
+              redditData = undefined
+            }
           }
         } catch (error) {
           console.warn('Reddit sentiment fetch failed:', error)
         }
       }
 
-      // Check if we have any sentiment data
+      // Check if we have any meaningful sentiment data
       if (!newsData && !redditData) {
-        console.warn('No sentiment data available from any source')
+        console.warn('No meaningful sentiment data available from any source')
         return null
       }
 

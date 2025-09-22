@@ -957,4 +957,78 @@ export class MacroeconomicAnalysisService {
       }
     }
   }
+
+  /**
+   * Analyze macroeconomic impact on a specific stock/sector
+   */
+  async analyzeStockMacroImpact(
+    symbol: string,
+    sector: string,
+    currentPrice: number
+  ): Promise<{
+    score: number;
+    impact: 'positive' | 'negative' | 'neutral';
+    factors: string[];
+    confidence: number;
+    macroScore: number;
+    sectorImpact: number;
+    adjustedScore: number;
+  }> {
+    try {
+      // Get current macro context
+      const macroContext = await this.getMacroeconomicContext()
+
+      if (!macroContext) {
+        throw new Error('Unable to get macroeconomic context')
+      }
+
+      // Sector-specific impact mapping
+      const sectorMultiplier = macroContext.sectorImpacts[sector] || 1.0
+
+      // Calculate base impact score
+      let impactScore = macroContext.overallScore * sectorMultiplier
+
+      // Determine overall impact
+      let impact: 'positive' | 'negative' | 'neutral' = 'neutral'
+      if (impactScore > 6.5) impact = 'positive'
+      else if (impactScore < 4.5) impact = 'negative'
+
+      // Generate relevant factors
+      const factors: string[] = []
+
+      if (macroContext.inflationEnvironment === 'high') {
+        factors.push('High inflation environment may pressure margins')
+      }
+      if (macroContext.monetaryPolicy === 'restrictive') {
+        factors.push('Restrictive monetary policy may limit growth')
+      }
+      if (macroContext.economicCycle === 'expansion') {
+        factors.push('Economic expansion supports growth')
+      }
+
+      const adjustedScore = Math.round(impactScore * 10) / 10
+
+      return {
+        score: adjustedScore,
+        impact,
+        factors,
+        confidence: macroContext.confidence,
+        macroScore: macroContext.overallScore,
+        sectorImpact: sectorMultiplier,
+        adjustedScore
+      }
+
+    } catch (error) {
+      console.error('Error in analyzeStockMacroImpact:', error)
+      return {
+        score: 5.0,
+        impact: 'neutral',
+        factors: ['Macro analysis unavailable'],
+        confidence: 0.1,
+        macroScore: 5.0,
+        sectorImpact: 1.0,
+        adjustedScore: 5.0
+      }
+    }
+  }
 }

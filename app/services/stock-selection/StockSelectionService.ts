@@ -30,8 +30,9 @@ import { AlgorithmCache } from '../algorithms/AlgorithmCache'
 import { SelectionResult, StockScore } from '../algorithms/types'
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
 import SecurityValidator from '../security/SecurityValidator'
-import MacroeconomicAnalysisService from '../financial-data/MacroeconomicAnalysisService'
+import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
+import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
  * Main Stock Selection Service
@@ -46,6 +47,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private activeRequests: Map<string, AbortController> = new Map()
   private macroeconomicService?: MacroeconomicAnalysisService
   private sentimentService?: SentimentAnalysisService
+  private errorHandler: ErrorHandler
 
   constructor(
     fallbackDataService: FallbackDataService,
@@ -62,6 +64,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.config = this.createDefaultConfig()
     this.macroeconomicService = macroeconomicService
     this.sentimentService = sentimentService
+    this.errorHandler = new ErrorHandler()
 
     // Initialize algorithm cache with proper config structure
     const algorithmCache = new AlgorithmCache({
@@ -837,7 +840,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       if (timestampMatch) {
         const requestTime = parseInt(timestampMatch[1])
         if (now - requestTime > staleThreshold) {
-          this.errorHandler.logger.warn(`Cleaning up stale request: ${requestId}`, {
+          console.warn(`Cleaning up stale request: ${requestId}`, {
             requestId,
             age: now - requestTime,
             threshold: staleThreshold
@@ -1564,7 +1567,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
-      this.errorHandler.logger.error('Unhandled rejection in StockSelectionService', {
+      console.error('Unhandled rejection in StockSelectionService', {
         reason,
         promise: promise.toString()
       })

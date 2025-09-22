@@ -60,7 +60,16 @@
       "Bash(npm run type-check:*)",
       "Bash(node:*)",
       "mcp__context7__resolve-library-id",
-      "Bash(sudo pkill:*)"
+      "Bash(sudo pkill:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(timeout 15 npm run dev)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_console_messages",
+      "WebFetch(domain:developers.google.com)"
     ],
     "deny": [],
     "ask": []
