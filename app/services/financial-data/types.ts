@@ -417,3 +417,70 @@ export interface InsiderTrading {
   date: string
   insider: string
 }
+
+/**
+ * Currency Data Service Types
+ * Supporting currency analysis and sector correlation intelligence
+ */
+
+export interface CurrencyContext {
+  dxyStrength: number        // Dollar Index strength 0-10
+  currencyTrend: string      // 'strengthening', 'weakening', 'stable'
+  sectorImpacts: Record<string, number> // Sector-specific multipliers
+  confidence: number         // Data quality confidence 0-1
+  lastUpdate: string         // ISO timestamp
+}
+
+export interface CurrencyPair {
+  symbol: string             // e.g., 'EURUSD', 'USDJPY'
+  rate: number              // Current exchange rate
+  change: number            // Change from previous close
+  changePercent: number     // Percentage change
+  bid?: number              // Bid price
+  ask?: number              // Ask price
+  timestamp: number         // Unix timestamp
+  source: string            // Data source identifier
+}
+
+export interface DollarIndex {
+  value: number             // Current DXY value
+  change: number            // Change from previous close
+  changePercent: number     // Percentage change
+  strength: number          // Normalized strength score 0-10
+  trend: 'strengthening' | 'weakening' | 'stable'
+  timestamp: number         // Unix timestamp
+  source: string            // Data source identifier
+}
+
+export interface CurrencyStrength {
+  currency: string          // Currency code (USD, EUR, JPY, etc.)
+  strengthScore: number     // Relative strength 0-10
+  momentum: number          // Recent momentum -10 to +10
+  volatility: number        // Volatility measure 0-10
+  trend: 'bullish' | 'bearish' | 'neutral'
+  lastUpdate: number        // Unix timestamp
+}
+
+export interface SectorCurrencyImpact {
+  sector: string            // Sector name
+  currencyExposure: number  // Currency exposure coefficient -1 to +1
+  usdStrengthMultiplier: number // Impact multiplier when USD strengthens
+  correlationScore: number  // Historical correlation strength 0-1
+  impactDescription: string // Human-readable impact explanation
+  riskLevel: 'low' | 'medium' | 'high'
+}
+
+export interface CurrencyAnalysis {
+  dxyIndex: DollarIndex
+  majorPairs: CurrencyPair[]
+  currencyStrengths: CurrencyStrength[]
+  sectorImpacts: SectorCurrencyImpact[]
+  marketSentiment: {
+    riskOn: boolean         // Risk-on vs risk-off sentiment
+    flightToQuality: number // Safe haven demand 0-10
+    carryTradeViability: number // Carry trade attractiveness 0-10
+  }
+  timestamp: number
+  confidence: number        // Overall data confidence 0-1
+  source: string
+}
