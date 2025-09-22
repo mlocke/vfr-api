@@ -5,6 +5,7 @@
  */
 
 import NewsAPI from './providers/NewsAPI'
+import RedditAPI from './providers/RedditAPI'
 import { RedisCache } from '../cache/RedisCache'
 import {
   SentimentIndicators,
@@ -14,21 +15,35 @@ import {
   BulkSentimentAnalysisResponse,
   SentimentConfig,
   SentimentCache,
-  NewsSentimentData
+  NewsSentimentData,
+  RedditSentimentData
 } from './types/sentiment-types'
 
 export class SentimentAnalysisService {
   private newsAPI: NewsAPI
+  private redditAPI: RedditAPI | null
   private cache: RedisCache
   private config: SentimentConfig
 
   constructor(
     newsAPI: NewsAPI,
-    cache: RedisCache
+    cache: RedisCache,
+    redditAPI?: RedditAPI
   ) {
     this.newsAPI = newsAPI
+    this.redditAPI = redditAPI || null
     this.cache = cache
     this.config = this.createDefaultConfig()
+
+    // Initialize Reddit API if credentials are available
+    if (!this.redditAPI && process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
+      try {
+        this.redditAPI = new RedditAPI()
+        console.log('Reddit API initialized for WSB sentiment analysis')
+      } catch (error) {
+        console.warn('Failed to initialize Reddit API:', error)
+      }
+    }
   }
 
   /**
@@ -142,15 +157,77 @@ export class SentimentAnalysisService {
       // Fetch news sentiment
       const newsData = await this.getNewsSentiment(symbol)
 
-      if (!newsData) {
-        console.warn('No sentiment data available')
+      // Fetch Reddit sentiment if available
+      let redditData: RedditSentimentData | undefined
+      if (this.redditAPI) {
+        try {
+          console.log('📱 Fetching WSB sentiment from Reddit...')
+          const redditResponse = await this.redditAPI.getWSBSentiment(symbol)
+          if (redditResponse.success && redditResponse.data) {
+            redditData = redditResponse.data
+            console.log(`✅ Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts)`)
+          }
+        } catch (error) {
+          console.warn('Reddit sentiment fetch failed:', error)
+        }
+      }
+
+      // Check if we have any sentiment data
+      if (!newsData && !redditData) {
+        console.warn('No sentiment data available from any source')
         return null
       }
 
+      // Calculate aggregated score with dynamic weighting
+      const newsWeight = this.config.weights.news
+      const redditWeight = this.config.weights.reddit
+
+      let aggregatedScore = 0
+      let totalWeight = 0
+      let baseConfidence = 0
+
+      // Add news sentiment if available
+      if (newsData) {
+        aggregatedScore += this.normalizeToZeroOne(newsData.sentiment) * newsWeight
+        totalWeight += newsWeight
+        baseConfidence = newsData.confidence
+      }
+
+      // Add Reddit sentiment if available
+      if (redditData) {
+        aggregatedScore += redditData.sentiment * redditWeight
+        totalWeight += redditWeight
+
+        // If no news data, use Reddit confidence as base
+        if (!newsData) {
+          baseConfidence = redditData.confidence
+        }
+      }
+
+      // Normalize by total weight
+      aggregatedScore = totalWeight > 0 ? aggregatedScore / totalWeight : 0.5
+
+      // Calculate confidence (higher with multiple sources)
+      const multiSourceBonus = (newsData && redditData) ? 0.1 : 0 // 10% bonus for having both sources
+      const confidence = Math.min(baseConfidence + multiSourceBonus, 1.0)
+
+      // Create fallback news data if needed (for Reddit-only sentiment)
+      const finalNewsData = newsData || {
+        symbol,
+        sentiment: 0, // Neutral sentiment when no news available
+        confidence: 0.1,
+        articleCount: 0,
+        sources: [],
+        keyTopics: [],
+        timeframe: '1d',
+        lastUpdated: Date.now()
+      }
+
       const indicators: SentimentIndicators = {
-        news: newsData,
-        aggregatedScore: this.normalizeToZeroOne(newsData.sentiment),
-        confidence: newsData.confidence,
+        news: finalNewsData,
+        reddit: redditData,
+        aggregatedScore,
+        confidence,
         lastUpdated: Date.now()
       }
 
@@ -185,9 +262,23 @@ export class SentimentAnalysisService {
     const warnings: string[] = []
     const opportunities: string[] = []
 
-    // For now, sentiment is based only on news (can expand later)
+    // Calculate weighted sentiment from multiple sources
     const newsScore = this.normalizeToZeroOne(indicators.news.sentiment)
-    const overall = newsScore
+    let redditScore = 0
+
+    if (indicators.reddit) {
+      redditScore = indicators.reddit.sentiment
+      reasoning.push(`Reddit WSB sentiment: ${(redditScore * 100).toFixed(0)}% (${indicators.reddit.postCount} posts)`)
+
+      if (redditScore > 0.7) {
+        opportunities.push('Strong retail investor sentiment on WSB may drive momentum')
+      } else if (redditScore < 0.3) {
+        warnings.push('Negative retail sentiment on WSB could create selling pressure')
+      }
+    }
+
+    // Use aggregated score calculated in getSentimentIndicators
+    const overall = indicators.aggregatedScore
 
     // Generate reasoning based on sentiment
     if (newsScore > 0.7) {
@@ -222,7 +313,8 @@ export class SentimentAnalysisService {
     return {
       overall: Math.max(0, Math.min(1, overall)),
       components: {
-        news: newsScore
+        news: newsScore,
+        reddit: indicators.reddit ? redditScore : undefined
       },
       confidence: indicators.confidence,
       reasoning,
@@ -359,7 +451,8 @@ export class SentimentAnalysisService {
         fallback: []
       },
       weights: {
-        news: 1.0 // 100% news for now, expandable to other sources
+        news: 0.7, // 70% weight for news sentiment
+        reddit: 0.3 // 30% weight for Reddit WSB sentiment
       },
       thresholds: {
         confidenceThreshold: 0.3,

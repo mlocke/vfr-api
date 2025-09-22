@@ -16,6 +16,7 @@ export interface NewsSentimentData {
 
 export interface SentimentIndicators {
   news: NewsSentimentData
+  reddit?: RedditSentimentData // Optional Reddit sentiment
   aggregatedScore: number // 0-1 composite sentiment score
   confidence: number // Overall confidence in sentiment data
   lastUpdated: number
@@ -25,6 +26,7 @@ export interface SentimentScore {
   overall: number // 0-1 composite sentiment score
   components: {
     news: number // News sentiment component (0-1)
+    reddit?: number // Reddit sentiment component (0-1, optional)
   }
   confidence: number // 0-1 confidence in the score
   reasoning: string[]
@@ -70,7 +72,8 @@ export interface SentimentConfig {
     fallback: SentimentDataSource[]
   }
   weights: {
-    news: number // Weight for news sentiment (1.0 for now, expandable)
+    news: number // Weight for news sentiment
+    reddit: number // Weight for Reddit sentiment
   }
   thresholds: {
     confidenceThreshold: number
@@ -83,7 +86,7 @@ export interface SentimentConfig {
 }
 
 export interface SentimentDataSource {
-  source: 'newsapi' | 'alphavantage' | 'fmp' | 'composite'
+  source: 'newsapi' | 'reddit' | 'alphavantage' | 'fmp' | 'composite'
   indicators: string[]
   lastUpdated: number
   quality: number // 0-1 data quality score
@@ -224,4 +227,54 @@ export interface SentimentPerformanceMetrics {
   sentimentAccuracy: number
   dataFreshness: number
   timestamp: number
+}
+
+// Reddit API specific types
+export interface RedditPost {
+  id: string
+  title: string
+  selftext: string
+  score: number
+  upvote_ratio: number
+  num_comments: number
+  created_utc: number
+  author: string
+  url: string
+  permalink: string
+  flair_text: string | null
+}
+
+export interface RedditComment {
+  id: string
+  body: string
+  score: number
+  created_utc: number
+  author: string
+  permalink: string
+}
+
+export interface RedditSentimentData {
+  symbol: string
+  sentiment: number // 0-1 (negative to positive)
+  confidence: number // 0-1 confidence in sentiment analysis
+  postCount: number // Number of posts analyzed
+  avgScore: number // Average Reddit score
+  avgUpvoteRatio: number // Average upvote ratio
+  totalComments: number // Total comments across posts
+  timeframe: string // Time period analyzed (e.g., "24h", "7d")
+  lastUpdated: number
+  topPosts: Array<{
+    title: string
+    score: number
+    comments: number
+    url: string
+  }>
+}
+
+export interface RedditAPIResponse {
+  data: {
+    children: Array<{
+      data: RedditPost
+    }>
+  }
 }

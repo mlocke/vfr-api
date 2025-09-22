@@ -9,6 +9,14 @@ import { financialDataService, StockData, FundamentalRatios, AnalystRatings, Pri
 import { TechnicalIndicatorService } from '../../../services/technical-analysis/TechnicalIndicatorService'
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { OHLCData, TechnicalAnalysisResult } from '../../../services/technical-analysis/types'
+import { SentimentAnalysisService } from '../../../services/financial-data/SentimentAnalysisService'
+import NewsAPI from '../../../services/financial-data/providers/NewsAPI'
+import { StockSentimentImpact } from '../../../services/financial-data/types/sentiment-types'
+import { MacroeconomicAnalysisService } from '../../../services/financial-data/MacroeconomicAnalysisService'
+import { FREDAPI } from '../../../services/financial-data/FREDAPI'
+import { BLSAPI } from '../../../services/financial-data/BLSAPI'
+import { EIAAPI } from '../../../services/financial-data/EIAAPI'
+import { StockMacroeconomicImpact } from '../../../services/financial-data/types/macroeconomic-types'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -38,11 +46,28 @@ interface EnhancedStockData extends StockData {
     }
     summary: string
   }
+  sentimentAnalysis?: {
+    score: number // 0-100 overall sentiment score
+    impact: 'positive' | 'negative' | 'neutral'
+    confidence: number
+    newsVolume: number
+    adjustedScore: number
+    summary: string
+  }
+  macroeconomicAnalysis?: {
+    score: number // 0-100 overall macro score
+    cyclephase: string
+    sectorImpact: string
+    adjustedScore: number
+    economicRisk: number
+    summary: string
+  }
   fundamentals?: FundamentalRatios
   analystRating?: AnalystRatings
   priceTarget?: PriceTarget
   compositeScore?: number
   recommendation?: 'BUY' | 'SELL' | 'HOLD'
+  sector?: string
 }
 
 interface SimpleStockResponse {
@@ -57,13 +82,17 @@ interface SimpleStockResponse {
       technicalAnalysisEnabled?: boolean
       fundamentalDataEnabled?: boolean
       analystDataEnabled?: boolean
+      sentimentAnalysisEnabled?: boolean
+      macroeconomicAnalysisEnabled?: boolean
     }
   }
   error?: string
 }
 
-// Initialize technical analysis service (lazy initialization)
+// Initialize services (lazy initialization)
 let technicalService: TechnicalIndicatorService | null = null
+let sentimentService: SentimentAnalysisService | null = null
+let macroService: MacroeconomicAnalysisService | null = null
 
 /**
  * Get or initialize technical analysis service
@@ -74,6 +103,42 @@ function getTechnicalService(): TechnicalIndicatorService {
     technicalService = new TechnicalIndicatorService(cache)
   }
   return technicalService
+}
+
+/**
+ * Get or initialize sentiment analysis service
+ */
+function getSentimentService(): SentimentAnalysisService | null {
+  if (!sentimentService) {
+    try {
+      const cache = new RedisCache()
+      const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY)
+      sentimentService = new SentimentAnalysisService(newsAPI, cache)
+    } catch (error) {
+      console.warn('Failed to initialize sentiment service:', error)
+      return null
+    }
+  }
+  return sentimentService
+}
+
+/**
+ * Get or initialize macroeconomic analysis service
+ */
+function getMacroService(): MacroeconomicAnalysisService | null {
+  if (!macroService) {
+    try {
+      const cache = new RedisCache()
+      const fredAPI = new FREDAPI(process.env.FRED_API_KEY)
+      const blsAPI = new BLSAPI(process.env.BLS_API_KEY)
+      const eiaAPI = new EIAAPI(process.env.EIA_API_KEY)
+      macroService = new MacroeconomicAnalysisService(fredAPI, blsAPI, eiaAPI, cache)
+    } catch (error) {
+      console.warn('Failed to initialize macroeconomic service:', error)
+      return null
+    }
+  }
+  return macroService
 }
 
 /**
@@ -91,24 +156,34 @@ function convertToOHLCData(historicalData: import('../../../services/financial-d
 }
 
 /**
- * Calculate composite score from technical, fundamental, and analyst data
+ * Calculate composite score from technical, fundamental, sentiment, macroeconomic, and analyst data
  */
 function calculateSimpleScore(stock: EnhancedStockData): number {
   let score = 50 // neutral start
 
-  // Technical (if exists)
+  // Technical analysis (32% weight, reduced to accommodate sentiment + macro)
   if (stock.technicalAnalysis?.score) {
-    score = stock.technicalAnalysis.score * 0.4
+    score = stock.technicalAnalysis.score * 0.32
   }
 
-  // Fundamentals boost/penalty
+  // Sentiment analysis (10% weight)
+  if (stock.sentimentAnalysis?.adjustedScore) {
+    score += stock.sentimentAnalysis.adjustedScore * 0.1
+  }
+
+  // Macroeconomic analysis (20% weight)
+  if (stock.macroeconomicAnalysis?.adjustedScore) {
+    score += stock.macroeconomicAnalysis.adjustedScore * 0.2
+  }
+
+  // Fundamentals boost/penalty (unchanged - representing ~25% fundamental weight)
   if (stock.fundamentals) {
     if (stock.fundamentals.peRatio && stock.fundamentals.peRatio < 20) score += 10
     if (stock.fundamentals.roe && stock.fundamentals.roe > 0.15) score += 10
     if (stock.fundamentals.debtToEquity && stock.fundamentals.debtToEquity > 2) score -= 10
   }
 
-  // Analyst boost
+  // Analyst boost (unchanged - representing ~5% alternative data weight)
   if (stock.analystRating?.consensus === 'Strong Buy') score += 15
   else if (stock.analystRating?.consensus === 'Buy') score += 10
   else if (stock.analystRating?.consensus === 'Sell') score -= 10
@@ -130,21 +205,29 @@ function getRecommendation(score: number): 'BUY' | 'SELL' | 'HOLD' {
  */
 async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[]> {
   const technical = getTechnicalService()
+  const sentiment = getSentimentService()
+  const macro = getMacroService()
   const enhancedStocks: EnhancedStockData[] = []
 
   // Process stocks in parallel with Promise.allSettled for resilience
   const analysisPromises = stocks.map(async (stock): Promise<EnhancedStockData> => {
     try {
       // Fetch all data types in parallel
-      const [historicalResult, fundamentalsResult, analystResult, priceTargetResult] = await Promise.allSettled([
+      const [historicalResult, fundamentalsResult, analystResult, priceTargetResult, companyInfoResult] = await Promise.allSettled([
         financialDataService.getHistoricalOHLC(stock.symbol, 50),
         financialDataService.getFundamentalRatios(stock.symbol),
         financialDataService.getAnalystRatings(stock.symbol),
-        financialDataService.getPriceTargets(stock.symbol)
+        financialDataService.getPriceTargets(stock.symbol),
+        financialDataService.getCompanyInfo(stock.symbol)
       ])
 
       // Initialize enhanced stock with base data
       let enhancedStock: EnhancedStockData = { ...stock }
+
+      // Add company info and sector data
+      if (companyInfoResult.status === 'fulfilled' && companyInfoResult.value) {
+        enhancedStock.sector = companyInfoResult.value.sector || 'Unknown'
+      }
 
       // Add fundamental data
       if (fundamentalsResult.status === 'fulfilled' && fundamentalsResult.value) {
@@ -159,6 +242,56 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
       // Add price target data
       if (priceTargetResult.status === 'fulfilled' && priceTargetResult.value) {
         enhancedStock.priceTarget = priceTargetResult.value
+      }
+
+      // Add sentiment analysis if service is available
+      if (sentiment && enhancedStock.sector) {
+        try {
+          const sentimentImpact = await sentiment.analyzeStockSentimentImpact(
+            stock.symbol,
+            enhancedStock.sector,
+            enhancedStock.price || 50 // base score for sentiment analysis
+          )
+
+          if (sentimentImpact) {
+            enhancedStock.sentimentAnalysis = {
+              score: sentimentImpact.sentimentScore.overall,
+              impact: sentimentImpact.sentimentScore.overall >= 60 ? 'positive' :
+                     sentimentImpact.sentimentScore.overall <= 40 ? 'negative' : 'neutral',
+              confidence: sentimentImpact.sentimentScore.confidence || 0.5,
+              newsVolume: 0, // Will be enhanced in future iterations
+              adjustedScore: sentimentImpact.adjustedScore,
+              summary: `${sentimentImpact.sentimentScore.overall >= 60 ? 'Positive' :
+                         sentimentImpact.sentimentScore.overall <= 40 ? 'Negative' : 'Neutral'} sentiment with ${(sentimentImpact.sentimentScore.confidence || 0.5).toFixed(1)}% confidence`
+            }
+          }
+        } catch (error) {
+          console.warn(`Sentiment analysis failed for ${stock.symbol}:`, error)
+        }
+      }
+
+      // Add macroeconomic analysis if service is available and sector is known
+      if (macro && enhancedStock.sector) {
+        try {
+          const macroImpact = await macro.analyzeStockMacroImpact(
+            stock.symbol,
+            enhancedStock.sector,
+            enhancedStock.price || 50 // base score for macro analysis
+          )
+
+          if (macroImpact) {
+            enhancedStock.macroeconomicAnalysis = {
+              score: macroImpact.macroScore.overall,
+              cyclephase: 'expansion', // Will be enhanced when cycle analysis is available
+              sectorImpact: macroImpact.sectorImpact.outlook,
+              adjustedScore: macroImpact.adjustedScore,
+              economicRisk: macroImpact.macroScore.confidence || 0.5,
+              summary: `Economic outlook: ${macroImpact.sectorImpact.outlook} for ${macroImpact.sectorImpact.sector} sector`
+            }
+          }
+        } catch (error) {
+          console.warn(`Macroeconomic analysis failed for ${stock.symbol}:`, error)
+        }
       }
 
       // Add technical analysis if historical data is sufficient
@@ -335,7 +468,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           sources: Array.from(sources),
           technicalAnalysisEnabled: true,
           fundamentalDataEnabled: true,
-          analystDataEnabled: true
+          analystDataEnabled: true,
+          sentimentAnalysisEnabled: getSentimentService() !== null,
+          macroeconomicAnalysisEnabled: getMacroService() !== null
         }
       }
     }

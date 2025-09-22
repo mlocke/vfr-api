@@ -69,7 +69,8 @@ const PROVIDER_NAMES: { [key: string]: string } = {
   treasury: 'Treasury API',
   fred: 'FRED',
   bls: 'BLS',
-  eia: 'EIA'
+  eia: 'EIA',
+  reddit: 'Reddit WSB Sentiment API'
 }
 
 export default function DataSourceSwitcher() {

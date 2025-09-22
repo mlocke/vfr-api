@@ -185,6 +185,16 @@ export default function AdminDashboard() {
 			rateLimit: 1000,
 			timeout: 5000,
 		},
+		{
+			id: "reddit",
+			name: "Reddit WSB Sentiment API",
+			category: "intelligence",
+			description: "r/wallstreetbets sentiment analysis",
+			status: "online",
+			enabled: true,
+			rateLimit: 300,
+			timeout: 8000,
+		},
 	];
 
 	// State management

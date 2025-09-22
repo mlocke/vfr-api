@@ -22,6 +22,7 @@ import { MarketIndicesService } from '../../../services/financial-data/MarketInd
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
 import { ErrorHandler } from '../../../services/error-handling/ErrorHandler'
+import RedditAPI from '../../../services/financial-data/providers/RedditAPI'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -64,7 +65,8 @@ const DATA_SOURCE_CONFIGS = {
   enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
   technical_indicators: { name: 'Technical Indicators Service', timeout: 5000 },
   firecrawl: { name: 'Firecrawl API', timeout: 20000 },
-  dappier: { name: 'Dappier API', timeout: 10000 }
+  dappier: { name: 'Dappier API', timeout: 10000 },
+  reddit: { name: 'Reddit WSB Sentiment API', timeout: 8000 }
 }
 
 export async function POST(request: NextRequest) {
@@ -270,7 +272,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -324,6 +326,9 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
             signal: AbortSignal.timeout(timeout)
           })
           return response.ok
+        case 'reddit':
+          apiInstance = new RedditAPI()
+          break
       }
       return await apiInstance.healthCheck()
     }
@@ -635,6 +640,51 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         }
         break
 
+      case 'reddit':
+        console.log('🟠 Making real Reddit WSB sentiment API call...')
+        const redditAPI = new RedditAPI()
+
+        // Test health check (OAuth authentication)
+        const redditHealthy = await redditAPI.healthCheck()
+
+        // Test WSB sentiment for popular symbols
+        const redditTestSymbols = ['AAPL', 'TSLA', 'GME']
+        const sentimentResults = []
+
+        for (const symbol of redditTestSymbols) {
+          try {
+            const sentimentResponse = await redditAPI.getWSBSentiment(symbol)
+            sentimentResults.push({
+              symbol,
+              success: sentimentResponse.success,
+              sentiment: sentimentResponse.data?.sentiment,
+              postCount: sentimentResponse.data?.postCount,
+              confidence: sentimentResponse.data?.confidence,
+              error: sentimentResponse.error
+            })
+          } catch (error) {
+            sentimentResults.push({
+              symbol,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            })
+          }
+        }
+
+        testData = {
+          healthCheck: redditHealthy,
+          authentication: redditHealthy ? 'OAuth successful' : 'OAuth failed',
+          sentimentTests: sentimentResults,
+          averageSentiment: sentimentResults
+            .filter(r => r.success && r.sentiment !== undefined)
+            .reduce((sum, r, _, arr) => sum + (r.sentiment || 0) / arr.length, 0),
+          totalPostsAnalyzed: sentimentResults
+            .filter(r => r.success)
+            .reduce((sum, r) => sum + (r.postCount || 0), 0),
+          testType: 'reddit_wsb_sentiment'
+        }
+        break
+
       default:
         // Data source not recognized - return an error
         throw new Error(`Data source '${dataSourceId}' is not implemented or recognized`)
@@ -642,7 +692,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId) && !testData.error
     }
 
     return testData
