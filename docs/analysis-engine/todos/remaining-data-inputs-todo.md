@@ -49,7 +49,7 @@
 
 #### Next Tasks:
 - ✅ Reddit WSB sentiment via Reddit API (COMPLETED - fully integrated with OAuth2 and performance testing)
-- Google Trends integration for retail interest
+- Google Trends integration for retail interest (deferred)
 - ESG scoring integration
 
 ---
