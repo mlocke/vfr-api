@@ -68,7 +68,7 @@ describe('InstitutionalDataService Integration Tests', () => {
       })
 
       unreliableService.clearCache()
-    }, 30000)
+    })
 
     test('should_implement_circuit_breaker_pattern_for_repeated_failures', async () => {
       const symbol = 'MSFT'
@@ -176,7 +176,7 @@ describe('InstitutionalDataService Integration Tests', () => {
         console.warn = originalConsoleWarn
         console.error = originalConsoleError
       }
-    }, 30000)
+    })
 
     test('should_handle_concurrent_requests_without_race_conditions', async () => {
       const symbol = 'TSLA'
@@ -237,7 +237,7 @@ describe('InstitutionalDataService Integration Tests', () => {
       // Service should work regardless of Redis availability
       const result = await service.getInstitutionalHoldings(symbol)
       expect(Array.isArray(result)).toBe(true)
-    }, 30000)
+    })
 
     test('should_implement_cache_aside_pattern_correctly', async () => {
       const symbol = 'MSFT'
@@ -279,7 +279,7 @@ describe('InstitutionalDataService Integration Tests', () => {
       expect(Array.isArray(result)).toBe(true)
 
       console.log('✓ Cache invalidation working properly')
-    }, 30000)
+    })
 
     test('should_implement_cache_ttl_and_expiration_correctly', async () => {
       const symbol = 'AMZN'
@@ -303,7 +303,7 @@ describe('InstitutionalDataService Integration Tests', () => {
         // This is acceptable in a test environment
         console.log('⚠ No cache data available (likely due to no institutional data for symbol or test environment limitations)')
       }
-    }, 30000)
+    })
 
     test('should_handle_cache_corruption_gracefully', async () => {
       const symbol = 'NVDA'
@@ -322,7 +322,7 @@ describe('InstitutionalDataService Integration Tests', () => {
       expect(Array.isArray(result)).toBe(true)
 
       console.log('✓ Cache corruption handled gracefully')
-    }, 30000)
+    })
   })
 
   describe('Real-time Data Processing Integration', () => {
@@ -558,7 +558,7 @@ describe('InstitutionalDataService Integration Tests', () => {
       } else {
         console.log('⚠ Service health monitoring: UNHEALTHY (may be due to test environment)')
       }
-    }, 20000)
+    })
 
     test('should_provide_operational_metrics_and_insights', async () => {
       const symbol = 'MSFT'

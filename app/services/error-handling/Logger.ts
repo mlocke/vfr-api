@@ -4,6 +4,8 @@
  * Built on KISS principles with consistent formatting and log levels
  */
 
+import SecurityValidator from '../security/SecurityValidator'
+
 export enum LogLevel {
   ERROR = 0,
   WARN = 1,
@@ -431,13 +433,8 @@ export class Logger {
       return message
     }
 
-    return message
-      .replace(/api[_-]?key[:\s=]+[\w\-]+/gi, 'api_key=***')
-      .replace(/token[:\s=]+[\w\-]+/gi, 'token=***')
-      .replace(/password[:\s=]+[\w\-]+/gi, 'password=***')
-      .replace(/secret[:\s=]+[\w\-]+/gi, 'secret=***')
-      .replace(/\b\d{4,}\b/g, '***') // Remove long numbers
-      .replace(/https?:\/\/[^\s]+/gi, '[URL]') // Remove URLs
+    // Use SecurityValidator's comprehensive sanitization
+    return SecurityValidator.sanitizeErrorMessage(message, true)
   }
 
   private sanitizeMetadata(metadata: any): any {

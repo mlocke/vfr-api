@@ -140,7 +140,7 @@ describe('InstitutionalDataService Basic Tests', () => {
         expect(Array.isArray(holdingsResult)).toBe(true)
         expect(Array.isArray(transactionsResult)).toBe(true)
       }
-    }, 30000)
+    })
 
     test('should_enforce_rate_limiting_for_repeated_requests', async () => {
       const symbol = 'AAPL'
@@ -300,7 +300,7 @@ describe('InstitutionalDataService Basic Tests', () => {
       expect(transactions.length).toBe(0)
 
       expect(intelligence).toBeNull()
-    }, 30000)
+    })
   })
 
   describe('Error Handling and Resilience', () => {
@@ -332,7 +332,7 @@ describe('InstitutionalDataService Basic Tests', () => {
           expect(Array.isArray(result.value)).toBe(true)
         }
       })
-    }, 30000)
+    })
 
     test('should_sanitize_error_messages_to_prevent_information_disclosure', async () => {
       // Capture console output to check for sensitive information
@@ -381,7 +381,7 @@ describe('InstitutionalDataService Basic Tests', () => {
       // Original cache should still be intact
       const cachedResult = await service.getInstitutionalHoldings(symbol)
       expect(Array.isArray(cachedResult)).toBe(true)
-    }, 30000)
+    })
   })
 
   describe('Cache Management', () => {
@@ -420,7 +420,7 @@ describe('InstitutionalDataService Basic Tests', () => {
       // Service should still work after cache clear
       const result = await service.getInstitutionalHoldings(symbol)
       expect(Array.isArray(result)).toBe(true)
-    }, 30000)
+    })
   })
 
   describe('Performance and Memory Management', () => {
@@ -466,6 +466,6 @@ describe('InstitutionalDataService Basic Tests', () => {
       expect(totalTime).toBeGreaterThan(200) // At least 200ms for 3 requests with rate limiting
 
       console.log(`✓ Rate limiting enforced: ${totalTime}ms for 3 requests`)
-    }, 30000)
+    })
   })
 })

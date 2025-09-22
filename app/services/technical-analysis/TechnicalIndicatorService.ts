@@ -74,6 +74,8 @@ export class TechnicalIndicatorService {
     const cacheKey = this.generateCacheKey(symbol, config)
     const cached = await this.getCachedResult(cacheKey)
     if (cached) {
+      // Track cache hit performance
+      this.trackPerformanceForCacheHit(symbol, Date.now() - startTime, cached)
       return cached
     }
 
@@ -116,8 +118,8 @@ export class TechnicalIndicatorService {
       // Cache the result
       await this.cacheResult(cacheKey, result, config.performance.cacheTTL)
 
-      // Track performance
-      this.trackPerformance(symbol, Date.now() - startTime, result)
+      // Track performance for cache miss
+      this.trackPerformanceForCacheMiss(symbol, Date.now() - startTime, result)
 
       return result
 
@@ -871,25 +873,61 @@ export class TechnicalIndicatorService {
     return Math.max(0, Math.min(1, qualityScore))
   }
 
-  private trackPerformance(symbol: string, calculationTime: number, result: TechnicalAnalysisResult): void {
-    const performance: TechnicalAnalysisPerformance = {
-      symbol,
-      calculationTimes: {
-        total: calculationTime,
-        trend: calculationTime * 0.3,
-        momentum: calculationTime * 0.3,
-        volume: calculationTime * 0.2,
-        volatility: calculationTime * 0.1,
-        patterns: calculationTime * 0.1
-      },
-      totalTime: calculationTime,
-      cacheHits: 0,
-      cacheMisses: 1,
-      dataQuality: result.metadata.dataQuality,
-      timestamp: Date.now()
-    }
+  private trackPerformance(symbol: string, calculationTime: number, result: TechnicalAnalysisResult, isCacheHit: boolean = false): void {
+    const existingPerformance = this.performanceTracker.get(symbol)
 
-    this.performanceTracker.set(symbol, performance)
+    if (existingPerformance) {
+      // Update existing performance data
+      existingPerformance.totalTime += calculationTime
+      if (isCacheHit) {
+        existingPerformance.cacheHits += 1
+      } else {
+        existingPerformance.cacheMisses += 1
+        // Update calculation times only for cache misses (actual calculations)
+        existingPerformance.calculationTimes = {
+          total: calculationTime,
+          trend: calculationTime * 0.3,
+          momentum: calculationTime * 0.3,
+          volume: calculationTime * 0.2,
+          volatility: calculationTime * 0.1,
+          patterns: calculationTime * 0.1
+        }
+      }
+      existingPerformance.dataQuality = result.metadata.dataQuality
+      existingPerformance.timestamp = Date.now()
+    } else {
+      // Create new performance record
+      const performance: TechnicalAnalysisPerformance = {
+        symbol,
+        calculationTimes: {
+          total: calculationTime,
+          trend: calculationTime * 0.3,
+          momentum: calculationTime * 0.3,
+          volume: calculationTime * 0.2,
+          volatility: calculationTime * 0.1,
+          patterns: calculationTime * 0.1
+        },
+        totalTime: calculationTime,
+        cacheHits: isCacheHit ? 1 : 0,
+        cacheMisses: isCacheHit ? 0 : 1,
+        dataQuality: result.metadata.dataQuality,
+        timestamp: Date.now()
+      }
+
+      this.performanceTracker.set(symbol, performance)
+    }
+  }
+
+  private trackPerformanceForCacheHit(symbol: string, requestTime: number, result: TechnicalAnalysisResult): void {
+    // Ensure minimum time for cache hits (at least 1ms for tracking purposes)
+    const actualTime = Math.max(1, requestTime)
+    this.trackPerformance(symbol, actualTime, result, true)
+  }
+
+  private trackPerformanceForCacheMiss(symbol: string, calculationTime: number, result: TechnicalAnalysisResult): void {
+    // Ensure minimum time for cache misses (at least 1ms for tracking purposes)
+    const actualTime = Math.max(1, calculationTime)
+    this.trackPerformance(symbol, actualTime, result, false)
   }
 
   /**
@@ -897,9 +935,22 @@ export class TechnicalIndicatorService {
    */
   getPerformanceStats(symbol?: string): TechnicalAnalysisPerformance | TechnicalAnalysisPerformance[] {
     if (symbol) {
-      return this.performanceTracker.get(symbol) || {
+      const performance = this.performanceTracker.get(symbol)
+      if (performance) {
+        return performance
+      }
+
+      // Return a default performance object if no data exists
+      return {
         symbol,
-        calculationTimes: {},
+        calculationTimes: {
+          total: 0,
+          trend: 0,
+          momentum: 0,
+          volume: 0,
+          volatility: 0,
+          patterns: 0
+        },
         totalTime: 0,
         cacheHits: 0,
         cacheMisses: 0,

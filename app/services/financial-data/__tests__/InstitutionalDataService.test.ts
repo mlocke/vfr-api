@@ -124,7 +124,7 @@ describe('InstitutionalDataService', () => {
         expect(Array.isArray(holdingsResult)).toBe(true)
         expect(Array.isArray(transactionsResult)).toBe(true)
       }
-    }, 30000)
+    })
 
     test('should_enforce_rate_limiting_for_repeated_requests', async () => {
       const symbol = 'AAPL'
@@ -204,7 +204,7 @@ describe('InstitutionalDataService', () => {
       if (oneQuarter.length > 0 && fourQuarters.length > 0) {
         expect(fourQuarters.length).toBeGreaterThanOrEqual(oneQuarter.length)
       }
-    }, 30000)
+    })
 
     test('should_implement_caching_for_institutional_holdings', async () => {
       const symbol = 'GOOGL'
@@ -296,7 +296,7 @@ describe('InstitutionalDataService', () => {
       if (thirtyDays.length > 0 && oneEightyDays.length > 0) {
         expect(oneEightyDays.length).toBeGreaterThanOrEqual(thirtyDays.length)
       }
-    }, 30000)
+    })
 
     test('should_implement_caching_for_insider_transactions', async () => {
       const symbol = 'META'
@@ -391,7 +391,7 @@ describe('InstitutionalDataService', () => {
 
       // Should return null for symbols with no institutional data
       expect(intelligence).toBeNull()
-    }, 30000)
+    })
 
     test('should_calculate_sentiment_scores_within_valid_ranges', async () => {
       const symbol = 'JPM' // Large bank likely to have institutional activity
@@ -441,7 +441,7 @@ describe('InstitutionalDataService', () => {
           expect(Array.isArray(result.value)).toBe(true)
         }
       })
-    }, 30000)
+    })
 
     test('should_sanitize_error_messages_to_prevent_information_disclosure', async () => {
       // Capture console output to check for sensitive information
@@ -485,7 +485,7 @@ describe('InstitutionalDataService', () => {
       // Original cache should still be intact
       const cachedResult = await service.getInstitutionalHoldings(symbol)
       expect(Array.isArray(cachedResult)).toBe(true)
-    }, 30000)
+    })
   })
 
   describe('Performance and Memory Management', () => {
@@ -531,7 +531,7 @@ describe('InstitutionalDataService', () => {
       expect(totalTime).toBeGreaterThan(200) // At least 200ms for 3 requests with rate limiting
 
       console.log(`✓ Rate limiting enforced: ${totalTime}ms for 3 requests`)
-    }, 30000)
+    })
 
     test('should_clear_cache_without_affecting_service_functionality', async () => {
       const symbol = 'GOOGL'
@@ -545,7 +545,7 @@ describe('InstitutionalDataService', () => {
       // Service should still work after cache clear
       const result = await service.getInstitutionalHoldings(symbol)
       expect(Array.isArray(result)).toBe(true)
-    }, 30000)
+    })
   })
 
   describe('Data Quality and Validation', () => {
@@ -587,7 +587,7 @@ describe('InstitutionalDataService', () => {
           expect(holding.source).toBe('sec_edgar_institutional')
         })
       }
-    }, 30000)
+    })
 
     test('should_validate_insider_transaction_data_structure_thoroughly', async () => {
       const symbol = 'WMT'
@@ -631,7 +631,7 @@ describe('InstitutionalDataService', () => {
           expect(transaction.source).toBe('sec_edgar_institutional')
         })
       }
-    }, 30000)
+    })
 
     test('should_ensure_data_freshness_and_completeness_scoring', async () => {
       const symbol = 'KO'

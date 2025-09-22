@@ -131,10 +131,8 @@ export class ErrorHandler {
 
     let message = this.extractErrorMessage(error)
 
-    // Sanitize message if configured
-    if (this.config.sanitizeErrors) {
-      message = SecurityValidator.sanitizeErrorMessage(error, true)
-    }
+    // Always sanitize messages for security - this is critical for preventing information disclosure
+    message = SecurityValidator.sanitizeErrorMessage(message, true)
 
     const errorResponse: ErrorResponse = {
       success: false,
@@ -545,7 +543,8 @@ export class ErrorHandler {
     const metadata: any = {}
 
     if (error instanceof Error && this.config.includeStackTrace) {
-      metadata.stack = error.stack
+      // Always sanitize stack trace to prevent information disclosure
+      metadata.stack = SecurityValidator.sanitizeErrorMessage(error.stack || '', true)
     }
 
     if (error && typeof error === 'object') {
@@ -556,7 +555,10 @@ export class ErrorHandler {
         metadata.headers = error.headers
       }
       if (error.response) {
+        // Always sanitize response data if it contains sensitive information
         metadata.response = error.response
+          ? SecurityValidator.sanitizeErrorMessage(JSON.stringify(error.response), true)
+          : error.response
       }
     }
 

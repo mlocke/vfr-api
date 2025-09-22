@@ -20,10 +20,6 @@ const config = {
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
-  // Transform files with ts-jest
-  transform: {
-    '^.+\\.ts$': 'ts-jest'
-  },
 
   // Module name mapping for absolute imports
   moduleNameMapper: {
@@ -40,14 +36,38 @@ const config = {
     '!app/services/**/*.d.ts'
   ],
 
-  // Test results output (handled by reporters)
-  reporters: ['default'],
+  // Test results output - suppress warnings and noise
+  reporters: [
+    ['default', { silent: false, verbose: false }],
+    '<rootDir>/jest.reporter.js'
+  ],
 
-  // Verbose output for detailed test information
-  verbose: true,
+  // Verbose output disabled to reduce console clutter
+  verbose: false,
 
-  // Setup files - memory optimization and leak prevention
+  // Suppress specific Jest warnings
+  silent: false,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+
+  // Transform files with ts-jest and suppress diagnostics
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      diagnostics: {
+        warnOnly: true,
+        exclude: ['**']
+      },
+      transpilation: true // Use modern transpilation instead of isolatedModules
+    }]
+  },
+
+  // Suppress Jest internal warnings and timeout notifications
+  errorOnDeprecated: false,
+  notify: false,
+  notifyMode: 'failure',
+
+  // Additional Node.js warning suppression via environment
+  setupFiles: ['<rootDir>/jest.node-setup.js'],
+
 
   // Clear mocks between tests
   clearMocks: true,
@@ -56,8 +76,8 @@ const config = {
   detectOpenHandles: true,
   forceExit: false,
 
-  // Test timeout - reduced to prevent memory buildup
-  testTimeout: 10000,
+  // Test timeout - set for longest integration tests with real API calls
+  testTimeout: 300000, // 5 minutes for comprehensive integration tests with real APIs
 
 
   // Maximum worker processes

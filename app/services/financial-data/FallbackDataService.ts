@@ -172,9 +172,33 @@ export class FallbackDataService implements FinancialDataProvider {
    * Get stock price with automatic fallback and security controls
    */
   async getStockPrice(symbol: string): Promise<StockData | null> {
+    // Early validation check to return null for invalid symbols
+    const symbolValidation = SecurityValidator.validateSymbol(symbol)
+    if (!symbolValidation.isValid) {
+      this.errorHandler.logger.warn(`Invalid symbol for stock price: ${symbol}`, {
+        errors: symbolValidation.errors
+      })
+      return null
+    }
+
+    // Check rate limiting before execution
+    const serviceId = `stock_price_${symbolValidation.sanitized}`
+    const rateLimitCheck = SecurityValidator.checkRateLimit(serviceId)
+    if (!rateLimitCheck.allowed) {
+      this.errorHandler.logger.warn(`Rate limit exceeded for stock price: ${symbol}`)
+      return null
+    }
+
+    // Check circuit breaker
+    const circuitCheck = SecurityValidator.checkCircuitBreaker(serviceId)
+    if (!circuitCheck.allowed) {
+      this.errorHandler.logger.warn(`Circuit breaker open for stock price: ${symbol}`)
+      return null
+    }
+
     return this.errorHandler.validateAndExecute(
-      () => this.executeGetStockPrice(symbol),
-      [symbol],
+      () => this.executeGetStockPrice(symbolValidation.sanitized!),
+      [symbolValidation.sanitized!],
       {
         timeout: 30000,
         retries: 2,
@@ -258,12 +282,8 @@ export class FallbackDataService implements FinancialDataProvider {
           errors.push(`${source.name}: No data returned`)
         }
       } catch (error) {
-        const errorInfo = this.errorHandler.errorHandler.createErrorResponse(
-          error,
-          source.name,
-          undefined
-        )
-        errors.push(`${source.name}: ${errorInfo.error.message}`)
+        const sanitizedError = SecurityValidator.sanitizeErrorMessage(error, true)
+        errors.push(`${source.name}: ${sanitizedError}`)
         this.errorHandler.logger.logApiError(
           'GET',
           'stock_price',
@@ -448,10 +468,19 @@ export class FallbackDataService implements FinancialDataProvider {
               ])
 
               if (validation.isValid) {
-                results.set(symbol, {
-                  ...data,
-                  source: source.name.toLowerCase().replace(/\s+/g, '_')
+                // Also validate the price value
+                const priceValidation = SecurityValidator.validateNumeric(data.price, {
+                  min: 0,
+                  max: 100000,
+                  decimalPlaces: 4
                 })
+
+                if (priceValidation.isValid) {
+                  results.set(symbol, {
+                    ...data,
+                    source: source.name.toLowerCase().replace(/\s+/g, '_')
+                  })
+                }
               }
             }
           })
@@ -704,6 +733,21 @@ export class FallbackDataService implements FinancialDataProvider {
         return null
       }
 
+      // Check rate limiting before execution
+      const serviceId = `fundamental_ratios_${symbolValidation.sanitized}`
+      const rateLimitCheck = SecurityValidator.checkRateLimit(serviceId)
+      if (!rateLimitCheck.allowed) {
+        this.errorHandler.logger.warn(`Rate limit exceeded for fundamental ratios: ${symbol}`)
+        return null
+      }
+
+      // Check circuit breaker
+      const circuitCheck = SecurityValidator.checkCircuitBreaker(serviceId)
+      if (!circuitCheck.allowed) {
+        this.errorHandler.logger.warn(`Circuit breaker open for fundamental ratios: ${symbol}`)
+        return null
+      }
+
       return await this.errorHandler.handleApiCall(
         () => this.executeGetFundamentalRatios(symbolValidation.sanitized!),
         {
@@ -800,10 +844,11 @@ export class FallbackDataService implements FinancialDataProvider {
           }
           return null
         } catch (error) {
+          const sanitizedError = SecurityValidator.sanitizeErrorMessage(error, true)
           this.errorHandler.logger.logApiError(
             'GET',
             'fundamental_ratios',
-            error,
+            sanitizedError,
             undefined,
             { symbol: sanitizedSymbol, source: source.name }
           )

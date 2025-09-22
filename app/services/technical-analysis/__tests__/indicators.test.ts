@@ -204,6 +204,38 @@ describe('TechnicalIndicatorService', () => {
         expect(allPerformance.length).toBeGreaterThanOrEqual(2)
       }
     })
+
+    test('should track cache hits and misses correctly', async () => {
+      const ohlcData = generateMockOHLCData(50)
+      const input: TechnicalAnalysisInput = {
+        symbol: 'CACHE_TEST',
+        ohlcData
+      }
+
+      // First calculation should be a cache miss
+      const firstResult = await service.calculateAllIndicators(input)
+      let performance = service.getPerformanceStats('CACHE_TEST')
+
+      expect(performance).toBeDefined()
+      if (typeof performance === 'object' && !Array.isArray(performance)) {
+        expect(performance.cacheMisses).toBe(1)
+        expect(performance.cacheHits).toBe(0)
+        expect(performance.totalTime).toBeGreaterThan(0)
+      }
+
+      // Mock cache to return the first result for the second call (simulating cache hit)
+      jest.spyOn(mockCache, 'get').mockResolvedValueOnce(firstResult)
+
+      // Second calculation should be a cache hit
+      await service.calculateAllIndicators(input)
+      performance = service.getPerformanceStats('CACHE_TEST')
+
+      if (typeof performance === 'object' && !Array.isArray(performance)) {
+        expect(performance.cacheMisses).toBe(1) // Should still be 1
+        expect(performance.cacheHits).toBe(1)   // Should now be 1
+        expect(performance.totalTime).toBeGreaterThan(0)
+      }
+    })
   })
 
   describe('Caching', () => {
