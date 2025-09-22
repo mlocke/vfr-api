@@ -243,9 +243,17 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
    */
   async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
     try {
-      return await this.errorHandler.validateAndExecute(
-        () => this.executeGetFundamentalRatios(symbol),
-        [symbol],
+      // Validate symbol input first - return null for invalid symbols instead of throwing
+      const symbolValidation = securityValidator.validateSymbol(symbol)
+      if (!symbolValidation.isValid) {
+        this.errorHandler.logger.warn(`Invalid symbol for fundamental ratios: ${symbol}`, {
+          errors: symbolValidation.errors
+        })
+        return null
+      }
+
+      return await this.errorHandler.handleApiCall(
+        () => this.executeGetFundamentalRatios(symbolValidation.sanitized!),
         {
           timeout: this.timeout,
           retries: 2,

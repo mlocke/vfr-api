@@ -143,7 +143,7 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
       }
 
       // Execute the actual operation with error handling
-      return await this.errorHandler.errorHandler.handleAsync(
+      const result = await this.errorHandler.errorHandler.handleAsync(
         () => this.executeGetInstitutionalHoldings(symbol, quarters),
         'InstitutionalDataService.getInstitutionalHoldings',
         undefined,
@@ -151,13 +151,13 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
           timeout: 30000,
           retries: 2
         }
-      ).then((result: any) => {
-        // If result is an error response, return empty array
-        if (typeof result === 'object' && result && 'success' in result && result.success === false) {
-          return []
-        }
-        return result as InstitutionalHolding[]
-      })
+      )
+
+      // If result is an error response, return empty array
+      if (typeof result === 'object' && result && 'success' in result && result.success === false) {
+        return []
+      }
+      return result as InstitutionalHolding[]
     } catch (error) {
       this.errorHandler.logger.warn(`Failed to get institutional holdings for ${symbol}`, { error })
       return []
@@ -180,7 +180,7 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
       }
 
       // Execute the actual operation with error handling
-      return await this.errorHandler.errorHandler.handleAsync(
+      const result = await this.errorHandler.errorHandler.handleAsync(
         () => this.executeGetInsiderTransactions(symbol, days),
         'InstitutionalDataService.getInsiderTransactions',
         undefined,
@@ -188,13 +188,13 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
           timeout: 30000,
           retries: 2
         }
-      ).then((result: any) => {
-        // If result is an error response, return empty array
-        if (typeof result === 'object' && result && 'success' in result && result.success === false) {
-          return []
-        }
-        return result as InsiderTransaction[]
-      })
+      )
+
+      // If result is an error response, return empty array
+      if (typeof result === 'object' && result && 'success' in result && result.success === false) {
+        return []
+      }
+      return result as InsiderTransaction[]
     } catch (error) {
       this.errorHandler.logger.warn(`Failed to get insider transactions for ${symbol}`, { error })
       return []
@@ -214,7 +214,7 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
       }
 
       // Execute the actual operation with error handling
-      return await this.errorHandler.errorHandler.handleAsync(
+      const result = await this.errorHandler.errorHandler.handleAsync(
         () => this.executeGetInstitutionalIntelligence(symbol),
         'InstitutionalDataService.getInstitutionalIntelligence',
         undefined,
@@ -222,13 +222,13 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
           timeout: 45000,
           retries: 1
         }
-      ).then((result: any) => {
-        // If result is an error response, return null
-        if (typeof result === 'object' && result && 'success' in result && result.success === false) {
-          return null
-        }
-        return result as InstitutionalIntelligence | null
-      })
+      )
+
+      // If result is an error response, return null
+      if (typeof result === 'object' && result && 'success' in result && result.success === false) {
+        return null
+      }
+      return result as InstitutionalIntelligence | null
     } catch (error) {
       this.errorHandler.logger.warn(`Failed to get institutional intelligence for ${symbol}`, { error })
       return null

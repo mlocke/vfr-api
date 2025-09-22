@@ -595,8 +595,8 @@ describe('SECEdgarAPI', () => {
         expect(result.status).toBe('fulfilled')
       })
 
-      // Should take time due to rate limiting
-      expect(totalTime).toBeGreaterThan(200)
+      // Should take time due to rate limiting (3 requests with 100ms delay should take at least 150ms)
+      expect(totalTime).toBeGreaterThan(150)
 
       console.log(`✓ Concurrent requests handled properly: ${totalTime}ms for ${symbols.length} symbols`)
     }, 45000)

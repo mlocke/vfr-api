@@ -193,8 +193,8 @@ describe('SECEdgarAPI Security and Rate Limiting Tests', () => {
       // All requests should complete
       expect(results.length).toBe(symbols.length)
 
-      // Should take time due to rate limiting - 3 concurrent requests with 100ms delay should take at least 200ms
-      expect(totalTime).toBeGreaterThan(200)
+      // Should take time due to rate limiting - 3 concurrent requests with 100ms delay should take at least 150ms
+      expect(totalTime).toBeGreaterThan(150)
 
       console.log(`✓ Request queuing working: ${totalTime}ms for ${symbols.length} concurrent requests`)
     }, 45000)

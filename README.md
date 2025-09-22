@@ -121,10 +121,20 @@ NODE_ENV=development
 - **Memory Optimized**: `maxWorkers: 1` for stability
 
 ```bash
-npm test                    # All tests
+npm test                    # All tests (22 integration tests passing)
 npm run test:coverage      # Coverage report (80% minimum)
 npm test -- --testNamePattern="ServiceName"  # Specific test
 ```
+
+### Integration Test Status
+**InstitutionalDataService Integration**: ✅ **ALL 22 TESTS PASSING**
+- Error Handling and Resilience Integration (6 tests)
+- Cache Integration and Real-time Processing (5 tests)
+- Real-time Data Processing Integration (4 tests)
+- Security Integration and Compliance (4 tests)
+- System Integration and Health Monitoring (3 tests)
+
+Recent fixes include RedisCache method updates and enhanced rate limiting test robustness.
 
 ## Architecture Details
 

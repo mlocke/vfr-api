@@ -6,6 +6,31 @@
 import Redis from 'ioredis'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
+// Test-friendly logging utility
+class CacheLogger {
+  private static isTestEnvironment(): boolean {
+    return process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined
+  }
+
+  static log(message: string): void {
+    if (!this.isTestEnvironment()) {
+      console.log(message)
+    }
+  }
+
+  static warn(message: string): void {
+    if (!this.isTestEnvironment()) {
+      console.warn(message)
+    }
+  }
+
+  static error(message: string, error?: any): void {
+    if (!this.isTestEnvironment()) {
+      console.error(message, error)
+    }
+  }
+}
+
 interface CacheConfig {
   host: string
   port: number
@@ -103,28 +128,28 @@ export class RedisCache {
 
     // Event handlers
     this.redis.on('connect', () => {
-      console.log('✅ Redis connected successfully')
+      CacheLogger.log('✅ Redis connected successfully')
       this.redisAvailable = true
     })
 
     this.redis.on('ready', () => {
-      console.log('🚀 Redis ready for operations')
+      CacheLogger.log('🚀 Redis ready for operations')
       this.redisAvailable = true
     })
 
     this.redis.on('error', (error) => {
-      console.error('❌ Redis error:', error)
+      CacheLogger.error('❌ Redis error:', error)
       this.redisAvailable = false
       this.stats.errors++
     })
 
     this.redis.on('reconnecting', () => {
-      console.log('🔄 Redis reconnecting...')
+      CacheLogger.log('🔄 Redis reconnecting...')
       this.redisAvailable = false
     })
 
     this.redis.on('close', () => {
-      console.log('📪 Redis connection closed')
+      CacheLogger.log('📪 Redis connection closed')
       this.redisAvailable = false
     })
 
@@ -138,7 +163,7 @@ export class RedisCache {
     const clusterNodes = process.env.REDIS_CLUSTER_NODES?.split(',') || []
 
     if (clusterNodes.length > 1) {
-      console.log('🔗 Setting up Redis cluster...')
+      CacheLogger.log('🔗 Setting up Redis cluster...')
 
       // For now, we'll use a simple backup connection
       // In production, use Redis.Cluster for true clustering
@@ -156,12 +181,18 @@ export class RedisCache {
    */
   private setupDevelopmentFallback(): void {
     // Check Redis connection after a brief delay
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (!this.redisAvailable) {
-        console.warn('⚠️ Redis not available in development mode - using in-memory fallback')
-        console.warn('💡 To use Redis caching, ensure Redis is running on localhost:6379')
+        CacheLogger.warn('⚠️ Redis not available in development mode - using in-memory fallback')
+        CacheLogger.warn('💡 To use Redis caching, ensure Redis is running on localhost:6379')
       }
     }, 2000) // Give Redis 2 seconds to connect
+
+    // Track timeout for cleanup in tests
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
+      (global as any).__redisTimeouts = (global as any).__redisTimeouts || []
+      ;(global as any).__redisTimeouts.push(timeoutId)
+    }
   }
 
   /**
@@ -207,7 +238,7 @@ export class RedisCache {
 
     } catch (error) {
       const normalizedError = ErrorHandler.normalizeError(error)
-      console.warn(`⚠️ Cache get error for key ${key} (Redis may not be available):`, normalizedError.message)
+      CacheLogger.warn(`⚠️ Cache get error for key ${key} (Redis may not be available): ${normalizedError.message}`)
       this.stats.errors++
       this.redisAvailable = false
       return null
@@ -226,7 +257,7 @@ export class RedisCache {
     try {
       // Check if Redis is available
       if (!this.isRedisAvailable()) {
-        console.warn(`⚠️ Redis not available, skipping cache set for key: ${key}`)
+        CacheLogger.warn(`⚠️ Redis not available, skipping cache set for key: ${key}`)
         return false
       }
 
@@ -245,7 +276,7 @@ export class RedisCache {
       return true
 
     } catch (error) {
-      console.error(`❌ Cache set error for key ${key}:`, error)
+      CacheLogger.error(`❌ Cache set error for key ${key}:`, error)
       this.stats.errors++
       return false
     }
@@ -265,7 +296,7 @@ export class RedisCache {
       this.stats.deletes++
       return result > 0
     } catch (error) {
-      console.error(`❌ Cache delete error for key ${key}:`, error)
+      CacheLogger.error(`❌ Cache delete error for key ${key}:`, error)
       this.stats.errors++
       return false
     }
@@ -307,7 +338,7 @@ export class RedisCache {
       return result
 
     } catch (error) {
-      console.error('❌ Cache mget error:', error)
+      CacheLogger.error('❌ Cache mget error:', error)
       this.stats.errors++
       return {}
     }
@@ -348,7 +379,7 @@ export class RedisCache {
       return true
 
     } catch (error) {
-      console.error('❌ Cache mset error:', error)
+      CacheLogger.error('❌ Cache mset error:', error)
       this.stats.errors++
       return false
     }
@@ -423,19 +454,19 @@ export class RedisCache {
    * Warm cache with frequently accessed data
    */
   async warmCache(symbols: string[], sources: string[] = ['polygon', 'alphavantage']): Promise<void> {
-    console.log(`🔥 Warming cache for ${symbols.length} symbols from ${sources.length} sources...`)
+    CacheLogger.log(`🔥 Warming cache for ${symbols.length} symbols from ${sources.length} sources...`)
 
     const warmingPromises = symbols.flatMap(symbol =>
       sources.map(async source => {
         const key = `stock:price:${symbol}:${source}`
         // This would typically fetch fresh data and cache it
         // For now, we'll just ensure the key structure exists
-        console.log(`🔥 Warmed cache key: ${key}`)
+        CacheLogger.log(`🔥 Warmed cache key: ${key}`)
       })
     )
 
     await Promise.all(warmingPromises)
-    console.log('✅ Cache warming complete')
+    CacheLogger.log('✅ Cache warming complete')
   }
 
   /**
@@ -452,7 +483,7 @@ export class RedisCache {
 
       return { ...this.stats }
     } catch (error) {
-      console.error('❌ Error getting cache stats:', error)
+      CacheLogger.error('❌ Error getting cache stats:', error)
       return this.stats
     }
   }
@@ -469,11 +500,11 @@ export class RedisCache {
 
         // Auto-cleanup if cache is getting full (>80% of max memory)
         if (stats.totalKeys > 10000) {
-          console.log('🧹 Auto-cleanup: Cache is getting full, running maintenance...')
+          CacheLogger.log('🧹 Auto-cleanup: Cache is getting full, running maintenance...')
           await this.cleanup()
         }
       } catch (error) {
-        console.error('❌ Redis health check failed:', error)
+        CacheLogger.error('❌ Redis health check failed:', error)
         this.stats.errors++
       }
     }, 30000) // Check every 30 seconds
@@ -504,9 +535,9 @@ export class RedisCache {
         return deleted
       `, 0)
 
-      console.log(`🧹 Cache cleanup completed. Keys processed: ${keysDeleted}`)
+      CacheLogger.log(`🧹 Cache cleanup completed. Keys processed: ${keysDeleted}`)
     } catch (error) {
-      console.error('❌ Cache cleanup error:', error)
+      CacheLogger.error('❌ Cache cleanup error:', error)
     }
   }
 
@@ -540,7 +571,7 @@ export class RedisCache {
       return await this.redis.ping()
     } catch (error) {
       const normalizedError = ErrorHandler.normalizeError(error)
-      console.warn('⚠️ Redis ping failed (may not be available in development):', normalizedError.message)
+      CacheLogger.warn(`⚠️ Redis ping failed (may not be available in development): ${normalizedError.message}`)
       this.redisAvailable = false
       return 'PONG (fallback)'
     }
@@ -552,14 +583,43 @@ export class RedisCache {
   async shutdown(): Promise<void> {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval)
+      this.healthCheckInterval = undefined
     }
 
-    await this.redis.disconnect()
-    if (this.backupRedis) {
-      await this.backupRedis.disconnect()
+    try {
+      // Remove all event listeners to prevent post-shutdown logging
+      if (this.redis) {
+        this.redis.removeAllListeners()
+        await this.redis.disconnect()
+      }
+
+      if (this.backupRedis) {
+        this.backupRedis.removeAllListeners()
+        await this.backupRedis.disconnect()
+      }
+    } catch (error) {
+      // Ignore disconnection errors during shutdown
+      CacheLogger.warn('Warning during Redis shutdown - this is normal during tests')
     }
 
-    console.log('📪 Redis cache connections closed')
+    this.redisAvailable = false
+    CacheLogger.log('📪 Redis cache connections closed')
+  }
+
+  /**
+   * Test-specific cleanup method
+   * Ensures all Redis connections and timers are properly cleaned up for tests
+   */
+  async cleanupForTests(): Promise<void> {
+    // Clear any pending timeouts from setupDevelopmentFallback
+    const timeoutIds = (global as any).__redisTimeouts || []
+    timeoutIds.forEach((id: NodeJS.Timeout) => clearTimeout(id))
+
+    // Shutdown Redis connections
+    await this.shutdown()
+
+    // Reset singleton instance for fresh test state
+    RedisCache.instance = undefined as any
   }
 }
 

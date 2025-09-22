@@ -701,9 +701,9 @@ describe('Enhanced Stock Selection API', () => {
         expect(result.data.metadata.timestamp).toBeGreaterThanOrEqual(beforeTime)
         expect(result.data.metadata.timestamp).toBeLessThanOrEqual(afterTime)
 
-        // Stock data timestamp should be reasonable (within last 24 hours)
+        // Stock data timestamp should be reasonable (within last 72 hours to account for weekends)
         const hoursOld = (Date.now() - stock.timestamp) / (1000 * 60 * 60)
-        expect(hoursOld).toBeLessThan(24)
+        expect(hoursOld).toBeLessThan(72)
 
         console.log(`✅ ${symbol} data freshness: ${hoursOld.toFixed(1)} hours old`)
       }

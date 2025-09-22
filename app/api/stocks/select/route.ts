@@ -200,14 +200,20 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
       return enhancedStock
     } catch (error) {
       console.error(`Stock enhancement failed for ${stock.symbol}:`, error)
-      return { ...stock }
+      // Only return the stock if it has a valid symbol
+      if (stock && stock.symbol) {
+        return { ...stock }
+      }
+      // Return null for invalid stocks - will be filtered out
+      return null as any
     }
   })
 
   const results = await Promise.allSettled(analysisPromises)
 
   results.forEach((result) => {
-    if (result.status === 'fulfilled') {
+    if (result.status === 'fulfilled' && result.value && result.value.symbol) {
+      // Only include stocks that have valid data
       enhancedStocks.push(result.value)
     }
   })
@@ -317,7 +323,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log(`✅ Comprehensive analysis completed in ${analysisTime}ms`)
 
-    // Return enhanced response
+    // Return enhanced response - set timestamp after all processing is complete
     const response: SimpleStockResponse = {
       success: true,
       data: {
@@ -325,7 +331,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         metadata: {
           mode,
           count: enhancedStocks.length,
-          timestamp: Date.now(),
+          timestamp: Date.now(), // Set timestamp after processing
           sources: Array.from(sources),
           technicalAnalysisEnabled: true,
           fundamentalDataEnabled: true,
@@ -339,11 +345,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('Stock selection error:', error)
 
+    // Return appropriate status codes for different error types
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request format'
+      }, { status: 400 })
+    }
+
     return NextResponse.json({
       success: false,
-      error: error instanceof z.ZodError
-        ? 'Invalid request format'
-        : 'Internal server error'
+      error: 'Internal server error'
     }, { status: 500 })
   }
 }

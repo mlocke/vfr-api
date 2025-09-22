@@ -440,7 +440,7 @@ export class FallbackDataService implements FinancialDataProvider {
       for (const result of batchResults) {
         if (result.status === 'fulfilled' && result.value?.data) {
           const { data: batchData, source } = result.value
-          batchData.forEach((data, symbol) => {
+          batchData.forEach((data: StockData, symbol: string) => {
             if (!results.has(symbol)) { // Don't overwrite higher priority data
               // Validate each stock data item
               const validation = SecurityValidator.validateApiResponse(data, [
@@ -572,8 +572,8 @@ export class FallbackDataService implements FinancialDataProvider {
     const yahooSource = this.dataSources.find(s => s.name === 'Yahoo Finance')
     if (yahooSource && this.canMakeRequest(yahooSource)) {
       try {
-        const stocks = await yahooSource.provider.getStocksBySector(sector, limit)
-        if (stocks.length > 0) {
+        const stocks = await yahooSource.provider.getStocksBySector?.(sector, limit)
+        if (stocks && stocks.length > 0) {
           this.recordRequest(yahooSource)
           return stocks
         }
@@ -587,8 +587,8 @@ export class FallbackDataService implements FinancialDataProvider {
       if (!this.canMakeRequest(source) || source.name === 'Yahoo Finance') continue
 
       try {
-        const stocks = await source.provider.getStocksBySector(sector, limit)
-        if (stocks.length > 0) {
+        const stocks = await source.provider.getStocksBySector?.(sector, limit)
+        if (stocks && stocks.length > 0) {
           this.recordRequest(source)
           return stocks
         }
@@ -694,18 +694,28 @@ export class FallbackDataService implements FinancialDataProvider {
    * Get fundamental ratios with comprehensive security controls
    */
   async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
-    return this.errorHandler.validateAndExecute(
-      () => this.executeGetFundamentalRatios(symbol),
-      [symbol],
-      {
-        timeout: 30000,
-        retries: 2,
-        context: 'getFundamentalRatios'
+    try {
+      // Validate symbol input first - return null for invalid symbols instead of throwing
+      const symbolValidation = SecurityValidator.validateSymbol(symbol)
+      if (!symbolValidation.isValid) {
+        this.errorHandler.logger.warn(`Invalid symbol for fundamental ratios: ${symbol}`, {
+          errors: symbolValidation.errors
+        })
+        return null
       }
-    ).catch(error => {
+
+      return await this.errorHandler.handleApiCall(
+        () => this.executeGetFundamentalRatios(symbolValidation.sanitized!),
+        {
+          timeout: 30000,
+          retries: 2,
+          context: 'getFundamentalRatios'
+        }
+      )
+    } catch (error) {
       this.errorHandler.logger.warn(`Failed to get fundamental ratios for ${symbol}`, { error })
       return null
-    })
+    }
   }
 
   private async executeGetFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
@@ -773,9 +783,9 @@ export class FallbackDataService implements FinancialDataProvider {
                     field,
                     value,
                     errors: validation.errors
-                  })
+                  });
                   // Set to undefined rather than rejecting entire response
-                  (data as any)[field] = undefined
+                  (data as any)[field] = undefined;
                 }
               }
             }

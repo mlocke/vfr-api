@@ -78,12 +78,10 @@ export class Form4Parser {
     this.xmlParser = new XMLParser({
       ignoreAttributes: false,
       parseAttributeValue: true,
-      parseNodeValue: true,
       parseTagValue: true,
       trimValues: true,
       removeNSPrefix: true,
       allowBooleanAttributes: true,
-      parseTrueNumberOnly: true,
       numberParseOptions: {
         hex: false,
         leadingZeros: true,
@@ -96,7 +94,6 @@ export class Form4Parser {
       ignorePiTags: true,
       preserveOrder: false,
       stopNodes: ['*.script', '*.style'],
-      maxSize: this.maxFileSize,
       // Only parse relevant Form 4 elements
       updateTag: (tagName: string) => {
         const relevantTags = [

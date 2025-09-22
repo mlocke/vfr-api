@@ -65,12 +65,10 @@ export class Form13FParser {
     this.xmlParser = new XMLParser({
       ignoreAttributes: false,
       parseAttributeValue: true,
-      parseNodeValue: true,
       parseTagValue: true,
       trimValues: true,
       removeNSPrefix: true,
       allowBooleanAttributes: true,
-      parseTrueNumberOnly: false,
       numberParseOptions: {
         hex: false,
         leadingZeros: true,
@@ -83,7 +81,6 @@ export class Form13FParser {
       ignorePiTags: true,
       preserveOrder: false,
       stopNodes: ['*.script', '*.style', '*.comment'],
-      maxSize: this.config.maxMemoryMB * 1024 * 1024,
       // Performance optimization
       updateTag: (tagName: string, jPath: string) => {
         // Only parse tags we need
@@ -155,6 +152,7 @@ export class Form13FParser {
     let currentValue = ''
 
     // Create streaming transformer
+    const self = this
     const parseTransform = new Transform({
       objectMode: true,
       transform(chunk: string, encoding, callback) {
@@ -166,7 +164,7 @@ export class Form13FParser {
             if (char === '<') {
               // Start of XML tag
               if (currentValue.trim()) {
-                this.processElementValue(currentElement, currentValue.trim(), currentHolding)
+                self.processElementValue(currentElement, currentValue.trim(), currentHolding)
                 currentValue = ''
               }
               currentElement = ''
@@ -178,8 +176,8 @@ export class Form13FParser {
                 insideInfoTable = true
                 currentHolding = {}
               } else if (element === '/infotable') {
-                if (insideInfoTable && this.isValidHolding(currentHolding)) {
-                  const holding = this.convertToInstitutionalHolding(currentHolding, managerInfo)
+                if (insideInfoTable && self.isValidHolding(currentHolding)) {
+                  const holding = self.convertToInstitutionalHolding(currentHolding, managerInfo)
                   if (holding && (!targetSymbol || holding.symbol === targetSymbol)) {
                     holdings.push(holding)
                   }
@@ -197,7 +195,7 @@ export class Form13FParser {
 
           callback()
         } catch (error) {
-          callback(error)
+          callback(error instanceof Error ? error : new Error(String(error)))
         }
       }
     })
@@ -288,7 +286,7 @@ export class Form13FParser {
     const holdings: InstitutionalHolding[] = []
 
     // Extract info tables using regex
-    const infoTableRegex = /<infoTable[^>]*?>(.*?)<\/infoTable>/gis
+    const infoTableRegex = /<infoTable[^>]*?>([\s\S]*?)<\/infoTable>/gi
     let match
 
     while ((match = infoTableRegex.exec(content)) !== null && holdings.length < this.config.maxHoldingsPerFiling) {

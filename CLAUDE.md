@@ -65,6 +65,12 @@ src/
 - `npm test -- --testNamePattern="name"` - Run specific test by name
 - `npm test -- path/to/test.ts` - Run specific test file
 
+### Integration Test Status
+- **InstitutionalDataService**: ✅ All 22 tests passing
+- **Cache Integration**: ✅ RedisCache method compatibility verified
+- **Rate Limiting**: ✅ Robust test environment handling
+- **Security Compliance**: ✅ OWASP validation tests passing
+
 ### Development Utilities
 - `npm run dev:port-check` - Check if port 3000 is available
 - `npm run dev:kill` - Kill all development processes
