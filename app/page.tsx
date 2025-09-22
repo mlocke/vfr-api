@@ -4,8 +4,13 @@ import { useState } from 'react'
 import Link from 'next/link'
 import StockTicker from './components/StockTicker'
 import SectorDropdown, { SectorOption } from './components/SectorDropdown'
+<<<<<<< HEAD
 import EconomicCalendar from './components/market/EconomicCalendar'
 import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
+=======
+import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
+import EconomicCalendar from './components/market/EconomicCalendar'
+>>>>>>> feature/input-integration
 import SectorRotationWheel from './components/market/SectorRotationWheel'
 
 interface SymbolData {
@@ -270,23 +275,22 @@ export default function Home() {
                 Analyze Stocks & Options
               </Link>
             </div>
-            <div className="live-dashboard">
-              <div className="dashboard-header">
-                <h2 className="dashboard-title">Live Market Dashboard</h2>
-                <div className="dashboard-subtitle">Real-time market intelligence & economic calendar</div>
-              </div>
-
-              <div className="dashboard-grid">
-                <div className="dashboard-card">
-                  <EconomicCalendar />
-                </div>
-
-                <div className="dashboard-card">
+            <div className="dashboard-preview">
+              <div className="live-dashboard-container">
+                {/* Market Sentiment Heatmap */}
+                <div className="dashboard-section">
                   <MarketSentimentHeatmap />
                 </div>
 
-                <div className="dashboard-card full-width">
-                  <SectorRotationWheel />
+                {/* Dashboard Grid Layout */}
+                <div className="dashboard-grid">
+                  <div className="dashboard-left">
+                    <EconomicCalendar />
+                  </div>
+
+                  <div className="dashboard-right">
+                    <SectorRotationWheel />
+                  </div>
                 </div>
               </div>
             </div>

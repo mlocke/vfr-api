@@ -225,7 +225,7 @@ export async function DELETE(request: NextRequest) {
     const symbol = searchParams.get('symbol')?.toUpperCase()
     const timeframe = searchParams.get('timeframe')
 
-    await financialDataCacheService.clearCache(symbol, timeframe)
+    await financialDataCacheService.clearCache(symbol, timeframe || undefined)
 
     return NextResponse.json({
       success: true,

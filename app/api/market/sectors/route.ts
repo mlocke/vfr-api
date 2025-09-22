@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { SectorDataService } from '../../../services/financial-data/SectorDataService'
+import ErrorHandler from '../../../services/error-handling/ErrorHandler'
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,823 +1,960 @@
 /**
- * Macroeconomic Analysis Service
- * Connects economic data collection with stock analysis engine
- * Provides 20% weight in composite scoring as per roadmap
+ * MacroeconomicAnalysisService.ts - Core orchestration service for macro data
+ * Integrates FRED, BLS, EIA, and currency data for comprehensive economic analysis
+ *
+ * Performance Target: <800ms complete macro context collection
+ * Parallel processing efficiency: >80%
+ * Error resilience with graceful degradation
  */
 
 import { FREDAPI } from './FREDAPI'
 import { BLSAPI } from './BLSAPI'
 import { EIAAPI } from './EIAAPI'
 import { RedisCache } from '../cache/RedisCache'
-import {
-  MacroeconomicIndicators,
-  EconomicCycleAnalysis,
-  SectorEconomicImpact,
-  MacroeconomicScore,
-  StockMacroeconomicImpact,
-  MacroeconomicAnalysisResponse,
-  BulkMacroAnalysisResponse,
-  MacroeconomicConfig,
-  MacroeconomicCache
-} from './types/macroeconomic-types'
+import ErrorHandler from '../error-handling/ErrorHandler'
+
+// Core interface as specified in requirements
+export interface MacroeconomicContext {
+  overallScore: number           // 0-10 composite score
+  inflationEnvironment: string   // 'low', 'moderate', 'high', 'declining'
+  monetaryPolicy: string         // 'accommodative', 'neutral', 'restrictive'
+  economicCycle: string          // 'expansion', 'peak', 'contraction', 'trough'
+  sectorImpacts: Record<string, number> // Sector-specific multipliers
+  confidence: number             // 0-1 data quality confidence
+  lastUpdate: string
+  dataSourcesUsed: string[]      // Track which APIs provided data
+}
+
+// Enhanced interfaces for comprehensive analysis
+export interface CurrencyAnalysis {
+  dxyStrength: number
+  usdTrend: 'strengthening' | 'weakening' | 'stable'
+  globalImpact: number
+  inflationPressure: number
+  timestamp: number
+}
+
+export interface EnergyInflationPressure {
+  oilPressure: number
+  gasPressure: number
+  energyInflationScore: number
+  sectorImpacts: {
+    transportation: number
+    utilities: number
+    manufacturing: number
+    consumer: number
+  }
+  timestamp: number
+}
+
+export interface MacroTrendAnalysis {
+  gdpMomentum: {
+    direction: string
+    strength: number
+    confidence: number
+  }
+  inflationTrend: {
+    current: number
+    direction: string
+    momentum: number
+  }
+  employmentTrend: {
+    strength: number
+    direction: string
+    confidence: number
+  }
+  monetaryConditions: {
+    stance: string
+    tightness: number
+    marketImpact: number
+  }
+}
+
+export interface SectorMultipliers {
+  technology: number
+  healthcare: number
+  financials: number
+  energy: number
+  utilities: number
+  industrials: number
+  materials: number
+  consumerDiscretionary: number
+  consumerStaples: number
+  realEstate: number
+  communication: number
+}
+
+export interface MacroRiskFactors {
+  inflationRisk: {
+    level: 'low' | 'moderate' | 'high'
+    description: string
+    probability: number
+  }
+  recessionRisk: {
+    level: 'low' | 'moderate' | 'high'
+    description: string
+    probability: number
+  }
+  monetaryRisk: {
+    level: 'low' | 'moderate' | 'high'
+    description: string
+    impact: string
+  }
+  energyRisk: {
+    level: 'low' | 'moderate' | 'high'
+    description: string
+    sectorImpact: string[]
+  }
+}
+
+export interface ComprehensiveMacroAnalysis extends MacroeconomicContext {
+  trendAnalysis: MacroTrendAnalysis
+  currencyAnalysis?: CurrencyAnalysis
+  energyAnalysis?: EnergyInflationPressure
+  riskFactors: MacroRiskFactors
+  opportunities: string[]
+  keyInsights: string[]
+  performanceMetrics: {
+    responseTime: number
+    dataCompleteness: number
+    parallelEfficiency: number
+    cacheHitRate: number
+  }
+}
 
 export class MacroeconomicAnalysisService {
   private fredAPI: FREDAPI
   private blsAPI: BLSAPI
   private eiaAPI: EIAAPI
   private cache: RedisCache
-  private config: MacroeconomicConfig
+  private timeout: number
+  private throwErrors: boolean
 
-  // Sector sensitivity mappings based on economic research
-  private readonly SECTOR_SENSITIVITIES = {
-    'Technology': {
-      interestRates: -0.7, // Tech sensitive to rates (high valuations)
-      inflation: -0.3,
-      gdpGrowth: 0.8,
-      dollarStrength: -0.4
-    },
-    'Financials': {
-      interestRates: 0.8, // Banks benefit from higher rates
-      inflation: 0.2,
-      gdpGrowth: 0.7,
-      dollarStrength: 0.3
-    },
-    'Real Estate': {
-      interestRates: -0.9, // REITs very sensitive to rates
-      inflation: 0.1,
-      gdpGrowth: 0.6,
-      dollarStrength: -0.2
-    },
-    'Utilities': {
-      interestRates: -0.6, // Utilities are rate-sensitive
-      inflation: -0.4,
-      gdpGrowth: 0.2,
-      dollarStrength: 0.1
-    },
-    'Consumer Discretionary': {
-      interestRates: -0.4,
-      inflation: -0.6, // Consumers hurt by inflation
-      gdpGrowth: 0.9,
-      dollarStrength: -0.1
-    },
-    'Consumer Staples': {
-      interestRates: -0.2,
-      inflation: -0.2, // More defensive
-      gdpGrowth: 0.3,
-      dollarStrength: 0.1
-    },
-    'Healthcare': {
-      interestRates: -0.3,
-      inflation: -0.1,
-      gdpGrowth: 0.4,
-      dollarStrength: 0.2
-    },
-    'Energy': {
-      interestRates: 0.1,
-      inflation: 0.7, // Energy benefits from inflation
-      gdpGrowth: 0.5,
-      dollarStrength: -0.5 // Oil priced in USD
-    },
-    'Materials': {
-      interestRates: -0.2,
-      inflation: 0.6,
-      gdpGrowth: 0.8,
-      dollarStrength: -0.3
-    },
-    'Industrials': {
-      interestRates: -0.3,
-      inflation: -0.1,
-      gdpGrowth: 0.8,
-      dollarStrength: -0.2
-    },
-    'Communication Services': {
-      interestRates: -0.5,
-      inflation: -0.2,
-      gdpGrowth: 0.6,
-      dollarStrength: -0.1
-    }
+  // Sector impact weights for different economic conditions
+  private readonly SECTOR_WEIGHTS = {
+    technology: { inflation: -0.8, recession: -1.2, monetary: -0.9, energy: -0.3 },
+    healthcare: { inflation: -0.2, recession: 0.1, monetary: -0.1, energy: -0.2 },
+    financials: { inflation: 0.3, recession: -1.5, monetary: 1.2, energy: -0.1 },
+    energy: { inflation: 0.9, recession: -0.4, monetary: 0.2, energy: 1.8 },
+    utilities: { inflation: -0.3, recession: 0.3, monetary: -0.4, energy: 0.7 },
+    industrials: { inflation: -0.5, recession: -1.1, monetary: -0.6, energy: -0.8 },
+    materials: { inflation: 0.4, recession: -0.9, monetary: -0.3, energy: -0.5 },
+    consumerDiscretionary: { inflation: -0.9, recession: -1.8, monetary: -0.7, energy: -1.1 },
+    consumerStaples: { inflation: -0.1, recession: 0.2, monetary: 0.1, energy: -0.4 },
+    realEstate: { inflation: -0.6, recession: -1.0, monetary: -1.3, energy: -0.2 },
+    communication: { inflation: -0.4, recession: -0.6, monetary: -0.5, energy: -0.2 }
   }
 
-  constructor(
-    fredAPI: FREDAPI,
-    blsAPI: BLSAPI,
-    eiaAPI: EIAAPI,
-    cache: RedisCache
-  ) {
-    this.fredAPI = fredAPI
-    this.blsAPI = blsAPI
-    this.eiaAPI = eiaAPI
-    this.cache = cache
-    this.config = this.createDefaultConfig()
+  constructor(options?: {
+    fredApiKey?: string
+    blsApiKey?: string
+    eiaApiKey?: string
+    timeout?: number
+    throwErrors?: boolean
+  }) {
+    const {
+      fredApiKey,
+      blsApiKey,
+      eiaApiKey,
+      timeout = 15000,
+      throwErrors = false
+    } = options || {}
+
+    // Initialize data source APIs with dependency injection
+    this.fredAPI = new FREDAPI(fredApiKey, timeout, throwErrors)
+    this.blsAPI = new BLSAPI(blsApiKey, timeout, throwErrors)
+    this.eiaAPI = new EIAAPI(eiaApiKey, timeout, throwErrors)
+    this.cache = RedisCache.getInstance()
+    this.timeout = timeout
+    this.throwErrors = throwErrors
+
+    console.log('🏭 MacroeconomicAnalysisService initialized with data source orchestration')
   }
 
   /**
-   * Main method: Analyze macroeconomic impact for a single stock
+   * Main orchestration method - gets comprehensive macro context
+   * Performance target: <800ms with >80% parallel processing efficiency
    */
-  async analyzeStockMacroImpact(symbol: string, sector: string, baseScore: number): Promise<StockMacroeconomicImpact | null> {
-    try {
-      console.log(`🌍 Analyzing macro impact for ${symbol} (${sector})`)
-
-      // Get current macroeconomic indicators
-      const indicators = await this.getMacroeconomicIndicators()
-      if (!indicators) {
-        console.warn('Unable to get macroeconomic indicators')
-        return null
-      }
-
-      // Analyze economic cycle
-      const cycleAnalysis = await this.analyzeEconomicCycle(indicators)
-
-      // Calculate sector-specific impact
-      const sectorImpact = this.calculateSectorImpact(sector, indicators, cycleAnalysis)
-
-      // Generate macroeconomic score
-      const macroScore = this.calculateMacroeconomicScore(indicators, cycleAnalysis)
-
-      // Calculate correlations (simplified for now, would use historical data in production)
-      const correlationAnalysis = this.calculateStockCorrelations(symbol, sector, indicators)
-
-      // Calculate adjusted score with 20% macro weight
-      const macroWeight = 0.20 // 20% as per roadmap
-      const adjustedScore = this.calculateAdjustedScore(baseScore, macroScore.overall, macroWeight)
-
-      return {
-        symbol,
-        macroScore,
-        sectorImpact,
-        correlationAnalysis,
-        adjustedScore,
-        macroWeight
-      }
-
-    } catch (error) {
-      console.error(`Macroeconomic analysis failed for ${symbol}:`, error)
-      return null
-    }
-  }
-
-  /**
-   * Bulk analysis for multiple stocks
-   */
-  async analyzeBulkMacroImpact(stocks: Array<{symbol: string, sector: string, baseScore: number}>): Promise<BulkMacroAnalysisResponse> {
+  async getMacroeconomicContext(): Promise<MacroeconomicContext | null> {
     const startTime = Date.now()
 
     try {
-      console.log(`🌍 Bulk macro analysis for ${stocks.length} stocks`)
+      // Check cache first (smart TTL strategy - 10min prod, 2min dev)
+      const cacheKey = 'macro:comprehensive_context'
+      const cacheTTL = process.env.NODE_ENV === 'production' ? 600 : 120
 
-      // Get shared macroeconomic data once
-      const indicators = await this.getMacroeconomicIndicators()
-      if (!indicators) {
-        return {
-          success: false,
-          error: 'Unable to retrieve macroeconomic indicators',
-          executionTime: Date.now() - startTime,
-          timestamp: Date.now()
-        }
-      }
-
-      const cycleAnalysis = await this.analyzeEconomicCycle(indicators)
-
-      // Analyze each stock
-      const stockImpacts: StockMacroeconomicImpact[] = []
-
-      for (const stock of stocks) {
-        try {
-          const sectorImpact = this.calculateSectorImpact(stock.sector, indicators, cycleAnalysis)
-          const macroScore = this.calculateMacroeconomicScore(indicators, cycleAnalysis)
-          const correlationAnalysis = this.calculateStockCorrelations(stock.symbol, stock.sector, indicators)
-
-          const macroWeight = 0.20
-          const adjustedScore = this.calculateAdjustedScore(stock.baseScore, macroScore.overall, macroWeight)
-
-          stockImpacts.push({
-            symbol: stock.symbol,
-            macroScore,
-            sectorImpact,
-            correlationAnalysis,
-            adjustedScore,
-            macroWeight
-          })
-
-        } catch (error) {
-          console.warn(`Failed macro analysis for ${stock.symbol}:`, error)
-          // Continue with other stocks
-        }
-      }
-
-      return {
-        success: true,
-        data: {
-          indicators,
-          cycleAnalysis,
-          stockImpacts
-        },
-        executionTime: Date.now() - startTime,
-        timestamp: Date.now()
-      }
-
-    } catch (error) {
-      console.error('Bulk macro analysis failed:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        executionTime: Date.now() - startTime,
-        timestamp: Date.now()
-      }
-    }
-  }
-
-  /**
-   * Get comprehensive macroeconomic indicators from multiple sources
-   */
-  async getMacroeconomicIndicators(): Promise<MacroeconomicIndicators | null> {
-    try {
-      // Check cache first
-      const cacheKey = 'macro:indicators'
-      const cached = await this.getCachedData(cacheKey)
+      const cached = await this.cache.get<MacroeconomicContext>(cacheKey)
       if (cached) {
+        console.log(`📊 Returning cached macro context (${Date.now() - startTime}ms)`)
         return cached
       }
 
-      console.log('📊 Fetching fresh macroeconomic indicators...')
+      console.log('🔍 Fetching fresh macroeconomic context with parallel processing...')
 
-      // Fetch data from multiple sources in parallel
+      // Parallel data collection using Promise.allSettled for maximum resilience
+      const dataCollectionPromises = [
+        this.fredAPI.getEconomicContext(),
+        this.fredAPI.getInflationTrendAnalysis(),
+        this.fredAPI.getMonetaryPolicyContext(),
+        this.fredAPI.getEconomicCyclePosition(),
+        this.blsAPI.calculateEmploymentStrengthScore(),
+        this.blsAPI.analyzeUnemploymentTrend(6),
+        this.eiaAPI.getQuickCommoditySnapshot()
+      ]
+
+      const results = await Promise.allSettled(dataCollectionPromises)
+      const processingTime = Date.now() - startTime
+
+      // Process results with graceful degradation
       const [
-        gdpData,
-        inflationData,
-        employmentData,
-        ratesData,
-        moneySupplyData,
-        exchangeData,
-        commodityData
-      ] = await Promise.allSettled([
-        this.getGDPIndicators(),
-        this.getInflationIndicators(),
-        this.getEmploymentIndicators(),
-        this.getInterestRateIndicators(),
-        this.getMoneySupplyIndicators(),
-        this.getExchangeRateIndicators(),
-        this.getCommodityIndicators()
-      ])
+        economicContext,
+        inflationTrend,
+        monetaryContext,
+        cyclePosition,
+        employmentStrength,
+        unemploymentTrend,
+        commoditySnapshot
+      ] = results
 
-      const indicators: MacroeconomicIndicators = {
-        gdp: gdpData.status === 'fulfilled' ? gdpData.value : this.getEmptyGDPData(),
-        inflation: inflationData.status === 'fulfilled' ? inflationData.value : this.getEmptyInflationData(),
-        employment: employmentData.status === 'fulfilled' ? employmentData.value : this.getEmptyEmploymentData(),
-        interestRates: ratesData.status === 'fulfilled' ? ratesData.value : this.getEmptyRatesData(),
-        moneySupply: moneySupplyData.status === 'fulfilled' ? moneySupplyData.value : this.getEmptyMoneySupplyData(),
-        exchangeRates: exchangeData.status === 'fulfilled' ? exchangeData.value : this.getEmptyExchangeData(),
-        commodities: commodityData.status === 'fulfilled' ? commodityData.value : this.getEmptyCommodityData()
+      // Calculate data availability and parallel efficiency
+      const successfulSources = results.filter(r => r.status === 'fulfilled' && r.value).length
+      const parallelEfficiency = (successfulSources / results.length) * 100
+      const dataSourcesUsed: string[] = []
+
+      // Collect data sources that provided data
+      if (economicContext.status === 'fulfilled' && economicContext.value) dataSourcesUsed.push('FRED-Economic')
+      if (inflationTrend.status === 'fulfilled' && inflationTrend.value) dataSourcesUsed.push('FRED-Inflation')
+      if (monetaryContext.status === 'fulfilled' && monetaryContext.value) dataSourcesUsed.push('FRED-Monetary')
+      if (cyclePosition.status === 'fulfilled' && cyclePosition.value) dataSourcesUsed.push('FRED-Cycle')
+      if (employmentStrength.status === 'fulfilled' && employmentStrength.value) dataSourcesUsed.push('BLS-Employment')
+      if (unemploymentTrend.status === 'fulfilled' && unemploymentTrend.value) dataSourcesUsed.push('BLS-Unemployment')
+      if (commoditySnapshot.status === 'fulfilled' && commoditySnapshot.value) dataSourcesUsed.push('EIA-Energy')
+
+      // Calculate composite macroeconomic score (0-10 scale)
+      const overallScore = this.calculateCompositeScore({
+        economicContext: economicContext.status === 'fulfilled' ? economicContext.value : null,
+        inflationTrend: inflationTrend.status === 'fulfilled' ? inflationTrend.value : null,
+        monetaryContext: monetaryContext.status === 'fulfilled' ? monetaryContext.value : null,
+        cyclePosition: cyclePosition.status === 'fulfilled' ? cyclePosition.value : null,
+        employmentStrength: employmentStrength.status === 'fulfilled' ? employmentStrength.value : null,
+        unemploymentTrend: unemploymentTrend.status === 'fulfilled' ? unemploymentTrend.value : null,
+        commoditySnapshot: commoditySnapshot.status === 'fulfilled' ? commoditySnapshot.value : null
+      })
+
+      // Determine inflation environment
+      const inflationEnvironment = this.determineInflationEnvironment(
+        inflationTrend.status === 'fulfilled' ? inflationTrend.value : null
+      )
+
+      // Determine monetary policy stance
+      const monetaryPolicy = this.determineMonetaryPolicy(
+        monetaryContext.status === 'fulfilled' ? monetaryContext.value : null
+      )
+
+      // Determine economic cycle position
+      const economicCycle = this.determineEconomicCycle(
+        cyclePosition.status === 'fulfilled' ? cyclePosition.value : null,
+        employmentStrength.status === 'fulfilled' ? employmentStrength.value : null
+      )
+
+      // Calculate sector-specific impact multipliers
+      const sectorImpacts = this.calculateSectorImpacts(
+        overallScore,
+        inflationTrend.status === 'fulfilled' ? inflationTrend.value : null,
+        monetaryContext.status === 'fulfilled' ? monetaryContext.value : null,
+        commoditySnapshot.status === 'fulfilled' ? commoditySnapshot.value : null
+      )
+
+      // Calculate confidence score based on data availability and freshness
+      const confidence = this.calculateConfidenceScore(
+        successfulSources,
+        results.length,
+        processingTime
+      )
+
+      const macroContext: MacroeconomicContext = {
+        overallScore: Number(overallScore.toFixed(1)),
+        inflationEnvironment,
+        monetaryPolicy,
+        economicCycle,
+        sectorImpacts,
+        confidence: Number(confidence.toFixed(2)),
+        lastUpdate: new Date().toISOString(),
+        dataSourcesUsed
       }
 
-      // Cache for 15 minutes (macro data doesn't change frequently)
-      await this.setCachedData(cacheKey, indicators, 15 * 60 * 1000)
+      // Cache with smart TTL strategy
+      await this.cache.set(cacheKey, macroContext, cacheTTL, {
+        source: 'macro-analysis',
+        version: '1.0.0'
+      })
 
-      return indicators
+      const totalTime = Date.now() - startTime
+      console.log(`✅ Macro context generated in ${totalTime}ms with ${parallelEfficiency.toFixed(1)}% efficiency`)
+
+      // Validate performance requirements
+      if (totalTime > 800) {
+        console.warn(`⚠️ Performance target missed: ${totalTime}ms > 800ms target`)
+      }
+
+      if (parallelEfficiency < 80) {
+        console.warn(`⚠️ Parallel efficiency below target: ${parallelEfficiency.toFixed(1)}% < 80%`)
+      }
+
+      return macroContext
 
     } catch (error) {
-      console.error('Failed to get macroeconomic indicators:', error)
+      const responseTime = Date.now() - startTime
+      console.error(`❌ Macro context generation failed (${responseTime}ms):`, error)
+
+      if (this.throwErrors) {
+        throw ErrorHandler.normalizeError(error)
+      }
+
       return null
     }
   }
 
   /**
-   * Analyze current economic cycle phase
+   * Get comprehensive macro analysis with enhanced features
    */
-  private async analyzeEconomicCycle(indicators: MacroeconomicIndicators): Promise<EconomicCycleAnalysis> {
+  async getComprehensiveMacroAnalysis(): Promise<ComprehensiveMacroAnalysis | null> {
+    const startTime = Date.now()
+
     try {
-      // Simplified economic cycle analysis
-      // In production, this would use more sophisticated models
+      // Get base macro context
+      const baseContext = await this.getMacroeconomicContext()
+      if (!baseContext) {
+        console.warn('❌ Failed to get base macro context')
+        return null
+      }
 
-      let cycleScore = 0
-      const signals: string[] = []
+      // Enhanced parallel processing for additional analysis
+      const enhancedAnalysisPromises = [
+        this.analyzeMacroTrends(),
+        this.analyzeCurrencyImpact(),
+        this.analyzeEnergyInflationPressure(),
+        this.assessMacroRisks(baseContext)
+      ]
 
-      // GDP growth analysis
-      if (indicators.gdp.growth !== null) {
-        if (indicators.gdp.growth > 3) {
-          cycleScore += 0.3
-          signals.push('Strong GDP growth')
-        } else if (indicators.gdp.growth < 0) {
-          cycleScore -= 0.4
-          signals.push('Negative GDP growth')
+      const enhancedResults = await Promise.allSettled(enhancedAnalysisPromises)
+      const processingTime = Date.now() - startTime
+
+      const [
+        trendAnalysis,
+        currencyAnalysis,
+        energyAnalysis,
+        riskFactors
+      ] = enhancedResults
+
+      // Generate insights and opportunities
+      const keyInsights = this.generateKeyInsights(baseContext, {
+        trendAnalysis: trendAnalysis.status === 'fulfilled' ? trendAnalysis.value : null,
+        currencyAnalysis: currencyAnalysis.status === 'fulfilled' ? currencyAnalysis.value : null,
+        energyAnalysis: energyAnalysis.status === 'fulfilled' ? energyAnalysis.value : null
+      })
+
+      const opportunities = this.identifyOpportunities(baseContext, keyInsights)
+
+      const comprehensiveAnalysis: ComprehensiveMacroAnalysis = {
+        ...baseContext,
+        trendAnalysis: trendAnalysis.status === 'fulfilled' ? trendAnalysis.value as MacroTrendAnalysis : this.getDefaultTrendAnalysis(),
+        currencyAnalysis: currencyAnalysis.status === 'fulfilled' ? currencyAnalysis.value as CurrencyAnalysis : undefined,
+        energyAnalysis: energyAnalysis.status === 'fulfilled' ? energyAnalysis.value as EnergyInflationPressure : undefined,
+        riskFactors: riskFactors.status === 'fulfilled' ? riskFactors.value as MacroRiskFactors : this.getDefaultRiskFactors(),
+        opportunities,
+        keyInsights,
+        performanceMetrics: {
+          responseTime: processingTime,
+          dataCompleteness: baseContext.confidence,
+          parallelEfficiency: (enhancedResults.filter(r => r.status === 'fulfilled').length / enhancedResults.length) * 100,
+          cacheHitRate: 0 // Would be calculated from cache stats
         }
       }
 
-      // Unemployment analysis
-      if (indicators.employment.unemploymentRate !== null) {
-        if (indicators.employment.unemploymentRate < 4) {
-          cycleScore += 0.2
-          signals.push('Low unemployment')
-        } else if (indicators.employment.unemploymentRate > 7) {
-          cycleScore -= 0.3
-          signals.push('High unemployment')
+      const totalTime = Date.now() - startTime
+      console.log(`✅ Comprehensive macro analysis completed in ${totalTime}ms`)
+
+      return comprehensiveAnalysis
+
+    } catch (error) {
+      console.error('❌ Comprehensive macro analysis failed:', error)
+      if (this.throwErrors) throw error
+      return null
+    }
+  }
+
+  /**
+   * Calculate 0-10 scale composite macroeconomic score with weighted components
+   */
+  private calculateCompositeScore(data: {
+    economicContext: any
+    inflationTrend: any
+    monetaryContext: any
+    cyclePosition: any
+    employmentStrength: any
+    unemploymentTrend: any
+    commoditySnapshot: any
+  }): number {
+    let score = 5.0 // Neutral baseline
+    let totalWeight = 0
+
+    // Economic cycle weight: 25%
+    if (data.cyclePosition) {
+      const cycleScore = data.cyclePosition.compositeScore / 10 // Normalize to 0-10
+      score += cycleScore * 0.25
+      totalWeight += 0.25
+    }
+
+    // Employment weight: 20%
+    if (data.employmentStrength) {
+      const employmentScore = data.employmentStrength.overallScore
+      score += employmentScore * 0.20
+      totalWeight += 0.20
+    }
+
+    // Inflation weight: 20%
+    if (data.inflationTrend) {
+      const inflationScore = this.scoreInflationTrend(data.inflationTrend)
+      score += inflationScore * 0.20
+      totalWeight += 0.20
+    }
+
+    // Monetary policy weight: 15%
+    if (data.monetaryContext) {
+      const monetaryScore = data.monetaryContext.equityValuationImpact.score / 10
+      score += monetaryScore * 0.15
+      totalWeight += 0.15
+    }
+
+    // Unemployment trend weight: 10%
+    if (data.unemploymentTrend) {
+      const unemploymentScore = data.unemploymentTrend.economicSignal === 'bullish' ? 8 :
+                               data.unemploymentTrend.economicSignal === 'bearish' ? 3 : 5
+      score += unemploymentScore * 0.10
+      totalWeight += 0.10
+    }
+
+    // Energy/commodity weight: 10%
+    if (data.commoditySnapshot) {
+      const energyScore = this.scoreEnergyConditions(data.commoditySnapshot)
+      score += energyScore * 0.10
+      totalWeight += 0.10
+    }
+
+    // Normalize score if we don't have complete data
+    if (totalWeight > 0 && totalWeight < 1.0) {
+      score = (score - 5.0) / totalWeight + 5.0
+    }
+
+    return Math.max(0, Math.min(10, score))
+  }
+
+  /**
+   * Score inflation trend on 0-10 scale (5 = optimal, lower/higher = worse)
+   */
+  private scoreInflationTrend(inflationTrend: any): number {
+    if (!inflationTrend) return 5
+
+    const targetInflation = 2.0
+    const currentInflation = inflationTrend.cpiMomentum?.yearOverYear || 0
+    const deviation = Math.abs(currentInflation - targetInflation)
+
+    // Optimal range: 1.5% - 2.5%
+    if (deviation <= 0.5) return 9 // Very good
+    if (deviation <= 1.0) return 7 // Good
+    if (deviation <= 2.0) return 5 // Acceptable
+    if (deviation <= 3.0) return 3 // Concerning
+    return 1 // Poor
+  }
+
+  /**
+   * Score energy conditions based on price levels and volatility
+   */
+  private scoreEnergyConditions(commoditySnapshot: any): number {
+    if (!commoditySnapshot) return 5
+
+    let score = 5
+
+    // WTI oil price assessment
+    if (commoditySnapshot.wti) {
+      const wtiPrice = commoditySnapshot.wti
+      if (wtiPrice >= 60 && wtiPrice <= 80) score += 1 // Goldilocks range
+      else if (wtiPrice >= 40 && wtiPrice <= 100) score += 0.5 // Acceptable
+      else score -= 1 // Too high or too low
+    }
+
+    // Natural gas price assessment
+    if (commoditySnapshot.natGas) {
+      const gasPrice = commoditySnapshot.natGas
+      if (gasPrice >= 2.5 && gasPrice <= 4.0) score += 0.5 // Reasonable range
+      else if (gasPrice > 6.0) score -= 1 // Too expensive
+    }
+
+    return Math.max(0, Math.min(10, score))
+  }
+
+  /**
+   * Determine inflation environment based on trends and levels
+   */
+  private determineInflationEnvironment(inflationTrend: any): string {
+    if (!inflationTrend) return 'moderate'
+
+    const currentCPI = inflationTrend.cpiMomentum?.yearOverYear || 0
+    const trend = inflationTrend.outlook
+
+    if (currentCPI < 1.5) return 'low'
+    if (currentCPI >= 1.5 && currentCPI < 3.0) {
+      return trend === 'falling' ? 'declining' : 'moderate'
+    }
+    if (currentCPI >= 3.0) {
+      return trend === 'falling' ? 'declining' : 'high'
+    }
+
+    return 'moderate'
+  }
+
+  /**
+   * Determine monetary policy stance
+   */
+  private determineMonetaryPolicy(monetaryContext: any): string {
+    if (!monetaryContext) return 'neutral'
+
+    const fedFundsRate = monetaryContext.federalFundsRate?.current || 5.0
+    const stance = monetaryContext.policyStance
+
+    if (stance?.includes('dovish') || fedFundsRate < 2.0) return 'accommodative'
+    if (stance?.includes('hawkish') || fedFundsRate > 5.5) return 'restrictive'
+    return 'neutral'
+  }
+
+  /**
+   * Determine economic cycle position
+   */
+  private determineEconomicCycle(cyclePosition: any, employmentStrength: any): string {
+    if (cyclePosition?.phase) return cyclePosition.phase
+
+    // Fallback based on employment strength
+    if (employmentStrength) {
+      const score = employmentStrength.overallScore
+      if (score >= 8.0) return 'expansion'
+      if (score >= 6.0) return 'peak'
+      if (score >= 4.0) return 'trough'
+      return 'contraction'
+    }
+
+    return 'expansion' // Default optimistic
+  }
+
+  /**
+   * Calculate sector-specific impact multipliers
+   */
+  private calculateSectorImpacts(
+    overallScore: number,
+    inflationTrend: any,
+    monetaryContext: any,
+    commoditySnapshot: any
+  ): Record<string, number> {
+    const impacts: Record<string, number> = {}
+
+    // Base multiplier from overall macro score
+    const baseMultiplier = (overallScore - 5) / 5 // -1 to +1 range
+
+    // Economic condition factors
+    const inflationFactor = this.getInflationFactor(inflationTrend)
+    const monetaryFactor = this.getMonetaryFactor(monetaryContext)
+    const energyFactor = this.getEnergyFactor(commoditySnapshot)
+    const recessionFactor = overallScore < 4 ? -0.5 : 0
+
+    // Calculate sector impacts using weights
+    Object.entries(this.SECTOR_WEIGHTS).forEach(([sector, weights]) => {
+      let sectorImpact = baseMultiplier
+
+      sectorImpact += weights.inflation * inflationFactor
+      sectorImpact += weights.monetary * monetaryFactor
+      sectorImpact += weights.energy * energyFactor
+      sectorImpact += weights.recession * recessionFactor
+
+      // Normalize to reasonable range
+      impacts[sector] = Math.max(-2.0, Math.min(2.0, sectorImpact))
+    })
+
+    return impacts
+  }
+
+  /**
+   * Calculate confidence score based on data availability and quality
+   */
+  private calculateConfidenceScore(
+    successfulSources: number,
+    totalSources: number,
+    processingTime: number
+  ): number {
+    let confidence = 0.5 // Base confidence
+
+    // Data availability component (50% weight)
+    const dataAvailability = successfulSources / totalSources
+    confidence += dataAvailability * 0.5
+
+    // Performance component (20% weight) - faster = more confident
+    const performanceScore = Math.max(0, (800 - processingTime) / 800)
+    confidence += performanceScore * 0.2
+
+    // Data freshness component (30% weight) - assume fresh for now
+    confidence += 0.3
+
+    return Math.max(0, Math.min(1, confidence))
+  }
+
+  // Helper methods for factor calculations
+  private getInflationFactor(inflationTrend: any): number {
+    if (!inflationTrend) return 0
+    const cpi = inflationTrend.cpiMomentum?.yearOverYear || 2.0
+    return (cpi - 2.0) / 5.0 // Normalize around 2% target
+  }
+
+  private getMonetaryFactor(monetaryContext: any): number {
+    if (!monetaryContext) return 0
+    const fedRate = monetaryContext.federalFundsRate?.current || 5.0
+    return (fedRate - 5.0) / 5.0 // Normalize around 5% neutral rate
+  }
+
+  private getEnergyFactor(commoditySnapshot: any): number {
+    if (!commoditySnapshot?.wti) return 0
+    const oilPrice = commoditySnapshot.wti
+    return (oilPrice - 70) / 50 // Normalize around $70/barrel
+  }
+
+  // Enhanced analysis methods
+  private async analyzeMacroTrends(): Promise<MacroTrendAnalysis | null> {
+    try {
+      // This would integrate multiple data sources for comprehensive trend analysis
+      // For now, return a simplified structure
+      return {
+        gdpMomentum: {
+          direction: 'stable',
+          strength: 6.5,
+          confidence: 0.8
+        },
+        inflationTrend: {
+          current: 3.2,
+          direction: 'declining',
+          momentum: -0.5
+        },
+        employmentTrend: {
+          strength: 7.8,
+          direction: 'improving',
+          confidence: 0.9
+        },
+        monetaryConditions: {
+          stance: 'restrictive',
+          tightness: 7.5,
+          marketImpact: -0.6
         }
       }
+    } catch (error) {
+      console.error('Error analyzing macro trends:', error)
+      return null
+    }
+  }
 
-      // Yield curve analysis
-      if (indicators.interestRates.isInverted) {
-        cycleScore -= 0.4
-        signals.push('Inverted yield curve')
-      }
+  private async analyzeCurrencyImpact(): Promise<CurrencyAnalysis | null> {
+    try {
+      // Get DXY data from EIA service (which uses Alpha Vantage)
+      const dxyData = await this.eiaAPI.getDollarIndex()
 
-      // Inflation analysis
-      if (indicators.inflation.cpi !== null) {
-        if (indicators.inflation.cpi > 5) {
-          cycleScore -= 0.2
-          signals.push('High inflation')
-        } else if (indicators.inflation.cpi < 1) {
-          cycleScore -= 0.1
-          signals.push('Low inflation risk')
-        }
-      }
+      if (!dxyData) return null
 
-      // Determine cycle phase
-      let phase: 'expansion' | 'peak' | 'contraction' | 'trough' | 'unknown'
-      if (cycleScore > 0.3) {
-        phase = 'expansion'
-      } else if (cycleScore > 0) {
-        phase = 'peak'
-      } else if (cycleScore > -0.3) {
-        phase = 'contraction'
-      } else {
-        phase = 'trough'
-      }
+      const dxyStrength = dxyData.rate
+      const usdTrend = dxyData.changePercent > 0.5 ? 'strengthening' :
+                       dxyData.changePercent < -0.5 ? 'weakening' : 'stable'
 
       return {
-        cycle: {
-          phase,
-          confidence: Math.min(Math.abs(cycleScore), 1),
-          timeInPhase: 6, // Simplified - would track actual time
-          nextPhaseEstimate: 12 // Simplified estimate
-        },
-        indicators: {
-          leading: {
-            score: cycleScore,
-            signals: signals.slice(0, 3)
-          },
-          coincident: {
-            score: cycleScore * 0.8,
-            signals: ['GDP growth', 'Employment levels']
-          },
-          lagging: {
-            score: cycleScore * 0.6,
-            signals: ['Unemployment rate', 'Inflation']
-          }
-        },
-        riskFactors: {
-          inflationRisk: indicators.inflation.cpi && indicators.inflation.cpi > 4 ? 0.7 : 0.3,
-          recessionRisk: cycleScore < -0.2 ? 0.6 : 0.2,
-          rateHikeRisk: indicators.inflation.cpi && indicators.inflation.cpi > 3 ? 0.8 : 0.3,
-          marketVolatilityRisk: 0.4 // Would calculate from market data
+        dxyStrength,
+        usdTrend,
+        globalImpact: Math.abs(dxyData.changePercent) * 10,
+        inflationPressure: dxyStrength > 105 ? 0.3 : -0.2,
+        timestamp: Date.now()
+      }
+    } catch (error) {
+      console.error('Error analyzing currency impact:', error)
+      return null
+    }
+  }
+
+  private async analyzeEnergyInflationPressure(): Promise<EnergyInflationPressure | null> {
+    try {
+      const energyData = await this.eiaAPI.getEnergyInflationImpact()
+
+      if (!energyData) return null
+
+      return {
+        oilPressure: energyData.oilInflationImpact,
+        gasPressure: energyData.gasInflationImpact,
+        energyInflationScore: (energyData.oilInflationImpact + energyData.gasInflationImpact) / 2,
+        sectorImpacts: {
+          transportation: energyData.transportationSectorImpact,
+          utilities: energyData.oilInflationImpact * 0.6,
+          manufacturing: energyData.oilInflationImpact * 0.8,
+          consumer: energyData.consumerSectorImpact
         },
         timestamp: Date.now()
       }
-
     } catch (error) {
-      console.error('Economic cycle analysis failed:', error)
-      return this.getDefaultCycleAnalysis()
-    }
-  }
-
-  /**
-   * Calculate sector-specific economic impact
-   */
-  private calculateSectorImpact(sector: string, indicators: MacroeconomicIndicators, cycle: EconomicCycleAnalysis): SectorEconomicImpact {
-    const sensitivity = this.SECTOR_SENSITIVITIES[sector as keyof typeof this.SECTOR_SENSITIVITIES] || this.SECTOR_SENSITIVITIES['Technology'] // Default to tech
-
-    // Calculate current environment score based on sector sensitivities
-    let environmentScore = 0.5 // Neutral base
-
-    // Interest rate impact
-    if (indicators.interestRates.fedFunds !== null) {
-      const rateLevel = indicators.interestRates.fedFunds
-      if (rateLevel > 4) {
-        environmentScore += sensitivity.interestRates * -0.3 // High rates
-      } else if (rateLevel < 2) {
-        environmentScore += sensitivity.interestRates * 0.3 // Low rates
-      }
-    }
-
-    // Inflation impact
-    if (indicators.inflation.cpi !== null) {
-      const inflationLevel = indicators.inflation.cpi
-      if (inflationLevel > 4) {
-        environmentScore += sensitivity.inflation * -0.2
-      } else if (inflationLevel < 2) {
-        environmentScore += sensitivity.inflation * 0.2
-      }
-    }
-
-    // GDP growth impact
-    if (indicators.gdp.growth !== null) {
-      const gdpGrowth = indicators.gdp.growth
-      if (gdpGrowth > 3) {
-        environmentScore += sensitivity.gdpGrowth * 0.3
-      } else if (gdpGrowth < 0) {
-        environmentScore += sensitivity.gdpGrowth * -0.4
-      }
-    }
-
-    // Dollar strength impact
-    if (indicators.exchangeRates.dxy !== null) {
-      // Simplified DXY impact (would need historical comparison)
-      environmentScore += sensitivity.dollarStrength * 0.1
-    }
-
-    // Normalize environment score
-    environmentScore = Math.max(0, Math.min(1, environmentScore))
-
-    // Determine outlook
-    let outlook: 'very_positive' | 'positive' | 'neutral' | 'negative' | 'very_negative'
-    if (environmentScore > 0.8) outlook = 'very_positive'
-    else if (environmentScore > 0.6) outlook = 'positive'
-    else if (environmentScore > 0.4) outlook = 'neutral'
-    else if (environmentScore > 0.2) outlook = 'negative'
-    else outlook = 'very_negative'
-
-    return {
-      sector,
-      economicSensitivity: sensitivity,
-      currentEnvironmentScore: environmentScore,
-      outlook
-    }
-  }
-
-  /**
-   * Calculate comprehensive macroeconomic score
-   */
-  private calculateMacroeconomicScore(indicators: MacroeconomicIndicators, cycle: EconomicCycleAnalysis): MacroeconomicScore {
-    const components = {
-      growth: this.calculateGrowthScore(indicators),
-      inflation: this.calculateInflationScore(indicators),
-      monetary: this.calculateMonetaryScore(indicators),
-      fiscal: 0.5, // Simplified - would include govt spending, deficit data
-      external: this.calculateExternalScore(indicators)
-    }
-
-    // Weight the components according to config
-    const overall =
-      components.growth * this.config.weights.growth +
-      components.inflation * this.config.weights.inflation +
-      components.monetary * this.config.weights.monetary +
-      components.fiscal * this.config.weights.fiscal +
-      components.external * this.config.weights.external
-
-    const reasoning: string[] = []
-    const warnings: string[] = []
-    const opportunities: string[] = []
-
-    // Generate reasoning
-    if (components.growth > 0.7) {
-      reasoning.push('Strong economic growth supports market expansion')
-      opportunities.push('GDP growth favors cyclical sectors')
-    } else if (components.growth < 0.3) {
-      reasoning.push('Weak economic growth poses headwinds')
-      warnings.push('GDP concerns may pressure earnings')
-    }
-
-    if (components.inflation > 0.7) {
-      reasoning.push('Low inflation provides favorable environment')
-      opportunities.push('Stable prices support consumer spending')
-    } else if (components.inflation < 0.3) {
-      reasoning.push('High inflation creates uncertainty')
-      warnings.push('Inflation may compress margins')
-    }
-
-    if (components.monetary > 0.7) {
-      reasoning.push('Accommodative monetary policy supports valuations')
-      opportunities.push('Low rates benefit growth stocks')
-    } else if (components.monetary < 0.3) {
-      reasoning.push('Tight monetary policy pressures valuations')
-      warnings.push('Rising rates may impact high-multiple stocks')
-    }
-
-    if (cycle.riskFactors.recessionRisk > 0.5) {
-      warnings.push('Elevated recession risk requires caution')
-    }
-
-    return {
-      overall: Math.max(0, Math.min(1, overall)),
-      components,
-      confidence: Math.max(0.3, 1 - cycle.riskFactors.recessionRisk),
-      reasoning,
-      warnings,
-      opportunities,
-      timestamp: Date.now()
-    }
-  }
-
-  /**
-   * Calculate adjusted stock score with macroeconomic factors
-   */
-  private calculateAdjustedScore(baseScore: number, macroScore: number, macroWeight: number): number {
-    // Weighted average: baseScore * (1 - macroWeight) + macroScore * macroWeight
-    const adjustedScore = baseScore * (1 - macroWeight) + macroScore * macroWeight
-    return Math.max(0, Math.min(1, adjustedScore))
-  }
-
-  // Data fetching methods for each indicator category
-
-  private async getGDPIndicators() {
-    const [gdp, realGdp, potentialGdp] = await Promise.allSettled([
-      this.fredAPI.getStockPrice('GDP'),
-      this.fredAPI.getStockPrice('GDPC1'),
-      this.fredAPI.getStockPrice('GDPPOT')
-    ])
-
-    return {
-      real: realGdp.status === 'fulfilled' && realGdp.value ? realGdp.value.price : null,
-      nominal: gdp.status === 'fulfilled' && gdp.value ? gdp.value.price : null,
-      potential: potentialGdp.status === 'fulfilled' && potentialGdp.value ? potentialGdp.value.price : null,
-      growth: null, // Would calculate from historical data
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getInflationIndicators() {
-    const [cpi, coreCpi] = await Promise.allSettled([
-      this.fredAPI.getStockPrice('CPIAUCSL'),
-      this.fredAPI.getStockPrice('CPILFESL')
-    ])
-
-    return {
-      cpi: cpi.status === 'fulfilled' && cpi.value ? cpi.value.price : null,
-      coreCpi: coreCpi.status === 'fulfilled' && coreCpi.value ? coreCpi.value.price : null,
-      ppi: null, // Would get from BLS
-      pce: null, // Would get PCE data
-      expectedInflation: null, // Would calculate from TIPS spreads
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getEmploymentIndicators() {
-    const [unemployment, participation, payrolls] = await Promise.allSettled([
-      this.fredAPI.getStockPrice('UNRATE'),
-      this.fredAPI.getStockPrice('CIVPART'),
-      this.fredAPI.getStockPrice('PAYEMS')
-    ])
-
-    return {
-      unemploymentRate: unemployment.status === 'fulfilled' && unemployment.value ? unemployment.value.price : null,
-      participationRate: participation.status === 'fulfilled' && participation.value ? participation.value.price : null,
-      nonfarmPayrolls: payrolls.status === 'fulfilled' && payrolls.value ? payrolls.value.price : null,
-      unemploymentLevel: null,
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getInterestRateIndicators() {
-    const treasuryData = await this.fredAPI.getTreasuryAnalysisData()
-
-    return {
-      fedFunds: treasuryData?.rates?.['3M'] || null,
-      treasury3m: treasuryData?.rates?.['3M'] || null,
-      treasury10y: treasuryData?.rates?.['10Y'] || null,
-      treasury30y: treasuryData?.rates?.['30Y'] || null,
-      yieldCurveSlope: treasuryData?.yieldCurve?.slope_10Y_2Y || null,
-      isInverted: treasuryData?.yieldCurve?.isInverted || false,
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getMoneySupplyIndicators() {
-    const [m1, m2] = await Promise.allSettled([
-      this.fredAPI.getStockPrice('M1SL'),
-      this.fredAPI.getStockPrice('M2SL')
-    ])
-
-    return {
-      m1: m1.status === 'fulfilled' && m1.value ? m1.value.price : null,
-      m2: m2.status === 'fulfilled' && m2.value ? m2.value.price : null,
-      m1Growth: null, // Would calculate from historical data
-      m2Growth: null, // Would calculate from historical data
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getExchangeRateIndicators() {
-    // Add DXY support to FRED API call
-    const [dxy, eur, jpy] = await Promise.allSettled([
-      this.fredAPI.getStockPrice('DTWEXBGS'), // Trade weighted US dollar index
-      this.fredAPI.getStockPrice('DEXUSEU'),
-      this.fredAPI.getStockPrice('DEXJPUS')
-    ])
-
-    return {
-      dxy: dxy.status === 'fulfilled' && dxy.value ? dxy.value.price : null,
-      eurUsd: eur.status === 'fulfilled' && eur.value ? eur.value.price : null,
-      usdJpy: jpy.status === 'fulfilled' && jpy.value ? jpy.value.price : null,
-      usdCny: null, // Would get from additional source
-      lastUpdated: Date.now()
-    }
-  }
-
-  private async getCommodityIndicators() {
-    // Note: EIA API methods would need to be implemented
-    // For now, returning null values as placeholders
-    return {
-      oilWti: null, // Would call this.eiaAPI.getCrudeOilPrices() when method exists
-      oilBrent: null, // Would call this.eiaAPI.getCrudeOilPrices() when method exists
-      gold: null, // Would get from financial data provider
-      naturalGas: null, // Would call this.eiaAPI.getNaturalGasPrices() when method exists
-      lastUpdated: Date.now()
-    }
-  }
-
-  // Score calculation helpers
-
-  private calculateGrowthScore(indicators: MacroeconomicIndicators): number {
-    let score = 0.5 // Neutral base
-
-    if (indicators.gdp.growth !== null) {
-      if (indicators.gdp.growth > 3) score = 0.8
-      else if (indicators.gdp.growth > 2) score = 0.7
-      else if (indicators.gdp.growth > 0) score = 0.6
-      else score = 0.2
-    }
-
-    return score
-  }
-
-  private calculateInflationScore(indicators: MacroeconomicIndicators): number {
-    let score = 0.5
-
-    if (indicators.inflation.cpi !== null) {
-      const cpi = indicators.inflation.cpi
-      if (cpi < 2) score = 0.6 // Below target, but not deflationary
-      else if (cpi < 3) score = 0.8 // Near target
-      else if (cpi < 5) score = 0.4 // Elevated
-      else score = 0.2 // High inflation
-    }
-
-    return score
-  }
-
-  private calculateMonetaryScore(indicators: MacroeconomicIndicators): number {
-    let score = 0.5
-
-    if (indicators.interestRates.fedFunds !== null) {
-      const rate = indicators.interestRates.fedFunds
-      if (rate < 2) score = 0.8 // Accommodative
-      else if (rate < 4) score = 0.6 // Neutral
-      else score = 0.3 // Restrictive
-    }
-
-    // Adjust for yield curve
-    if (indicators.interestRates.isInverted) {
-      score *= 0.7 // Penalty for inversion
-    }
-
-    return score
-  }
-
-  private calculateExternalScore(indicators: MacroeconomicIndicators): number {
-    let score = 0.5
-
-    // Dollar strength impact (simplified)
-    if (indicators.exchangeRates.dxy !== null) {
-      // Moderate dollar strength is generally positive
-      score = 0.6
-    }
-
-    return score
-  }
-
-  private calculateStockCorrelations(symbol: string, sector: string, indicators: MacroeconomicIndicators) {
-    // Simplified correlation calculation
-    // In production, this would use historical correlation analysis
-    const sectorSensitivity = this.SECTOR_SENSITIVITIES[sector as keyof typeof this.SECTOR_SENSITIVITIES] || this.SECTOR_SENSITIVITIES['Technology']
-
-    return {
-      gdpCorrelation: sectorSensitivity.gdpGrowth,
-      inflationCorrelation: sectorSensitivity.inflation,
-      rateCorrelation: sectorSensitivity.interestRates,
-      dxyCorrelation: sectorSensitivity.dollarStrength
-    }
-  }
-
-  // Cache management
-  private async getCachedData(key: string): Promise<any> {
-    try {
-      return await this.cache.get(key)
-    } catch (error) {
-      console.warn('Cache get failed:', error)
+      console.error('Error analyzing energy inflation pressure:', error)
       return null
     }
   }
 
-  private async setCachedData(key: string, data: any, ttl: number): Promise<void> {
-    try {
-      await this.cache.set(key, data, ttl)
-    } catch (error) {
-      console.warn('Cache set failed:', error)
+  private async assessMacroRisks(context: MacroeconomicContext): Promise<MacroRiskFactors> {
+    const inflationRisk = this.assessInflationRisk(context)
+    const recessionRisk = this.assessRecessionRisk(context)
+    const monetaryRisk = this.assessMonetaryRisk(context)
+    const energyRisk = this.assessEnergyRisk(context)
+
+    return {
+      inflationRisk,
+      recessionRisk,
+      monetaryRisk,
+      energyRisk
     }
   }
 
-  // Default/empty data helpers
-  private getEmptyGDPData() {
-    return { real: null, nominal: null, potential: null, growth: null, lastUpdated: Date.now() }
-  }
+  private assessInflationRisk(context: MacroeconomicContext): { level: 'low' | 'moderate' | 'high', description: string, probability: number } {
+    const isHighInflation = context.inflationEnvironment === 'high'
+    const isRising = context.inflationEnvironment === 'moderate'
 
-  private getEmptyInflationData() {
-    return { cpi: null, coreCpi: null, ppi: null, pce: null, expectedInflation: null, lastUpdated: Date.now() }
-  }
-
-  private getEmptyEmploymentData() {
-    return { unemploymentRate: null, participationRate: null, nonfarmPayrolls: null, unemploymentLevel: null, lastUpdated: Date.now() }
-  }
-
-  private getEmptyRatesData() {
-    return { fedFunds: null, treasury3m: null, treasury10y: null, treasury30y: null, yieldCurveSlope: null, isInverted: false, lastUpdated: Date.now() }
-  }
-
-  private getEmptyMoneySupplyData() {
-    return { m1: null, m2: null, m1Growth: null, m2Growth: null, lastUpdated: Date.now() }
-  }
-
-  private getEmptyExchangeData() {
-    return { dxy: null, eurUsd: null, usdJpy: null, usdCny: null, lastUpdated: Date.now() }
-  }
-
-  private getEmptyCommodityData() {
-    return { oilWti: null, oilBrent: null, gold: null, naturalGas: null, lastUpdated: Date.now() }
-  }
-
-  private getDefaultCycleAnalysis(): EconomicCycleAnalysis {
-    return {
-      cycle: {
-        phase: 'unknown',
-        confidence: 0,
-        timeInPhase: 0,
-        nextPhaseEstimate: 0
-      },
-      indicators: {
-        leading: { score: 0, signals: [] },
-        coincident: { score: 0, signals: [] },
-        lagging: { score: 0, signals: [] }
-      },
-      riskFactors: {
-        inflationRisk: 0.5,
-        recessionRisk: 0.5,
-        rateHikeRisk: 0.5,
-        marketVolatilityRisk: 0.5
-      },
-      timestamp: Date.now()
-    }
-  }
-
-  private createDefaultConfig(): MacroeconomicConfig {
-    return {
-      updateFrequency: 15 * 60 * 1000, // 15 minutes
-      dataSources: {
-        primary: [],
-        fallback: []
-      },
-      weights: {
-        growth: 0.3,      // 30% weight to growth
-        inflation: 0.25,  // 25% weight to inflation
-        monetary: 0.25,   // 25% weight to monetary policy
-        fiscal: 0.1,      // 10% weight to fiscal policy
-        external: 0.1     // 10% weight to external factors
-      },
-      thresholds: {
-        recessionSignal: -0.3,
-        inflationConcern: 4.0,
-        rateVolatility: 0.5
-      },
-      cache: {
-        ttl: 15 * 60 * 1000, // 15 minutes
-        maxAge: 60 * 60 * 1000 // 1 hour
+    if (isHighInflation) {
+      return {
+        level: 'high',
+        description: 'Persistent high inflation pressures consumer spending and corporate margins',
+        probability: 0.75
       }
     }
+
+    if (isRising) {
+      return {
+        level: 'moderate',
+        description: 'Inflation trending above target may trigger aggressive Fed action',
+        probability: 0.45
+      }
+    }
+
+    return {
+      level: 'low',
+      description: 'Inflation near target with stable expectations',
+      probability: 0.15
+    }
   }
 
-  // Health check
-  async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
-    try {
-      const [fredHealth, blsHealth, eiaHealth] = await Promise.allSettled([
-        this.fredAPI.healthCheck(),
-        this.blsAPI.healthCheck ? this.blsAPI.healthCheck() : Promise.resolve(true),
-        this.eiaAPI.healthCheck ? this.eiaAPI.healthCheck() : Promise.resolve(true)
-      ])
+  private assessRecessionRisk(context: MacroeconomicContext): { level: 'low' | 'moderate' | 'high', description: string, probability: number } {
+    const isContraction = context.economicCycle === 'contraction'
+    const isPeak = context.economicCycle === 'peak'
+    const lowScore = context.overallScore < 4
 
-      const healthy = fredHealth.status === 'fulfilled' && fredHealth.value
-
+    if (isContraction || lowScore) {
       return {
-        status: healthy ? 'healthy' : 'unhealthy',
-        details: {
-          fredAPI: fredHealth.status === 'fulfilled' ? fredHealth.value : false,
-          blsAPI: blsHealth.status === 'fulfilled' ? blsHealth.value : false,
-          eiaAPI: eiaHealth.status === 'fulfilled' ? eiaHealth.value : false,
-          cache: this.cache ? true : false
+        level: 'high',
+        description: 'Economic indicators pointing toward recession within 12 months',
+        probability: 0.65
+      }
+    }
+
+    if (isPeak) {
+      return {
+        level: 'moderate',
+        description: 'Economy at peak expansion phase with elevated recession risk',
+        probability: 0.35
+      }
+    }
+
+    return {
+      level: 'low',
+      description: 'Economic expansion continues with low recession probability',
+      probability: 0.15
+    }
+  }
+
+  private assessMonetaryRisk(context: MacroeconomicContext): { level: 'low' | 'moderate' | 'high', description: string, impact: string } {
+    const isRestrictive = context.monetaryPolicy === 'restrictive'
+    const isAccommodative = context.monetaryPolicy === 'accommodative'
+
+    if (isRestrictive) {
+      return {
+        level: 'high',
+        description: 'Restrictive monetary policy pressures valuations and growth',
+        impact: 'Negative for growth stocks, positive for value and financials'
+      }
+    }
+
+    if (isAccommodative) {
+      return {
+        level: 'moderate',
+        description: 'Accommodative policy may fuel asset bubbles and inflation',
+        impact: 'Positive for risk assets, negative for currency strength'
+      }
+    }
+
+    return {
+      level: 'low',
+      description: 'Neutral monetary policy provides stable backdrop',
+      impact: 'Balanced impact across asset classes'
+    }
+  }
+
+  private assessEnergyRisk(context: MacroeconomicContext): { level: 'low' | 'moderate' | 'high', description: string, sectorImpact: string[] } {
+    const energyMultiplier = context.sectorImpacts.energy || 0
+
+    if (energyMultiplier > 1.0) {
+      return {
+        level: 'high',
+        description: 'High energy prices create inflation pressure and consumer burden',
+        sectorImpact: ['Transportation', 'Airlines', 'Consumer Discretionary']
+      }
+    }
+
+    if (energyMultiplier > 0.5) {
+      return {
+        level: 'moderate',
+        description: 'Elevated energy costs impact transportation and utilities',
+        sectorImpact: ['Transportation', 'Utilities']
+      }
+    }
+
+    return {
+      level: 'low',
+      description: 'Stable energy prices support economic growth',
+      sectorImpact: []
+    }
+  }
+
+  private generateKeyInsights(context: MacroeconomicContext, analysis: any): string[] {
+    const insights: string[] = []
+
+    // Score-based insights
+    if (context.overallScore >= 8) {
+      insights.push('Strong macroeconomic conditions support risk asset performance')
+    } else if (context.overallScore <= 3) {
+      insights.push('Weak macro environment suggests defensive positioning')
+    }
+
+    // Inflation insights
+    if (context.inflationEnvironment === 'high') {
+      insights.push('High inflation environment favors real assets and value stocks')
+    } else if (context.inflationEnvironment === 'declining') {
+      insights.push('Declining inflation supports growth stocks and long-duration assets')
+    }
+
+    // Monetary policy insights
+    if (context.monetaryPolicy === 'restrictive') {
+      insights.push('Restrictive monetary policy creates headwinds for speculative growth')
+    } else if (context.monetaryPolicy === 'accommodative') {
+      insights.push('Accommodative policy provides tailwinds for risk assets')
+    }
+
+    // Cycle insights
+    if (context.economicCycle === 'expansion') {
+      insights.push('Economic expansion phase favors cyclical and growth sectors')
+    } else if (context.economicCycle === 'contraction') {
+      insights.push('Economic contraction supports defensive and quality names')
+    }
+
+    return insights
+  }
+
+  private identifyOpportunities(context: MacroeconomicContext, insights: string[]): string[] {
+    const opportunities: string[] = []
+
+    // High-scoring sectors
+    Object.entries(context.sectorImpacts).forEach(([sector, impact]) => {
+      if (impact > 1.0) {
+        opportunities.push(`${sector} sector positioned for outperformance`)
+      }
+    })
+
+    // Macro regime opportunities
+    if (context.inflationEnvironment === 'declining' && context.monetaryPolicy !== 'restrictive') {
+      opportunities.push('Goldilocks scenario supports duration and growth assets')
+    }
+
+    if (context.economicCycle === 'trough' && context.overallScore > 4) {
+      opportunities.push('Early cycle recovery favors cyclical value plays')
+    }
+
+    return opportunities
+  }
+
+  // Default fallback methods
+  private getDefaultTrendAnalysis(): MacroTrendAnalysis {
+    return {
+      gdpMomentum: { direction: 'stable', strength: 5.0, confidence: 0.5 },
+      inflationTrend: { current: 2.5, direction: 'stable', momentum: 0 },
+      employmentTrend: { strength: 6.0, direction: 'stable', confidence: 0.6 },
+      monetaryConditions: { stance: 'neutral', tightness: 5.0, marketImpact: 0 }
+    }
+  }
+
+  private getDefaultRiskFactors(): MacroRiskFactors {
+    return {
+      inflationRisk: { level: 'moderate', description: 'Insufficient data for assessment', probability: 0.3 },
+      recessionRisk: { level: 'moderate', description: 'Insufficient data for assessment', probability: 0.25 },
+      monetaryRisk: { level: 'moderate', description: 'Insufficient data for assessment', impact: 'Neutral' },
+      energyRisk: { level: 'moderate', description: 'Insufficient data for assessment', sectorImpact: [] }
+    }
+  }
+
+  /**
+   * Health check for all macro data sources
+   */
+  async healthCheck(): Promise<{
+    isHealthy: boolean
+    sources: Record<string, boolean>
+    overallLatency: number
+    errors: string[]
+  }> {
+    const startTime = Date.now()
+    const sources: Record<string, boolean> = {}
+    const errors: string[] = []
+
+    try {
+      // Parallel health checks
+      const healthPromises = [
+        this.fredAPI.healthCheck().then(result => ({ name: 'FRED', healthy: result })),
+        this.blsAPI.healthCheck().then(result => ({ name: 'BLS', healthy: result })),
+        this.eiaAPI.healthCheck().then(result => ({ name: 'EIA', healthy: result }))
+      ]
+
+      const results = await Promise.allSettled(healthPromises)
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          sources[result.value.name] = result.value.healthy
+          if (!result.value.healthy) {
+            errors.push(`${result.value.name} API health check failed`)
+          }
+        } else {
+          const apiNames = ['FRED', 'BLS', 'EIA']
+          sources[apiNames[index]] = false
+          errors.push(`${apiNames[index]} health check error: ${result.reason}`)
         }
+      })
+
+      const healthySources = Object.values(sources).filter(Boolean).length
+      const isHealthy = healthySources >= 2 // At least 2 out of 3 sources healthy
+
+      return {
+        isHealthy,
+        sources,
+        overallLatency: Date.now() - startTime,
+        errors
       }
     } catch (error) {
       return {
-        status: 'unhealthy',
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
+        isHealthy: false,
+        sources,
+        overallLatency: Date.now() - startTime,
+        errors: [`Health check failed: ${error}`]
       }
     }
   }
 }
-
-export default MacroeconomicAnalysisService

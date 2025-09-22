@@ -92,26 +92,6 @@ export default function EconomicCalendar({ className = '' }: EconomicCalendarPro
     return `${diffDays}d`
   }
 
-  const formatDate = (timeString: string): string => {
-    const eventTime = new Date(timeString)
-    return eventTime.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
-
-  const formatDateTime = (timeString: string): string => {
-    const eventTime = new Date(timeString)
-    return eventTime.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    })
-  }
-
   const isUpcoming = (timeString: string): boolean => {
     const eventTime = new Date(timeString)
     const now = new Date()
@@ -244,12 +224,7 @@ export default function EconomicCalendar({ className = '' }: EconomicCalendarPro
         {events.length === 0 ? (
           <div className="no-events">
             <div className="no-events-icon">📅</div>
-            <div className="no-events-text">
-              No economic events scheduled for {selectedTimeframe}
-              <div className="timeframe-hint">
-                Try switching to "Week" or "Month" view for upcoming events
-              </div>
-            </div>
+            <div className="no-events-text">No economic events scheduled</div>
           </div>
         ) : (
           events.map((event) => (
@@ -264,10 +239,7 @@ export default function EconomicCalendar({ className = '' }: EconomicCalendarPro
               <div className="event-header">
                 <div className="event-meta">
                   <span className="event-icon">{getCategoryIcon(event.category)}</span>
-                  <div className="event-timing">
-                    <span className="event-date">{formatDate(event.time)}</span>
-                    <span className="event-time">{formatTime(event.time)}</span>
-                  </div>
+                  <span className="event-time">{formatTime(event.time)}</span>
                   <span
                     className={`impact-badge impact-${event.impact}`}
                     style={{ backgroundColor: getImpactColor(event.impact) }}
@@ -412,20 +384,8 @@ export default function EconomicCalendar({ className = '' }: EconomicCalendarPro
           font-size: 1.2rem;
         }
 
-        .event-timing {
-          display: flex;
-          flex-direction: column;
-          gap: 0.2rem;
-        }
-
-        .event-date {
-          font-size: 0.9rem;
-          color: rgba(255, 255, 255, 0.9);
-          font-weight: 600;
-        }
-
         .event-time {
-          font-size: 0.75rem;
+          font-size: 0.8rem;
           color: rgba(156, 163, 175, 0.8);
           font-weight: 500;
         }
@@ -499,13 +459,6 @@ export default function EconomicCalendar({ className = '' }: EconomicCalendarPro
 
         .no-events-text {
           font-size: 1rem;
-        }
-
-        .timeframe-hint {
-          font-size: 0.9rem;
-          color: rgba(99, 102, 241, 0.8);
-          margin-top: 0.5rem;
-          font-weight: 500;
         }
 
         @keyframes pulse-upcoming {

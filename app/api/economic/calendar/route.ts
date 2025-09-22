@@ -7,6 +7,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { EconomicCalendarService } from '../../../services/financial-data/EconomicCalendarService'
 import ErrorHandler from '../../../services/error-handling/ErrorHandler'
 
+interface EconomicEvent {
+  id: string
+  title: string
+  time: string
+  impact: 'high' | 'medium' | 'low'
+  actual?: string
+  forecast?: string
+  previous?: string
+  description: string
+  category: string
+}
+
 const economicCalendarService = new EconomicCalendarService()
 
 export async function GET(request: NextRequest) {
@@ -14,6 +26,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const timeframe = searchParams.get('timeframe') || 'today'
 
+<<<<<<< HEAD
     // Validate timeframe parameter
     if (!['today', 'week', 'month'].includes(timeframe)) {
       return NextResponse.json(
@@ -69,7 +82,6 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
