@@ -83,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "say 'Claude finished'"
+            "command": "afplay /System/Library/Sounds/basso.aiff"
           }
         ]
       }
@@ -94,7 +94,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "say 'Subagent done.'"
+            "command": "afplay /System/Library/Sounds/blow.aiff"
           }
         ]
       }
