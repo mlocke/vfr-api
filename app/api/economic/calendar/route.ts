@@ -26,7 +26,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const timeframe = searchParams.get('timeframe') || 'today'
 
-<<<<<<< HEAD
     // Validate timeframe parameter
     if (!['today', 'week', 'month'].includes(timeframe)) {
       return NextResponse.json(

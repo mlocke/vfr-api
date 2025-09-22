@@ -4,13 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import StockTicker from './components/StockTicker'
 import SectorDropdown, { SectorOption } from './components/SectorDropdown'
-<<<<<<< HEAD
-import EconomicCalendar from './components/market/EconomicCalendar'
-import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
-=======
 import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
 import EconomicCalendar from './components/market/EconomicCalendar'
->>>>>>> feature/input-integration
 import SectorRotationWheel from './components/market/SectorRotationWheel'
 
 interface SymbolData {
