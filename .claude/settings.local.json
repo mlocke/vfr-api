@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "say 'Bond...... James Bond is done.'"
+            "command": "say 'Subagent done.'"
           }
         ]
       }

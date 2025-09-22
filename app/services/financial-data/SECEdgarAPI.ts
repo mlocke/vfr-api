@@ -292,14 +292,50 @@ export class SECEdgarAPI implements FinancialDataProvider {
 
   /**
    * Rate limiting delay to comply with SEC EDGAR 10 req/sec limit
+   * Uses proper request queuing to prevent race conditions
    */
   private async rateLimitDelay(): Promise<void> {
-    const now = Date.now()
-    const timeSinceLastRequest = now - this.lastRequestTime
-    if (timeSinceLastRequest < this.REQUEST_DELAY) {
-      await new Promise(resolve => setTimeout(resolve, this.REQUEST_DELAY - timeSinceLastRequest))
-    }
-    this.lastRequestTime = Date.now()
+    // Create a promise that will resolve when it's this request's turn
+    const requestPromise = new Promise<void>((resolve) => {
+      const executeRequest = () => {
+        const now = Date.now()
+        const timeSinceLastRequest = now - this.lastRequestTime
+
+        if (timeSinceLastRequest < this.REQUEST_DELAY) {
+          const delay = this.REQUEST_DELAY - timeSinceLastRequest
+          setTimeout(() => {
+            this.lastRequestTime = Date.now()
+            resolve()
+          }, delay)
+        } else {
+          this.lastRequestTime = Date.now()
+          resolve()
+        }
+      }
+
+      // Add this request to the queue
+      if (this.requestQueue.length === 0) {
+        // No queue, execute immediately
+        executeRequest()
+      } else {
+        // Wait for previous request to complete, then execute
+        this.requestQueue[this.requestQueue.length - 1].then(executeRequest)
+      }
+    })
+
+    // Add this promise to the queue
+    this.requestQueue.push(requestPromise)
+
+    // Clean up completed requests from queue
+    requestPromise.finally(() => {
+      const index = this.requestQueue.indexOf(requestPromise)
+      if (index > -1) {
+        this.requestQueue.splice(index, 1)
+      }
+    })
+
+    // Wait for this request's turn
+    await requestPromise
   }
 
   /**

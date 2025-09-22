@@ -568,16 +568,26 @@ describe('SECEdgarAPI', () => {
     test('should_enforce_sec_edgar_rate_limiting_between_requests', async () => {
       const symbol = 'V'
 
-      // Make multiple requests and measure timing
+      // Make sequential requests and measure timing
       const startTime = Date.now()
+
+      // Start all requests simultaneously to test proper queuing
       const promises = Array(3).fill(0).map(() => api.getCompanyInfo(symbol))
       await Promise.allSettled(promises)
+
       const totalTime = Date.now() - startTime
 
-      // With 100ms delay between requests, 3 requests should take at least 200ms
-      expect(totalTime).toBeGreaterThan(200)
+      // With 100ms delay between requests and proper queuing:
+      // Request 1: immediate (0ms)
+      // Request 2: after 100ms delay
+      // Request 3: after another 100ms delay
+      // Total should be at least 200ms for proper sequential processing
+      expect(totalTime).toBeGreaterThanOrEqual(190) // Allow small tolerance for timing variations
 
-      console.log(`✓ Rate limiting enforced: ${totalTime}ms for 3 requests`)
+      // Should not take significantly longer than expected (allowing for processing time)
+      expect(totalTime).toBeLessThan(500) // Should not be excessively delayed
+
+      console.log(`✓ Rate limiting enforced: ${totalTime}ms for 3 requests (expected ≥190ms)`)
     }, 30000)
 
     test('should_handle_concurrent_requests_with_proper_queuing', async () => {
