@@ -22,7 +22,7 @@ import { MarketIndicesService } from '../../../services/financial-data/MarketInd
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
 import { ErrorHandler } from '../../../services/error-handling/ErrorHandler'
-import RedditAPI from '../../../services/financial-data/providers/RedditAPI'
+import { RedditAPIEnhanced } from '../../../services/financial-data'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -327,7 +327,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           })
           return response.ok
         case 'reddit':
-          apiInstance = new RedditAPI()
+          apiInstance = new RedditAPIEnhanced()
           break
       }
       return await apiInstance.healthCheck()
@@ -641,25 +641,36 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         break
 
       case 'reddit':
-        console.log('🟠 Making real Reddit WSB sentiment API call...')
-        const redditAPI = new RedditAPI()
+        console.log('🟠 Making enhanced Reddit multi-subreddit sentiment API call...')
+        const redditAPI = new RedditAPIEnhanced()
 
         // Test health check (OAuth authentication)
         const redditHealthy = await redditAPI.healthCheck()
 
-        // Test WSB sentiment for popular symbols
+        // Test enhanced multi-subreddit sentiment for popular symbols
         const redditTestSymbols = ['AAPL', 'TSLA', 'GME']
         const sentimentResults = []
 
         for (const symbol of redditTestSymbols) {
           try {
-            const sentimentResponse = await redditAPI.getWSBSentiment(symbol)
+            const sentimentResponse = await redditAPI.getEnhancedSentiment(symbol)
+            const data = sentimentResponse.data
             sentimentResults.push({
               symbol,
               success: sentimentResponse.success,
-              sentiment: sentimentResponse.data?.sentiment,
-              postCount: sentimentResponse.data?.postCount,
-              confidence: sentimentResponse.data?.confidence,
+              sentiment: data?.sentiment,
+              postCount: data?.postCount,
+              confidence: data?.confidence,
+              weightedSentiment: data?.weightedSentiment,
+              diversityScore: data?.diversityScore,
+              subredditCount: data?.subredditBreakdown?.length || 0,
+              subredditBreakdown: data?.subredditBreakdown?.map(sub => ({
+                subreddit: sub.subreddit,
+                sentiment: sub.sentiment,
+                postCount: sub.postCount,
+                weight: sub.weight,
+                contributionScore: sub.contributionScore
+              })) || [],
               error: sentimentResponse.error
             })
           } catch (error) {
@@ -671,17 +682,31 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
           }
         }
 
+        // Calculate enhanced metrics
+        const successfulResults = sentimentResults.filter(r => r.success)
+        const totalSubreddits = successfulResults.reduce((sum, r) => sum + (r.subredditCount || 0), 0)
+        const avgDiversityScore = successfulResults.length > 0 ?
+          successfulResults.reduce((sum, r) => sum + (r.diversityScore || 0), 0) / successfulResults.length : 0
+
         testData = {
           healthCheck: redditHealthy,
           authentication: redditHealthy ? 'OAuth successful' : 'OAuth failed',
           sentimentTests: sentimentResults,
-          averageSentiment: sentimentResults
-            .filter(r => r.success && r.sentiment !== undefined)
-            .reduce((sum, r, _, arr) => sum + (r.sentiment || 0) / arr.length, 0),
-          totalPostsAnalyzed: sentimentResults
-            .filter(r => r.success)
-            .reduce((sum, r) => sum + (r.postCount || 0), 0),
-          testType: 'reddit_wsb_sentiment'
+          enhancedMetrics: {
+            averageSentiment: successfulResults
+              .filter(r => r.sentiment !== undefined)
+              .reduce((sum, r, _, arr) => sum + (r.sentiment || 0) / arr.length, 0),
+            averageWeightedSentiment: successfulResults
+              .filter(r => r.weightedSentiment !== undefined)
+              .reduce((sum, r, _, arr) => sum + (r.weightedSentiment || 0) / arr.length, 0),
+            totalPostsAnalyzed: successfulResults
+              .reduce((sum, r) => sum + (r.postCount || 0), 0),
+            totalSubredditsAnalyzed: totalSubreddits,
+            averageDiversityScore: avgDiversityScore,
+            subredditCoverage: successfulResults.length > 0 ?
+              Math.round(totalSubreddits / successfulResults.length * 100) / 100 : 0
+          },
+          testType: 'reddit_enhanced_multi_subreddit_sentiment'
         }
         break
 
@@ -1001,7 +1026,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           apiInstance = new MarketIndicesService()
           break
         case 'reddit':
-          apiInstance = new RedditAPI(undefined, undefined, undefined, timeout, true)
+          apiInstance = new RedditAPIEnhanced(undefined, undefined, undefined, timeout, true)
           break
       }
 
@@ -1044,15 +1069,17 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
               }))
           )
         } else if (dataSourceId === 'reddit') {
-          // Reddit uses sentiment analysis instead of stock price
+          // Reddit Enhanced uses multi-subreddit sentiment analysis
           const testSymbols = ['AAPL', 'TSLA', 'GME', 'NVDA', 'MSFT']
           const testSymbol = testSymbols[i % testSymbols.length] // Rotate through symbols
           requests.push(
-            apiInstance.getWSBSentiment(testSymbol)
+            apiInstance.getEnhancedSentiment(testSymbol)
               .then((result: any) => ({
                 request: i + 1,
                 responseTime: Date.now() - startTime,
-                success: !!(result && result.success)
+                success: !!(result && result.success),
+                subredditCount: result?.data?.subredditBreakdown?.length || 0,
+                postCount: result?.data?.postCount || 0
               }))
               .catch(() => ({
                 request: i + 1,

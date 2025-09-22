@@ -14,6 +14,7 @@ export * from './EIAAPI'
 export * from './TwelveDataAPI'
 export * from './MarketIndicesService'
 export * from './FinancialDataService'
+export { default as RedditAPIEnhanced } from './providers/RedditAPIEnhanced'
 
 // Default export for convenience
 export { financialDataService as default } from './FinancialDataService'

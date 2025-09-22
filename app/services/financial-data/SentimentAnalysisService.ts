@@ -5,7 +5,7 @@
  */
 
 import NewsAPI from './providers/NewsAPI'
-import RedditAPI from './providers/RedditAPI'
+import RedditAPIEnhanced from './providers/RedditAPIEnhanced'
 import { RedisCache } from '../cache/RedisCache'
 import { SecurityValidator } from '../security/SecurityValidator'
 import {
@@ -22,7 +22,7 @@ import {
 
 export class SentimentAnalysisService {
   private newsAPI: NewsAPI
-  private redditAPI: RedditAPI | null
+  private redditAPI: RedditAPIEnhanced | null
   private cache: RedisCache
   private config: SentimentConfig
   private securityValidator: SecurityValidator
@@ -30,21 +30,21 @@ export class SentimentAnalysisService {
   constructor(
     newsAPI: NewsAPI,
     cache: RedisCache,
-    redditAPI?: RedditAPI
+    redditAPI?: RedditAPIEnhanced
   ) {
     this.newsAPI = newsAPI
     this.redditAPI = redditAPI || null
     this.cache = cache
     this.config = this.createDefaultConfig()
-    this.securityValidator = new SecurityValidator()
+    this.securityValidator = SecurityValidator.getInstance()
 
-    // Initialize Reddit API if credentials are available
+    // Initialize Reddit API Enhanced if credentials are available
     if (!this.redditAPI && process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) {
       try {
-        this.redditAPI = new RedditAPI()
-        console.log('Reddit API initialized for WSB sentiment analysis')
+        this.redditAPI = new RedditAPIEnhanced()
+        console.log('Reddit API Enhanced initialized for multi-subreddit sentiment analysis')
       } catch (error) {
-        console.warn('Failed to initialize Reddit API:', error)
+        console.warn('Failed to initialize Reddit API Enhanced:', error)
       }
     }
   }
@@ -179,12 +179,12 @@ export class SentimentAnalysisService {
       // Fetch news sentiment
       const newsData = await this.getNewsSentiment(sanitizedSymbol)
 
-      // Fetch Reddit sentiment if available
+      // Fetch Reddit sentiment using enhanced multi-subreddit analysis if available
       let redditData: RedditSentimentData | undefined
       if (this.redditAPI) {
         try {
-          console.log('📱 Fetching WSB sentiment from Reddit...')
-          const redditResponse = await this.redditAPI.getWSBSentiment(sanitizedSymbol)
+          console.log('📱 Fetching multi-subreddit sentiment from Reddit Enhanced...')
+          const redditResponse = await this.redditAPI.getEnhancedSentiment(sanitizedSymbol)
 
           // Check for validation errors (security failures)
           if (!redditResponse.success && redditResponse.error?.includes('Invalid symbol')) {
@@ -195,7 +195,7 @@ export class SentimentAnalysisService {
 
           if (redditResponse.success && redditResponse.data) {
             redditData = redditResponse.data
-            console.log(`✅ Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts)`)
+            console.log(`✅ Enhanced Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts across ${redditResponse.data.subredditBreakdown?.length || 1} subreddits)`)
 
             // Filter out Reddit data with zero confidence (no posts found)
             if (redditData.confidence === 0) {
@@ -204,7 +204,7 @@ export class SentimentAnalysisService {
             }
           }
         } catch (error) {
-          console.warn('Reddit sentiment fetch failed:', error)
+          console.warn('Enhanced Reddit sentiment fetch failed:', error)
         }
       }
 
