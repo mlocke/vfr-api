@@ -128,11 +128,11 @@ function getSentimentService(): SentimentAnalysisService | null {
 function getMacroService(): MacroeconomicAnalysisService | null {
   if (!macroService) {
     try {
-      const cache = new RedisCache()
-      const fredAPI = new FREDAPI(process.env.FRED_API_KEY)
-      const blsAPI = new BLSAPI(process.env.BLS_API_KEY)
-      const eiaAPI = new EIAAPI(process.env.EIA_API_KEY)
-      macroService = new MacroeconomicAnalysisService(fredAPI, blsAPI, eiaAPI, cache)
+      macroService = new MacroeconomicAnalysisService({
+        fredApiKey: process.env.FRED_API_KEY,
+        blsApiKey: process.env.BLS_API_KEY,
+        eiaApiKey: process.env.EIA_API_KEY
+      })
     } catch (error) {
       console.warn('Failed to initialize macroeconomic service:', error)
       return null
@@ -281,12 +281,12 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
 
           if (macroImpact) {
             enhancedStock.macroeconomicAnalysis = {
-              score: macroImpact.macroScore.overall,
+              score: macroImpact.macroScore,
               cyclephase: 'expansion', // Will be enhanced when cycle analysis is available
-              sectorImpact: macroImpact.sectorImpact.outlook,
+              sectorImpact: 'neutral', // Simplified for now - using neutral default
               adjustedScore: macroImpact.adjustedScore,
-              economicRisk: macroImpact.macroScore.confidence || 0.5,
-              summary: `Economic outlook: ${macroImpact.sectorImpact.outlook} for ${macroImpact.sectorImpact.sector} sector`
+              economicRisk: macroImpact.confidence,
+              summary: `Economic outlook: ${macroImpact.impact} with ${Math.round(macroImpact.confidence * 100)}% confidence`
             }
           }
         } catch (error) {

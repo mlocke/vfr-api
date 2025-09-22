@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
         // Get current preferences to maintain fallbacks
         const currentPreferences = enhancedService.getDataSourcePreferences()
-        const currentPreference: { fallbacks: string[] } | undefined = currentPreferences[dataType]
+        const currentPreference: { fallbacks: string[] } | undefined = (currentPreferences as Record<string, any>)[dataType]
 
         if (currentPreference) {
           // Keep existing fallbacks, just change primary

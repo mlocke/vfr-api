@@ -237,7 +237,7 @@ export class AlgorithmEngine {
         volume: stockData.volume || 0,
         marketCap: companyInfo?.marketCap || 0,
         sector: companyInfo?.sector || '',
-        exchange: companyInfo?.ticker || '',
+        exchange: companyInfo?.symbol || '',
         timestamp: Date.now()
       }
 

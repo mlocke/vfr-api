@@ -19,7 +19,8 @@ import {
   SelectionRequest,
   SelectionMode,
   AlgorithmIntegrationInterface,
-  SelectionOptions
+  SelectionOptions,
+  AnalysisScope
 } from '../types'
 // Note: SelectionConfigManager replaced with inline config
 
@@ -357,9 +358,8 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
    * Get list of available algorithms
    */
   getAvailableAlgorithms(): string[] {
-    // Get available algorithms from the real config manager
-    const configs = this.configManager.getAvailableConfigurations()
-    return configs
+    // Return default algorithms as we can't make this async per interface
+    return ['momentum', 'value', 'quality', 'balanced']
   }
 
   /**

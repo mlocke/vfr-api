@@ -547,7 +547,7 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
   async fetchStockData(symbols: string[], options: SelectionOptions = {}): Promise<any> {
     const results = await this.enrichStockData(symbols, options)
 
-    return results.reduce((acc, result) => {
+    return results.reduce((acc: Record<string, any>, result) => {
       acc[result.symbol] = result.enrichedData
       return acc
     }, {})

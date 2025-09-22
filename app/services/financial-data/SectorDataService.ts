@@ -97,7 +97,11 @@ export class SectorDataService {
       timestamp: new Date().toISOString(),
       dataQuality: 'real',
       source: 'Multiple APIs (Alpha Vantage, Yahoo Finance, FMP)',
-      apiStatus,
+      apiStatus: {
+        alphaVantage: apiStatus['alphaVantage'] ?? false,
+        yahooFinance: apiStatus['yahooFinance'] ?? false,
+        fmp: apiStatus['fmp'] ?? false
+      },
       errors: errors.length > 0 ? errors : undefined
     }
   }

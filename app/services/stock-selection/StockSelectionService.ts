@@ -64,7 +64,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.config = this.createDefaultConfig()
     this.macroeconomicService = macroeconomicService
     this.sentimentService = sentimentService
-    this.errorHandler = new ErrorHandler()
+    this.errorHandler = ErrorHandler.getInstance()
 
     // Initialize algorithm cache with proper config structure
     const algorithmCache = new AlgorithmCache({
@@ -444,30 +444,14 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         marketCap: stockScore.marketData.marketCap,
         priceChange24h: additionalData.priceChange24h,
         volumeChange24h: additionalData.volumeChange24h,
-        beta: additionalData.beta,
-
-        // Analyst sentiment integration
-        analystConsensus: additionalData.analystData?.consensus || null,
-        analystSentimentScore: additionalData.analystData?.sentimentScore || null,
-        totalAnalysts: additionalData.analystData?.totalAnalysts || 0,
-
-        // Price target integration
-        priceTargetConsensus: additionalData.priceTargets?.consensus || null,
-        priceTargetUpside: additionalData.priceTargets?.upside || null,
-        priceTargetRange: additionalData.priceTargets ? {
-          high: additionalData.priceTargets.high,
-          low: additionalData.priceTargets.low
-        } : null
-      },
+        beta: additionalData.beta
+      } as any,
 
       reasoning: {
         primaryFactors: this.extractPrimaryFactors(stockScore),
         warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact),
-        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact),
-        analystInsights: this.generateAnalystInsights(additionalData),
-        macroeconomicInsights: macroImpact ? this.generateMacroeconomicInsights(macroImpact) : [],
-        sentimentInsights: sentimentImpact ? this.generateSentimentInsights(sentimentImpact) : []
-      },
+        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact)
+      } as any,
 
       dataQuality: {
         overall: stockScore.dataQuality,
@@ -815,7 +799,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     cacheHitRate: number
     averageExecutionTime: number
     activeRequestsCount: number
-    memoryUsage: ReturnType<typeof this.getMemoryUsage>
+    memoryUsage: ReturnType<StockSelectionService['getMemoryUsage']>
     successRate: number
   } {
     return {

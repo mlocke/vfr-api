@@ -82,10 +82,10 @@ export class MemoryOptimizer {
   private gcCooldown = 30000 // 30 seconds between forced GCs
 
   // Pre-configured object pools for common types
-  private responsePool: ObjectPool<any>
-  private requestPool: ObjectPool<any>
-  private arrayPool: ObjectPool<any[]>
-  private mapPool: ObjectPool<Map<string, any>>
+  private responsePool!: ObjectPool<any>
+  private requestPool!: ObjectPool<any>
+  private arrayPool!: ObjectPool<any[]>
+  private mapPool!: ObjectPool<Map<string, any>>
 
   private constructor() {
     this.initializeObjectPools()
