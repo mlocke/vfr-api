@@ -21,7 +21,11 @@
 		"format:check": "prettier --check .",
 		"test": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --runInBand",
 		"test:watch": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --watch --maxWorkers=1",
-		"test:coverage": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --coverage --runInBand"
+		"test:coverage": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --coverage --runInBand",
+		"test:performance": "node --max-old-space-size=4096 --expose-gc --trace-gc node_modules/.bin/jest --runInBand --testPathPattern=performance.test.ts --verbose --logHeapUsage",
+		"test:performance:single": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --runInBand --testPathPattern=SentimentAnalysisService.performance.test.ts",
+		"test:performance:memory": "node --max-old-space-size=4096 --expose-gc --trace-gc node_modules/.bin/jest --runInBand --testNamePattern=\"Memory Leak Prevention\"",
+		"test:performance:cache": "node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --runInBand --testNamePattern=\"Cache Performance\""
 	},
 	"dependencies": {
 		"@types/bcrypt": "^6.0.0",

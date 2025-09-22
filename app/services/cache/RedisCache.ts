@@ -516,6 +516,24 @@ export class RedisCache {
   }
 
   /**
+   * Clear all cache entries
+   */
+  async clear(): Promise<void> {
+    try {
+      if (!this.isRedisAvailable()) {
+        CacheLogger.warn('⚠️ Redis not available, skipping cache clear')
+        return
+      }
+
+      await this.redis.flushdb()
+      CacheLogger.log('🧹 Cache cleared successfully')
+    } catch (error) {
+      CacheLogger.error('❌ Cache clear error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Cleanup expired keys and optimize memory
    */
   async cleanup(): Promise<void> {
