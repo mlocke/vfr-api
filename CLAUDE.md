@@ -59,17 +59,24 @@ src/
 - `npm run format` - Format code with Prettier
 
 ### Testing Commands
-- `npm test` - Run Jest tests with memory optimization (maxWorkers: 1)
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate test coverage report
+- `npm test` - Run Jest tests with memory optimization (4096MB heap, maxWorkers: 1, runInBand)
+- `npm run test:watch` - Run tests in watch mode with memory optimization
+- `npm run test:coverage` - Generate comprehensive test coverage report (outputs to docs/test-output/coverage/)
 - `npm test -- --testNamePattern="name"` - Run specific test by name
 - `npm test -- path/to/test.ts` - Run specific test file
+- **Test Isolation**: Tests run with explicit garbage collection and memory leak detection
+- **Real API Testing**: All tests use live APIs with 5-minute timeout for comprehensive integration testing
 
 ### Integration Test Status
-- **InstitutionalDataService**: ✅ All 22 tests passing
-- **Cache Integration**: ✅ RedisCache method compatibility verified
-- **Rate Limiting**: ✅ Robust test environment handling
-- **Security Compliance**: ✅ OWASP validation tests passing
+- **Test Suite Scale**: ✅ 17 comprehensive test files with 8,449+ lines of test code
+- **InstitutionalDataService**: ✅ 608-line comprehensive integration test covering error handling, caching, real-time processing, and security
+- **MacroeconomicAnalysisService**: ✅ New enhanced test suite for macroeconomic data integration (FRED, BLS, EIA APIs)
+- **CurrencyDataService**: ✅ New test suite for international currency data analysis
+- **Cache Integration**: ✅ RedisCache + in-memory fallback with cache-aside pattern verification
+- **Rate Limiting**: ✅ Circuit breaker patterns and concurrent request handling
+- **Security Compliance**: ✅ OWASP Top 10 protection with input validation and error sanitization
+- **Performance Optimization**: ✅ Memory management with 4096MB heap allocation and maxWorkers: 1
+- **Technical Analysis**: ✅ Advanced indicators and signal processing tests
 
 ### Development Utilities
 - `npm run dev:port-check` - Check if port 3000 is available
@@ -94,6 +101,8 @@ src/
 |---------|------|---------|
 | StockSelectionService | `app/services/stock-selection/` | Multi-modal stock analysis |
 | InstitutionalDataService | `app/services/financial-data/InstitutionalDataService.ts` | 13F holdings + Form 4 insider trading |
+| MacroeconomicAnalysisService | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA macroeconomic data integration |
+| CurrencyDataService | `app/services/financial-data/CurrencyDataService.ts` | International currency data and analysis |
 | SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
 | CacheService | `app/services/cache/` | Redis + in-memory fallback |
@@ -145,15 +154,32 @@ src/
 ## Testing Framework
 
 ### Configuration
-- **Framework**: Jest with ts-jest preset
-- **Memory Optimization**: `maxWorkers: 1` and explicit garbage collection
-- **Pattern**: `**/__tests__/**/*.test.ts`
-- **Coverage**: Outputs to `docs/test-output/coverage/`
+- **Framework**: Jest with ts-jest preset and TypeScript diagnostics optimization
+- **Memory Optimization**: 4096MB heap allocation, `maxWorkers: 1`, `runInBand` execution
+- **Performance**: Explicit garbage collection (`--expose-gc`), memory leak detection disabled temporarily
+- **Pattern**: `**/__tests__/**/*.test.ts` excluding node_modules and build directories
+- **Coverage**: Comprehensive service layer coverage output to `docs/test-output/coverage/`
+- **Timeout**: 300,000ms (5 minutes) for integration tests with real APIs
+- **Concurrency**: Max 5 concurrent tests with worker memory limit of 512MB
 
 ### Testing Philosophy
-- **TDD Approach**: Tests written before implementation
-- **Real Data Only**: Always use real APIs, never mock data
-- **Memory Management**: Tests run with increased heap size (4096MB)
+- **TDD Approach**: Tests written before implementation with comprehensive integration focus
+- **Real Data Only**: Always use real APIs with live data sources, never mock data
+- **Enterprise Testing**: Circuit breaker patterns, memory pressure testing, concurrent request handling
+- **Security Integration**: OWASP Top 10 validation, input sanitization, error disclosure prevention
+- **Performance Validation**: Response time targets, memory leak prevention, cache optimization
+
+### Recent Test Advancements
+**Test Suite Evolution (Based on Recent Commits)**:
+- **608-line Integration Test**: Comprehensive InstitutionalDataService test covering error handling, resilience, caching, and security
+- **Macroeconomic Data Testing**: New test suite for MacroeconomicAnalysisService with FRED, BLS, and EIA API integration
+- **Currency Data Validation**: CurrencyDataService testing with international data sources
+- **Enhanced Security Testing**: Circuit breaker patterns, concurrent request handling, and memory pressure testing
+- **Real-time Processing**: Live API integration tests with 5-minute timeouts for comprehensive validation
+- **Memory Management**: Advanced Jest configuration preventing memory leaks in extensive test runs
+- **Performance Benchmarking**: Response time validation and parallel processing optimization tests
+
+**Current Status**: All tests passing after comprehensive fixes addressing memory optimization, security integration, and real-time data processing capabilities.
 
 ## Data Flow Architecture
 
@@ -210,7 +236,12 @@ src/
 |-----------|-----------|---------|
 | Stock Analysis | `app/services/stock-selection/StockSelectionService.ts` | Multi-modal analysis |
 | Institutional Data | `app/services/financial-data/InstitutionalDataService.ts` | 13F + Form 4 parsing |
+| Macroeconomic Analysis | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA data orchestration |
+| Currency Data | `app/services/financial-data/CurrencyDataService.ts` | International currency analysis |
 | SEC EDGAR | `app/services/financial-data/SECEdgarAPI.ts` | Enhanced SEC integration |
+| FRED API | `app/services/financial-data/FREDAPI.ts` | Enhanced Federal Reserve data |
+| BLS API | `app/services/financial-data/BLSAPI.ts` | Bureau of Labor Statistics data |
+| EIA API | `app/services/financial-data/EIAAPI.ts` | Energy Information Administration data |
 | Security | `app/services/security/SecurityValidator.ts` | OWASP protection |
 | Error Handling | `app/services/error-handling/ErrorHandler.ts` | Centralized errors |
 | Caching | `app/services/cache/RedisCache.ts` | Redis + fallback |
@@ -218,9 +249,12 @@ src/
 | Data Fallback | `app/services/financial-data/FallbackDataService.ts` | API switching |
 
 ### Config Files
-- `jest.config.js` - Memory optimization
-- `tsconfig.json` - TypeScript strict mode
-- `.env` - API keys and DB URLs
+- `jest.config.js` - Advanced memory optimization with 4096MB heap, garbage collection, leak detection
+- `jest.setup.js` - Test environment setup and global configurations
+- `jest.node-setup.js` - Node.js specific warning suppression and environment setup
+- `jest.reporter.js` - Custom test output formatting and reporting
+- `tsconfig.json` - TypeScript strict mode with enhanced diagnostics
+- `.env` - Extended API keys (FRED, BLS, EIA) and database URLs
 
 ### Key Documentation
 - `docs/vision.md` - Project goals

@@ -400,6 +400,89 @@ body {
   margin-top: 0.25rem;
 }
 
+/* Live Dashboard Layout */
+.live-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.dashboard-section {
+  width: 100%;
+  animation: fadeInUp 1s ease-out 0.3s both;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.dashboard-left,
+.dashboard-right {
+  animation: fadeInUp 1s ease-out 0.6s both;
+}
+
+/* Enhanced Cyberpunk Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+  }
+}
+
+@keyframes data-flow {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Responsive Layout */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .live-dashboard-container {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .live-dashboard-container {
+    padding: 0 0.5rem;
+  }
+
+  .dashboard-section {
+    margin: 0 -0.5rem;
+  }
+}
+
 /* Data Engines Section */
 .data-engines-section {
   background: rgba(255, 255, 255, 0.03);

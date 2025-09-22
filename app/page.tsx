@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import StockTicker from './components/StockTicker'
 import SectorDropdown, { SectorOption } from './components/SectorDropdown'
+import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
+import EconomicCalendar from './components/market/EconomicCalendar'
+import SectorRotationWheel from './components/market/SectorRotationWheel'
 
 interface SymbolData {
   proName: string
@@ -268,34 +271,20 @@ export default function Home() {
               </Link>
             </div>
             <div className="dashboard-preview">
-              <div className="dashboard-mockup">
-                <div className="mockup-header">
-                  <div className="mockup-dots">
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                  </div>
-                  <div className="mockup-title">Live Market Dashboard</div>
+              <div className="live-dashboard-container">
+                {/* Market Sentiment Heatmap */}
+                <div className="dashboard-section">
+                  <MarketSentimentHeatmap />
                 </div>
-                <div className="chart-container">
-                  <div className="chart-line"></div>
-                </div>
-                <div className="metrics-grid">
-                  <div className="metric-card">
-                    <div className="metric-value">+12.4%</div>
-                    <div className="metric-label">Portfolio Growth</div>
+
+                {/* Dashboard Grid Layout */}
+                <div className="dashboard-grid">
+                  <div className="dashboard-left">
+                    <EconomicCalendar />
                   </div>
-                  <div className="metric-card">
-                    <div className="metric-value">89.2%</div>
-                    <div className="metric-label">Prediction Accuracy</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">$2.4M</div>
-                    <div className="metric-label">Assets Analyzed</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">Real-time</div>
-                    <div className="metric-label">Data Feed</div>
+
+                  <div className="dashboard-right">
+                    <SectorRotationWheel />
                   </div>
                 </div>
               </div>
