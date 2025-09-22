@@ -32,6 +32,16 @@ export class EnhancedDataService implements FinancialDataProvider {
   }
 
   /**
+   * Get market data using configured preferences
+   */
+  async getMarketData(symbol: string): Promise<import('./types').MarketData | null> {
+    // For now, return null as DataSourceManager doesn't implement this yet
+    // This method will be implemented when DataSourceManager is extended with market data support
+    console.warn('getMarketData not yet implemented in DataSourceManager')
+    return null
+  }
+
+  /**
    * Get options chain using configured preferences
    */
   async getOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {

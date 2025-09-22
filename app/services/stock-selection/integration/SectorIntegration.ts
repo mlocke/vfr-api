@@ -212,7 +212,7 @@ export class SectorIntegration implements SectorIntegrationInterface {
       }
 
       // Use FallbackDataService to get stocks by sector
-      const stocksData = await this.fallbackDataService.getStocksBySector(sectorId, 100)
+      const stocksData = await this.fallbackDataService.getStocksBySector(sector.id, 100)
 
       if (stocksData && stocksData.length > 0) {
         return stocksData.map(stock => stock.symbol)

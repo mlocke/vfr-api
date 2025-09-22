@@ -11,6 +11,8 @@ export class TreasuryAPI implements FinancialDataProvider {
   name = 'Treasury API (via FRED)'
   private fredAPI: FREDAPI
   private timeout: number
+  private baseUrl = 'https://api.stlouisfed.org/fred'
+  private userAgent = 'VFR-API/1.0'
 
   constructor(timeout = 8000) {
     this.timeout = timeout

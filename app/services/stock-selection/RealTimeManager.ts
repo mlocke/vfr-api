@@ -459,9 +459,11 @@ export class RealTimeManager extends EventEmitter {
     for (const subscription of this.subscriptions.values()) {
       if (subscription.type === 'sector' && subscription.sector?.id === message.sector) {
         await this.sendSubscriptionUpdate(subscription, {
+          subscriptionId: subscription.id,
           type: 'market_update',
           data: message,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          symbols: subscription.symbols
         })
       }
     }
@@ -471,9 +473,11 @@ export class RealTimeManager extends EventEmitter {
     for (const subscription of this.subscriptions.values()) {
       if (subscription.symbols.includes(symbol) && subscription.isActive) {
         await this.sendSubscriptionUpdate(subscription, {
+          subscriptionId: subscription.id,
           type: 'price_update',
           data: snapshot,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          symbols: subscription.symbols
         })
       }
     }
@@ -554,9 +558,11 @@ export class RealTimeManager extends EventEmitter {
 
       if (updateData) {
         await this.sendSubscriptionUpdate(subscription, {
+          subscriptionId: subscription.id,
           type: 'selection_update',
           data: updateData,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          symbols: subscription.symbols
         })
 
         subscription.lastUpdate = Date.now()
@@ -579,7 +585,7 @@ export class RealTimeManager extends EventEmitter {
       // Get or calculate selection result
       let selectionResult = this.selectionResultsCache.get(symbol)
       if (!selectionResult || Date.now() - selectionResult.lastUpdated > 30000) {
-        selectionResult = await this.updateSelectionResult(symbol)
+        selectionResult = await this.updateSelectionResult(symbol) || undefined
       }
 
       if (selectionResult) {
