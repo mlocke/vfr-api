@@ -30,6 +30,8 @@ import { AlgorithmCache } from '../algorithms/AlgorithmCache'
 import { SelectionResult, StockScore } from '../algorithms/types'
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
 import SecurityValidator from '../security/SecurityValidator'
+import MacroeconomicAnalysisService from '../financial-data/MacroeconomicAnalysisService'
+import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
 
 /**
  * Main Stock Selection Service
@@ -42,18 +44,24 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private cache: RedisCache
   private stats: SelectionServiceStats
   private activeRequests: Map<string, AbortController> = new Map()
+  private macroeconomicService?: MacroeconomicAnalysisService
+  private sentimentService?: SentimentAnalysisService
 
   constructor(
     fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
     cache: RedisCache,
-    technicalService?: TechnicalIndicatorService
+    technicalService?: TechnicalIndicatorService,
+    macroeconomicService?: MacroeconomicAnalysisService,
+    sentimentService?: SentimentAnalysisService
   ) {
     super()
 
     this.fallbackDataService = fallbackDataService
     this.cache = cache
     this.config = this.createDefaultConfig()
+    this.macroeconomicService = macroeconomicService
+    this.sentimentService = sentimentService
 
     // Initialize algorithm cache with proper config structure
     const algorithmCache = new AlgorithmCache({
@@ -378,9 +386,52 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // Get additional market data
     const additionalData = await this.fetchAdditionalStockData(symbol, request.options)
 
+    // Get macroeconomic analysis if service is available
+    let macroImpact = null
+    let adjustedScore = stockScore
+    if (this.macroeconomicService) {
+      try {
+        macroImpact = await this.macroeconomicService.analyzeStockMacroImpact(
+          symbol,
+          stockScore.marketData.sector,
+          stockScore.overallScore
+        )
+        if (macroImpact) {
+          // Update the stock score with macro-adjusted score
+          adjustedScore = {
+            ...stockScore,
+            overallScore: macroImpact.adjustedScore
+          }
+        }
+      } catch (error) {
+        console.warn(`Macroeconomic analysis failed for ${symbol}:`, error)
+      }
+    }
+
+    // Get sentiment analysis if service is available
+    let sentimentImpact = null
+    if (this.sentimentService) {
+      try {
+        sentimentImpact = await this.sentimentService.analyzeStockSentimentImpact(
+          symbol,
+          stockScore.marketData.sector,
+          adjustedScore.overallScore // Use macro-adjusted score as base
+        )
+        if (sentimentImpact) {
+          // Update the stock score with sentiment-adjusted score
+          adjustedScore = {
+            ...adjustedScore,
+            overallScore: sentimentImpact.adjustedScore
+          }
+        }
+      } catch (error) {
+        console.warn(`Sentiment analysis failed for ${symbol}:`, error)
+      }
+    }
+
     return {
       symbol,
-      score: stockScore,
+      score: adjustedScore,
       weight: algorithmResult.selections[0]?.weight || 1.0,
       action: algorithmResult.selections[0]?.action || 'HOLD',
       confidence: algorithmResult.selections[0]?.confidence || 0.5,
@@ -408,9 +459,11 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       reasoning: {
         primaryFactors: this.extractPrimaryFactors(stockScore),
-        warnings: this.identifyWarnings(stockScore, additionalData),
-        opportunities: this.identifyOpportunities(stockScore, additionalData),
-        analystInsights: this.generateAnalystInsights(additionalData)
+        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact),
+        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact),
+        analystInsights: this.generateAnalystInsights(additionalData),
+        macroeconomicInsights: macroImpact ? this.generateMacroeconomicInsights(macroImpact) : [],
+        sentimentInsights: sentimentImpact ? this.generateSentimentInsights(sentimentImpact) : []
       },
 
       dataQuality: {
@@ -1121,7 +1174,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return factors
   }
 
-  private identifyWarnings(stockScore: StockScore, additionalData?: any): string[] {
+  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any): string[] {
     const warnings = []
 
     if (stockScore.dataQuality.overall < 0.6) {
@@ -1179,10 +1232,27 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       warnings.push('Stock trading significantly above analyst price targets')
     }
 
+    // Macroeconomic warnings
+    if (macroImpact?.macroScore?.warnings) {
+      warnings.push(...macroImpact.macroScore.warnings)
+    }
+
+    if (macroImpact?.sectorImpact?.outlook === 'negative' || macroImpact?.sectorImpact?.outlook === 'very_negative') {
+      warnings.push(`Unfavorable macroeconomic environment for ${macroImpact.sectorImpact.sector} sector`)
+    }
+
+    // Sentiment-based warnings
+    if (sentimentImpact?.sentimentScore?.warnings) {
+      warnings.push(...sentimentImpact.sentimentScore.warnings)
+    }
+    if (sentimentImpact?.sentimentScore?.overall < 0.3) {
+      warnings.push('Negative news sentiment creates downward pressure')
+    }
+
     return warnings
   }
 
-  private identifyOpportunities(stockScore: StockScore, additionalData?: any): string[] {
+  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any): string[] {
     const opportunities = []
 
     if (stockScore.overallScore > 0.8) {
@@ -1232,6 +1302,28 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
+    // Macroeconomic opportunities
+    if (macroImpact?.macroScore?.opportunities) {
+      opportunities.push(...macroImpact.macroScore.opportunities)
+    }
+
+    if (macroImpact?.sectorImpact?.outlook === 'positive' || macroImpact?.sectorImpact?.outlook === 'very_positive') {
+      opportunities.push(`Favorable macroeconomic environment for ${macroImpact.sectorImpact.sector} sector`)
+    }
+
+    if (macroImpact?.adjustedScore > stockScore.overallScore) {
+      const improvement = ((macroImpact.adjustedScore - stockScore.overallScore) * 100).toFixed(1)
+      opportunities.push(`Macroeconomic tailwinds boost score by ${improvement}%`)
+    }
+
+    // Sentiment-based opportunities
+    if (sentimentImpact?.sentimentScore?.opportunities) {
+      opportunities.push(...sentimentImpact.sentimentScore.opportunities)
+    }
+    if (sentimentImpact?.sentimentScore?.overall > 0.7) {
+      opportunities.push('Positive news sentiment supports upward momentum')
+    }
+
     return opportunities
   }
 
@@ -1256,6 +1348,86 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // Distribution insights
     const buyPercent = ((distribution.strongBuy + distribution.buy) / totalAnalysts * 100).toFixed(0)
     insights.push(`${buyPercent}% of analysts recommend Buy or Strong Buy`)
+
+    return insights
+  }
+
+  private generateMacroeconomicInsights(macroImpact: any): string[] {
+    const insights: string[] = []
+
+    if (!macroImpact) return insights
+
+    // Economic cycle insights
+    if (macroImpact.macroScore) {
+      const macro = macroImpact.macroScore
+      insights.push(`Economic environment score: ${(macro.overall * 100).toFixed(0)}/100`)
+
+      if (macro.reasoning && macro.reasoning.length > 0) {
+        insights.push(...macro.reasoning.slice(0, 2)) // Take top 2 reasons
+      }
+    }
+
+    // Sector sensitivity insights
+    if (macroImpact.sectorImpact) {
+      const sector = macroImpact.sectorImpact
+      insights.push(`${sector.sector} sector outlook: ${sector.outlook.replace('_', ' ')}`)
+
+      // Add specific sensitivity insights
+      const sensitivities = []
+      if (Math.abs(sector.economicSensitivity.interestRates) > 0.5) {
+        const direction = sector.economicSensitivity.interestRates > 0 ? 'benefits from' : 'hurt by'
+        sensitivities.push(`${direction} interest rate changes`)
+      }
+      if (Math.abs(sector.economicSensitivity.inflation) > 0.5) {
+        const direction = sector.economicSensitivity.inflation > 0 ? 'benefits from' : 'hurt by'
+        sensitivities.push(`${direction} inflation`)
+      }
+
+      if (sensitivities.length > 0) {
+        insights.push(`Sector ${sensitivities.join(' and ')}`)
+      }
+    }
+
+    // Score adjustment insights
+    if (macroImpact.adjustedScore && macroImpact.macroWeight) {
+      const adjustment = macroImpact.adjustedScore - (macroImpact.adjustedScore / (1 - macroImpact.macroWeight + macroImpact.macroWeight))
+      if (Math.abs(adjustment) > 0.05) {
+        const direction = adjustment > 0 ? 'boosted' : 'reduced'
+        insights.push(`Macro factors ${direction} score by ${(Math.abs(adjustment) * 100).toFixed(1)}%`)
+      }
+    }
+
+    return insights
+  }
+
+  private generateSentimentInsights(sentimentImpact: any): string[] {
+    const insights: string[] = []
+    if (!sentimentImpact) return insights
+
+    // Main sentiment insights
+    if (sentimentImpact.sentimentScore) {
+      const sentiment = sentimentImpact.sentimentScore
+      insights.push(`News sentiment score: ${(sentiment.overall * 100).toFixed(0)}/100`)
+
+      if (sentiment.reasoning && sentiment.reasoning.length > 0) {
+        insights.push(...sentiment.reasoning.slice(0, 2)) // Take top 2 reasons
+      }
+    }
+
+    // Sentiment insights from the sentiment analysis service
+    if (sentimentImpact.insights && sentimentImpact.insights.length > 0) {
+      insights.push(...sentimentImpact.insights.slice(0, 3)) // Take top 3 insights
+    }
+
+    // Score adjustment insights
+    if (sentimentImpact.adjustedScore && sentimentImpact.sentimentWeight) {
+      const baseScore = sentimentImpact.adjustedScore / (1 - sentimentImpact.sentimentWeight + sentimentImpact.sentimentWeight)
+      const adjustment = sentimentImpact.adjustedScore - baseScore
+      if (Math.abs(adjustment) > 0.02) {
+        const direction = adjustment > 0 ? 'boosted' : 'reduced'
+        insights.push(`Sentiment factors ${direction} score by ${(Math.abs(adjustment) * 100).toFixed(1)}%`)
+      }
+    }
 
     return insights
   }
@@ -1462,9 +1634,11 @@ export async function createStockSelectionService(
   fallbackDataService: FallbackDataService,
   factorLibrary: FactorLibrary,
   cache: RedisCache,
-  technicalService?: TechnicalIndicatorService
+  technicalService?: TechnicalIndicatorService,
+  macroeconomicService?: MacroeconomicAnalysisService,
+  sentimentService?: SentimentAnalysisService
 ): Promise<StockSelectionService> {
-  const service = new StockSelectionService(fallbackDataService, factorLibrary, cache, technicalService)
+  const service = new StockSelectionService(fallbackDataService, factorLibrary, cache, technicalService, macroeconomicService, sentimentService)
 
   // Perform any async initialization here
   const health = await service.healthCheck()

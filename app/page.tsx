@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import StockTicker from './components/StockTicker'
 import SectorDropdown, { SectorOption } from './components/SectorDropdown'
+import EconomicCalendar from './components/market/EconomicCalendar'
+import MarketSentimentHeatmap from './components/market/MarketSentimentHeatmap'
+import SectorRotationWheel from './components/market/SectorRotationWheel'
 
 interface SymbolData {
   proName: string
@@ -267,36 +270,23 @@ export default function Home() {
                 Analyze Stocks & Options
               </Link>
             </div>
-            <div className="dashboard-preview">
-              <div className="dashboard-mockup">
-                <div className="mockup-header">
-                  <div className="mockup-dots">
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                  </div>
-                  <div className="mockup-title">Live Market Dashboard</div>
+            <div className="live-dashboard">
+              <div className="dashboard-header">
+                <h2 className="dashboard-title">Live Market Dashboard</h2>
+                <div className="dashboard-subtitle">Real-time market intelligence & economic calendar</div>
+              </div>
+
+              <div className="dashboard-grid">
+                <div className="dashboard-card">
+                  <EconomicCalendar />
                 </div>
-                <div className="chart-container">
-                  <div className="chart-line"></div>
+
+                <div className="dashboard-card">
+                  <MarketSentimentHeatmap />
                 </div>
-                <div className="metrics-grid">
-                  <div className="metric-card">
-                    <div className="metric-value">+12.4%</div>
-                    <div className="metric-label">Portfolio Growth</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">89.2%</div>
-                    <div className="metric-label">Prediction Accuracy</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">$2.4M</div>
-                    <div className="metric-label">Assets Analyzed</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-value">Real-time</div>
-                    <div className="metric-label">Data Feed</div>
-                  </div>
+
+                <div className="dashboard-card full-width">
+                  <SectorRotationWheel />
                 </div>
               </div>
             </div>
@@ -616,7 +606,7 @@ export default function Home() {
             opacity: 1;
           }
         }
-        
+
         @keyframes scaleIn {
           from {
             transform: scale(0.8);
@@ -625,6 +615,90 @@ export default function Home() {
           to {
             transform: scale(1);
             opacity: 1;
+          }
+        }
+
+        .live-dashboard {
+          margin-top: 2rem;
+          padding: 2rem;
+          background: rgba(17, 24, 39, 0.3);
+          border-radius: 20px;
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          backdrop-filter: blur(10px);
+        }
+
+        .dashboard-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .dashboard-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.95);
+          text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+          margin-bottom: 0.5rem;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .dashboard-subtitle {
+          font-size: 1.1rem;
+          color: rgba(156, 163, 175, 0.8);
+          font-weight: 400;
+        }
+
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+          min-height: 400px;
+          animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .dashboard-card.full-width {
+          grid-column: 1 / -1;
+          min-height: 500px;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .dashboard-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+
+          .dashboard-card.full-width {
+            grid-column: 1;
+          }
+
+          .live-dashboard {
+            padding: 1rem;
+            margin-top: 1rem;
+          }
+
+          .dashboard-title {
+            font-size: 1.5rem;
+          }
+
+          .dashboard-subtitle {
+            font-size: 1rem;
           }
         }
       `}</style>

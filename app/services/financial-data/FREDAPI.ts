@@ -87,6 +87,8 @@ export class FREDAPI implements FinancialDataProvider {
     'DEXUSEU': 'U.S. / Euro Foreign Exchange Rate',
     'DEXJPUS': 'Japan / U.S. Foreign Exchange Rate',
     'DEXCHUS': 'China / U.S. Foreign Exchange Rate',
+    'DTWEXBGS': 'Trade Weighted U.S. Dollar Index: Broad, Goods and Services',
+    'DTWEXM': 'Trade Weighted U.S. Dollar Index: Major Currencies',
 
     // Money Supply
     'M1SL': 'M1 Money Stock',
@@ -102,7 +104,7 @@ export class FREDAPI implements FinancialDataProvider {
   }
 
   constructor(apiKey?: string, timeout = 15000, throwErrors = false) {
-    this.apiKey = apiKey || process.env.FRED_API_KEY || ''
+    this.apiKey = apiKey !== undefined ? apiKey : (process.env.FRED_API_KEY || '')
     this.timeout = timeout
     this.throwErrors = throwErrors
 
@@ -556,6 +558,90 @@ export class FREDAPI implements FinancialDataProvider {
     } catch (error) {
       console.error(`Failed to get recent observations for ${seriesId}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Get previous value for economic indicators used in calendar
+   */
+  async getEconomicPreviousValue(indicatorType: string): Promise<string | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('FRED API key not configured')
+        return null
+      }
+
+      // Map calendar event types to FRED series
+      const seriesMapping: {[key: string]: string} = {
+        'Consumer Price Index (CPI)': 'CPIAUCSL',
+        'Non-Farm Payrolls': 'PAYEMS',
+        'Unemployment Rate': 'UNRATE',
+        'Producer Price Index (PPI)': 'PPIACO',
+        'Industrial Production': 'INDPRO',
+        'Housing Starts': 'HOUST',
+        'Consumer Confidence': 'UMCSENT', // University of Michigan Consumer Sentiment
+        'Gross Domestic Product (GDP)': 'GDP',
+        'Retail Sales': 'RSAFS',
+        'Initial Jobless Claims': 'ICSA' // Initial Claims for Unemployment Insurance
+      }
+
+      const seriesId = seriesMapping[indicatorType]
+      if (!seriesId) {
+        console.warn(`No FRED series mapping for: ${indicatorType}`)
+        return null
+      }
+
+      // Get the last 2 observations to get the previous value
+      const observations = await this.getRecentObservations(seriesId, 2)
+      if (!observations || observations.length < 2) {
+        console.warn(`Insufficient data for ${indicatorType}`)
+        return null
+      }
+
+      // Return the previous value (second most recent)
+      const previousValue = observations[1].value
+      if (previousValue === '.') {
+        // Try third most recent if second is missing
+        const moreObs = await this.getRecentObservations(seriesId, 3)
+        if (moreObs && moreObs.length >= 3 && moreObs[2].value !== '.') {
+          return this.formatEconomicValue(indicatorType, parseFloat(moreObs[2].value))
+        }
+        return null
+      }
+
+      return this.formatEconomicValue(indicatorType, parseFloat(previousValue))
+    } catch (error) {
+      console.error(`Error getting previous value for ${indicatorType}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Format economic values with appropriate units
+   */
+  private formatEconomicValue(indicatorType: string, value: number): string {
+    switch (indicatorType) {
+      case 'Consumer Price Index (CPI)':
+      case 'Producer Price Index (PPI)':
+        return `${value.toFixed(1)}`
+      case 'Non-Farm Payrolls':
+        return `${(value * 1000).toLocaleString()}` // FRED stores in thousands
+      case 'Unemployment Rate':
+        return `${value.toFixed(1)}%`
+      case 'Industrial Production':
+        return `${value.toFixed(1)}`
+      case 'Housing Starts':
+        return `${value.toLocaleString()}K`
+      case 'Consumer Confidence':
+        return `${value.toFixed(1)}`
+      case 'Gross Domestic Product (GDP)':
+        return `${value.toFixed(1)}%` // Usually quarterly change
+      case 'Retail Sales':
+        return `${value.toFixed(1)}%` // Monthly change
+      case 'Initial Jobless Claims':
+        return `${value.toLocaleString()}` // Number of claims
+      default:
+        return value.toFixed(2)
     }
   }
 
