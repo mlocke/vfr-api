@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MarketSentimentData, SectorSentiment } from '../../services/financial-data/MarketSentimentService'
+import MarketExplanationModal from './MarketExplanationModal'
 
 interface MarketSentimentHeatmapProps {
   className?: string
@@ -11,10 +12,11 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
   const [sentimentData, setSentimentData] = useState<MarketSentimentData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showExplanationModal, setShowExplanationModal] = useState(false)
 
   useEffect(() => {
     fetchSentimentData()
-    const interval = setInterval(fetchSentimentData, 60000) // Update every minute
+    const interval = setInterval(fetchSentimentData, 3600000) // Update every hour (was 60000)
 
     return () => clearInterval(interval)
   }, [])
@@ -60,7 +62,7 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
 
   const formatPercentage = (value: number | undefined): string => {
     if (value === undefined) return '--'
-    const sign = value >= 0 ? '+' : ''
+    const sign = value > 0 ? '+' : ''
     return `${sign}${value.toFixed(2)}%`
   }
 
@@ -211,6 +213,13 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
             {sentimentData.overall.value}
             <span className="sentiment-label">{sentimentData.overall.level.replace('-', ' ').toUpperCase()}</span>
           </div>
+          <button
+            className="explain-button"
+            onClick={() => setShowExplanationModal(true)}
+            title="Get plain-language explanation of current market conditions"
+          >
+            📊 Explain This
+          </button>
         </div>
       </div>
 
@@ -270,8 +279,13 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
             <span className="card-icon">📈</span>
             <span className="card-title">YIELD</span>
           </div>
-          <div className="card-value">{sentimentData.economicIndicators.yieldCurve.level.toUpperCase()}</div>
-          <div className="card-subtitle">Curve Signal</div>
+          <div className="card-value">
+            {sentimentData.economicIndicators.yieldCurve.spread10Y2Y !== undefined
+              ? formatPercentage(sentimentData.economicIndicators.yieldCurve.spread10Y2Y)
+              : sentimentData.economicIndicators.yieldCurve.level.toUpperCase()
+            }
+          </div>
+          <div className="card-subtitle">10Y-2Y Spread</div>
         </div>
 
         {/* Social Sentiment */}
@@ -287,7 +301,12 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
             <span className="card-icon">🌐</span>
             <span className="card-title">SOCIAL</span>
           </div>
-          <div className="card-value">{sentimentData.socialSentiment.sentiment.toUpperCase()}</div>
+          <div className="card-value">
+            {sentimentData.socialSentiment.overallValue !== undefined
+              ? `${sentimentData.socialSentiment.overallValue}%`
+              : sentimentData.socialSentiment.sentiment.toUpperCase()
+            }
+          </div>
           <div className="card-subtitle">
             Trending: {sentimentData.socialSentiment.trending.join(', ')}
           </div>
@@ -302,6 +321,12 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
           Updated: {new Date(sentimentData.lastUpdate).toLocaleTimeString()}
         </div>
       </div>
+
+      {/* Market Explanation Modal */}
+      <MarketExplanationModal
+        isOpen={showExplanationModal}
+        onClose={() => setShowExplanationModal(false)}
+      />
 
       <style jsx>{`
         .market-sentiment-heatmap {
@@ -331,7 +356,10 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
         }
 
         .sentiment-overview {
-          text-align: right;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.75rem;
         }
 
         .overall-sentiment {
@@ -439,6 +467,39 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
           color: rgba(156, 163, 175, 0.8);
         }
 
+        .explain-button {
+          background: rgba(99, 102, 241, 0.15);
+          border: 1px solid rgba(99, 102, 241, 0.4);
+          color: rgba(99, 102, 241, 0.95);
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(10px);
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+        }
+
+        .explain-button:hover {
+          background: rgba(99, 102, 241, 0.25);
+          border-color: rgba(99, 102, 241, 0.6);
+          color: rgba(255, 255, 255, 0.95);
+          transform: translateY(-1px);
+          box-shadow:
+            0 4px 12px rgba(99, 102, 241, 0.2),
+            0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        .explain-button:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        }
+
         @keyframes pulse-glow {
           0%, 100% {
             text-shadow: 0 0 10px currentColor;
@@ -457,6 +518,15 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
             flex-direction: column;
             gap: 1rem;
             text-align: center;
+          }
+
+          .sentiment-overview {
+            align-items: center;
+          }
+
+          .explain-button {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
           }
         }
       `}</style>

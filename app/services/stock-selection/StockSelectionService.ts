@@ -930,7 +930,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       financialDataService.getFundamentalRatios?.(sanitizedSymbol) ?? Promise.resolve(null),
       financialDataService.getAnalystRatings?.(sanitizedSymbol) ?? Promise.resolve(null),
       financialDataService.getPriceTargets?.(sanitizedSymbol) ?? Promise.resolve(null),
-      this.vwapService?.getVWAPAnalysis?.(sanitizedSymbol) ?? Promise.resolve(null)
+      this.vwapService?.getVWAPAnalysis?.(sanitizedSymbol) ?? Promise.resolve(null),
+      financialDataService.getExtendedHoursData?.(sanitizedSymbol) ?? Promise.resolve(null)
     ]
 
     const results = await Promise.allSettled(dataPromises)
@@ -941,7 +942,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    * Extract fulfilled data values from Promise.allSettled results
    */
   private extractDataFromResults(results: PromiseSettledResult<any>[], sanitizedSymbol: string): any {
-    const dataTypes = ['stockPrice', 'companyInfo', 'marketData', 'fundamentalRatios', 'analystRatings', 'priceTargets', 'vwapAnalysis']
+    const dataTypes = ['stockPrice', 'companyInfo', 'marketData', 'fundamentalRatios', 'analystRatings', 'priceTargets', 'vwapAnalysis', 'extendedHoursData']
 
     return results.map((result, index) => {
       if (result.status === 'fulfilled') {
@@ -971,7 +972,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    * Transform raw data into standardized stock data format
    */
   private transformStockData(rawData: any[], sanitizedSymbol: string): any {
-    const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis] = rawData
+    const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis, extendedHoursData] = rawData
 
     return {
       symbol: stockPrice.symbol,
@@ -985,7 +986,15 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       priceTargets: this.formatPriceTargets(priceTargets),
       fundamentalRatios: fundamentalRatios ? this.validateFundamentalRatios(fundamentalRatios, sanitizedSymbol) : null,
       vwapAnalysis: vwapAnalysis || null,
-      sourceBreakdown: this.createSourceBreakdown(stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis),
+      // Extended hours data integration
+      preMarketPrice: extendedHoursData?.preMarketPrice,
+      preMarketChange: extendedHoursData?.preMarketChange,
+      preMarketChangePercent: extendedHoursData?.preMarketChangePercent,
+      afterHoursPrice: extendedHoursData?.afterHoursPrice,
+      afterHoursChange: extendedHoursData?.afterHoursChange,
+      afterHoursChangePercent: extendedHoursData?.afterHoursChangePercent,
+      marketStatus: extendedHoursData?.marketStatus || 'closed',
+      sourceBreakdown: this.createSourceBreakdown(stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis, extendedHoursData),
       lastUpdated: Date.now()
     }
   }
@@ -1040,7 +1049,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   /**
    * Create source breakdown for data quality tracking
    */
-  private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any, vwapAnalysis?: any): any {
+  private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any, vwapAnalysis?: any, extendedHoursData?: any): any {
     return {
       stockPrice: stockPrice.source,
       companyInfo: companyInfo ? 'available' : 'missing',
@@ -1048,7 +1057,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       fundamentalRatios: fundamentalRatios?.source || 'unavailable',
       analystRatings: analystRatings?.source || 'unavailable',
       priceTargets: priceTargets?.source || 'unavailable',
-      vwapAnalysis: vwapAnalysis ? 'available' : 'unavailable'
+      vwapAnalysis: vwapAnalysis ? 'available' : 'unavailable',
+      extendedHoursData: extendedHoursData ? 'available' : 'unavailable'
     }
   }
 

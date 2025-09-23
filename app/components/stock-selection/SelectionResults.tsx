@@ -8,6 +8,8 @@ import {
   MultiStockAnalysisResult,
   SelectionMode
 } from '../../services/stock-selection/types'
+import ExtendedHoursIndicator from '../market/ExtendedHoursIndicator'
+import PreMarketAfterHoursDisplay from '../market/PreMarketAfterHoursDisplay'
 
 /**
  * Component props
@@ -90,6 +92,25 @@ function StockCard({ stock, index, showDetails = false, onToggleDetails }: Stock
             <div className="text-sm text-gray-400">24h Change</div>
           </div>
         </div>
+
+        {/* Extended Hours Data */}
+        {(stock.context.preMarketPrice || stock.context.afterHoursPrice) && (
+          <div className="mb-3">
+            <PreMarketAfterHoursDisplay
+              symbol={stock.symbol}
+              regularPrice={stock.score.marketData.price}
+              extendedHoursData={{
+                preMarketPrice: stock.context.preMarketPrice,
+                preMarketChange: stock.context.preMarketChange,
+                preMarketChangePercent: stock.context.preMarketChangePercent,
+                afterHoursPrice: stock.context.afterHoursPrice,
+                afterHoursChange: stock.context.afterHoursChange,
+                afterHoursChangePercent: stock.context.afterHoursChangePercent,
+                marketStatus: stock.context.marketStatus
+              }}
+            />
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="flex items-center justify-between text-sm">
@@ -423,6 +444,13 @@ export default function SelectionResults({
 
   return (
     <div className={`selection-results ${className}`}>
+      {/* Market Status Indicator */}
+      <div className="mb-4">
+        <ExtendedHoursIndicator
+          marketStatus={topSelections[0]?.context?.marketStatus}
+        />
+      </div>
+
       {/* Results Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
