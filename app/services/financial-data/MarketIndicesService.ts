@@ -50,7 +50,7 @@ export interface MarketIndicesData {
 export class MarketIndicesService {
   private providers: Map<string, FinancialDataProvider> = new Map()
   private cache: Map<string, { data: MarketIndex, timestamp: number }> = new Map()
-  private cacheTTL = 60000  // 1 minute cache for indices
+  private cacheTTL = 3600000  // 1 hour cache for indices (was 60000)
 
   // Core indices to track
   private readonly CORE_INDICES = [
@@ -111,15 +111,21 @@ export class MarketIndicesService {
       return cached.data
     }
 
-    // Try each provider in priority order
-    const providerOrder = ['twelvedata', 'polygon', 'fmp', 'yahoo']
+    // Special handling for VIX - use Yahoo Finance first since TwelveData doesn't support it
+    let providerOrder = ['twelvedata', 'polygon', 'fmp', 'yahoo']
+    let querySymbol = symbol
+    if (symbol === 'VIX') {
+      providerOrder = ['yahoo', 'polygon', 'fmp'] // Skip TwelveData for VIX
+      querySymbol = '^VIX' // Yahoo Finance uses ^VIX for VIX index
+    }
 
     for (const providerName of providerOrder) {
       const provider = this.providers.get(providerName)
       if (!provider) continue
 
       try {
-        const stockData = await provider.getStockPrice(symbol)
+        const stockData = await provider.getStockPrice(querySymbol)
+
         if (stockData) {
           const indexData: MarketIndex = {
             symbol: symbol,

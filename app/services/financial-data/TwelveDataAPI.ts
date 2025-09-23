@@ -122,51 +122,48 @@ export class TwelveDataAPI implements FinancialDataProvider {
         return null
       }
 
-      // First try the simple price endpoint
-      const priceResponse = await this.makeRequest('price', {
-        symbol: symbol.toUpperCase(),
-        apikey: this.apiKey
-      })
-
-      if (priceResponse.success && priceResponse.data?.price) {
-        const priceData = priceResponse.data as TwelveDataPrice
-        const price = parseFloat(priceData.price)
-
-        if (!isNaN(price)) {
-          return {
-            symbol: symbol.toUpperCase(),
-            price: Number(price.toFixed(2)),
-            change: 0, // Simple price endpoint doesn't provide change
-            changePercent: 0,
-            volume: 0,
-            timestamp: Date.now(),
-            source: 'twelvedata'
-          }
-        }
-      }
-
-      // Fallback to quote endpoint for more detailed data
+      // Use quote endpoint first for complete data (price, change, changePercent, volume)
       const quoteResponse = await this.makeRequest('quote', {
         symbol: symbol.toUpperCase(),
         apikey: this.apiKey
       })
 
-      if (!quoteResponse.success || !quoteResponse.data) {
+      if (quoteResponse.success && quoteResponse.data) {
+        const quote = quoteResponse.data as TwelveDataQuote
+
+        // Validate required fields
+        if (quote.close) {
+          const price = parseFloat(quote.close)
+          const change = quote.change ? parseFloat(quote.change) : 0
+          const changePercent = quote.percent_change ? parseFloat(quote.percent_change) : 0
+          const volume = quote.volume ? parseInt(quote.volume) : 0
+
+          if (!isNaN(price)) {
+            return {
+              symbol: symbol.toUpperCase(),
+              price: Number(price.toFixed(2)),
+              change: Number(change.toFixed(2)),
+              changePercent: Number(changePercent.toFixed(2)),
+              volume,
+              timestamp: quote.timestamp ? quote.timestamp * 1000 : Date.now(),
+              source: 'twelvedata'
+            }
+          }
+        }
+      }
+
+      // Fallback to simple price endpoint if quote fails
+      const priceResponse = await this.makeRequest('price', {
+        symbol: symbol.toUpperCase(),
+        apikey: this.apiKey
+      })
+
+      if (!priceResponse.success || !priceResponse.data?.price) {
         return null
       }
 
-      const quote = quoteResponse.data as TwelveDataQuote
-
-      // Validate required fields
-      if (!quote.close) {
-        console.warn(`TwelveData: Missing price data for ${symbol}`)
-        return null
-      }
-
-      const price = parseFloat(quote.close)
-      const change = quote.change ? parseFloat(quote.change) : 0
-      const changePercent = quote.percent_change ? parseFloat(quote.percent_change) : 0
-      const volume = quote.volume ? parseInt(quote.volume) : 0
+      const priceData = priceResponse.data as TwelveDataPrice
+      const price = parseFloat(priceData.price)
 
       if (isNaN(price)) {
         console.warn(`TwelveData: Invalid price data for ${symbol}`)
@@ -176,10 +173,10 @@ export class TwelveDataAPI implements FinancialDataProvider {
       return {
         symbol: symbol.toUpperCase(),
         price: Number(price.toFixed(2)),
-        change: Number(change.toFixed(2)),
-        changePercent: Number(changePercent.toFixed(2)),
-        volume,
-        timestamp: quote.timestamp ? quote.timestamp * 1000 : Date.now(),
+        change: 0, // Simple price endpoint doesn't provide change
+        changePercent: 0,
+        volume: 0,
+        timestamp: Date.now(),
         source: 'twelvedata'
       }
     } catch (error) {
@@ -447,6 +444,11 @@ export class TwelveDataAPI implements FinancialDataProvider {
       }
 
       const data = await response.json()
+
+      // Log errors only for debugging
+      if (data.code && data.message) {
+        console.log(`📋 TwelveData API error for ${endpoint}:`, data.message)
+      }
 
       // Check for TwelveData API error messages
       if (data.code && data.message) {

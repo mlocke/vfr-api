@@ -42,13 +42,16 @@ export interface MarketSentimentData {
   }
   sectors: SectorSentiment[]
   economicIndicators: {
-    yieldCurve: SentimentScore
+    yieldCurve: SentimentScore & {
+      spread10Y2Y?: number    // 10Y-2Y yield spread percentage
+    }
     dollarStrength: SentimentScore
     commodities: SentimentScore
   }
   socialSentiment: {
     trending: string[]      // Trending tickers from free sources
     sentiment: 'bullish' | 'bearish' | 'neutral'
+    overallValue: number    // Overall sentiment percentage (0-100)
   }
   lastUpdate: string
   dataQuality: number
@@ -58,7 +61,7 @@ export class MarketSentimentService {
   private marketIndicesService: MarketIndicesService
   private fredAPI: FREDAPI
   private cache: RedisCache
-  private cacheTTL = 60000 // 1 minute cache
+  private cacheTTL = 3600000 // 1 hour cache (was 60000)
 
   constructor() {
     this.marketIndicesService = new MarketIndicesService()
@@ -164,13 +167,17 @@ export class MarketSentimentService {
       },
       sectors: sectorSentiments,
       economicIndicators: {
-        yieldCurve: this.calculateYieldCurveSentiment(economicData?.yieldCurve),
+        yieldCurve: {
+          ...this.calculateYieldCurveSentiment(economicData?.yieldCurve),
+          spread10Y2Y: economicData?.yieldCurve?.yieldCurve?.slope_10Y_2Y
+        },
         dollarStrength: this.calculateDollarSentiment(economicData?.dollarIndex),
         commodities: this.calculateCommoditySentiment(marketData)
       },
       socialSentiment: {
         trending: this.extractTrendingSymbols(marketData),
-        sentiment: this.interpretOverallSentiment(overallScore.value)
+        sentiment: this.interpretOverallSentiment(overallScore.value),
+        overallValue: overallScore.value
       },
       lastUpdate: new Date().toISOString(),
       dataQuality: this.calculateDataQuality(marketData, economicData)

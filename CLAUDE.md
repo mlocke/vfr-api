@@ -68,15 +68,17 @@ src/
 - **Real API Testing**: All tests use live APIs with 5-minute timeout for comprehensive integration testing
 
 ### Integration Test Status
-- **Test Suite Scale**: ✅ 17 comprehensive test files with 8,449+ lines of test code
+- **Test Suite Scale**: ✅ 18+ comprehensive test files with 8,500+ lines of test code
+- **VWAPService**: ✅ New comprehensive test suite for VWAP calculations and analysis integration
 - **InstitutionalDataService**: ✅ 608-line comprehensive integration test covering error handling, caching, real-time processing, and security
-- **MacroeconomicAnalysisService**: ✅ New enhanced test suite for macroeconomic data integration (FRED, BLS, EIA APIs)
-- **CurrencyDataService**: ✅ New test suite for international currency data analysis
+- **MacroeconomicAnalysisService**: ✅ Enhanced test suite for macroeconomic data integration (FRED, BLS, EIA APIs)
+- **CurrencyDataService**: ✅ Test suite for international currency data analysis
+- **SentimentAnalysisService**: ✅ Production-ready sentiment analysis with NewsAPI + Reddit WSB integration
 - **Cache Integration**: ✅ RedisCache + in-memory fallback with cache-aside pattern verification
 - **Rate Limiting**: ✅ Circuit breaker patterns and concurrent request handling
 - **Security Compliance**: ✅ OWASP Top 10 protection with input validation and error sanitization
 - **Performance Optimization**: ✅ Memory management with 4096MB heap allocation and maxWorkers: 1
-- **Technical Analysis**: ✅ Advanced indicators and signal processing tests
+- **Technical Analysis**: ✅ Advanced indicators and signal processing tests with VWAP integration
 
 ### Development Utilities
 - `npm run dev:port-check` - Check if port 3000 is available
@@ -104,6 +106,9 @@ src/
 | InstitutionalDataService | `app/services/financial-data/InstitutionalDataService.ts` | 13F holdings + Form 4 insider trading |
 | MacroeconomicAnalysisService | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA macroeconomic data integration |
 | CurrencyDataService | `app/services/financial-data/CurrencyDataService.ts` | International currency data and analysis |
+| VWAPService | `app/services/financial-data/VWAPService.ts` | Volume Weighted Average Price calculations and analysis |
+| SentimentAnalysisService | `app/services/financial-data/SentimentAnalysisService.ts` | News + Reddit WSB sentiment analysis |
+| EnhancedDataService | `app/services/financial-data/EnhancedDataService.ts` | Enhanced financial data aggregation |
 | RedditAPI | `app/services/financial-data/providers/RedditAPI.ts` | WSB sentiment analysis with performance testing |
 | SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
@@ -118,6 +123,35 @@ src/
 - **Fundamental Analysis**: 15 key fundamental ratios integrated into analysis (P/E, P/B, ROE, margins, liquidity ratios) with dual-source redundancy (FMP + EODHD)
 - **Institutional Intelligence**: 13F quarterly holdings analysis and Form 4 insider trading monitoring with real-time sentiment scoring
 - **Intelligence Features**: Analyst-based, fundamental-based, institutional, and insider warnings, opportunities, and upside calculations
+
+### Advanced Trading Features (Recently Implemented)
+- **VWAP Analysis**: Volume Weighted Average Price calculations with real-time deviation analysis
+- **Multi-timeframe VWAP**: Minute, hour, and daily VWAP data for comprehensive price analysis
+- **VWAP Signals**: Above/below/at VWAP positioning with strength indicators (weak/moderate/strong)
+- **Technical Integration**: VWAP scoring integrated into technical analysis component (40% weight)
+- **Performance Optimized**: < 200ms additional latency for VWAP calculations with 1-minute cache TTL
+- **Polygon.io Integration**: Direct VWAP endpoint integration with fallback to calculated VWAP from aggregates
+- **Trading Intelligence**: Price deviation analysis for institutional-grade execution timing
+
+### Current Implementation Status (Based on Recent Development)
+#### ✅ Completed Features
+- **VWAP Service**: Full implementation with VWAPService.ts, comprehensive testing, and Polygon API integration
+- **Reddit WSB Integration**: Enhanced sentiment analysis with OAuth2, performance testing, and multi-symbol support
+- **Sentiment Analysis**: Production-ready NewsAPI + Reddit integration contributing 10% to composite scoring
+- **Macroeconomic Data**: FRED + BLS + EIA integration (20% weight) with real-time economic cycle analysis
+- **Institutional Intelligence**: SEC EDGAR 13F + Form 4 insider trading monitoring (10% sentiment weight)
+- **Fundamental Analysis**: 15+ ratios with dual-source redundancy (FMP + EODHD) contributing 25% weight
+- **Technical Indicators**: Advanced indicators with VWAP integration (40% weight)
+
+#### 🚧 In Development (Based on Active Branch: feature/trading-features)
+- **Extended Trading Features**: Pre/post market data, bid/ask spread analysis
+- **Short Interest Integration**: FINRA data processing and squeeze detection algorithms
+- **Enhanced Reddit API**: Multi-subreddit support beyond WSB
+
+#### 📋 Planned Features (From Analysis Engine Plans)
+- **ESG Integration**: Alternative data component (5% weight) - planned implementation
+- **Options Data Enhancement**: Put/call ratios and options flow analysis
+- **Enhanced Technical Patterns**: Pattern recognition and support/resistance identification
 
 ### Caching System
 - **Primary**: Redis with configurable TTL (2min dev, 10min prod)
@@ -238,6 +272,9 @@ src/
 | Component | File Path | Purpose |
 |-----------|-----------|---------|
 | Stock Analysis | `app/services/stock-selection/StockSelectionService.ts` | Multi-modal analysis |
+| VWAP Analysis | `app/services/financial-data/VWAPService.ts` | Volume Weighted Average Price calculations |
+| Sentiment Analysis | `app/services/financial-data/SentimentAnalysisService.ts` | News + Reddit WSB sentiment analysis |
+| Enhanced Data | `app/services/financial-data/EnhancedDataService.ts` | Enhanced financial data aggregation |
 | Institutional Data | `app/services/financial-data/InstitutionalDataService.ts` | 13F + Form 4 parsing |
 | Macroeconomic Analysis | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA data orchestration |
 | Currency Data | `app/services/financial-data/CurrencyDataService.ts` | International currency analysis |
@@ -261,9 +298,13 @@ src/
 - `.env` - Extended API keys (FRED, BLS, EIA) and database URLs
 
 ### Key Documentation
-- `docs/vision.md` - Project goals
-- `docs/security-architecture.md` - Security implementation
-- `docs/error-handling-standards.md` - Error management
+- `docs/vision.md` - Project goals and strategic direction
+- `docs/security-architecture.md` - Security implementation and OWASP compliance
+- `docs/error-handling-standards.md` - Error management and logging standards
+- `docs/analysis-engine/` - Analysis engine documentation ecosystem
+  - `plans/` - Strategic implementation plans for trading features, ESG, macroeconomic data
+  - `todos/` - Detailed task tracking and implementation status
+  - `CLAUDE.md` - Analysis engine specific AI agent instructions
 
 ## Troubleshooting
 

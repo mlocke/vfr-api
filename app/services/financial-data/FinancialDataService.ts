@@ -396,6 +396,63 @@ export class FinancialDataService {
   }
 
   /**
+   * Get extended hours data (pre-market and after-hours)
+   */
+  async getExtendedHoursData(symbol: string): Promise<{
+    preMarketPrice?: number
+    preMarketChange?: number
+    preMarketChangePercent?: number
+    afterHoursPrice?: number
+    afterHoursChange?: number
+    afterHoursChangePercent?: number
+    marketStatus: 'pre-market' | 'market-hours' | 'after-hours' | 'closed'
+  } | null> {
+    const cacheKey = `extended_hours_${symbol.toUpperCase()}`
+
+    // Check cache first (shorter TTL for extended hours data)
+    const cached = this.getFromCache<any>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    try {
+      // Use Polygon API for extended hours data (most reliable source)
+      const polygonProvider = this.providers.find(p => p.name === 'Polygon.io') as PolygonAPI
+      if (polygonProvider && polygonProvider.getExtendedHoursSnapshot) {
+        const result = await polygonProvider.getExtendedHoursSnapshot(symbol)
+        if (result) {
+          // Cache with shorter TTL (1 minute for extended hours)
+          this.cache.set(cacheKey, {
+            data: result,
+            timestamp: Date.now()
+          })
+          return result
+        }
+      }
+    } catch (error) {
+      console.error(`Extended hours data error for ${symbol}:`, error)
+    }
+
+    return null
+  }
+
+  /**
+   * Get market status
+   */
+  async getMarketStatus(): Promise<'pre-market' | 'market-hours' | 'after-hours' | 'closed'> {
+    try {
+      const polygonProvider = this.providers.find(p => p.name === 'Polygon.io') as PolygonAPI
+      if (polygonProvider && polygonProvider.getMarketStatus) {
+        return await polygonProvider.getMarketStatus()
+      }
+    } catch (error) {
+      console.error('Market status error:', error)
+    }
+
+    return 'closed'
+  }
+
+  /**
    * Get predefined sector to stock mapping
    * In production, this would come from a comprehensive database
    */

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(sentimentData, {
       status: 200,
       headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=30',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=1800',
         'Content-Type': 'application/json'
       }
     })

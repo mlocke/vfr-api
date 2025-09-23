@@ -13,6 +13,12 @@ export interface StockData {
   bid?: number
   ask?: number
   vwap?: number
+  preMarketPrice?: number
+  preMarketChange?: number
+  preMarketChangePercent?: number
+  afterHoursPrice?: number
+  afterHoursChange?: number
+  afterHoursChangePercent?: number
   timestamp: number
   source: string
 }

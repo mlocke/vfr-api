@@ -783,6 +783,170 @@ export class PolygonAPI implements FinancialDataProvider {
   }
 
   /**
+   * Get pre-market trading data (4:00 AM - 9:30 AM ET)
+   */
+  async getPreMarketData(symbol: string): Promise<{ preMarketPrice?: number; preMarketChange?: number; preMarketChangePercent?: number } | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Check rate limiting before making request
+      this.checkRateLimit(`/v2/snapshot/locale/us/markets/stocks/tickers/${upperSymbol}`)
+
+      // Get snapshot data which includes pre-market info
+      const response = await this.makeRequest(
+        `/v2/snapshot/locale/us/markets/stocks/tickers/${upperSymbol}?apikey=${this.apiKey}`
+      )
+
+      if (!response.success || !response.data?.ticker) {
+        return null
+      }
+
+      const ticker = response.data.ticker
+
+      // Pre-market data is available in the snapshot under updated_timeframe
+      // If market is currently in pre-market session, use current day data
+      const preMarketPrice = ticker.day?.c || ticker.min?.c || null
+      const previousClose = ticker.prevDay?.c || 0
+
+      if (!preMarketPrice || !previousClose) {
+        return null
+      }
+
+      const preMarketChange = preMarketPrice - previousClose
+      const preMarketChangePercent = previousClose > 0 ? (preMarketChange / previousClose) * 100 : 0
+
+      return {
+        preMarketPrice: Number(preMarketPrice.toFixed(2)),
+        preMarketChange: Number(preMarketChange.toFixed(2)),
+        preMarketChangePercent: Number(preMarketChangePercent.toFixed(2))
+      }
+    } catch (error) {
+      console.error(`Polygon pre-market data error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get after-hours trading data (4:00 PM - 8:00 PM ET)
+   */
+  async getAfterHoursData(symbol: string): Promise<{ afterHoursPrice?: number; afterHoursChange?: number; afterHoursChangePercent?: number } | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Check rate limiting before making request
+      this.checkRateLimit(`/v2/snapshot/locale/us/markets/stocks/tickers/${upperSymbol}`)
+
+      // Get snapshot data which includes after-hours info
+      const response = await this.makeRequest(
+        `/v2/snapshot/locale/us/markets/stocks/tickers/${upperSymbol}?apikey=${this.apiKey}`
+      )
+
+      if (!response.success || !response.data?.ticker) {
+        return null
+      }
+
+      const ticker = response.data.ticker
+
+      // After-hours data - if market is closed, use latest available price
+      const afterHoursPrice = ticker.day?.c || ticker.min?.c || null
+      const regularClose = ticker.day?.c || ticker.prevDay?.c || 0
+
+      if (!afterHoursPrice || !regularClose) {
+        return null
+      }
+
+      const afterHoursChange = afterHoursPrice - regularClose
+      const afterHoursChangePercent = regularClose > 0 ? (afterHoursChange / regularClose) * 100 : 0
+
+      return {
+        afterHoursPrice: Number(afterHoursPrice.toFixed(2)),
+        afterHoursChange: Number(afterHoursChange.toFixed(2)),
+        afterHoursChangePercent: Number(afterHoursChangePercent.toFixed(2))
+      }
+    } catch (error) {
+      console.error(`Polygon after-hours data error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get comprehensive extended hours snapshot
+   */
+  async getExtendedHoursSnapshot(symbol: string): Promise<{
+    preMarketPrice?: number
+    preMarketChange?: number
+    preMarketChangePercent?: number
+    afterHoursPrice?: number
+    afterHoursChange?: number
+    afterHoursChangePercent?: number
+    marketStatus: 'pre-market' | 'market-hours' | 'after-hours' | 'closed'
+  } | null> {
+    try {
+      const [preMarketData, afterHoursData, marketStatus] = await Promise.all([
+        this.getPreMarketData(symbol),
+        this.getAfterHoursData(symbol),
+        this.getMarketStatus()
+      ])
+
+      return {
+        ...preMarketData,
+        ...afterHoursData,
+        marketStatus
+      }
+    } catch (error) {
+      console.error(`Polygon extended hours snapshot error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get current market session status
+   */
+  async getMarketStatus(): Promise<'pre-market' | 'market-hours' | 'after-hours' | 'closed'> {
+    try {
+      const now = new Date()
+      const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }))
+      const hours = easternTime.getHours()
+      const minutes = easternTime.getMinutes()
+      const dayOfWeek = easternTime.getDay()
+
+      // Weekend
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        return 'closed'
+      }
+
+      const currentTime = hours * 60 + minutes
+      const preMarketStart = 4 * 60 // 4:00 AM
+      const marketOpen = 9 * 60 + 30 // 9:30 AM
+      const marketClose = 16 * 60 // 4:00 PM
+      const afterHoursEnd = 20 * 60 // 8:00 PM
+
+      if (currentTime >= preMarketStart && currentTime < marketOpen) {
+        return 'pre-market'
+      } else if (currentTime >= marketOpen && currentTime < marketClose) {
+        return 'market-hours'
+      } else if (currentTime >= marketClose && currentTime < afterHoursEnd) {
+        return 'after-hours'
+      } else {
+        return 'closed'
+      }
+    } catch (error) {
+      console.error('Error determining market status:', error)
+      return 'closed'
+    }
+  }
+
+  /**
    * Make HTTP request to Polygon API
    */
   private async makeRequest(endpoint: string): Promise<ApiResponse<any>> {

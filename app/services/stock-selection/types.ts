@@ -91,6 +91,14 @@ export interface EnhancedStockResult {
     priceChange24h?: number
     volumeChange24h?: number
     beta?: number
+    // Extended hours data
+    preMarketPrice?: number
+    preMarketChange?: number
+    preMarketChangePercent?: number
+    afterHoursPrice?: number
+    afterHoursChange?: number
+    afterHoursChangePercent?: number
+    marketStatus?: 'pre-market' | 'market-hours' | 'after-hours' | 'closed'
   }
 
   // Reasoning and factors
