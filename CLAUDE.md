@@ -78,6 +78,7 @@ src/
 - **MacroeconomicAnalysisService**: ✅ Enhanced test suite for macroeconomic data integration (FRED, BLS, EIA APIs)
 - **CurrencyDataService**: ✅ Test suite for international currency data analysis
 - **SentimentAnalysisService**: ✅ Production-ready sentiment analysis with NewsAPI + Reddit WSB integration
+- **MarketSentimentService**: ✅ Enhanced Live Market Sentiment with rate limit graceful degradation (commit a381c82)
 - **Cache Integration**: ✅ RedisCache + in-memory fallback with cache-aside pattern verification
 - **Rate Limiting**: ✅ Circuit breaker patterns and concurrent request handling
 - **Security Compliance**: ✅ OWASP Top 10 protection with input validation and error sanitization
@@ -118,7 +119,7 @@ src/
 | NewsAPI | `app/services/financial-data/providers/NewsAPI.ts` | Financial news sentiment analysis provider |
 | EconomicCalendarService | `app/services/financial-data/EconomicCalendarService.ts` | Economic events and calendar data processing |
 | MarketIndicesService | `app/services/financial-data/MarketIndicesService.ts` | Market indices data and analysis |
-| MarketSentimentService | `app/services/financial-data/MarketSentimentService.ts` | Comprehensive market sentiment aggregation |
+| MarketSentimentService | `app/services/financial-data/MarketSentimentService.ts` | Comprehensive market sentiment aggregation with rate limit handling |
 | SectorDataService | `app/services/financial-data/SectorDataService.ts` | Sector-level analysis and performance tracking |
 | SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
@@ -148,7 +149,7 @@ src/
 - **VWAP Service**: Full implementation with VWAPService.ts, comprehensive testing, and Polygon API integration
 - **Reddit WSB Integration**: Enhanced sentiment analysis with OAuth2, performance testing, and multi-symbol support
 - **Enhanced Reddit API**: Multi-subreddit sentiment analysis with weighted scoring and parallel processing (RedditAPIEnhanced.ts)
-- **Sentiment Analysis**: Production-ready NewsAPI + Reddit integration contributing 10% to composite scoring
+- **Sentiment Analysis**: Production-ready NewsAPI + Reddit integration contributing 10% to composite scoring with graceful API rate limit handling
 - **Macroeconomic Data**: FRED + BLS + EIA integration (20% weight) with real-time economic cycle analysis
 - **Institutional Intelligence**: SEC EDGAR 13F + Form 4 insider trading monitoring (10% sentiment weight)
 - **Fundamental Analysis**: 15+ ratios with dual-source redundancy (FMP + EODHD) contributing 25% weight
@@ -156,6 +157,7 @@ src/
 - **Economic Calendar**: Economic events processing and calendar data integration
 - **Market Indices**: Comprehensive market indices tracking and analysis
 - **Sector Data**: Sector-level performance analysis and tracking
+- **Live Market Sentiment**: Enhanced sentiment display with rate limit graceful degradation and improved UX
 
 #### 🚧 In Development (Based on Active Branch: feature/trading-features)
 - **Extended Trading Features**: Pre/post market data, bid/ask spread analysis
@@ -165,6 +167,20 @@ src/
 - **ESG Integration**: Alternative data component (5% weight) - planned implementation
 - **Options Data Enhancement**: Put/call ratios and options flow analysis
 - **Enhanced Technical Patterns**: Pattern recognition and support/resistance identification
+
+### Recent UX/UI Improvements (Latest Fixes)
+#### ✅ Live Market Sentiment Enhancement (Commit a381c82)
+- **Problem Solved**: Live Market Sentiment cards showing confusing 0.00% values during API rate limits
+- **Solution Implemented**:
+  - Enhanced MarketSentimentService with realistic baseline defaults (52 ± 5 sentiment score)
+  - Added confidence scoring system (0.1 for defaults vs 0.8 for real data)
+  - Improved UI with "Limited Data" messaging instead of 0.00% display
+  - Visual indicators (dashed borders, warning dots) for constrained data
+  - Tooltips explaining data limitations and quality warnings
+- **Rate Limit Handling**: Graceful degradation for TwelveData (800/day), FMP, and Polygon API constraints
+- **User Experience**: Clear distinction between real data and fallback scenarios
+- **Technical Details**: Enhanced error handling in MarketSentimentHeatmap.tsx and SectorRotationWheel.tsx
+- **Status**: Production-ready with comprehensive error states and retry functionality
 
 ### Caching System
 - **Primary**: Redis with configurable TTL (2min dev, 10min prod)
@@ -265,6 +281,7 @@ src/
 3. **Real Data Only** - Connect to actual data sources
 4. **KISS Principles** - Avoid over-engineering
 5. **Performance First** - Optimize for Core Web Vitals
+6. **Graceful Degradation** - Handle API rate limits with meaningful user feedback
 
 ### Architecture Patterns
 - **Service Layer**: Business logic in `app/services/`
@@ -272,6 +289,7 @@ src/
 - **Security**: `SecurityValidator` on all endpoints
 - **Caching**: Redis + in-memory fallback
 - **Performance**: Promise.allSettled parallel execution (83.8% improvement)
+- **Rate Limit Handling**: Graceful API degradation with meaningful user feedback
 
 ### Workflow
 1. `npm run dev:clean` (port conflicts)
@@ -296,6 +314,8 @@ src/
 | BLS API | `app/services/financial-data/BLSAPI.ts` | Bureau of Labor Statistics data |
 | EIA API | `app/services/financial-data/EIAAPI.ts` | Energy Information Administration data |
 | Reddit WSB API | `app/services/financial-data/providers/RedditAPI.ts` | WSB sentiment analysis with performance testing |
+| Market Sentiment UI | `app/components/market/MarketSentimentHeatmap.tsx` | Enhanced sentiment display with rate limit handling |
+| Sector Rotation UI | `app/components/market/SectorRotationWheel.tsx` | Sector visualization with error states and retry functionality |
 | Security | `app/services/security/SecurityValidator.ts` | OWASP protection |
 | Error Handling | `app/services/error-handling/ErrorHandler.ts` | Centralized errors |
 | Caching | `app/services/cache/RedisCache.ts` | Redis + fallback |
@@ -326,6 +346,7 @@ src/
 | Port conflicts | Clean environment | `npm run dev:clean` |
 | Redis down | Uses in-memory fallback | Automatic |
 | Rate limits | Auto-switches sources | Via FallbackDataService |
+| Market Sentiment 0.00% | Enhanced fallback with "Limited Data" display | Automatic via MarketSentimentService |
 | Memory issues | Jest optimization | `maxWorkers: 1` |
 | Server issues | Kill httpd processes | Manual kill + restart |
 

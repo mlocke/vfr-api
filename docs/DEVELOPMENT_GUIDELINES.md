@@ -623,7 +623,17 @@ npm run dev:clean
 - Use fallback data sources
 - Enable caching to reduce API calls
 
-#### 4. Cache Issues
+#### 4. Live Market Sentiment Showing 0.00%
+**Symptoms**: Market sentiment cards display confusing 0.00% values, users unclear about data quality
+**Solutions**: ✅ **RESOLVED** (Commit a381c82)
+- Enhanced MarketSentimentService with realistic baseline defaults (52 ± 5 sentiment score)
+- Added confidence scoring system (0.1 for defaults vs 0.8 for real data)
+- Improved UI with "Limited Data" messaging instead of 0.00% display
+- Visual indicators (dashed borders, warning dots) for constrained data
+- Tooltips explaining data limitations and quality warnings
+- **Technical Implementation**: Updated MarketSentimentHeatmap.tsx and SectorRotationWheel.tsx with enhanced error states
+
+#### 5. Cache Issues
 **Symptoms**: Stale data, inconsistent responses
 **Solutions**:
 ```bash
