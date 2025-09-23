@@ -62,13 +62,17 @@ src/
 - `npm test` - Run Jest tests with memory optimization (4096MB heap, maxWorkers: 1, runInBand)
 - `npm run test:watch` - Run tests in watch mode with memory optimization
 - `npm run test:coverage` - Generate comprehensive test coverage report (outputs to docs/test-output/coverage/)
+- `npm run test:performance` - Run performance tests with memory monitoring and garbage collection tracking
+- `npm run test:performance:single` - Run individual performance test for SentimentAnalysisService
+- `npm run test:performance:memory` - Run memory leak prevention tests
+- `npm run test:performance:cache` - Run cache performance validation tests
 - `npm test -- --testNamePattern="name"` - Run specific test by name
 - `npm test -- path/to/test.ts` - Run specific test file
 - **Test Isolation**: Tests run with explicit garbage collection and memory leak detection
 - **Real API Testing**: All tests use live APIs with 5-minute timeout for comprehensive integration testing
 
 ### Integration Test Status
-- **Test Suite Scale**: ✅ 18+ comprehensive test files with 8,500+ lines of test code
+- **Test Suite Scale**: ✅ 26 comprehensive test files with 13,200+ lines of test code
 - **VWAPService**: ✅ New comprehensive test suite for VWAP calculations and analysis integration
 - **InstitutionalDataService**: ✅ 608-line comprehensive integration test covering error handling, caching, real-time processing, and security
 - **MacroeconomicAnalysisService**: ✅ Enhanced test suite for macroeconomic data integration (FRED, BLS, EIA APIs)
@@ -110,6 +114,12 @@ src/
 | SentimentAnalysisService | `app/services/financial-data/SentimentAnalysisService.ts` | News + Reddit WSB sentiment analysis |
 | EnhancedDataService | `app/services/financial-data/EnhancedDataService.ts` | Enhanced financial data aggregation |
 | RedditAPI | `app/services/financial-data/providers/RedditAPI.ts` | WSB sentiment analysis with performance testing |
+| RedditAPIEnhanced | `app/services/financial-data/providers/RedditAPIEnhanced.ts` | Multi-subreddit sentiment analysis with weighted scoring |
+| NewsAPI | `app/services/financial-data/providers/NewsAPI.ts` | Financial news sentiment analysis provider |
+| EconomicCalendarService | `app/services/financial-data/EconomicCalendarService.ts` | Economic events and calendar data processing |
+| MarketIndicesService | `app/services/financial-data/MarketIndicesService.ts` | Market indices data and analysis |
+| MarketSentimentService | `app/services/financial-data/MarketSentimentService.ts` | Comprehensive market sentiment aggregation |
+| SectorDataService | `app/services/financial-data/SectorDataService.ts` | Sector-level analysis and performance tracking |
 | SecurityValidator | `app/services/security/SecurityValidator.ts` | OWASP Top 10 protection |
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
 | CacheService | `app/services/cache/` | Redis + in-memory fallback |
@@ -137,16 +147,19 @@ src/
 #### ✅ Completed Features
 - **VWAP Service**: Full implementation with VWAPService.ts, comprehensive testing, and Polygon API integration
 - **Reddit WSB Integration**: Enhanced sentiment analysis with OAuth2, performance testing, and multi-symbol support
+- **Enhanced Reddit API**: Multi-subreddit sentiment analysis with weighted scoring and parallel processing (RedditAPIEnhanced.ts)
 - **Sentiment Analysis**: Production-ready NewsAPI + Reddit integration contributing 10% to composite scoring
 - **Macroeconomic Data**: FRED + BLS + EIA integration (20% weight) with real-time economic cycle analysis
 - **Institutional Intelligence**: SEC EDGAR 13F + Form 4 insider trading monitoring (10% sentiment weight)
 - **Fundamental Analysis**: 15+ ratios with dual-source redundancy (FMP + EODHD) contributing 25% weight
 - **Technical Indicators**: Advanced indicators with VWAP integration (40% weight)
+- **Economic Calendar**: Economic events processing and calendar data integration
+- **Market Indices**: Comprehensive market indices tracking and analysis
+- **Sector Data**: Sector-level performance analysis and tracking
 
 #### 🚧 In Development (Based on Active Branch: feature/trading-features)
 - **Extended Trading Features**: Pre/post market data, bid/ask spread analysis
 - **Short Interest Integration**: FINRA data processing and squeeze detection algorithms
-- **Enhanced Reddit API**: Multi-subreddit support beyond WSB
 
 #### 📋 Planned Features (From Analysis Engine Plans)
 - **ESG Integration**: Alternative data component (5% weight) - planned implementation

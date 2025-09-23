@@ -27,17 +27,17 @@ analysis-engine/
 ## Analysis Engine Architecture
 
 ### Core Components
-- **Data Collection Layer**: Multi-tiered approach with 12+ financial APIs
+- **Data Collection Layer**: Multi-tiered approach with 15+ financial APIs
 - **Analysis Engine**: AI-powered analysis with weighted factor scoring
 - **Cache Strategy**: Redis-based caching with TTL optimization
 - **Real-time Processing**: Parallel API calls with fallback mechanisms
 
 ### Key Weighting Strategy
-- **40%** - Technical & price action signals
-- **25%** - Fundamental analysis & financial health
-- **20%** - Macroeconomic context & sector rotation
-- **10%** - Sentiment & institutional flow (includes analyst ratings ✅ IMPLEMENTED)
-- **5%** - Alternative data & special situations
+- **40%** - Technical & price action signals (includes VWAP analysis ✅ IMPLEMENTED)
+- **25%** - Fundamental analysis & financial health (dual-source redundancy ✅ IMPLEMENTED)
+- **20%** - Macroeconomic context & sector rotation (FRED + BLS + EIA ✅ IMPLEMENTED)
+- **10%** - Sentiment & institutional flow (analyst ratings + Reddit WSB multi-subreddit ✅ IMPLEMENTED)
+- **5%** - Alternative data & special situations (ESG integration planned)
 
 ## Development Commands (From Root Directory)
 

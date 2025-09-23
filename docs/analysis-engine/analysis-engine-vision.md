@@ -2,16 +2,16 @@
 
 ## Market Context & Sentiment Data
 - **Options flow data** (put/call ratios, unusual options activity)
-- **Insider trading patterns** from SEC filings
-- **Institutional holdings changes** (13F filings)
+- **Insider trading patterns** from SEC filings ✅ IMPLEMENTED (Form 4 parsing via InstitutionalDataService)
+- **Institutional holdings changes** (13F filings) ✅ IMPLEMENTED (Form 13F parsing via InstitutionalDataService)
 - **Short interest data**
-- **Social sentiment analysis** (Reddit, Twitter, financial news)
+- **Social sentiment analysis** (Reddit, Twitter, financial news) ✅ IMPLEMENTED (Reddit WSB multi-subreddit + NewsAPI via SentimentAnalysisService)
 - **Analyst upgrades/downgrades** and price targets ✅ IMPLEMENTED via FMP
 
 ## Cross-Asset Correlations
-- **Currency data** (DXY, sector-relevant currencies)
-- **Commodity prices** (gold, silver, sector-specific commodities)
-- **Bond yields** across the curve (2Y, 10Y, 30Y spreads)
+- **Currency data** (DXY, sector-relevant currencies) ✅ IMPLEMENTED (CurrencyDataService with international data)
+- **Commodity prices** (gold, silver, sector-specific commodities) ✅ IMPLEMENTED (EIA API integration for energy commodities)
+- **Bond yields** across the curve (2Y, 10Y, 30Y spreads) ✅ IMPLEMENTED (FRED API treasury data)
 - **Volatility indices** ✅ IMPLEMENTED (VIX via MarketIndicesService)
 - **Analyst sentiment data** ✅ IMPLEMENTED (consensus ratings, price targets via FMP)
 

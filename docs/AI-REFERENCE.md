@@ -1,6 +1,6 @@
 # AI Agent Reference - VFR Financial Platform
 
-**Quick Context**: Next.js 15 financial analysis platform aggregating 12+ APIs for institutional-grade stock intelligence.
+**Quick Context**: Next.js 15 financial analysis platform aggregating 15+ APIs for institutional-grade stock intelligence.
 
 ## Critical Rules & Standards
 
@@ -32,7 +32,7 @@
 | Caching | `app/services/cache/RedisCache.ts` | Redis + in-memory fallback |
 | Data Fallback | `app/services/financial-data/FallbackDataService.ts` | API orchestration + switching |
 
-### Data Sources (12+ APIs)
+### Data Sources (15+ APIs)
 | Tier | Source | Rate Limit | Purpose |
 |------|--------|------------|---------|
 | Premium | Polygon, Alpha Vantage, FMP | 250-5000/day | Primary data + ratios |
@@ -55,7 +55,7 @@ interface AnalysisResult {
 
 ### Data Flow
 1. **Input** → Symbol validation & normalization
-2. **Parallel APIs** → 12+ sources via FallbackDataService (Promise.allSettled)
+2. **Parallel APIs** → 15+ sources via FallbackDataService (Promise.allSettled)
 3. **Analysis** → Weighted composite scoring
 4. **Cache** → Redis (2min dev, 10min prod) + in-memory fallback
 5. **Output** → BUY/SELL/HOLD + confidence scores

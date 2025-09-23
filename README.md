@@ -1,6 +1,6 @@
 # VFR API - Veritak Financial Research Platform
 
-**Next.js 15 | TypeScript 5.2 | React 19 | 12+ Financial APIs**
+**Next.js 15 | TypeScript 5.2 | React 19 | 15+ Financial APIs**
 
 ## Quick Start
 ```bash
@@ -11,7 +11,7 @@ npm run dev:clean     # Port 3000
 
 ## Core Identity
 **Problem**: Individual investors lack institutional-grade analysis tools
-**Solution**: AI-driven analysis engine aggregating 12+ data sources
+**Solution**: AI-driven analysis engine aggregating 15+ data sources with advanced trading intelligence
 **Mission**: Democratize sophisticated financial research via single-click insights
 
 ## Features & Tech Stack
@@ -19,8 +19,8 @@ npm run dev:clean     # Port 3000
 | Category | Technology | Purpose |
 |----------|------------|---------|
 | **Framework** | Next.js 15 + App Router | SSR/SSG with TypeScript |
-| **Data Sources** | 12+ APIs (Polygon, AV, FMP, SEC, FRED) | Real-time financial data |
-| **Intelligence** | SEC EDGAR 13F/Form 4 + AI analysis | Institutional insights |
+| **Data Sources** | 15+ APIs (Polygon, AV, FMP, SEC, FRED, BLS, EIA) | Real-time financial + macroeconomic data |
+| **Intelligence** | SEC EDGAR 13F/Form 4 + VWAP + Multi-Reddit sentiment | Institutional + trading insights |
 | **Caching** | Redis + In-memory fallback | Performance optimization |
 | **Security** | JWT + bcrypt + OWASP validation | Enterprise-grade protection |
 | **UI** | React 19 + Tailwind CSS | Cyberpunk-themed interface |
@@ -35,7 +35,7 @@ app/
 │   ├── admin/              # Admin dashboard APIs
 │   └── user_auth/          # JWT authentication
 ├── services/               # Business logic layer
-│   ├── financial-data/     # 12+ API integrations
+│   ├── financial-data/     # 15+ API integrations
 │   ├── stock-selection/    # Multi-modal analysis
 │   ├── security/           # OWASP protection
 │   ├── cache/              # Redis + fallback
@@ -92,11 +92,13 @@ SECRET_KEY=your_jwt_secret
 NODE_ENV=development
 ```
 
-### Data Sources (12+ APIs)
+### Data Sources (15+ APIs)
 | Tier | Source | Type | Purpose |
 |------|--------|------|---------|
-| Premium | Polygon, Alpha Vantage, FMP | Paid | Primary data + ratios |
-| Government | SEC EDGAR, FRED, BLS | Free | Institutional/macro |
+| Premium | Polygon, Alpha Vantage, FMP | Paid | Primary data + ratios + VWAP |
+| Enhanced | EODHD, TwelveData | Paid | Secondary + ratios |
+| Government | SEC EDGAR, FRED, BLS, EIA | Free | Institutional/macro/energy |
+| Social Intelligence | Reddit WSB Multi-Subreddit, NewsAPI | Free/Paid | Sentiment analysis |
 | Backup | Yahoo Finance | Free | Fallback only |
 
 ## API Usage
@@ -121,20 +123,22 @@ NODE_ENV=development
 - **Memory Optimized**: `maxWorkers: 1` for stability
 
 ```bash
-npm test                    # All tests (22 integration tests passing)
+npm test                    # All tests (26 test files, 13,200+ lines)
 npm run test:coverage      # Coverage report (80% minimum)
 npm test -- --testNamePattern="ServiceName"  # Specific test
 ```
 
 ### Integration Test Status
-**InstitutionalDataService Integration**: ✅ **ALL 22 TESTS PASSING**
-- Error Handling and Resilience Integration (6 tests)
-- Cache Integration and Real-time Processing (5 tests)
-- Real-time Data Processing Integration (4 tests)
-- Security Integration and Compliance (4 tests)
-- System Integration and Health Monitoring (3 tests)
+**Comprehensive Test Suite**: ✅ **26 TEST FILES PASSING** (13,200+ lines of test code)
+- **VWAP Service**: Volume Weighted Average Price analysis and integration
+- **Enhanced Reddit API**: Multi-subreddit sentiment analysis with performance testing
+- **Sentiment Analysis**: NewsAPI + Reddit WSB integration with caching
+- **Macroeconomic Data**: FRED + BLS + EIA integration testing
+- **Currency Data**: International currency analysis validation
+- **Institutional Data**: SEC EDGAR 13F + Form 4 comprehensive integration
+- **Security & Performance**: OWASP compliance + memory optimization
 
-Recent fixes include RedisCache method updates and enhanced rate limiting test robustness.
+All tests use real APIs with 5-minute timeout for comprehensive integration validation.
 
 ## Architecture Details
 
@@ -142,13 +146,17 @@ Recent fixes include RedisCache method updates and enhanced rate limiting test r
 | Service | File | Purpose |
 |---------|------|---------|
 | StockSelectionService | `app/services/stock-selection/` | Multi-modal analysis |
-| FallbackDataService | `app/services/financial-data/` | API orchestration + failover |
+| VWAPService | `app/services/financial-data/` | Volume Weighted Average Price analysis |
+| SentimentAnalysisService | `app/services/financial-data/` | NewsAPI + Reddit multi-subreddit sentiment |
+| MacroeconomicAnalysisService | `app/services/financial-data/` | FRED + BLS + EIA integration |
 | InstitutionalDataService | `app/services/financial-data/` | SEC 13F + Form 4 parsing |
+| CurrencyDataService | `app/services/financial-data/` | International currency analysis |
+| FallbackDataService | `app/services/financial-data/` | API orchestration + failover |
 | SecurityValidator | `app/services/security/` | OWASP protection |
 
 ### Data Flow
 1. **Input** → Stock symbols/sectors
-2. **Parallel APIs** → 12+ sources via FallbackDataService
+2. **Parallel APIs** → 15+ sources via FallbackDataService
 3. **AI Analysis** → Proprietary algorithms + institutional intelligence
 4. **Cache** → Redis (2min dev, 10min prod) + in-memory fallback
 5. **Output** → Actionable insights + BUY/SELL/HOLD recommendations
