@@ -225,14 +225,9 @@ export class SectorDataService {
       console.warn(`FMP failed for ${symbol}:`, error)
     }
 
-    // If all APIs failed, return realistic fallback data with rate limit indicators
-    const fallbackData = this.getFallbackSectorData(symbol, name)
-    return {
-      ...fallbackData,
-      dataStatus: 'rate-limited',
-      apiSource: 'Fallback (Rate Limited)',
-      errors: [...errors, 'All APIs rate limited - using fallback data']
-    }
+    // If all APIs failed, return null - no mock data allowed
+    console.error(`All APIs failed for sector ${symbol} (${name}). Errors:`, errors)
+    return null
   }
 
   /**
@@ -253,39 +248,6 @@ export class SectorDataService {
     return marketCaps[symbol] || 10000000000 // Default 10B
   }
 
-  /**
-   * Get realistic fallback data when APIs are rate limited
-   * Uses current market conditions and historical patterns
-   */
-  private getFallbackSectorData(symbol: string, name: string): Omit<SectorData, 'dataStatus' | 'apiSource' | 'errors'> {
-    // Current realistic sector performance based on market conditions
-    const sectorPerformance: { [key: string]: { change: number, price: number, volume: number } } = {
-      'XLK': { change: 1.2, price: 279.45, volume: 8500000 },    // Tech outperforming
-      'XLF': { change: 0.8, price: 54.68, volume: 45000000 },    // Financials moderate gains
-      'XLV': { change: 0.3, price: 137.69, volume: 11500000 },   // Healthcare defensive
-      'XLE': { change: -1.1, price: 87.55, volume: 16000000 },   // Energy down
-      'XLI': { change: 0.5, price: 153.88, volume: 9200000 },    // Industrials steady
-      'XLC': { change: 0.4, price: 119.89, volume: 5800000 },    // Communication slight up
-      'XLY': { change: 0.7, price: 242.08, volume: 6800000 },    // Consumer Discretionary up
-      'XLP': { change: -0.2, price: 79.22, volume: 13800000 }    // Consumer Staples slightly down
-    }
-
-    const data = sectorPerformance[symbol] || { change: 0, price: 100, volume: 10000000 }
-    const previousClose = data.price - data.change
-    const changePercent = (data.change / previousClose) * 100
-
-    return {
-      symbol,
-      name,
-      performance: Number(changePercent.toFixed(2)),
-      volume: data.volume,
-      marketCap: this.estimateETFMarketCap(symbol),
-      momentum: this.getMomentum(changePercent),
-      price: data.price,
-      change: data.change,
-      changePercent: Number(changePercent.toFixed(2))
-    }
-  }
 
   /**
    * Calculate momentum based on performance
