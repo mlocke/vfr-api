@@ -62,8 +62,17 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
 
   const formatPercentage = (value: number | undefined): string => {
     if (value === undefined) return '--'
+    if (value === 0) return 'Limited Data'
     const sign = value > 0 ? '+' : ''
     return `${sign}${value.toFixed(2)}%`
+  }
+
+  const isLimitedData = (sector: SectorSentiment): boolean => {
+    return sector.performance.day === 0 && sector.sentiment.confidence <= 0.1
+  }
+
+  const getCardOpacity = (sector: SectorSentiment): number => {
+    return isLimitedData(sector) ? 0.7 : 1.0
   }
 
   if (loading) {
@@ -245,12 +254,14 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
         {sentimentData.sectors.map((sector) => (
           <div
             key={sector.symbol}
-            className="sentiment-card sector-card"
+            className={`sentiment-card sector-card ${isLimitedData(sector) ? 'limited-data' : ''}`}
             style={{
               background: getSentimentColor(sector.sentiment.value, true),
               borderColor: getSentimentColor(sector.sentiment.value),
-              boxShadow: getSentimentGlow(sector.sentiment.value)
+              boxShadow: getSentimentGlow(sector.sentiment.value),
+              opacity: getCardOpacity(sector)
             }}
+            title={isLimitedData(sector) ? 'Limited data available due to API rate limits' : `${sector.name} sector sentiment`}
           >
             <div className="card-header">
               <span className="card-icon">
@@ -260,6 +271,7 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
                  sector.symbol === 'XLV' ? '🏥' : '🏭'}
               </span>
               <span className="card-title">{sector.symbol}</span>
+              {isLimitedData(sector) && <span className="limited-indicator">⚠️</span>}
             </div>
             <div className="card-value">{formatPercentage(sector.performance.day)}</div>
             <div className="card-subtitle">{sector.name}</div>
@@ -316,6 +328,7 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
       <div className="heatmap-footer">
         <div className="data-quality">
           Quality: {Math.round(sentimentData.dataQuality * 100)}%
+          {sentimentData.dataQuality < 0.5 && <span className="quality-warning"> (Limited due to API constraints)</span>}
         </div>
         <div className="last-update">
           Updated: {new Date(sentimentData.lastUpdate).toLocaleTimeString()}
@@ -419,6 +432,34 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
           box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
+        .sentiment-card.limited-data {
+          border-style: dashed;
+          position: relative;
+        }
+
+        .sentiment-card.limited-data::after {
+          content: '';
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          width: 8px;
+          height: 8px;
+          background: rgba(251, 146, 60, 0.8);
+          border-radius: 50%;
+          animation: pulse-warning 2s infinite;
+        }
+
+        @keyframes pulse-warning {
+          0%, 100% {
+            opacity: 0.8;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+        }
+
         .card-header {
           display: flex;
           align-items: center;
@@ -434,6 +475,12 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
           font-size: 0.8rem;
           font-weight: 600;
           opacity: 0.9;
+        }
+
+        .limited-indicator {
+          font-size: 0.6rem;
+          opacity: 0.8;
+          margin-left: auto;
         }
 
         .card-value {
@@ -461,6 +508,11 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
 
         .data-quality {
           color: rgba(34, 197, 94, 0.8);
+        }
+
+        .quality-warning {
+          color: rgba(251, 146, 60, 0.9);
+          font-size: 0.7rem;
         }
 
         .last-update {

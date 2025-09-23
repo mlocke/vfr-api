@@ -36,38 +36,56 @@ export default function SectorRotationWheel({ className = '' }: SectorRotationWh
   }, [sectorData, selectedSector])
 
   const fetchSectorData = async () => {
+    console.log('🔄 SectorRotationWheel: Starting to fetch sector data...')
     try {
       const response = await fetch('/api/market/sectors')
+      console.log('📡 SectorRotationWheel: Response status:', response.status)
+
       const data = await response.json()
+      console.log('📊 SectorRotationWheel: Received data:', data)
+
       const sectors = data.sectors || []
+      console.log('🎯 SectorRotationWheel: Sectors count:', sectors.length)
 
       setSectorData(sectors)
 
       if (sectors.length === 0) {
+        console.warn('⚠️ SectorRotationWheel: No sectors received, setting error state')
         setError('Sector data temporarily unavailable')
       } else {
+        console.log('✅ SectorRotationWheel: Successfully loaded', sectors.length, 'sectors')
         setError(null)
       }
     } catch (err) {
-      console.error('Error fetching sector data:', err)
+      console.error('❌ SectorRotationWheel: Error fetching sector data:', err)
       setSectorData([])
       setError('Unable to connect to server')
     } finally {
+      console.log('🏁 SectorRotationWheel: Finished loading, setting loading to false')
       setLoading(false)
     }
   }
 
 
   const drawRotationWheel = () => {
+    console.log('🎨 SectorRotationWheel: Starting to draw wheel with', sectorData.length, 'sectors')
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) {
+      console.warn('⚠️ SectorRotationWheel: Canvas ref is null, cannot draw')
+      return
+    }
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {
+      console.warn('⚠️ SectorRotationWheel: Cannot get 2D context from canvas')
+      return
+    }
 
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2
     const radius = Math.min(centerX, centerY) - 40
+
+    console.log('🎨 SectorRotationWheel: Canvas dimensions:', canvas.width, 'x', canvas.height, 'radius:', radius)
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -236,6 +254,89 @@ export default function SectorRotationWheel({ className = '' }: SectorRotationWh
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Add error state handling
+  if (error) {
+    return (
+      <div className={`sector-rotation-wheel ${className}`}>
+        <div className="wheel-header">
+          <h3 className="wheel-title">Sector Rotation</h3>
+        </div>
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <div className="error-text">{error}</div>
+          <button
+            className="retry-button"
+            onClick={() => {
+              setError(null)
+              setLoading(true)
+              fetchSectorData()
+            }}
+          >
+            Retry
+          </button>
+        </div>
+
+        <style jsx>{`
+          .sector-rotation-wheel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            min-height: 500px;
+          }
+
+          .wheel-header {
+            margin-bottom: 1.5rem;
+            text-align: center;
+          }
+
+          .wheel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+          }
+
+          .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            gap: 1rem;
+          }
+
+          .error-icon {
+            font-size: 2rem;
+          }
+
+          .error-text {
+            color: rgba(239, 68, 68, 0.9);
+            font-size: 14px;
+            text-align: center;
+          }
+
+          .retry-button {
+            background: rgba(99, 102, 241, 0.8);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+          }
+
+          .retry-button:hover {
+            background: rgba(99, 102, 241, 1);
           }
         `}</style>
       </div>
