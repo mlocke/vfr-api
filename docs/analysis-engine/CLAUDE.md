@@ -36,7 +36,7 @@ analysis-engine/
 - **40%** - Technical & price action signals (includes VWAP analysis ✅ IMPLEMENTED)
 - **25%** - Fundamental analysis & financial health (dual-source redundancy ✅ IMPLEMENTED)
 - **20%** - Macroeconomic context & sector rotation (FRED + BLS + EIA ✅ IMPLEMENTED)
-- **10%** - Sentiment & institutional flow (analyst ratings + Reddit WSB multi-subreddit ✅ IMPLEMENTED)
+- **10%** - Sentiment & institutional flow (analyst ratings + Reddit WSB multi-subreddit ✅ IMPLEMENTED with rate limit graceful degradation)
 - **5%** - Alternative data & special situations (ESG integration planned)
 
 ## Development Commands (From Root Directory)
@@ -120,9 +120,10 @@ npm test -- --testNamePattern="PolygonAPI"
 - **KISS Principles**: Keep solutions simple and readable - avoid over-engineering
 - **No Mock Data**: Always use real financial APIs for testing and development
 - **Performance First**: Target < 3 seconds for complete analysis
-- **Graceful Degradation**: Handle API failures without breaking user experience
+- **Graceful Degradation**: Handle API failures without breaking user experience (Live Market Sentiment fix ✅)
 - **Confidence Scoring**: All analysis results include confidence levels
 - **Caching Strategy**: Implement appropriate TTL for different data types
+- **Rate Limit Handling**: Provide meaningful user feedback during API constraints
 
 ### Data Quality Standards
 - **Source Attribution**: Track which APIs provided each data point
