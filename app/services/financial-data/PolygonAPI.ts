@@ -63,21 +63,28 @@ export class PolygonAPI implements FinancialDataProvider {
       }
 
       // Fallback to previous day data if snapshot fails
+      console.log(`Polygon API: Fetching prev data for ${upperSymbol}`)
       const prevResponse = await this.makeRequest(
         `/v2/aggs/ticker/${upperSymbol}/prev?adjusted=true&apikey=${this.apiKey}`
       )
 
-      if (!prevResponse.success || !prevResponse.data?.results?.[0]) {
+      if (!prevResponse.success) {
+        console.error(`Polygon API: Failed request for ${upperSymbol}:`, prevResponse.error)
+        return null
+      }
+
+      if (!prevResponse.data?.results?.[0]) {
+        console.error(`Polygon API: No results for ${upperSymbol}`)
         return null
       }
 
       const result = prevResponse.data.results[0]
-      const price = result.c || 0
+      const price = result.c || 0  // Previous day's close
+      const open = result.o || 0   // Previous day's open
 
-      // Get cached previous close or use yesterday's open
-      const previousClose = this.previousCloseCache.get(upperSymbol) || result.o || price
-      const change = price - previousClose
-      const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+      // Calculate day change as close - open for the previous day
+      const change = price - open
+      const changePercent = open > 0 ? (change / open) * 100 : 0
 
       return {
         symbol: upperSymbol,

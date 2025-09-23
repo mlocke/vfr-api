@@ -26,13 +26,22 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('MarketSectorsAPI.GET error:', error)
 
+    // Return empty data with 200 status to avoid frontend errors
     return NextResponse.json(
       {
-        error: 'Failed to retrieve sector data',
-        message: 'Unable to fetch current sector performance. Please try again later.',
-        timestamp: new Date().toISOString()
+        sectors: [],
+        timestamp: new Date().toISOString(),
+        dataQuality: 'unavailable',
+        source: 'None - All APIs failed',
+        apiStatus: {
+          polygon: false,
+          alphaVantage: false,
+          yahooFinance: false,
+          fmp: false
+        },
+        errors: ['All data sources are currently unavailable']
       },
-      { status: 500 }
+      { status: 200 }
     )
   }
 }

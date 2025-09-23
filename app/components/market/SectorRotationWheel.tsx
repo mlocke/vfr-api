@@ -38,15 +38,20 @@ export default function SectorRotationWheel({ className = '' }: SectorRotationWh
   const fetchSectorData = async () => {
     try {
       const response = await fetch('/api/market/sectors')
-      if (!response.ok) throw new Error('Failed to fetch sector data')
-
       const data = await response.json()
-      setSectorData(data.sectors || [])
-      setError(null)
+      const sectors = data.sectors || []
+
+      setSectorData(sectors)
+
+      if (sectors.length === 0) {
+        setError('Sector data temporarily unavailable')
+      } else {
+        setError(null)
+      }
     } catch (err) {
       console.error('Error fetching sector data:', err)
       setSectorData([])
-      setError('Unable to load sector data - API unavailable')
+      setError('Unable to connect to server')
     } finally {
       setLoading(false)
     }

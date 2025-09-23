@@ -3,6 +3,7 @@
  * Provides real sector performance data using sector ETFs
  */
 
+import { PolygonAPI } from './PolygonAPI'
 import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
@@ -28,6 +29,7 @@ export interface SectorDataResponse {
   dataQuality: 'real' | 'simulated'
   source: string
   apiStatus: {
+    polygon: boolean
     alphaVantage: boolean
     yahooFinance: boolean
     fmp: boolean
@@ -36,6 +38,7 @@ export interface SectorDataResponse {
 }
 
 export class SectorDataService {
+  private polygon: PolygonAPI
   private alphaVantage: AlphaVantageAPI
   private yahooFinance: YahooFinanceAPI
   private fmp: FinancialModelingPrepAPI
@@ -53,6 +56,7 @@ export class SectorDataService {
   ]
 
   constructor() {
+    this.polygon = new PolygonAPI()
     this.alphaVantage = new AlphaVantageAPI()
     this.yahooFinance = new YahooFinanceAPI()
     this.fmp = new FinancialModelingPrepAPI()
@@ -68,12 +72,26 @@ export class SectorDataService {
     // Check API health first
     const apiStatus = await this.healthCheck()
 
-    // Use Promise.allSettled for parallel processing
-    const results = await Promise.allSettled(
-      this.sectorETFs.map(async (sector) => {
-        return this.getSectorDataForETF(sector.symbol, sector.name)
-      })
-    )
+    // Process sectors with intelligent rate limiting strategy
+    const results: PromiseSettledResult<SectorData | null>[] = []
+    const POLYGON_FREE_TIER_LIMIT = 5 // Max requests per minute
+
+    for (let i = 0; i < this.sectorETFs.length; i++) {
+      const sector = this.sectorETFs[i]
+
+      try {
+        // For the first 5 sectors, try with Polygon enabled
+        // For the rest, use skipPolygon to avoid rate limits
+        const skipPolygon = i >= POLYGON_FREE_TIER_LIMIT
+        const data = await this.getSectorDataForETF(sector.symbol, sector.name, skipPolygon)
+        results.push({ status: 'fulfilled', value: data })
+
+        // Add small delay between requests (200ms)
+        await new Promise(resolve => setTimeout(resolve, 200))
+      } catch (error) {
+        results.push({ status: 'rejected', reason: error })
+      }
+    }
 
     // Process results
     results.forEach((result, index) => {
@@ -89,15 +107,22 @@ export class SectorDataService {
 
     // If we have no real data, return error
     if (sectors.length === 0) {
+      console.error('Failed to fetch any sector data. All APIs failed.')
       throw new Error(`Failed to fetch any sector data. Errors: ${errors.join(', ')}`)
+    }
+
+    // Log partial success
+    if (sectors.length < this.sectorETFs.length) {
+      console.warn(`Partial sector data retrieved: ${sectors.length}/${this.sectorETFs.length} sectors. Rate limiting may be affecting results.`)
     }
 
     return {
       sectors: sectors.sort((a, b) => b.performance - a.performance), // Sort by performance
       timestamp: new Date().toISOString(),
       dataQuality: 'real',
-      source: 'Multiple APIs (Alpha Vantage, Yahoo Finance, FMP)',
+      source: 'Multiple APIs (Polygon.io, Alpha Vantage, Yahoo Finance, FMP)',
       apiStatus: {
+        polygon: apiStatus['polygon'] ?? false,
         alphaVantage: apiStatus['alphaVantage'] ?? false,
         yahooFinance: apiStatus['yahooFinance'] ?? false,
         fmp: apiStatus['fmp'] ?? false
@@ -109,10 +134,39 @@ export class SectorDataService {
   /**
    * Get data for a single sector ETF with fallback logic
    */
-  private async getSectorDataForETF(symbol: string, name: string): Promise<SectorData | null> {
+  private async getSectorDataForETF(symbol: string, name: string, skipPolygon: boolean = false): Promise<SectorData | null> {
     const errors: string[] = []
 
-    // Try Alpha Vantage first
+    // Try Polygon.io first (primary data source) unless rate limited
+    if (!skipPolygon) {
+      try {
+        const stockData = await this.polygon.getStockPrice(symbol)
+        if (stockData && stockData.price > 0) {
+          return {
+            symbol,
+            name,
+            performance: stockData.changePercent || 0,
+            volume: stockData.volume || 0,
+            marketCap: this.estimateETFMarketCap(symbol),
+            momentum: this.getMomentum(stockData.changePercent || 0),
+            price: stockData.price,
+            change: stockData.change || 0,
+            changePercent: stockData.changePercent || 0,
+            dataStatus: 'live',
+            apiSource: 'Polygon.io',
+            errors: undefined
+          }
+        } else {
+          errors.push('Polygon.io: No data returned')
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+        errors.push(`Polygon.io: ${errorMsg}`)
+        console.warn(`Polygon.io failed for ${symbol}:`, error)
+      }
+    }
+
+    // Try Alpha Vantage as fallback
     try {
       const stockData = await this.alphaVantage.getStockPrice(symbol)
       const marketData = await this.alphaVantage.getMarketData(symbol)
@@ -265,15 +319,17 @@ export class SectorDataService {
    */
   async healthCheck(): Promise<{ [key: string]: boolean }> {
     const checks = await Promise.allSettled([
+      this.polygon.healthCheck(),
       this.alphaVantage.healthCheck(),
       this.yahooFinance.healthCheck(),
       this.fmp.healthCheck()
     ])
 
     return {
-      alphaVantage: checks[0].status === 'fulfilled' ? checks[0].value : false,
-      yahooFinance: checks[1].status === 'fulfilled' ? checks[1].value : false,
-      fmp: checks[2].status === 'fulfilled' ? checks[2].value : false
+      polygon: checks[0].status === 'fulfilled' ? checks[0].value : false,
+      alphaVantage: checks[1].status === 'fulfilled' ? checks[1].value : false,
+      yahooFinance: checks[2].status === 'fulfilled' ? checks[2].value : false,
+      fmp: checks[3].status === 'fulfilled' ? checks[3].value : false
     }
   }
 }
