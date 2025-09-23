@@ -3,7 +3,7 @@
  * Replaces MCP-based Polygon data fetching with direct REST API calls
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis, VWAPData } from './types'
 
 export class PolygonAPI implements FinancialDataProvider {
   name = 'Polygon.io'
@@ -47,12 +47,16 @@ export class PolygonAPI implements FinancialDataProvider {
         // Cache the previous close for future use
         this.previousCloseCache.set(upperSymbol, previousClose)
 
+        // Get VWAP data if available (non-blocking)
+        const vwapData = await this.getVWAP(upperSymbol).catch(() => null)
+
         return {
           symbol: upperSymbol,
           price: Number(price.toFixed(2)),
           change: Number(change.toFixed(2)),
           changePercent: Number(changePercent.toFixed(2)),
           volume: ticker.day?.v || ticker.prevDay?.v || 0,
+          vwap: vwapData?.vwap,
           timestamp: ticker.updated || Date.now(),
           source: 'polygon'
         }
@@ -655,6 +659,100 @@ export class PolygonAPI implements FinancialDataProvider {
       console.error(`Polygon options analysis error for ${symbol}:`, error)
       return null
     }
+  }
+
+  /**
+   * Get VWAP (Volume Weighted Average Price) data
+   * Calculates VWAP from available aggregate data since dedicated endpoint is not available
+   */
+  async getVWAP(symbol: string, timespan: 'minute' | 'hour' | 'day' = 'minute', limit: number = 20): Promise<VWAPData | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Check rate limiting before making request
+      this.checkRateLimit(`/v2/aggs/ticker/${upperSymbol}`)
+
+      // Get aggregate data to calculate VWAP
+      // Today is Monday Sep 22, 2025 after hours - get today's and recent trading data
+      const endDate = new Date()
+      const startDate = new Date()
+
+      // For VWAP calculation, we want the most recent trading data
+      // If it's after hours on Monday, we can get today's data
+      // Otherwise adjust for weekends
+      const day = endDate.getDay()
+      if (day === 0) { // Sunday
+        endDate.setDate(endDate.getDate() - 2) // Go to Friday
+      } else if (day === 6) { // Saturday
+        endDate.setDate(endDate.getDate() - 1) // Go to Friday
+      }
+      // Monday after hours - keep current date to get today's trading data
+
+      startDate.setTime(endDate.getTime())
+      startDate.setDate(startDate.getDate() - 3) // Get last 3 trading days including today
+
+      const timespanMultiplier = timespan === 'minute' ? 1 : timespan === 'hour' ? 60 : 1440
+      const timespanUnit = timespan === 'day' ? 'day' : 'minute'
+
+      const url = `/v2/aggs/ticker/${upperSymbol}/range/${timespanMultiplier}/${timespanUnit}/${startDate.toISOString().split('T')[0]}/${endDate.toISOString().split('T')[0]}?adjusted=true&sort=desc&limit=${limit}&apikey=${this.apiKey}`
+
+      const response = await this.makeRequest(url)
+
+      if (!response.success || !response.data?.results?.length) {
+        return null
+      }
+
+      const aggregates = response.data.results
+
+      // Calculate VWAP from aggregates
+      let totalVolumePrice = 0
+      let totalVolume = 0
+
+      for (const agg of aggregates) {
+        if (agg.v && agg.v > 0) {
+          // Use typical price (high + low + close) / 3 * volume for VWAP calculation
+          const typicalPrice = (agg.h + agg.l + agg.c) / 3
+          totalVolumePrice += typicalPrice * agg.v
+          totalVolume += agg.v
+        }
+      }
+
+      if (totalVolume === 0) {
+        return null
+      }
+
+      const vwap = totalVolumePrice / totalVolume
+
+      return {
+        symbol: upperSymbol,
+        vwap: Number(vwap.toFixed(2)),
+        timestamp: aggregates[0].t || Date.now(),
+        volume: totalVolume,
+        timespan: timespan,
+        source: 'polygon'
+      }
+    } catch (error) {
+      console.error(`Polygon VWAP calculation error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Check VWAP-specific rate limiting
+   */
+  private async checkVWAPRateLimit(): Promise<boolean> {
+    const now = Date.now()
+    const recentVWAPRequests = this.requestQueue.filter(req =>
+      req.timestamp > now - this.RATE_LIMIT_WINDOW &&
+      req.endpoint.includes('vwap')
+    ).length
+
+    return recentVWAPRequests < this.FREE_TIER_RATE_LIMIT
   }
 
   /**

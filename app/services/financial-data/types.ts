@@ -484,3 +484,28 @@ export interface CurrencyAnalysis {
   confidence: number        // Overall data confidence 0-1
   source: string
 }
+
+/**
+ * VWAP (Volume Weighted Average Price) Data Types
+ * Supporting advanced trading features and execution analysis
+ */
+
+export interface VWAPData {
+  symbol: string
+  vwap: number
+  timestamp: number
+  volume: number
+  timespan: 'minute' | 'hour' | 'day'
+  source: string
+}
+
+export interface VWAPAnalysis {
+  symbol: string
+  currentPrice: number
+  vwap: number
+  deviation: number
+  deviationPercent: number
+  signal: 'above' | 'below' | 'at'
+  strength: 'weak' | 'moderate' | 'strong'
+  timestamp: number
+}

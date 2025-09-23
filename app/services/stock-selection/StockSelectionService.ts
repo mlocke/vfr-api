@@ -32,6 +32,7 @@ import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndica
 import SecurityValidator from '../security/SecurityValidator'
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
+import { VWAPService } from '../financial-data/VWAPService'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
@@ -47,6 +48,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private activeRequests: Map<string, AbortController> = new Map()
   private macroeconomicService?: MacroeconomicAnalysisService
   private sentimentService?: SentimentAnalysisService
+  private vwapService?: VWAPService
   private errorHandler: ErrorHandler
 
   constructor(
@@ -55,7 +57,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     cache: RedisCache,
     technicalService?: TechnicalIndicatorService,
     macroeconomicService?: MacroeconomicAnalysisService,
-    sentimentService?: SentimentAnalysisService
+    sentimentService?: SentimentAnalysisService,
+    vwapService?: VWAPService
   ) {
     super()
 
@@ -64,6 +67,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.config = this.createDefaultConfig()
     this.macroeconomicService = macroeconomicService
     this.sentimentService = sentimentService
+    this.vwapService = vwapService
     this.errorHandler = ErrorHandler.getInstance()
 
     // Initialize algorithm cache with proper config structure
@@ -925,7 +929,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       financialDataService.getMarketData(sanitizedSymbol),
       financialDataService.getFundamentalRatios?.(sanitizedSymbol) ?? Promise.resolve(null),
       financialDataService.getAnalystRatings?.(sanitizedSymbol) ?? Promise.resolve(null),
-      financialDataService.getPriceTargets?.(sanitizedSymbol) ?? Promise.resolve(null)
+      financialDataService.getPriceTargets?.(sanitizedSymbol) ?? Promise.resolve(null),
+      this.vwapService?.getVWAPAnalysis?.(sanitizedSymbol) ?? Promise.resolve(null)
     ]
 
     const results = await Promise.allSettled(dataPromises)
@@ -936,7 +941,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    * Extract fulfilled data values from Promise.allSettled results
    */
   private extractDataFromResults(results: PromiseSettledResult<any>[], sanitizedSymbol: string): any {
-    const dataTypes = ['stockPrice', 'companyInfo', 'marketData', 'fundamentalRatios', 'analystRatings', 'priceTargets']
+    const dataTypes = ['stockPrice', 'companyInfo', 'marketData', 'fundamentalRatios', 'analystRatings', 'priceTargets', 'vwapAnalysis']
 
     return results.map((result, index) => {
       if (result.status === 'fulfilled') {
@@ -966,7 +971,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    * Transform raw data into standardized stock data format
    */
   private transformStockData(rawData: any[], sanitizedSymbol: string): any {
-    const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets] = rawData
+    const [stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis] = rawData
 
     return {
       symbol: stockPrice.symbol,
@@ -979,7 +984,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       analystData: this.formatAnalystData(analystRatings),
       priceTargets: this.formatPriceTargets(priceTargets),
       fundamentalRatios: fundamentalRatios ? this.validateFundamentalRatios(fundamentalRatios, sanitizedSymbol) : null,
-      sourceBreakdown: this.createSourceBreakdown(stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets),
+      vwapAnalysis: vwapAnalysis || null,
+      sourceBreakdown: this.createSourceBreakdown(stockPrice, companyInfo, marketData, fundamentalRatios, analystRatings, priceTargets, vwapAnalysis),
       lastUpdated: Date.now()
     }
   }
@@ -1034,14 +1040,15 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   /**
    * Create source breakdown for data quality tracking
    */
-  private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any): any {
+  private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any, vwapAnalysis?: any): any {
     return {
       stockPrice: stockPrice.source,
       companyInfo: companyInfo ? 'available' : 'missing',
       marketData: marketData.source,
       fundamentalRatios: fundamentalRatios?.source || 'unavailable',
       analystRatings: analystRatings?.source || 'unavailable',
-      priceTargets: priceTargets?.source || 'unavailable'
+      priceTargets: priceTargets?.source || 'unavailable',
+      vwapAnalysis: vwapAnalysis ? 'available' : 'unavailable'
     }
   }
 
@@ -1219,6 +1226,19 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       warnings.push('Stock trading significantly above analyst price targets')
     }
 
+    // VWAP-based warnings
+    if (additionalData?.vwapAnalysis) {
+      const vwap = additionalData.vwapAnalysis
+
+      if (vwap.signal === 'below' && vwap.strength === 'strong') {
+        warnings.push(`Price significantly below VWAP (${vwap.deviationPercent.toFixed(1)}%) - potential downward pressure`)
+      }
+
+      if (vwap.signal === 'above' && vwap.strength === 'strong' && vwap.deviationPercent > 5) {
+        warnings.push(`Price far above VWAP (${vwap.deviationPercent.toFixed(1)}%) - potential overextension`)
+      }
+    }
+
     // Macroeconomic warnings
     if (macroImpact?.macroScore?.warnings) {
       warnings.push(...macroImpact.macroScore.warnings)
@@ -1286,6 +1306,23 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       if (ratios.dividendYield && ratios.dividendYield > 0.03 && ratios.payoutRatio && ratios.payoutRatio < 0.6) {
         opportunities.push('Attractive dividend yield with sustainable payout ratio')
+      }
+    }
+
+    // VWAP-based opportunities
+    if (additionalData?.vwapAnalysis) {
+      const vwap = additionalData.vwapAnalysis
+
+      if (vwap.signal === 'above' && vwap.strength === 'moderate' && vwap.deviationPercent > 1 && vwap.deviationPercent < 3) {
+        opportunities.push(`Price above VWAP (${vwap.deviationPercent.toFixed(1)}%) suggests positive momentum`)
+      }
+
+      if (vwap.signal === 'below' && vwap.strength === 'moderate' && vwap.deviationPercent < -1 && vwap.deviationPercent > -3) {
+        opportunities.push(`Price slightly below VWAP (${Math.abs(vwap.deviationPercent).toFixed(1)}%) may present entry opportunity`)
+      }
+
+      if (vwap.signal === 'at') {
+        opportunities.push('Price at VWAP provides neutral entry point with balanced risk/reward')
       }
     }
 
