@@ -61,9 +61,9 @@ describe('SentimentAnalysisService', () => {
     cache = new RedisCache({
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      ttl: 2 * 60 * 1000, // 2 minutes for development testing
-      retryAttempts: 3,
-      retryDelay: 1000
+      defaultTTL: 2 * 60, // 2 minutes for development testing (in seconds)
+      maxRetries: 3,
+      retryDelayOnFailover: 1000
     })
 
     service = new SentimentAnalysisService(newsAPI, cache)
@@ -421,7 +421,7 @@ describe('SentimentAnalysisService', () => {
       const failingCache = new RedisCache({
         host: 'invalid_host_that_does_not_exist',
         port: 9999,
-        ttl: 60000
+        defaultTTL: 60 // 60 seconds
       })
       const resilientService = new SentimentAnalysisService(newsAPI, failingCache)
 

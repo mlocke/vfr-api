@@ -708,7 +708,10 @@ describe('SentimentAnalysisService Security Tests', () => {
   describe('Error Message Security', () => {
     test('should_sanitize_error_messages_for_production_security', async () => {
       const originalNodeEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        configurable: true
+      })
 
       try {
         // Force error with invalid API configuration
@@ -739,7 +742,17 @@ describe('SentimentAnalysisService Security Tests', () => {
           console.error = originalConsoleError
         }
       } finally {
-        process.env.NODE_ENV = originalNodeEnv
+        if (originalNodeEnv !== undefined) {
+          Object.defineProperty(process.env, 'NODE_ENV', {
+            value: originalNodeEnv,
+            configurable: true
+          })
+        } else {
+          Object.defineProperty(process.env, 'NODE_ENV', {
+            value: undefined,
+            configurable: true
+          })
+        }
       }
     })
   })
