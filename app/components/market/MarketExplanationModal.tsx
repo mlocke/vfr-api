@@ -36,6 +36,25 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
     }
   }, [isOpen])
 
+  // Add ESC key support and prevent body scroll
+  useEffect(() => {
+    if (isOpen) {
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose()
+        }
+      }
+
+      document.addEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'hidden'
+
+      return () => {
+        document.removeEventListener('keydown', handleEscape)
+        document.body.style.overflow = 'unset'
+      }
+    }
+  }, [isOpen, onClose])
+
   const generateExplanation = async () => {
     setLoading(true)
     setError(null)
@@ -321,11 +340,12 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
           background: rgba(0, 0, 0, 0.8);
           display: flex;
           justify-content: center;
-          align-items: center;
+          align-items: flex-start;
           z-index: 9999;
           backdrop-filter: blur(5px);
           animation: fadeIn 0.3s ease;
           padding: 20px;
+          overflow-y: auto;
         }
 
         .market-explanation-modal {
@@ -336,9 +356,12 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
           box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
           max-width: 800px;
           width: 100%;
-          max-height: 90vh;
-          overflow-y: auto;
+          max-height: calc(100vh - 40px);
+          display: flex;
+          flex-direction: column;
           animation: scaleIn 0.3s ease;
+          margin: 20px auto;
+          position: relative;
         }
 
         .modal-header {
@@ -347,6 +370,7 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
           align-items: center;
           padding: 1.5rem;
           border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+          flex-shrink: 0;
         }
 
         .modal-title {
@@ -358,30 +382,42 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
         }
 
         .close-button {
-          background: transparent;
-          border: none;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 2rem;
+          background: rgba(75, 85, 99, 0.3);
+          border: 1px solid rgba(156, 163, 175, 0.3);
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 1.5rem;
           cursor: pointer;
           padding: 0;
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          font-weight: 300;
+          line-height: 1;
         }
 
         .close-button:hover {
           background: rgba(239, 68, 68, 0.2);
+          border-color: rgba(239, 68, 68, 0.5);
           color: rgba(239, 68, 68, 0.9);
           transform: scale(1.1);
+          box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .close-button:focus {
+          outline: 2px solid rgba(99, 102, 241, 0.5);
+          outline-offset: 2px;
         }
 
         .modal-content {
           padding: 1.5rem;
           color: rgba(255, 255, 255, 0.9);
+          flex: 1;
+          overflow-y: auto;
+          min-height: 0;
         }
 
         .loading-state, .error-state {
@@ -545,6 +581,7 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
           padding: 1rem 1.5rem;
           border-top: 1px solid rgba(99, 102, 241, 0.2);
           text-align: center;
+          flex-shrink: 0;
         }
 
         .disclaimer {
@@ -575,9 +612,15 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
         }
 
         @media (max-width: 768px) {
+          .market-explanation-overlay {
+            padding: 10px;
+            align-items: flex-start;
+          }
+
           .market-explanation-modal {
-            margin: 10px;
-            max-height: 95vh;
+            margin: 0;
+            max-height: calc(100vh - 20px);
+            width: calc(100% - 20px);
           }
 
           .modal-header {
@@ -600,6 +643,12 @@ export default function MarketExplanationModal({ isOpen, onClose }: MarketExplan
             flex-direction: column;
             gap: 0.25rem;
             text-align: center;
+          }
+
+          .close-button {
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
           }
         }
       `}</style>
