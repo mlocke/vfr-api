@@ -3,7 +3,7 @@
  * Provides access to 800,000+ economic time series from the Federal Reserve Bank of St. Louis
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types.js'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
 import { RedisCache } from '../cache/RedisCache'
 
 interface FREDObservation {
