@@ -86,7 +86,7 @@ export interface SentimentConfig {
 }
 
 export interface SentimentDataSource {
-  source: 'newsapi' | 'reddit' | 'alphavantage' | 'fmp' | 'composite'
+  source: 'yahoo_finance' | 'reddit' | 'alphavantage' | 'fmp' | 'composite'
   indicators: string[]
   lastUpdated: number
   quality: number // 0-1 data quality score
@@ -99,26 +99,7 @@ export interface SentimentCache {
   ttl: number // time to live in milliseconds
 }
 
-// News API specific types
-export interface NewsAPIResponse {
-  status: string
-  totalResults: number
-  articles: NewsArticle[]
-}
-
-export interface NewsArticle {
-  source: {
-    id: string | null
-    name: string
-  }
-  author: string | null
-  title: string
-  description: string | null
-  url: string
-  urlToImage: string | null
-  publishedAt: string
-  content: string | null
-}
+// Yahoo Finance news-specific types (no API key required)
 
 export interface ProcessedNewsArticle {
   title: string
@@ -132,13 +113,12 @@ export interface ProcessedNewsArticle {
 
 // Sentiment analysis configuration
 export interface SentimentAnalysisConfig {
-  newsAPI: {
+  yahooFinance: {
     enabled: boolean
-    apiKey: string
     timeout: number
     maxArticles: number
-    languages: string[]
-    sortBy: 'relevancy' | 'popularity' | 'publishedAt'
+    batchSize: number
+    cacheTTL: number
   }
   processing: {
     sentimentThreshold: number // Minimum confidence for sentiment
@@ -210,7 +190,7 @@ export interface SentimentComparison {
 export interface SentimentHealthCheck {
   status: 'healthy' | 'degraded' | 'unhealthy'
   details: {
-    newsAPI: boolean
+    yahooFinanceSentiment: boolean
     cache: boolean
     processingLatency: number
     dataFreshness: number

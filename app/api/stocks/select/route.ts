@@ -10,7 +10,6 @@ import { TechnicalIndicatorService } from '../../../services/technical-analysis/
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { OHLCData, TechnicalAnalysisResult } from '../../../services/technical-analysis/types'
 import { SentimentAnalysisService } from '../../../services/financial-data/SentimentAnalysisService'
-import NewsAPI from '../../../services/financial-data/providers/NewsAPI'
 import { StockSentimentImpact } from '../../../services/financial-data/types/sentiment-types'
 import { MacroeconomicAnalysisService } from '../../../services/financial-data/MacroeconomicAnalysisService'
 import { FREDAPI } from '../../../services/financial-data/FREDAPI'
@@ -198,8 +197,8 @@ class OptimizedServiceFactory {
           break
 
         case 'sentiment':
-          const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY!)
-          instance = new SentimentAnalysisService(newsAPI, cache)
+          // Yahoo Finance sentiment doesn't need API key
+          instance = new SentimentAnalysisService(cache)
           break
 
         case 'macroeconomic':

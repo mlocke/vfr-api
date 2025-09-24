@@ -18,7 +18,6 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
-import NewsAPI from '../../../services/financial-data/providers/NewsAPI'
 
 // Request validation - supports admin dashboard test format
 const RequestSchema = z.object({
@@ -71,10 +70,8 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 
     let sentimentService: SentimentAnalysisService | undefined
     try {
-      if (process.env.NEWSAPI_KEY) {
-        const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY)
-        sentimentService = new SentimentAnalysisService(newsAPI, cache)
-      }
+      // Yahoo Finance sentiment doesn't need API key
+      sentimentService = new SentimentAnalysisService(cache)
     } catch (error) {
       console.warn('Sentiment analysis service not available:', error)
     }

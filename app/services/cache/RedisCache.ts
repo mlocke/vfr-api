@@ -81,7 +81,7 @@ export class RedisCache {
       maxRetries: 3,
       retryDelayOnFailover: 100,
       enableReadyCheck: true,
-      lazyConnect: true,
+      lazyConnect: false,
       ...config
     }
 

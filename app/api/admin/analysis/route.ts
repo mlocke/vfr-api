@@ -11,7 +11,6 @@ import { TechnicalIndicatorService } from '../../../services/technical-analysis/
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { OHLCData } from '../../../services/technical-analysis/types'
 import SentimentAnalysisService from '../../../services/financial-data/SentimentAnalysisService'
-import NewsAPI from '../../../services/financial-data/providers/NewsAPI'
 import { MacroeconomicAnalysisService } from '../../../services/financial-data/MacroeconomicAnalysisService'
 import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
@@ -167,12 +166,8 @@ class AdminAnalysisServiceManager {
           break
 
         case 'sentiment':
-          if (!process.env.NEWSAPI_KEY) {
-            console.warn('NewsAPI key not available for sentiment service')
-            return null
-          }
-          const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY)
-          service = new SentimentAnalysisService(newsAPI, cache)
+          // Yahoo Finance sentiment doesn't need API key
+          service = new SentimentAnalysisService(cache)
           break
 
         case 'macroeconomic':
