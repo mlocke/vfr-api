@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import SectorDropdown, { SectorOption } from '../components/SectorDropdown'
+import StockAutocomplete from '../components/StockAutocomplete'
 import { SelectionMode } from '../services/stock-selection/types'
 
 // Type definitions for API communication
@@ -126,7 +127,7 @@ export default function DeepAnalysisPage() {
     }
   `
   const [selectedSector, setSelectedSector] = useState<SectorOption | undefined>()
-  const [tickerInput, setTickerInput] = useState('')
+  const [selectedSymbols, setSelectedSymbols] = useState<string[]>([])
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [analysisType, setAnalysisType] = useState<'sector' | 'tickers' | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
@@ -135,21 +136,21 @@ export default function DeepAnalysisPage() {
 
   const handleSectorChange = (sector: SectorOption) => {
     setSelectedSector(sector)
-    setTickerInput('')
+    setSelectedSymbols([])
     setAnalysisType('sector')
     setShowConfirmation(false)
   }
 
-  const handleTickerInputChange = (value: string) => {
-    setTickerInput(value)
+  const handleSymbolSelectionChange = (symbols: string[]) => {
+    setSelectedSymbols(symbols)
     setSelectedSector(undefined)
-    setAnalysisType('tickers')
+    setAnalysisType(symbols.length > 0 ? 'tickers' : null)
     setShowConfirmation(false)
   }
 
   const handleRunAnalysis = () => {
     if ((analysisType === 'sector' && selectedSector) ||
-        (analysisType === 'tickers' && tickerInput.trim())) {
+        (analysisType === 'tickers' && selectedSymbols.length > 0)) {
       setShowConfirmation(true)
     }
   }
@@ -170,21 +171,17 @@ export default function DeepAnalysisPage() {
           sector: selectedSector.id,
           limit: 20
         }
-      } else if (analysisType === 'tickers' && tickerInput.trim()) {
-        const symbols = tickerInput.split(',')
-          .map(t => t.trim().toUpperCase())
-          .filter(t => t.length > 0)
-
-        if (symbols.length === 1) {
+      } else if (analysisType === 'tickers' && selectedSymbols.length > 0) {
+        if (selectedSymbols.length === 1) {
           request = {
             mode: 'single',
-            symbols: symbols
+            symbols: selectedSymbols
           }
         } else {
           request = {
             mode: 'multiple',
-            symbols: symbols,
-            limit: Math.min(symbols.length, 10)
+            symbols: selectedSymbols,
+            limit: Math.min(selectedSymbols.length, 10)
           }
         }
       }
@@ -286,15 +283,14 @@ export default function DeepAnalysisPage() {
     if (analysisType === 'sector' && selectedSector) {
       return `Analyzing: ${selectedSector.label} Sector`
     }
-    if (analysisType === 'tickers' && tickerInput.trim()) {
-      const tickers = tickerInput.split(',').map(t => t.trim().toUpperCase()).filter(t => t)
-      return `Analyzing: ${tickers.join(', ')}`
+    if (analysisType === 'tickers' && selectedSymbols.length > 0) {
+      return `Analyzing: ${selectedSymbols.join(', ')}`
     }
     return ''
   }
 
   const isAnalysisReady = (analysisType === 'sector' && selectedSector) ||
-                         (analysisType === 'tickers' && tickerInput.trim())
+                         (analysisType === 'tickers' && selectedSymbols.length > 0)
 
   return (
     <>
@@ -486,7 +482,7 @@ export default function DeepAnalysisPage() {
                 />
               </div>
 
-              {/* Ticker Input */}
+              {/* Stock Symbol Search */}
               <div style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 backdropFilter: 'blur(10px)',
@@ -507,35 +503,12 @@ export default function DeepAnalysisPage() {
                   alignItems: 'center',
                   gap: '0.5rem'
                 }}>
-                  📈 Enter Stock Tickers
+                  📈 Search Stock Symbols
                 </h3>
-                <input
-                  type="text"
-                  value={tickerInput}
-                  onChange={(e) => handleTickerInputChange(e.target.value)}
-                  placeholder="e.g., AAPL, MSFT, GOOG"
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255, 255, 255, 0.2)',
-                    borderRadius: '10px',
-                    color: 'white',
-                    fontSize: '1rem',
-                    fontWeight: '500',
-                    outline: 'none',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = 'rgba(0, 200, 83, 0.6)'
-                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 200, 83, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)'
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.2)'
-                    e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)'
-                  }}
+                <StockAutocomplete
+                  onSelectionChange={handleSymbolSelectionChange}
+                  placeholder="Search stocks by symbol or company name (e.g., AAPL, Apple Inc)"
+                  maxSelections={10}
                 />
                 <p style={{
                   fontSize: '0.9rem',
@@ -543,7 +516,7 @@ export default function DeepAnalysisPage() {
                   marginTop: '0.5rem',
                   fontStyle: 'italic'
                 }}>
-                  Separate multiple tickers with commas
+                  Search and select multiple stocks for comparative analysis
                 </p>
               </div>
             </div>
@@ -727,7 +700,7 @@ export default function DeepAnalysisPage() {
                   color: 'white',
                   marginBottom: '0.5rem'
                 }}>
-                  Analyzing {analysisType === 'sector' ? selectedSector?.label : tickerInput}...
+                  Analyzing {analysisType === 'sector' ? selectedSector?.label : selectedSymbols.join(', ')}...
                 </h3>
                 <p style={{
                   fontSize: '1rem',
@@ -1084,7 +1057,7 @@ export default function DeepAnalysisPage() {
                       setAnalysisResult(null)
                       setError(null)
                       setSelectedSector(undefined)
-                      setTickerInput('')
+                      setSelectedSymbols([])
                       setAnalysisType(null)
                       setShowConfirmation(false)
                     }}
