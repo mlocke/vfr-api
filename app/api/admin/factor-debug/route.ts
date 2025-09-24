@@ -76,7 +76,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<FactorDeb
       console.warn('Technical service not available:', error)
     }
 
-    const factorLibrary = new FactorLibrary(technicalService)
+    const factorLibrary = new FactorLibrary(cache, technicalService)
 
     // Step 1: Get base stock data
     console.log(`📊 Fetching stock data for ${debugRequest.symbol}...`)
@@ -105,9 +105,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<FactorDeb
       symbol: debugRequest.symbol,
       price: stockData.price || 0,
       volume: stockData.volume || 0,
-      marketCap: companyInfo?.marketCap || stockData.marketCap || 0,
+      marketCap: companyInfo?.marketCap || fundamentalRatios?.marketCap || 0,
       sector: stockData.sector || 'Unknown',
-      exchange: stockData.exchange || 'Unknown',
+      exchange: 'NASDAQ',
       timestamp: Date.now()
     }
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<FactorDeb
       netProfitMargin: fundamentalRatios.netProfitMargin,
       grossProfitMargin: fundamentalRatios.grossProfitMargin,
       priceToSales: fundamentalRatios.priceToSales,
-      evEbitda: fundamentalRatios.evToEbitda,
+      evEbitda: fundamentalRatios.enterpriseValue && fundamentalRatios.eps ? (fundamentalRatios.enterpriseValue / fundamentalRatios.eps) : undefined,
       interestCoverage: fundamentalRatios.interestCoverage,
       earningsGrowth: fundamentalRatios.earningsGrowth,
       dividendYield: fundamentalRatios.dividendYield,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<FactorDeb
           factorName,
           debugRequest.symbol,
           marketDataPoint,
-          fundamentalDataPoint
+          fundamentalDataPoint || undefined
         )
 
         const calculationTime = Date.now() - factorStartTime

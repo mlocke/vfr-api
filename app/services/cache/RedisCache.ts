@@ -99,8 +99,8 @@ export class RedisCache {
     this.initializeRedis()
     this.startHealthCheck()
 
-    // Initialize with fallback mode for development
-    if (process.env.NODE_ENV === 'development') {
+    // Initialize with fallback mode for development (unless forced to production mode)
+    if (process.env.NODE_ENV === 'development' && !process.env.FORCE_REDIS_PRODUCTION_MODE) {
       this.setupDevelopmentFallback()
     }
   }

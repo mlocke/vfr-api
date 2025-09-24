@@ -84,7 +84,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Composite
       console.warn('Technical service not available:', error)
     }
 
-    const factorLibrary = new FactorLibrary(technicalService)
+    const factorLibrary = new FactorLibrary(cache, technicalService)
 
     // Initialize algorithm cache with proper config structure
     const algorithmCache = new AlgorithmCache({
@@ -158,9 +158,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<Composite
       symbol: debugRequest.symbol,
       price: stockData.price || 0,
       volume: stockData.volume || 0,
-      marketCap: companyInfo?.marketCap || stockData.marketCap || 0,
+      marketCap: companyInfo?.marketCap || fundamentalRatios?.marketCap || 0,
       sector: stockData.sector || 'Unknown',
-      exchange: stockData.exchange || 'Unknown',
+      exchange: 'NASDAQ',
       timestamp: Date.now()
     }
 
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Composite
       netProfitMargin: fundamentalRatios.netProfitMargin,
       grossProfitMargin: fundamentalRatios.grossProfitMargin,
       priceToSales: fundamentalRatios.priceToSales,
-      evEbitda: fundamentalRatios.evToEbitda,
+      evEbitda: fundamentalRatios.enterpriseValue && fundamentalRatios.eps ? (fundamentalRatios.enterpriseValue / fundamentalRatios.eps) : undefined,
       interestCoverage: fundamentalRatios.interestCoverage,
       earningsGrowth: fundamentalRatios.earningsGrowth,
       dividendYield: fundamentalRatios.dividendYield,
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<Composite
           factor,
           debugRequest.symbol,
           marketDataPoint,
-          fundamentalDataPoint
+          fundamentalDataPoint || undefined
         )
 
         factorScores[factor] = factorValue

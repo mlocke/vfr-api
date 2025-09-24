@@ -72,7 +72,7 @@ describe('FactorLibrary - Real Data Integration', () => {
     // Initialize services with real dependencies
     const cache = new RedisCache()
     technicalService = new TechnicalIndicatorService(cache)
-    factorLibrary = new FactorLibrary(technicalService)
+    factorLibrary = new FactorLibrary(cache, technicalService)
 
     console.log('🧪 Starting FactorLibrary integration tests with TSLA real data')
     console.log('Expected TSLA characteristics:')
