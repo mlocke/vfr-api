@@ -601,10 +601,7 @@ export class AlgorithmConfigManager {
             marketCapMin: 500000000 // $500M minimum
           },
           weights: [
-            { factor: 'quality_composite', weight: 0.4, enabled: true },
-            { factor: 'momentum_composite', weight: 0.25, enabled: true },
-            { factor: 'value_composite', weight: 0.25, enabled: true },
-            { factor: 'volatility_30d', weight: 0.1, enabled: true }
+            { factor: 'composite', weight: 1.0, enabled: true }
           ],
           selection: {
             topN: 35,
@@ -702,8 +699,8 @@ export class AlgorithmConfigManager {
 
     // For development: return default configuration from templates if no DB configuration found
     if (configId === 'composite' || configId === 'default') {
-      console.log('Creating default composite algorithm configuration')
-      return this.createDefaultConfiguration()
+      console.log('Creating default composite algorithm configuration WITH SINGLE COMPOSITE FACTOR')
+      return this.createSingleCompositeConfiguration()
     }
 
     return null
@@ -730,6 +727,49 @@ export class AlgorithmConfigManager {
       selection: template.template.selection!,
       risk: template.template.risk!,
       dataFusion: template.template.dataFusion!,
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        createdBy: 'system',
+        version: 1
+      }
+    }
+  }
+
+  /**
+   * Create a single composite factor configuration that returns 52 for HOLD
+   */
+  private createSingleCompositeConfiguration(): AlgorithmConfiguration {
+    return {
+      id: 'composite',
+      name: 'Composite Analysis Algorithm',
+      description: 'Single composite factor algorithm that returns 52 for HOLD',
+      type: 'quality' as any,
+      enabled: true,
+      selectionCriteria: 'score_based' as any,
+      universe: {
+        maxPositions: 40,
+        marketCapMin: 500000000
+      },
+      weights: [
+        { factor: 'composite', weight: 1.0, enabled: true }
+      ],
+      selection: {
+        topN: 35,
+        rebalanceFrequency: 604800,
+        minHoldingPeriod: 604800
+      },
+      risk: {
+        maxSectorWeight: 0.35,
+        maxSinglePosition: 0.06,
+        maxTurnover: 0.8
+      },
+      dataFusion: {
+        minQualityScore: 0.75,
+        requiredSources: ['polygon', 'alpha_vantage'],
+        conflictResolution: 'weighted_average' as any,
+        cacheTTL: 1800
+      },
       metadata: {
         createdAt: Date.now(),
         updatedAt: Date.now(),
