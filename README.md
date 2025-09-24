@@ -142,10 +142,12 @@ NODE_ENV=development
 ### Data Sources (15+ APIs)
 | Tier | Source | Type | Purpose |
 |------|--------|------|---------|
-| Premium | Polygon, Alpha Vantage, FMP | Paid | Primary data + ratios + VWAP |
-| Enhanced | EODHD, TwelveData | Paid | Secondary + ratios |
+| Premium | Polygon, Alpha Vantage, FMP | Paid | Primary data + ratios + VWAP + extended hours |
+| Enhanced | EODHD, TwelveData | Paid | Secondary + ratios + ESG data |
 | Government | SEC EDGAR, FRED, BLS, EIA | Free | Institutional/macro/energy |
 | Social Intelligence | Reddit WSB Multi-Subreddit, NewsAPI | Free/Paid | Sentiment analysis |
+| Alternative Data | ESG Providers, FINRA | Free/Paid | ESG scoring + short interest |
+| Extended Market | Polygon Extended Hours, Bid/Ask | Paid | Pre/post market + liquidity |
 | Backup | Yahoo Finance | Free | Fallback only |
 
 ## API Usage
@@ -183,6 +185,9 @@ npm test -- --testNamePattern="ServiceName"  # Specific test
 - **Macroeconomic Data**: FRED + BLS + EIA integration testing
 - **Currency Data**: International currency analysis validation
 - **Institutional Data**: SEC EDGAR 13F + Form 4 comprehensive integration
+- **ESG Data Service**: ESG scoring with industry-specific baselines
+- **Short Interest Service**: FINRA data integration with squeeze detection
+- **Extended Market Data**: Pre/post market data + bid/ask spread analysis
 - **Security & Performance**: OWASP compliance + memory optimization
 
 All tests use real APIs with 5-minute timeout for comprehensive integration validation.
@@ -198,6 +203,9 @@ All tests use real APIs with 5-minute timeout for comprehensive integration vali
 | MacroeconomicAnalysisService | `app/services/financial-data/` | FRED + BLS + EIA integration |
 | InstitutionalDataService | `app/services/financial-data/` | SEC 13F + Form 4 parsing |
 | CurrencyDataService | `app/services/financial-data/` | International currency analysis |
+| ESGDataService | `app/services/financial-data/` | ESG scoring with industry baselines |
+| ShortInterestService | `app/services/financial-data/` | FINRA short interest + squeeze detection |
+| ExtendedMarketDataService | `app/services/financial-data/` | Pre/post market data + bid/ask spreads |
 | FallbackDataService | `app/services/financial-data/` | API orchestration + failover |
 | SecurityValidator | `app/services/security/` | OWASP protection |
 

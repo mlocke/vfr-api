@@ -15,7 +15,7 @@ Users input a **market sector**, **single stock symbol**, or **multiple stock sy
 * **AI-Powered Analysis**: Proprietary engine identifies trends, predicts outcomes, evaluates risks
 * **Production Reliability**: Standardized error handling with circuit breaker patterns and graceful degradation including enhanced Live Market Sentiment UX
 * **Actionable Insights**: Clear **BUY/SELL/HOLD** recommendations with supporting analysis
-* **Advanced Trading Intelligence**: VWAP analysis, institutional holdings tracking, insider trading monitoring, and multi-timeframe technical indicators
+* **Advanced Trading Intelligence**: VWAP analysis, institutional holdings tracking, insider trading monitoring, ESG scoring with industry baselines, short interest analysis with squeeze detection, and extended market data (pre/post market + bid/ask spreads)
 * **Comprehensive Testing**: 26 test files with 13,200+ lines of test code ensuring reliability across all data sources
 
 ## Our Vision
