@@ -423,9 +423,9 @@ export class AlgorithmEngine {
   ): Promise<StockScore | null> {
     console.log(`Starting score calculation for ${symbol}, weights count: ${config.weights?.length || 0}`)
 
-    // 🎯 DIRECT FIX: If this is a composite algorithm, use the single composite factor
+    // Enhanced composite algorithm with proper factor tracking
     if (config.name?.includes('Composite') || config.id?.includes('composite')) {
-      console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Using direct composite factor calculation`)
+      console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Using enhanced composite factor calculation`)
 
       try {
         const compositeScore = await this.factorLibrary.calculateFactor(
@@ -436,12 +436,40 @@ export class AlgorithmEngine {
         )
 
         if (compositeScore !== null && !isNaN(compositeScore)) {
-          console.log(`🎯 Direct composite score for ${symbol}: ${compositeScore} (should be 0.52 for HOLD)`)
+          console.log(`🎯 Enhanced composite score for ${symbol}: ${compositeScore}`)
+
+          // Calculate sub-component scores for proper utilization tracking
+          const componentFactors: { [factor: string]: number } = { 'composite': compositeScore }
+
+          // Calculate individual composite components if they would contribute
+          try {
+            const qualityScore = await this.factorLibrary.calculateFactor('quality_composite', symbol, marketData, fundamentalData)
+            if (qualityScore !== null && qualityScore !== 0.5) {
+              componentFactors['quality_composite'] = qualityScore
+            }
+
+            const momentumScore = await this.factorLibrary.calculateFactor('momentum_composite', symbol, marketData, fundamentalData)
+            if (momentumScore !== null && momentumScore !== 0.5) {
+              componentFactors['momentum_composite'] = momentumScore
+            }
+
+            const valueScore = await this.factorLibrary.calculateFactor('value_composite', symbol, marketData, fundamentalData)
+            if (valueScore !== null && valueScore !== 0.5) {
+              componentFactors['value_composite'] = valueScore
+            }
+
+            const volatilityScore = await this.factorLibrary.calculateFactor('volatility_30d', symbol, marketData, fundamentalData)
+            if (volatilityScore !== null && volatilityScore !== 0.5) {
+              componentFactors['volatility_30d'] = volatilityScore
+            }
+          } catch (componentError) {
+            console.warn('Error calculating composite components:', componentError)
+          }
 
           return {
             symbol,
             overallScore: compositeScore,
-            factorScores: { 'composite': compositeScore },
+            factorScores: componentFactors,
             dataQuality: {
               overall: 0.9,
               metrics: {
@@ -464,14 +492,13 @@ export class AlgorithmEngine {
             },
             algorithmMetrics: {
               [config.type]: {
-                score: compositeScore,
-                factorContribution: { 'composite': 1.0 }
+                score: compositeScore
               }
             }
           }
         }
       } catch (error) {
-        console.error(`Error calculating direct composite score for ${symbol}:`, error)
+        console.error(`Error calculating enhanced composite score for ${symbol}:`, error)
       }
     }
 

@@ -281,7 +281,7 @@ describe('Integration with FactorLibrary', () => {
 
     // Test that FactorLibrary can be created with TechnicalIndicatorService
     const technicalService = new TechnicalIndicatorService(mockCache)
-    const factorLibrary = new FactorLibrary(technicalService)
+    const factorLibrary = new FactorLibrary(mockCache, technicalService)
 
     expect(factorLibrary).toBeDefined()
     expect(factorLibrary).toBeInstanceOf(FactorLibrary)

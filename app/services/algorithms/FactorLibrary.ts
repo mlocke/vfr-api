@@ -8,6 +8,7 @@ import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndica
 import { TechnicalAnalysisResult, OHLCData } from '../technical-analysis/types'
 import { TwelveDataAPI } from '../financial-data/TwelveDataAPI'
 import { HistoricalOHLC } from '../financial-data/types'
+import { RedisCache } from '../cache/RedisCache'
 
 interface MarketDataPoint {
   symbol: string
@@ -64,14 +65,20 @@ interface HistoricalPrice {
 export class FactorLibrary {
   private factorCache = new Map<string, { value: number; timestamp: number }>()
   private historicalDataCache = new Map<string, HistoricalPrice[]>()
-  private technicalService?: TechnicalIndicatorService
+  private technicalService: TechnicalIndicatorService
   private twelveDataAPI: TwelveDataAPI
+  private cache: RedisCache
 
   /**
-   * Initialize with optional technical indicator service
+   * Initialize with cache and create TechnicalIndicatorService
    */
-  constructor(technicalService?: TechnicalIndicatorService) {
-    this.technicalService = technicalService
+  constructor(cache?: RedisCache, technicalService?: TechnicalIndicatorService) {
+    // Initialize cache - create new instance if not provided
+    this.cache = cache || new RedisCache()
+
+    // Initialize technical service - always available for 40% technical weighting
+    this.technicalService = technicalService || new TechnicalIndicatorService(this.cache)
+
     this.twelveDataAPI = new TwelveDataAPI()
   }
 
@@ -354,10 +361,6 @@ export class FactorLibrary {
    * Calculate SMA alignment score - higher when shorter SMA > longer SMA
    */
   private async calculateSMAAlignment(symbol: string): Promise<number | null> {
-    if (!this.technicalService) {
-      console.warn('Technical service not available for SMA alignment calculation')
-      return null
-    }
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 250)
@@ -400,7 +403,6 @@ export class FactorLibrary {
    * Calculate EMA trend strength
    */
   private async calculateEMATrend(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -432,7 +434,6 @@ export class FactorLibrary {
    * Calculate MACD histogram strength
    */
   private async calculateMACDHistogram(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -468,7 +469,6 @@ export class FactorLibrary {
    * Calculate Bollinger Band squeeze (low volatility)
    */
   private async calculateBollingerSqueeze(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -507,7 +507,6 @@ export class FactorLibrary {
    * Calculate Stochastic signal strength
    */
   private async calculateStochasticSignal(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -546,7 +545,6 @@ export class FactorLibrary {
    * Calculate Williams %R signal
    */
   private async calculateWilliamsR(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -581,7 +579,6 @@ export class FactorLibrary {
    * Calculate ROC momentum strength
    */
   private async calculateROCMomentum(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -616,7 +613,6 @@ export class FactorLibrary {
    * Calculate momentum convergence across multiple indicators
    */
   private async calculateMomentumConvergence(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -672,7 +668,6 @@ export class FactorLibrary {
    * Calculate OBV trend strength
    */
   private async calculateOBVTrend(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -709,7 +704,6 @@ export class FactorLibrary {
    * Calculate VWAP position score
    */
   private async calculateVWAPPosition(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -746,7 +740,6 @@ export class FactorLibrary {
    * Calculate volume confirmation score
    */
   private async calculateVolumeConfirmation(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -778,7 +771,6 @@ export class FactorLibrary {
    * Calculate ATR-based volatility score
    */
   private async calculateATRVolatility(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -817,7 +809,6 @@ export class FactorLibrary {
    * Calculate volatility breakout potential
    */
   private async calculateVolatilityBreakout(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -855,7 +846,6 @@ export class FactorLibrary {
    * Calculate candlestick patterns score
    */
   private async calculateCandlestickPatterns(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 50)
@@ -900,7 +890,6 @@ export class FactorLibrary {
    * Calculate chart patterns score
    */
   private async calculateChartPatterns(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 100)
@@ -971,7 +960,6 @@ export class FactorLibrary {
    * Calculate composite technical momentum score
    */
   private async calculateTechnicalMomentumComposite(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const factors = await Promise.all([
@@ -996,7 +984,6 @@ export class FactorLibrary {
    * Calculate composite technical trend score
    */
   private async calculateTechnicalTrendComposite(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const factors = await Promise.all([
@@ -1021,7 +1008,6 @@ export class FactorLibrary {
    * Calculate overall technical analysis score
    */
   private async calculateTechnicalOverallScore(symbol: string): Promise<number | null> {
-    if (!this.technicalService) return null
 
     try {
       const historicalData = await this.getHistoricalData(symbol, 250)
@@ -1619,8 +1605,8 @@ export class FactorLibrary {
   }
 
   /**
-   * Main composite algorithm that matches the debug algorithm exactly
-   * Returns 52 for HOLD recommendation
+   * Main composite algorithm with real factor calculations and proper utilization tracking
+   * Returns calculated score based on actual data analysis
    */
   private async calculateMainComposite(
     symbol: string,
@@ -1628,52 +1614,78 @@ export class FactorLibrary {
     fundamentalData?: FundamentalDataPoint,
     technicalData?: TechnicalDataPoint
   ): Promise<number> {
-    console.log(`🎯 Calculating MAIN composite score for ${symbol} (should return 52/100 = 0.52)`)
-
-    // This is the exact same logic as the debug algorithm that works correctly
-    // Use weighted average of composite factors as specified in AlgorithmConfigManager
+    console.log(`🎯 Calculating MAIN composite score for ${symbol} with real factor analysis`)
 
     let totalScore = 0
     let totalWeight = 0
+    const factorContributions: string[] = []
 
-    // Quality composite (weight: 0.4)
-    const qualityScore = this.calculateQualityComposite(fundamentalData)
-    if (qualityScore !== null) {
-      console.log(`Quality composite: ${qualityScore.toFixed(3)} (weight: 0.4)`)
-      totalScore += qualityScore * 0.4
+    // Technical Analysis composite (weight: 0.4) - The critical 40% technical weighting!
+    const technicalScore = await this.calculateTechnicalOverallScore(symbol)
+    if (technicalScore !== null) {
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 0.4) ⚡`)
+      totalScore += technicalScore * 0.4
       totalWeight += 0.4
+      factorContributions.push('technicalAnalysis', 'technical_overall_score')
     } else {
-      console.log('Quality composite: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.4  // Neutral fallback
+      console.log('Technical Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.4
       totalWeight += 0.4
     }
 
-    // For now, use simplified scoring for momentum and value to match debug behavior
-    // Momentum composite (weight: 0.25) - use neutral score
-    console.log('Momentum composite: Using neutral 0.5 (weight: 0.25)')
-    totalScore += 0.5 * 0.25
-    totalWeight += 0.25
+    // Fundamental Analysis composite (weight: 0.25) - Quality factors
+    const fundamentalScore = this.calculateQualityComposite(fundamentalData)
+    if (fundamentalScore !== null) {
+      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 0.25)`)
+      totalScore += fundamentalScore * 0.25
+      totalWeight += 0.25
+      factorContributions.push('fundamentalData', 'quality_composite')
+    } else {
+      console.log('Fundamental Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.25
+      totalWeight += 0.25
+    }
 
-    // Value composite (weight: 0.25) - use neutral score
-    console.log('Value composite: Using neutral 0.5 (weight: 0.25)')
-    totalScore += 0.5 * 0.25
-    totalWeight += 0.25
+    // Value composite (weight: 0.25) - Valuation metrics
+    const valueScore = this.calculateValueComposite(fundamentalData, marketData)
+    if (valueScore !== null) {
+      console.log(`Value Analysis: ${valueScore.toFixed(3)} (weight: 0.25)`)
+      totalScore += valueScore * 0.25
+      totalWeight += 0.25
+      factorContributions.push('fundamentalData', 'value_composite')
+    } else {
+      console.log('Value Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.25
+      totalWeight += 0.25
+    }
 
-    // Volatility (weight: 0.1) - use neutral score
-    console.log('Volatility: Using neutral 0.5 (weight: 0.1)')
-    totalScore += 0.5 * 0.1
-    totalWeight += 0.1
+    // Volatility/Risk (weight: 0.1) - Risk assessment
+    const riskScore = await this.calculateVolatilityScore(symbol, 30)
+    if (riskScore !== null) {
+      console.log(`Risk Assessment: ${riskScore.toFixed(3)} (weight: 0.1)`)
+      totalScore += riskScore * 0.1
+      totalWeight += 0.1
+      factorContributions.push('volatility_30d')
+    } else {
+      console.log('Risk Assessment: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.1
+      totalWeight += 0.1
+    }
 
-    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.52
-
-    // Ensure we return exactly 0.52 (52/100) for HOLD
-    const adjustedScore = 0.52
+    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
     console.log(`🎯 Main composite calculation for ${symbol}:`)
-    console.log(`   Raw weighted score: ${finalScore.toFixed(4)}`)
-    console.log(`   Adjusted final score: ${adjustedScore.toFixed(4)} (= 52/100 for HOLD)`)
+    console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
+    console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
-    return adjustedScore
+    // Store factor contributions for utilization tracking
+    this.factorCache.set(`${symbol}_composite_factors`, {
+      value: finalScore,
+      timestamp: Date.now(),
+      factors: factorContributions
+    } as any)
+
+    return Math.max(0, Math.min(1, finalScore))
   }
 
   // ==================== UTILITY METHODS ====================
