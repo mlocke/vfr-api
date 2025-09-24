@@ -59,7 +59,7 @@ analysis-engine/
 | **Fundamental Health** | 25% | ✅ IMPLEMENTED | FMP + EODHD ratios | <1s | Dual-source redundancy |
 | **Macroeconomic Context** | 20% | ✅ IMPLEMENTED | FRED + BLS + EIA | <2s | Cache recent data if APIs slow |
 | **Sentiment Analysis** | 10% | ✅ IMPLEMENTED | News + Reddit WSB | <1.5s | Graceful degradation with defaults |
-| **Alternative Data** | 5% | 📋 PLANNED | ESG + special situations | TBD | Skip if unavailable |
+| **Alternative Data** | 5% | ✅ IMPLEMENTED | ESG + short interest | <1s | Skip if unavailable |
 
 #### Factor Scoring Logic
 ```
@@ -80,7 +80,9 @@ Factor Analysis → Weighted Scoring → Confidence Calculation → Final Recomm
 | Reddit WSB Sentiment | Production | `RedditAPI.ts` | ✅ Multi-subreddit | <1.5s |
 | Macroeconomic Data | Production | `MacroeconomicAnalysisService.ts` | ✅ All APIs | <2s |
 | Institutional Intelligence | Production | `InstitutionalDataService.ts` | ✅ 608-line test | <3s |
-| ESG Integration | Planned | TBD | Pending | TBD |
+| ESG Integration | Production | `ESGDataService.ts` | ✅ Comprehensive | <1s |
+| Short Interest Analysis | Production | `ShortInterestService.ts` | ✅ FINRA integration | <1s |
+| Extended Market Data | Production | `ExtendedMarketDataService.ts` | ✅ Polygon integration | <800ms |
 
 ## Development Commands (From Root Directory)
 

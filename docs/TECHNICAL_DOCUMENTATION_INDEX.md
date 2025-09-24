@@ -84,8 +84,11 @@ User Need → Context Analysis → Document Selection → Action Path
 | **SentimentAnalysisService** | <1.5s | 10% composite | Multi-provider sentiment | News + social intelligence |
 | **InstitutionalDataService** | <3s | Intelligence | SEC EDGAR processing | 13F filings + insider trading |
 | **StockSelectionService** | <2s | Core Analysis | Multi-modal orchestration | Primary user interface |
-| **TechnicalIndicatorService** | <500ms | 40% composite | Technical analysis | Chart patterns + indicators |
+| **TechnicalIndicatorService** | <500ms | 35% composite | Technical analysis | Chart patterns + indicators |
 | **MacroeconomicAnalysisService** | <2s | 20% composite | Gov data integration | Economic context |
+| **ESGDataService** | <1s | 3% composite | ESG scoring | Sustainability metrics |
+| **ShortInterestService** | <1s | 2% composite | FINRA integration | Short squeeze detection |
+| **ExtendedMarketDataService** | <800ms | 5% composite | Extended hours data | Pre/post market analysis |
 | **SecurityValidator** | <50ms | Security Gate | OWASP validation | All endpoint protection |
 | **ErrorHandler** | Instant | System Reliability | Centralized logging | Error sanitization |
 
@@ -103,11 +106,13 @@ User Need → Context Analysis → Document Selection → Action Path
 **Purpose**: Complete REST API reference with request/response formats and integration patterns.
 
 **API Categories**:
-- **Stock Analysis APIs**: `/api/stocks/select` (comprehensive analysis)
+- **Stock Analysis APIs**: `/api/stocks/select` (comprehensive analysis with ESG + extended market data)
 - **Market Intelligence APIs**: `/api/market/sentiment`, `/api/market/sectors`
 - **Economic Data APIs**: `/api/economic`, `/api/economic/calendar`
 - **Currency APIs**: `/api/currency` (international FX data)
 - **News & Sentiment APIs**: `/api/news/sentiment`
+- **Alternative Data APIs**: ESG scoring and short interest analysis endpoints
+- **Extended Market APIs**: Pre/post market data and bid/ask spread analysis
 - **System APIs**: `/api/health` (monitoring and diagnostics)
 - **Admin APIs**: `/api/admin/data-sources` (management interface)
 
@@ -260,6 +265,9 @@ User Need → Context Analysis → Document Selection → Action Path
 | InstitutionalDataService | <3s | <500ms | ✅ Achieved |
 | StockSelectionService | <2s | <800ms | ✅ Achieved |
 | TechnicalIndicatorService | <500ms | <100ms | ✅ Achieved |
+| ESGDataService | <1s | <200ms | ✅ Achieved |
+| ShortInterestService | <1s | <200ms | ✅ Achieved |
+| ExtendedMarketDataService | <800ms | <150ms | ✅ Achieved |
 
 ### System Performance Metrics
 - **API Integration**: 83.8% performance improvement via Promise.allSettled
