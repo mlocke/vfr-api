@@ -515,3 +515,57 @@ export interface VWAPAnalysis {
   strength: 'weak' | 'moderate' | 'strong'
   timestamp: number
 }
+
+/**
+ * Extended Market Data Types
+ * Supporting advanced trading features with bid/ask spreads and liquidity analysis
+ */
+
+export interface BidAskSpread {
+  symbol: string
+  bid: number
+  ask: number
+  spread: number
+  spreadPercent: number
+  midpoint: number
+  timestamp: number
+  source: string
+}
+
+export interface LiquidityMetrics {
+  symbol: string
+  bidAskSpread: number
+  spreadPercent: number
+  averageSpread: number          // Average spread over time window
+  spreadVolatility: number       // Volatility of spread measurements
+  liquidityScore: number         // 0-10 liquidity score (10 = most liquid)
+  marketMakingActivity: number   // Estimated market making activity
+  timestamp: number
+  source: string
+}
+
+export interface ExtendedHoursData {
+  symbol: string
+  marketStatus: 'pre-market' | 'market-hours' | 'after-hours' | 'closed'
+  preMarketPrice?: number
+  preMarketChange?: number
+  preMarketChangePercent?: number
+  preMarketVolume?: number
+  afterHoursPrice?: number
+  afterHoursChange?: number
+  afterHoursChangePercent?: number
+  afterHoursVolume?: number
+  regularHoursClose?: number
+  timestamp: number
+  source: string
+}
+
+export interface ExtendedMarketData {
+  symbol: string
+  regularData: StockData
+  extendedHours: ExtendedHoursData
+  bidAskSpread: BidAskSpread | null
+  liquidityMetrics: LiquidityMetrics | null
+  timestamp: number
+  source: string
+}

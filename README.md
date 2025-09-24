@@ -1,30 +1,77 @@
-# VFR API - Veritak Financial Research Platform
+# VFR Financial Analysis Platform - AI Agent Quick Start Guide
 
-**Next.js 15 | TypeScript 5.2 | React 19 | 15+ Financial APIs**
+**Enterprise Financial Intelligence | Next.js 15 | TypeScript 5.2 | React 19 | 15+ Financial APIs**
 
-## Quick Start
+## Immediate Action Framework for AI Agents
+
+### 🎯 Primary Context
+**System Purpose**: Democratize institutional-grade financial analysis through AI-powered multi-source data aggregation
+**Business Value**: Transform fragmented market data into actionable BUY/SELL/HOLD recommendations
+**Technical Stack**: Production-ready Next.js 15 platform with enterprise security and performance optimization
+
+### ⚡ Instant Setup (30 Seconds)
 ```bash
+# Essential setup sequence
+git clone <repository> && cd vfr-api
 npm install
-cp .env.example .env  # Add API keys
-npm run dev:clean     # Port 3000
+cp .env.example .env    # Configure 15+ API keys (see Environment section)
+npm run dev:clean       # Auto-resolves port conflicts, starts on 3000
+
+# Verify setup
+curl http://localhost:3000/api/health  # Should return {"status": "healthy"}
 ```
 
-## Core Identity
-**Problem**: Individual investors lack institutional-grade analysis tools
-**Solution**: AI-driven analysis engine aggregating 15+ data sources with advanced trading intelligence
-**Mission**: Democratize sophisticated financial research via single-click insights
+### 🔍 AI Agent Decision Matrix
+| Task Type | Immediate Action | Verification | Next Steps |
+|-----------|------------------|--------------|------------|
+| **Development** | `npm run type-check` | Zero TS errors | Follow TDD with real APIs |
+| **Testing** | `npm test` | All 26 tests pass | Check coverage with `npm run test:coverage` |
+| **Debugging** | Check `/api/health` + `/admin` | System status green | Use troubleshooting matrix |
+| **Deployment** | Verify all API keys | 15+ sources configured | Follow deployment guide |
+| **Integration** | Study service layer | Understand fallback patterns | Use API documentation |
 
-## Features & Tech Stack
+## System Context and Mental Model
 
-| Category | Technology | Purpose |
-|----------|------------|---------|
-| **Framework** | Next.js 15 + App Router | SSR/SSG with TypeScript |
-| **Data Sources** | 15+ APIs (Polygon, AV, FMP, SEC, FRED, BLS, EIA) | Real-time financial + macroeconomic data |
-| **Intelligence** | SEC EDGAR 13F/Form 4 + VWAP + Multi-Reddit sentiment | Institutional + trading insights |
-| **Caching** | Redis + In-memory fallback | Performance optimization |
-| **Security** | JWT + bcrypt + OWASP validation | Enterprise-grade protection |
-| **UI** | React 19 + Tailwind CSS | Cyberpunk-themed interface |
-| **Testing** | Jest + Playwright + TDD | Real data, no mocks |
+### Problem-Solution Context
+**Market Problem**: Individual investors lack access to institutional-grade analysis tools and real-time comprehensive data
+**Technical Solution**: AI-driven analysis engine aggregating 15+ financial data sources with enterprise-grade reliability
+**Business Mission**: Democratize sophisticated financial research through single-click actionable insights
+
+### AI Agent Mental Model
+**Think of this system as**: A financial intelligence aggregator that transforms fragmented market data into institutional-quality investment recommendations
+
+**Core Data Flow**:
+```
+User Input → Input Validation → Parallel API Collection → AI Analysis → Cached Results → Actionable Insights
+     ↓              ↓                    ↓                ↓            ↓              ↓
+Symbol(s)    SecurityValidator    15+ Financial APIs    Weighted    Redis Cache    BUY/SELL/HOLD
+Sector       OWASP protection     Premium + Government  Scoring     + In-memory    + Confidence
+Multiple     Rate limiting        + Social intelligence 5 Factors   Fallback       + Reasoning
+```
+
+**Success Metrics**:
+- Sub-3-second analysis completion
+- 99.5% uptime via fallback strategies
+- 80% security risk reduction (OWASP compliance)
+- 85%+ cache hit ratio for performance
+
+## Technology Stack with Context and Decision Rationale
+
+| Category | Technology | Business Purpose | Technical Benefits | AI Agent Considerations |
+|----------|------------|------------------|-------------------|------------------------|
+| **Frontend** | React 19 + Next.js 15 App Router | Modern user experience | SSR/SSG performance | Use App Router patterns, TypeScript strict |
+| **Data Layer** | 15+ APIs with intelligent fallback | Comprehensive market intelligence | Multi-source reliability | Always implement fallback logic |
+| **Intelligence** | SEC EDGAR + VWAP + Multi-Reddit sentiment | Institutional-grade insights | Real insider/sentiment data | Respect rate limits, cache aggressively |
+| **Performance** | Redis + in-memory caching | Sub-3-second analysis | 85%+ cache hit ratio | Implement cache-aside pattern |
+| **Security** | JWT + bcrypt + OWASP validation | Enterprise protection | 80% risk reduction | Validate all inputs, sanitize errors |
+| **Interface** | Tailwind CSS + Cyberpunk theme | Professional aesthetics | Component consistency | Follow design system |
+| **Quality** | Jest + Playwright + TDD | Production reliability | Real API testing | NO MOCK DATA policy |
+
+### Key Technology Decisions
+- **Next.js 15**: Chosen for App Router performance and TypeScript integration
+- **Multi-API Strategy**: Ensures 99.5% uptime through intelligent fallbacks
+- **Redis Caching**: Critical for meeting sub-3-second analysis targets
+- **Real API Testing**: Ensures production reliability (26 test files, 13,200+ lines)
 
 ## Architecture
 

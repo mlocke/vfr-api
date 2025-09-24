@@ -33,6 +33,9 @@ import SecurityValidator from '../security/SecurityValidator'
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
 import { VWAPService } from '../financial-data/VWAPService'
+import ESGDataService from '../financial-data/ESGDataService'
+import ShortInterestService from '../financial-data/ShortInterestService'
+import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataService'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
@@ -49,6 +52,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private macroeconomicService?: MacroeconomicAnalysisService
   private sentimentService?: SentimentAnalysisService
   private vwapService?: VWAPService
+  private esgService?: ESGDataService
+  private shortInterestService?: ShortInterestService
+  private extendedMarketService?: ExtendedMarketDataService
   private errorHandler: ErrorHandler
 
   constructor(
@@ -58,7 +64,10 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     technicalService?: TechnicalIndicatorService,
     macroeconomicService?: MacroeconomicAnalysisService,
     sentimentService?: SentimentAnalysisService,
-    vwapService?: VWAPService
+    vwapService?: VWAPService,
+    esgService?: ESGDataService,
+    shortInterestService?: ShortInterestService,
+    extendedMarketService?: ExtendedMarketDataService
   ) {
     super()
 
@@ -68,6 +77,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.macroeconomicService = macroeconomicService
     this.sentimentService = sentimentService
     this.vwapService = vwapService
+    this.esgService = esgService
+    this.shortInterestService = shortInterestService
+    this.extendedMarketService = extendedMarketService
     this.errorHandler = ErrorHandler.getInstance()
 
     // Initialize algorithm cache with proper config structure
@@ -436,6 +448,48 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
+    // Get ESG analysis if service is available
+    let esgImpact = null
+    if (this.esgService) {
+      try {
+        esgImpact = await this.esgService.getESGImpactForStock(
+          symbol,
+          stockScore.marketData.sector,
+          adjustedScore.overallScore // Use sentiment-adjusted score as base
+        )
+        if (esgImpact) {
+          // Update the stock score with ESG-adjusted score
+          adjustedScore = {
+            ...adjustedScore,
+            overallScore: esgImpact.adjustedScore
+          }
+        }
+      } catch (error) {
+        console.warn(`ESG analysis failed for ${symbol}:`, error)
+      }
+    }
+
+    // Get Short Interest analysis if service is available
+    let shortInterestImpact = null
+    if (this.shortInterestService) {
+      try {
+        shortInterestImpact = await this.shortInterestService.getShortInterestImpactForStock(
+          symbol,
+          stockScore.marketData.sector,
+          adjustedScore.overallScore // Use ESG-adjusted score as base
+        )
+        if (shortInterestImpact) {
+          // Update the stock score with short interest adjusted score
+          adjustedScore = {
+            ...adjustedScore,
+            overallScore: shortInterestImpact.adjustedScore
+          }
+        }
+      } catch (error) {
+        console.warn(`Short interest analysis failed for ${symbol}:`, error)
+      }
+    }
+
     return {
       symbol,
       score: adjustedScore,
@@ -453,8 +507,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       reasoning: {
         primaryFactors: this.extractPrimaryFactors(stockScore),
-        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact),
-        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact)
+        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact),
+        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact)
       } as any,
 
       dataQuality: {
@@ -1178,7 +1232,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return factors
   }
 
-  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any): string[] {
+  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any): string[] {
     const warnings = []
 
     if (stockScore.dataQuality.overall < 0.6) {
@@ -1266,10 +1320,23 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       warnings.push('Negative news sentiment creates downward pressure')
     }
 
+    // ESG-based warnings
+    if (esgImpact?.factors) {
+      const esgWarnings = esgImpact.factors.filter((factor: string) =>
+        factor.toLowerCase().includes('risk') ||
+        factor.toLowerCase().includes('controversies') ||
+        factor.toLowerCase().includes('regulatory')
+      )
+      warnings.push(...esgWarnings)
+    }
+    if (esgImpact?.impact === 'negative') {
+      warnings.push('Poor ESG practices may impact long-term sustainability and investor appeal')
+    }
+
     return warnings
   }
 
-  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any): string[] {
+  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any): string[] {
     const opportunities = []
 
     if (stockScore.overallScore > 0.8) {
@@ -1356,6 +1423,19 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     }
     if (sentimentImpact?.sentimentScore?.overall > 0.7) {
       opportunities.push('Positive news sentiment supports upward momentum')
+    }
+
+    // ESG-based opportunities
+    if (esgImpact?.factors) {
+      const esgOpportunities = esgImpact.factors.filter((factor: string) =>
+        factor.toLowerCase().includes('strong') ||
+        factor.toLowerCase().includes('value') ||
+        factor.toLowerCase().includes('performance')
+      )
+      opportunities.push(...esgOpportunities)
+    }
+    if (esgImpact?.impact === 'positive') {
+      opportunities.push('Strong ESG practices attract sustainable investment and reduce regulatory risk')
     }
 
     return opportunities

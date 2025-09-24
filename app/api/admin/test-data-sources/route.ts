@@ -21,8 +21,10 @@ import { EODHDAPI } from '../../../services/financial-data/EODHDAPI'
 import { MarketIndicesService } from '../../../services/financial-data/MarketIndicesService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
+import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { ErrorHandler } from '../../../services/error-handling/ErrorHandler'
 import { RedditAPIEnhanced } from '../../../services/financial-data'
+import { RedisCache } from '../../../services/cache/RedisCache'
 
 interface TestRequest {
   dataSourceIds: string[]
@@ -64,6 +66,7 @@ const DATA_SOURCE_CONFIGS = {
   options: { name: 'Options Data Service', timeout: 15000 },
   enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
   technical_indicators: { name: 'Technical Indicators Service', timeout: 5000 },
+  extended_market: { name: 'Extended Market Data Service', timeout: 8000 },
   firecrawl: { name: 'Firecrawl API', timeout: 20000 },
   dappier: { name: 'Dappier API', timeout: 10000 },
   reddit: { name: 'Reddit WSB Sentiment API', timeout: 8000 }
@@ -272,7 +275,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -326,6 +329,11 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
             signal: AbortSignal.timeout(timeout)
           })
           return response.ok
+        case 'extended_market':
+          const cache = new RedisCache()
+          const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
+          apiInstance = new ExtendedMarketDataService(polygonAPI, cache)
+          break
         case 'reddit':
           apiInstance = new RedditAPIEnhanced()
           break
@@ -637,6 +645,54 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
             availableProviders: Object.values(enhancedServiceStatus.providerStatus).filter(s => s.available).length
           },
           testType: 'comprehensive_enhanced_service'
+        }
+        break
+
+      case 'extended_market':
+        console.log('📈 Testing Extended Market Data Service...')
+        const extendedCache = new RedisCache()
+        const extendedPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
+        const extendedMarketService = new ExtendedMarketDataService(extendedPolygonAPI, extendedCache)
+
+        const testSymbolsExt = ['AAPL', 'MSFT', 'GOOGL']
+        const extendedResults = []
+
+        for (const symbol of testSymbolsExt) {
+          try {
+            const extendedData = await extendedMarketService.getExtendedMarketData(symbol)
+            const bidAskSpread = await extendedMarketService.getBidAskSpread(symbol)
+            const extendedScore = extendedData ? extendedMarketService.calculateExtendedMarketScore(extendedData) : 0
+
+            extendedResults.push({
+              symbol,
+              success: !!extendedData,
+              hasExtendedHours: !!extendedData?.extendedHours,
+              hasBidAsk: !!extendedData?.bidAskSpread,
+              hasLiquidity: !!extendedData?.liquidityMetrics,
+              extendedScore,
+              marketStatus: extendedData?.extendedHours?.marketStatus,
+              liquidityScore: extendedData?.liquidityMetrics?.liquidityScore,
+              spreadPercent: extendedData?.bidAskSpread?.spreadPercent
+            })
+          } catch (error) {
+            extendedResults.push({
+              symbol,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            })
+          }
+        }
+
+        testData = {
+          testResults: extendedResults,
+          summary: {
+            totalTests: testSymbolsExt.length,
+            successfulTests: extendedResults.filter(r => r.success).length,
+            dataQuality: extendedResults.filter(r => r.success).length / testSymbolsExt.length,
+            timestamp: Date.now()
+          },
+          serviceStatus: await extendedMarketService.healthCheck(),
+          testType: 'extended_market_data_analysis'
         }
         break
 
@@ -980,7 +1036,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -1024,6 +1080,11 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           break
         case 'market_indices':
           apiInstance = new MarketIndicesService()
+          break
+        case 'extended_market':
+          const perfCache = new RedisCache()
+          const perfPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
+          apiInstance = new ExtendedMarketDataService(perfPolygonAPI, perfCache)
           break
         case 'reddit':
           apiInstance = new RedditAPIEnhanced(undefined, undefined, undefined, timeout, true)
@@ -1080,6 +1141,23 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
                 success: !!(result && result.success),
                 subredditCount: result?.data?.subredditBreakdown?.length || 0,
                 postCount: result?.data?.postCount || 0
+              }))
+              .catch(() => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: false
+              }))
+          )
+        } else if (dataSourceId === 'extended_market') {
+          // Extended market data service uses getExtendedMarketData method
+          requests.push(
+            apiInstance.getExtendedMarketData(testSymbol)
+              .then((result: any) => ({
+                request: i + 1,
+                responseTime: Date.now() - startTime,
+                success: !!result,
+                hasExtendedHours: !!result?.extendedHours,
+                liquidityScore: result?.liquidityMetrics?.liquidityScore || 0
               }))
               .catch(() => ({
                 request: i + 1,

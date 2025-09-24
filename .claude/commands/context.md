@@ -1,5 +1,7 @@
-### Context MD
-claude --files "README.md" "docs/vision.md" "docs/claude-standards.md" "any CLAUDE.md in current directory"
+### Context Command
+- Read the following for project context:
+1. /CLAUDE.md
+2. /docs/TECHNICAL_DOCUMENTATION_INDEX.md
+3. /README.md
+4. $ARGUMENTS $ARGUMENTS
 
-Ask clarifying questions if needed. Load project context using optimized documentation.
-All files follow context-efficient standards for maximum AI reasoning capability.

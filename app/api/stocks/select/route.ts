@@ -17,6 +17,10 @@ import { FREDAPI } from '../../../services/financial-data/FREDAPI'
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
 import { StockMacroeconomicImpact } from '../../../services/financial-data/types/macroeconomic-types'
+import ESGDataService from '../../../services/financial-data/ESGDataService'
+import ShortInterestService from '../../../services/financial-data/ShortInterestService'
+import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
+import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -62,6 +66,23 @@ interface EnhancedStockData extends StockData {
     economicRisk: number
     summary: string
   }
+  esgAnalysis?: {
+    score: number // 0-100 overall ESG score
+    impact: 'positive' | 'negative' | 'neutral'
+    factors: string[]
+    confidence: number
+    adjustedScore: number
+    summary: string
+  }
+  shortInterestAnalysis?: {
+    score: number // 0-100 overall short interest score
+    impact: 'positive' | 'negative' | 'neutral'
+    factors: string[]
+    confidence: number
+    shortInterestRatio: number
+    adjustedScore: number
+    summary: string
+  }
   fundamentals?: FundamentalRatios
   analystRating?: AnalystRatings
   priceTarget?: PriceTarget
@@ -84,6 +105,9 @@ interface SimpleStockResponse {
       analystDataEnabled?: boolean
       sentimentAnalysisEnabled?: boolean
       macroeconomicAnalysisEnabled?: boolean
+      esgAnalysisEnabled?: boolean
+      shortInterestAnalysisEnabled?: boolean
+      extendedMarketDataEnabled?: boolean
     }
   }
   error?: string
@@ -93,6 +117,9 @@ interface SimpleStockResponse {
 let technicalService: TechnicalIndicatorService | null = null
 let sentimentService: SentimentAnalysisService | null = null
 let macroService: MacroeconomicAnalysisService | null = null
+let esgService: ESGDataService | null = null
+let shortInterestService: ShortInterestService | null = null
+let extendedMarketService: ExtendedMarketDataService | null = null
 
 /**
  * Get or initialize technical analysis service
@@ -142,6 +169,58 @@ function getMacroService(): MacroeconomicAnalysisService | null {
 }
 
 /**
+ * Get or initialize ESG analysis service
+ */
+function getESGService(): ESGDataService | null {
+  if (!esgService) {
+    try {
+      esgService = new ESGDataService({
+        apiKey: process.env.ESG_API_KEY || process.env.FINANCIAL_MODELING_PREP_API_KEY
+      })
+    } catch (error) {
+      console.warn('Failed to initialize ESG service:', error)
+      return null
+    }
+  }
+  return esgService
+}
+
+/**
+ * Get or initialize short interest analysis service
+ */
+function getShortInterestService(): ShortInterestService | null {
+  if (!shortInterestService) {
+    try {
+      shortInterestService = new ShortInterestService({
+        finraApiKey: process.env.FINRA_API_KEY,
+        polygonApiKey: process.env.POLYGON_API_KEY
+      })
+    } catch (error) {
+      console.warn('Failed to initialize short interest service:', error)
+      return null
+    }
+  }
+  return shortInterestService
+}
+
+/**
+ * Get or initialize extended market data service
+ */
+function getExtendedMarketService(): ExtendedMarketDataService | null {
+  if (!extendedMarketService) {
+    try {
+      const cache = new RedisCache()
+      const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
+      extendedMarketService = new ExtendedMarketDataService(polygonAPI, cache)
+    } catch (error) {
+      console.warn('Failed to initialize extended market service:', error)
+      return null
+    }
+  }
+  return extendedMarketService
+}
+
+/**
  * Convert HistoricalOHLC to OHLCData format
  */
 function convertToOHLCData(historicalData: import('../../../services/financial-data').HistoricalOHLC[]): OHLCData[] {
@@ -156,37 +235,100 @@ function convertToOHLCData(historicalData: import('../../../services/financial-d
 }
 
 /**
- * Calculate composite score from technical, fundamental, sentiment, macroeconomic, and analyst data
+ * Calculate composite score with rebalanced weights:
+ * Technical 35%, Fundamental 25%, Macro 20%, Sentiment 10%, Extended Market 5%, Alternative Data 5% (ESG 3% + Short Interest 2%)
  */
 function calculateSimpleScore(stock: EnhancedStockData): number {
-  let score = 50 // neutral start
+  let score = 0 // Start from 0 for proper weighted calculation
+  let totalWeight = 0
 
-  // Technical analysis (32% weight, reduced to accommodate sentiment + macro)
+  // Technical analysis (35% weight - reduced from 40%)
   if (stock.technicalAnalysis?.score) {
-    score = stock.technicalAnalysis.score * 0.32
+    score += stock.technicalAnalysis.score * 0.35
+    totalWeight += 0.35
+  }
+
+  // Fundamental analysis (25% weight) - convert fundamentals to score
+  if (stock.fundamentals) {
+    let fundamentalScore = 50 // neutral baseline
+
+    // P/E ratio scoring (0-100 scale)
+    if (stock.fundamentals.peRatio) {
+      if (stock.fundamentals.peRatio < 15) fundamentalScore += 20
+      else if (stock.fundamentals.peRatio < 25) fundamentalScore += 10
+      else if (stock.fundamentals.peRatio > 40) fundamentalScore -= 15
+    }
+
+    // ROE scoring
+    if (stock.fundamentals.roe) {
+      if (stock.fundamentals.roe > 0.20) fundamentalScore += 15
+      else if (stock.fundamentals.roe > 0.15) fundamentalScore += 10
+      else if (stock.fundamentals.roe < 0.05) fundamentalScore -= 10
+    }
+
+    // Debt-to-equity scoring
+    if (stock.fundamentals.debtToEquity) {
+      if (stock.fundamentals.debtToEquity < 0.3) fundamentalScore += 10
+      else if (stock.fundamentals.debtToEquity > 2) fundamentalScore -= 15
+    }
+
+    fundamentalScore = Math.max(0, Math.min(100, fundamentalScore))
+    score += fundamentalScore * 0.25
+    totalWeight += 0.25
+  }
+
+  // Macroeconomic analysis (20% weight)
+  if (stock.macroeconomicAnalysis?.score) {
+    score += stock.macroeconomicAnalysis.score * 0.20
+    totalWeight += 0.20
   }
 
   // Sentiment analysis (10% weight)
   if (stock.sentimentAnalysis?.adjustedScore) {
-    score += stock.sentimentAnalysis.adjustedScore * 0.1
+    score += stock.sentimentAnalysis.adjustedScore * 0.10
+    totalWeight += 0.10
   }
 
-  // Macroeconomic analysis (20% weight)
-  if (stock.macroeconomicAnalysis?.adjustedScore) {
-    score += stock.macroeconomicAnalysis.adjustedScore * 0.2
+  // Extended Market Data (5% weight) - liquidity and extended hours activity
+  let extendedMarketScore = 50 // neutral default
+  if (stock.preMarketChangePercent !== undefined || stock.afterHoursChangePercent !== undefined) {
+    // Calculate score based on extended hours movement
+    if (stock.preMarketChangePercent !== undefined) {
+      extendedMarketScore += stock.preMarketChangePercent > 0 ? 10 : -10
+    }
+    if (stock.afterHoursChangePercent !== undefined) {
+      extendedMarketScore += stock.afterHoursChangePercent > 0 ? 10 : -10
+    }
+    // Factor in bid/ask spread for liquidity
+    if (stock.bid && stock.ask) {
+      const spread = ((stock.ask - stock.bid) / stock.ask) * 100
+      if (spread < 0.1) extendedMarketScore += 10 // Very liquid
+      else if (spread < 0.5) extendedMarketScore += 5 // Liquid
+      else if (spread > 1) extendedMarketScore -= 5 // Less liquid
+    }
+    extendedMarketScore = Math.max(0, Math.min(100, extendedMarketScore))
+    score += extendedMarketScore * 0.05
+    totalWeight += 0.05
   }
 
-  // Fundamentals boost/penalty (unchanged - representing ~25% fundamental weight)
-  if (stock.fundamentals) {
-    if (stock.fundamentals.peRatio && stock.fundamentals.peRatio < 20) score += 10
-    if (stock.fundamentals.roe && stock.fundamentals.roe > 0.15) score += 10
-    if (stock.fundamentals.debtToEquity && stock.fundamentals.debtToEquity > 2) score -= 10
+  // Alternative Data: ESG analysis (3% weight - reduced from 5%)
+  if (stock.esgAnalysis?.score) {
+    score += stock.esgAnalysis.score * 0.03
+    totalWeight += 0.03
   }
 
-  // Analyst boost (unchanged - representing ~5% alternative data weight)
-  if (stock.analystRating?.consensus === 'Strong Buy') score += 15
-  else if (stock.analystRating?.consensus === 'Buy') score += 10
-  else if (stock.analystRating?.consensus === 'Sell') score -= 10
+  // Alternative Data: Short Interest analysis (2% weight - reduced from 2.5%)
+  if (stock.shortInterestAnalysis?.score) {
+    score += stock.shortInterestAnalysis.score * 0.02
+    totalWeight += 0.02
+  }
+
+  // Normalize by actual weights used (in case some components are missing)
+  if (totalWeight > 0) {
+    score = score / totalWeight * 100
+  } else {
+    score = 50 // Default neutral score if no components available
+  }
 
   return Math.max(0, Math.min(100, score))
 }
@@ -207,6 +349,9 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
   const technical = getTechnicalService()
   const sentiment = getSentimentService()
   const macro = getMacroService()
+  const esg = getESGService()
+  const shortInterest = getShortInterestService()
+  const extendedMarket = getExtendedMarketService()
   const enhancedStocks: EnhancedStockData[] = []
 
   // Process stocks in parallel with Promise.allSettled for resilience
@@ -291,6 +436,92 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
           }
         } catch (error) {
           console.warn(`Macroeconomic analysis failed for ${stock.symbol}:`, error)
+        }
+      }
+
+      // Add ESG analysis if service is available and sector is known
+      if (esg && enhancedStock.sector) {
+        try {
+          const esgImpact = await esg.getESGImpactForStock(
+            stock.symbol,
+            enhancedStock.sector,
+            enhancedStock.price || 50 // base score for ESG analysis
+          )
+
+          if (esgImpact) {
+            enhancedStock.esgAnalysis = {
+              score: esgImpact.esgScore,
+              impact: esgImpact.impact,
+              factors: esgImpact.factors,
+              confidence: esgImpact.confidence,
+              adjustedScore: esgImpact.adjustedScore,
+              summary: `ESG ${esgImpact.impact} impact with ${Math.round(esgImpact.confidence * 100)}% confidence`
+            }
+          }
+        } catch (error) {
+          console.warn(`ESG analysis failed for ${stock.symbol}:`, error)
+        }
+      }
+
+      // Add Short Interest analysis if service is available and sector is known
+      // Service now returns null when no API keys available - NO MOCK DATA
+      if (shortInterest && enhancedStock.sector) {
+        try {
+          const shortImpact = await shortInterest.getShortInterestImpactForStock(
+            stock.symbol,
+            enhancedStock.sector,
+            enhancedStock.price || 50 // base score for short interest analysis
+          )
+
+          // Only add analysis if real data is available
+          if (shortImpact && shortImpact.confidence > 0) {
+            enhancedStock.shortInterestAnalysis = {
+              score: shortImpact.score,
+              impact: shortImpact.impact,
+              factors: shortImpact.factors,
+              confidence: shortImpact.confidence,
+              shortInterestRatio: shortImpact.shortInterestScore,
+              adjustedScore: shortImpact.adjustedScore,
+              summary: shortImpact.shortInterestScore > 0 ?
+                `Short interest ${shortImpact.impact} impact (${shortImpact.shortInterestScore}% ratio) with ${Math.round(shortImpact.confidence * 100)}% confidence` :
+                'Short interest data unavailable - no API keys configured'
+            }
+          } else {
+            // Log when short interest is unavailable but don't include it in analysis
+            console.log(`Short interest data unavailable for ${stock.symbol} - no API keys or data not found`)
+          }
+        } catch (error) {
+          console.warn(`Short interest analysis failed for ${stock.symbol}:`, error)
+        }
+      }
+
+      // Add extended market data analysis if service is available
+      if (extendedMarket) {
+        try {
+          const extendedData = await extendedMarket.getExtendedMarketData(stock.symbol)
+
+          if (extendedData) {
+            // Calculate extended market score and add to enhanced data
+            const extendedScore = extendedMarket.calculateExtendedMarketScore(extendedData)
+
+            // Add extended market fields to stock data
+            if (extendedData.extendedHours) {
+              enhancedStock.preMarketPrice = extendedData.extendedHours.preMarketPrice
+              enhancedStock.preMarketChange = extendedData.extendedHours.preMarketChange
+              enhancedStock.preMarketChangePercent = extendedData.extendedHours.preMarketChangePercent
+              enhancedStock.afterHoursPrice = extendedData.extendedHours.afterHoursPrice
+              enhancedStock.afterHoursChange = extendedData.extendedHours.afterHoursChange
+              enhancedStock.afterHoursChangePercent = extendedData.extendedHours.afterHoursChangePercent
+            }
+
+            // Add bid/ask if available
+            if (extendedData.bidAskSpread) {
+              enhancedStock.bid = extendedData.bidAskSpread.bid
+              enhancedStock.ask = extendedData.bidAskSpread.ask
+            }
+          }
+        } catch (error) {
+          console.warn(`Extended market analysis failed for ${stock.symbol}:`, error)
         }
       }
 
@@ -470,7 +701,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           fundamentalDataEnabled: true,
           analystDataEnabled: true,
           sentimentAnalysisEnabled: getSentimentService() !== null,
-          macroeconomicAnalysisEnabled: getMacroService() !== null
+          macroeconomicAnalysisEnabled: getMacroService() !== null,
+          esgAnalysisEnabled: getESGService() !== null,
+          shortInterestAnalysisEnabled: getShortInterestService() !== null,
+          extendedMarketDataEnabled: getExtendedMarketService() !== null
         }
       }
     }

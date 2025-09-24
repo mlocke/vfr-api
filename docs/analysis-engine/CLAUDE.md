@@ -1,12 +1,30 @@
-# CLAUDE.md
+# VFR Analysis Engine - AI Agent Operational Context
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Purpose**: Specialized guidance for AI agents working with the VFR financial analysis engine, providing operational procedures, error boundaries, and implementation context.
 
-**IMPORTANT** Number 1 rule: NO MOCK DATA!! ANYWHERE!! EVER!!
+**⚠️ CRITICAL CONSTRAINT**: NO MOCK DATA in any implementation - Production reliability depends on real API integration.
 
-## Analysis Engine Documentation Directory
+## Analysis Engine Context and Mental Model
 
-This `/docs/analysis-engine` directory contains specialized documentation for the VFR financial analysis engine development and architecture. This is a subdirectory of the main VFR API project.
+### System Function and Purpose
+**Primary Role**: Transform fragmented financial data into actionable investment insights through AI-powered analysis
+**Core Process**: Multi-source data → Weighted analysis → Confidence-scored recommendations
+**Business Impact**: Democratizing institutional-grade financial research for individual investors
+
+### Operational Context
+This `/docs/analysis-engine` directory provides specialized documentation for the analysis engine subsystem within the main VFR API project. All implementation files are located in the project root under `app/services/`.
+
+**Decision Framework for AI Agents**:
+```
+Analysis Request → Data Collection → Weighted Scoring → Recommendation
+       ↓               ↓              ↓              ↓
+   Validate Input   15+ API Sources  5-Factor Analysis  BUY/SELL/HOLD
+   ├─ Symbol format   ├─ Premium APIs   ├─ Technical 40%   ├─ Confidence score
+   ├─ Sector valid    ├─ Government     ├─ Fundamental 25% ├─ Supporting data
+   └─ Multi support   └─ Social intel   └─ Macro 20%      └─ Risk assessment
+                                     ├─ Sentiment 10%
+                                     └─ Alternative 5%
+```
 
 ### Directory Structure
 
@@ -32,12 +50,37 @@ analysis-engine/
 - **Cache Strategy**: Redis-based caching with TTL optimization
 - **Real-time Processing**: Parallel API calls with fallback mechanisms
 
-### Key Weighting Strategy
-- **40%** - Technical & price action signals (includes VWAP analysis ✅ IMPLEMENTED)
-- **25%** - Fundamental analysis & financial health (dual-source redundancy ✅ IMPLEMENTED)
-- **20%** - Macroeconomic context & sector rotation (FRED + BLS + EIA ✅ IMPLEMENTED)
-- **10%** - Sentiment & institutional flow (analyst ratings + Reddit WSB multi-subreddit ✅ IMPLEMENTED with rate limit graceful degradation)
-- **5%** - Alternative data & special situations (ESG integration planned)
+### Analysis Engine Weighting Strategy with Implementation Status
+
+#### Weighted Factor Analysis (Total: 100%)
+| Factor | Weight | Implementation Status | Data Sources | Performance Target | Error Boundary |
+|--------|--------|----------------------|--------------|-------------------|---------------|
+| **Technical Analysis** | 40% | ✅ IMPLEMENTED | VWAP + indicators | <500ms | Fallback to basic TA if VWAP fails |
+| **Fundamental Health** | 25% | ✅ IMPLEMENTED | FMP + EODHD ratios | <1s | Dual-source redundancy |
+| **Macroeconomic Context** | 20% | ✅ IMPLEMENTED | FRED + BLS + EIA | <2s | Cache recent data if APIs slow |
+| **Sentiment Analysis** | 10% | ✅ IMPLEMENTED | News + Reddit WSB | <1.5s | Graceful degradation with defaults |
+| **Alternative Data** | 5% | 📋 PLANNED | ESG + special situations | TBD | Skip if unavailable |
+
+#### Factor Scoring Logic
+```
+Factor Analysis → Weighted Scoring → Confidence Calculation → Final Recommendation
+       ↓                ↓                  ↓                    ↓
+   Individual       Weight × Score     Data Quality Check    BUY/SELL/HOLD
+   ├─ Technical 40%  ├─ Max 40 points    ├─ Source reliability  ├─ Confidence %
+   ├─ Fundamental    ├─ Weighted sum     ├─ Timestamp fresh     ├─ Risk level
+   ├─ Macroeconomic  ├─ Normalization    ├─ Fallback usage      └─ Supporting rationale
+   ├─ Sentiment      └─ Range 0-100     └─ Confidence score
+   └─ Alternative
+```
+
+#### Implementation State Matrix
+| Component | Status | File Location | Test Coverage | Performance |
+|-----------|--------|---------------|---------------|-------------|
+| VWAP Analysis | Production | `VWAPService.ts` | ✅ Comprehensive | <200ms |
+| Reddit WSB Sentiment | Production | `RedditAPI.ts` | ✅ Multi-subreddit | <1.5s |
+| Macroeconomic Data | Production | `MacroeconomicAnalysisService.ts` | ✅ All APIs | <2s |
+| Institutional Intelligence | Production | `InstitutionalDataService.ts` | ✅ 608-line test | <3s |
+| ESG Integration | Planned | TBD | Pending | TBD |
 
 ## Development Commands (From Root Directory)
 
@@ -131,27 +174,61 @@ npm test -- --testNamePattern="PolygonAPI"
 - **Error Logging**: Comprehensive logging for debugging API issues
 - **Rate Limiting**: Respect API limits and implement backoff strategies
 
-## Troubleshooting
+## Analysis Engine Error Boundaries and Recovery Procedures
 
-### Common Analysis Engine Issues
-- **API Rate Limits**: Check admin dashboard at `/admin` for source health
-- **Cache Misses**: Verify Redis connection and TTL settings
-- **Analysis Timeouts**: Review parallel processing and API response times
-- **Data Quality**: Check fallback service logs for source switching
+### Error Classification and Recovery Matrix
 
-### Debug Commands
-```bash
-# Check API health from project root
-curl http://localhost:3000/api/health
-curl http://localhost:3000/api/admin/data-sources
+#### Data Collection Errors
+| Error Type | Symptoms | Root Cause | Recovery Action | Prevention |
+|------------|----------|------------|-----------------|------------|
+| **API Rate Limits** | 429 responses, missing data | Daily/hourly limits exceeded | FallbackDataService auto-switch | Monitor usage in admin dashboard |
+| **API Timeouts** | Slow responses, incomplete data | Network/server issues | 5s timeout → fallback source | Health monitoring |
+| **Invalid Responses** | Data format errors | API changes/outages | Schema validation → cache/backup | Version tracking |
+| **Authentication Failures** | 401/403 errors | Invalid/expired keys | Key rotation → admin notification | Key management |
 
-# Monitor analysis performance
-npm run dev:monitor
+#### Analysis Engine Errors
+| Issue | Detection | Impact | Immediate Response | Long-term Fix |
+|-------|-----------|--------|--------------------|---------------|
+| **Cache Misses** | Redis connection fails | Slower responses | In-memory fallback | Redis health monitoring |
+| **Analysis Timeouts** | >3s processing time | User experience degradation | Return partial results | Optimize algorithms |
+| **Data Quality Issues** | Inconsistent scoring | Unreliable recommendations | Confidence score adjustment | Data validation |
+| **Memory Pressure** | High heap usage | Performance degradation | Garbage collection | Memory optimization |
 
-# Test specific data sources
-node test-polygon-updates.ts
-node test-fallback-service.mjs
+### Diagnostic Decision Tree
 ```
+Issue Detected → Categorize → Gather Context → Apply Recovery → Monitor
+      ↓             ↓            ↓             ↓           ↓
+  User Report    Data/Engine   Run Diagnostics  Execute Fix   Verify Fix
+     │          ├─ Data       ├─ /api/health   ├─ Auto-retry   ├─ Success metrics
+     │          ├─ Analysis   ├─ Admin panel   ├─ Fallback     ├─ Error reduction
+     │          └─ System     └─ Log analysis └─ Manual fix   └─ Performance
+     └─ Log incident for pattern analysis
+```
+
+### Analysis Engine Diagnostic Commands
+```bash
+# System Health (Run from project root)
+curl http://localhost:3000/api/health              # Overall system status
+curl http://localhost:3000/api/admin/data-sources  # Individual API health
+
+# Performance Monitoring
+npm run dev:monitor                               # Real-time request logs
+npm run test:performance                          # Memory and timing analysis
+
+# Data Source Testing
+node test-polygon-updates.ts                      # Polygon API connectivity
+node test-fallback-service.mjs                    # Fallback logic validation
+
+# Analysis Engine Specific
+npm test -- --testNamePattern="StockSelectionService"  # Core analysis tests
+npm test -- app/services/financial-data/              # Data service validation
+```
+
+### Emergency Recovery Procedures
+1. **Analysis Engine Down**: Check `/api/health` → Restart services → Verify data flow
+2. **Data Quality Degradation**: Admin dashboard → Check source status → Enable manual overrides
+3. **Performance Issues**: Monitor memory → Check cache hit rates → Optimize queries
+4. **Partial Service Failure**: Identify failed component → Enable fallbacks → Monitor confidence scores
 
 ## Important Notes
 
