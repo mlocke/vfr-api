@@ -4,7 +4,7 @@
  * Provides 10% weight in composite scoring as per roadmap
  */
 
-import NewsAPI from './providers/NewsAPI'
+import YahooFinanceSentimentAPI from './providers/YahooFinanceSentimentAPI'
 import RedditAPIEnhanced from './providers/RedditAPIEnhanced'
 import { RedisCache } from '../cache/RedisCache'
 import { SecurityValidator } from '../security/SecurityValidator'
@@ -21,18 +21,17 @@ import {
 } from './types/sentiment-types'
 
 export class SentimentAnalysisService {
-  private newsAPI: NewsAPI
+  private yahooSentimentAPI: YahooFinanceSentimentAPI
   private redditAPI: RedditAPIEnhanced | null
   private cache: RedisCache
   private config: SentimentConfig
   private securityValidator: SecurityValidator
 
   constructor(
-    newsAPI: NewsAPI,
     cache: RedisCache,
     redditAPI?: RedditAPIEnhanced
   ) {
-    this.newsAPI = newsAPI
+    this.yahooSentimentAPI = new YahooFinanceSentimentAPI()
     this.redditAPI = redditAPI || null
     this.cache = cache
     this.config = this.createDefaultConfig()
@@ -279,13 +278,13 @@ export class SentimentAnalysisService {
   }
 
   /**
-   * Get news sentiment for a stock symbol
+   * Get company sentiment for a stock symbol using Yahoo Finance
    */
   private async getNewsSentiment(symbol: string): Promise<NewsSentimentData | null> {
     try {
-      return await this.newsAPI.getNewsSentiment(symbol, '1d')
+      return await this.yahooSentimentAPI.getNewsSentiment(symbol, '1d')
     } catch (error) {
-      console.error(`Failed to get news sentiment for ${symbol}:`, error)
+      console.error(`Failed to get company sentiment for ${symbol}:`, error)
       return null
     }
   }
@@ -478,16 +477,16 @@ export class SentimentAnalysisService {
       updateFrequency: 15 * 60 * 1000, // 15 minutes
       dataSources: {
         primary: [{
-          source: 'newsapi',
-          indicators: ['news_sentiment'],
+          source: 'composite', // Yahoo Finance company data
+          indicators: ['company_sentiment'],
           lastUpdated: Date.now(),
           quality: 0.8,
-          latency: 1000
+          latency: 2000
         }],
         fallback: []
       },
       weights: {
-        news: 0.7, // 70% weight for news sentiment
+        news: 0.7, // 70% weight for company sentiment (Yahoo Finance)
         reddit: 0.3 // 30% weight for Reddit WSB sentiment
       },
       thresholds: {
@@ -506,15 +505,15 @@ export class SentimentAnalysisService {
    */
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
     try {
-      const newsAPIHealth = await this.newsAPI.healthCheck()
+      const yahooSentimentHealth = await this.yahooSentimentAPI.healthCheck()
       const cacheHealth = await this.cache.ping() === 'PONG'
 
-      const healthy = newsAPIHealth && cacheHealth
+      const healthy = yahooSentimentHealth && cacheHealth
 
       return {
         status: healthy ? 'healthy' : 'unhealthy',
         details: {
-          newsAPI: newsAPIHealth,
+          yahooFinanceSentiment: yahooSentimentHealth,
           cache: cacheHealth
         }
       }

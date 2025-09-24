@@ -2276,15 +2276,12 @@ class StockSelectionServiceFactory {
     enabledServices.push('technical')
 
     // Conditional service initialization with proper error handling
-    if (availableApiKeys.has('newsapi')) {
-      try {
-        const { default: NewsAPI } = await import('../financial-data/providers/NewsAPI')
-        const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY!)
-        sentimentService = new (await import('../financial-data/SentimentAnalysisService')).default(newsAPI, cache)
-        enabledServices.push('sentiment')
-      } catch (error) {
-        console.warn('Failed to initialize sentiment service:', error)
-      }
+    // Yahoo Finance sentiment is always available (no API key required)
+    try {
+      sentimentService = new (await import('../financial-data/SentimentAnalysisService')).default(cache)
+      enabledServices.push('sentiment')
+    } catch (error) {
+      console.warn('Failed to initialize sentiment service:', error)
     }
 
     if (availableApiKeys.has('macroeconomic')) {
