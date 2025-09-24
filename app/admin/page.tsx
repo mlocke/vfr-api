@@ -195,6 +195,16 @@ export default function AdminDashboard() {
 			rateLimit: 300,
 			timeout: 8000,
 		},
+		{
+			id: "extended_market",
+			name: "Extended Market Data Service",
+			category: "financial",
+			description: "Pre/post market data & bid/ask spreads",
+			status: "online",
+			enabled: true,
+			rateLimit: 500,
+			timeout: 8000,
+		},
 	];
 
 	// State management
@@ -751,7 +761,7 @@ export default function AdminDashboard() {
 									margin: "0 auto",
 								}}
 							>
-								Monitor and test connections to all 14 financial data APIs
+								Monitor and test connections to all 15 financial data APIs
 							</p>
 						</div>
 

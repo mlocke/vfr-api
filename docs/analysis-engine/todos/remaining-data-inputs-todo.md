@@ -42,32 +42,33 @@
 
 ## High Priority Expansions
 
-### 1. Enhanced Sentiment & Alternative Data
-**Target**: Social media + additional sentiment sources
-**Files**: Expansion of existing `SentimentAnalysisService.ts`
-**Timeline**: 2-3 weeks | **Weight**: Expand current 10% with additional sources
+### ✅ Alternative Data Integration (COMPLETED)
+**Target**: ESG scoring + short interest analysis
+**Files**: `ESGDataService.ts`, `ShortInterestService.ts`
+**Timeline**: COMPLETED | **Weight**: 7.5% total (ESG 5% + Short Interest 2.5%)
 
-#### Next Tasks:
+#### Completed Tasks:
+- ✅ ESG scoring integration with industry-specific baselines (COMPLETED)
+- ✅ FINRA short interest integration with squeeze detection algorithms (COMPLETED)
 - ✅ Reddit WSB sentiment via Reddit API (COMPLETED - fully integrated with OAuth2 and performance testing)
 - Google Trends integration for retail interest (deferred)
-- ESG scoring integration (deferred)
 
 ---
 
 ## Medium Priority Enhancements
 
-### 2. Short Interest & Extended Market Data
-**Timeline**: 1-2 weeks
+### ✅ Extended Market Data (COMPLETED)
+**Timeline**: COMPLETED | **Weight**: 5% total in composite scoring
 
-#### Short Interest (FINRA)
-- Short interest ratios and days to cover
-- Short squeeze detection algorithms
-- **File**: `ShortInterestService.ts`
-
-#### Extended Market Data
-- Pre/post market data (Polygon API ready)
-- Bid/ask spread analysis for liquidity
-- VWAP calculations from existing OHLCV data
+#### Completed Tasks:
+- ✅ Pre/post market data integration (Polygon API) (COMPLETED)
+- ✅ Bid/ask spread analysis for liquidity assessment (COMPLETED)
+- ✅ Extended hours volume analysis (COMPLETED)
+- ✅ Liquidity metrics calculation (0-10 scoring) (COMPLETED)
+- ✅ Market making activity estimation (COMPLETED)
+- ✅ Integration into composite scoring (5% weight) (COMPLETED)
+- ✅ Admin dashboard testing support (COMPLETED)
+- ✅ VWAP calculations from existing OHLCV data (COMPLETED)
 
 ## Technical Enhancements
 
@@ -105,11 +106,12 @@
 ## Composite Scoring Architecture
 ```typescript
 interface EnhancedAnalysisResult {
-  technical: number;        // 40% weight
+  technical: number;        // 35% weight (reduced from 40%)
   fundamental: number;      // 25% weight
   macroeconomic: number;    // 20% weight
   sentiment: number;        // 10% weight (news sentiment ✅ + Reddit WSB ✅ operational)
-  alternative: number;      // 5% weight (ESG, short interest)
+  extendedMarket: number;   // 5% weight (NEW - liquidity + extended hours ✅ operational)
+  alternative: number;      // 5% weight (ESG 3% ✅ + Short Interest 2% ✅ operational)
 }
 ```
 
