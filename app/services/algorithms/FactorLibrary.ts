@@ -6,6 +6,8 @@
 import { FactorCalculator } from './types'
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
 import { TechnicalAnalysisResult, OHLCData } from '../technical-analysis/types'
+import { TwelveDataAPI } from '../financial-data/TwelveDataAPI'
+import { HistoricalOHLC } from '../financial-data/types'
 
 interface MarketDataPoint {
   symbol: string
@@ -24,6 +26,20 @@ interface FundamentalDataPoint {
   debtToEquity?: number
   roe?: number
   revenueGrowth?: number
+  currentRatio?: number
+  operatingMargin?: number
+  netProfitMargin?: number
+  grossProfitMargin?: number
+  priceToSales?: number
+  evEbitda?: number
+  evToEbitda?: number
+  interestCoverage?: number
+  earningsGrowth?: number
+  dividendYield?: number
+  payoutRatio?: number
+  revenueGrowthQoQ?: number
+  revenueGrowthYoY?: number
+  revenue?: number
   [key: string]: any
 }
 
@@ -49,12 +65,14 @@ export class FactorLibrary {
   private factorCache = new Map<string, { value: number; timestamp: number }>()
   private historicalDataCache = new Map<string, HistoricalPrice[]>()
   private technicalService?: TechnicalIndicatorService
+  private twelveDataAPI: TwelveDataAPI
 
   /**
    * Initialize with optional technical indicator service
    */
   constructor(technicalService?: TechnicalIndicatorService) {
     this.technicalService = technicalService
+    this.twelveDataAPI = new TwelveDataAPI()
   }
 
   /**
@@ -75,8 +93,11 @@ export class FactorLibrary {
     }
 
     let result: number | null = null
+    const startTime = Date.now()
 
     try {
+      console.log(`Starting calculation of factor ${factorName} for ${symbol}`)
+
       switch (factorName) {
         // ==================== MOMENTUM FACTORS ====================
         case 'momentum_1m':
@@ -261,15 +282,24 @@ export class FactorLibrary {
           return null
       }
 
+      const calculationTime = Date.now() - startTime
+
       // Cache result if valid
       if (result !== null && !isNaN(result)) {
         this.factorCache.set(cacheKey, { value: result, timestamp: Date.now() })
+        console.log(`✅ Factor ${factorName} for ${symbol}: ${result.toFixed(4)} (calculated in ${calculationTime}ms)`)
+      } else {
+        console.warn(`⚠️ Factor ${factorName} for ${symbol}: returned null/NaN (${calculationTime}ms)`)
       }
 
       return result
 
     } catch (error) {
-      console.error(`Error calculating factor ${factorName} for ${symbol}:`, error)
+      const calculationTime = Date.now() - startTime
+      console.error(`❌ Error calculating factor ${factorName} for ${symbol} (${calculationTime}ms):`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      })
       return null
     }
   }
@@ -1092,14 +1122,15 @@ export class FactorLibrary {
   }
 
   private calculateEVEBITDAScore(fundamentalData?: FundamentalDataPoint): number | null {
-    if (!fundamentalData?.evEbitda) return null
+    // Check multiple possible property names for EV/EBITDA
+    const evEbitda = fundamentalData?.evEbitda || fundamentalData?.evToEbitda
 
-    const evEbitda = fundamentalData.evEbitda
-    if (evEbitda <= 0) return null
+    if (!evEbitda || evEbitda <= 0) return null
 
     // Lower EV/EBITDA ratios get higher scores
-    const normalizedRatio = Math.max(0, Math.min(20, evEbitda))
-    return 1 - (normalizedRatio / 20)
+    // Typical range is 5-25, with 8-15 being reasonable
+    const normalizedRatio = Math.max(0, Math.min(25, evEbitda))
+    return Math.max(0, Math.min(1, 1 - (normalizedRatio / 25)))
   }
 
   private calculatePriceToSalesScore(
@@ -1119,38 +1150,52 @@ export class FactorLibrary {
   // ==================== QUALITY CALCULATIONS ====================
 
   private calculateROEScore(roe?: number): number | null {
-    if (roe === undefined) return null
+    if (roe === undefined || !isFinite(roe)) return null
 
     // Higher ROE gets higher scores
-    // Normalize around typical ROE ranges (-20% to 40%)
-    const normalizedROE = Math.max(-0.2, Math.min(0.4, roe))
-    return (normalizedROE + 0.2) / 0.6
+    // ROE above 15% is excellent, above 20% is exceptional
+    // Normalize around typical ROE ranges (-50% to 50%)
+    const normalizedROE = Math.max(-0.5, Math.min(0.5, roe))
+    const score = Math.max(0, Math.min(1, (normalizedROE + 0.5) / 1.0))
+
+    return score
   }
 
   private calculateDebtEquityScore(debtToEquity?: number): number | null {
-    if (debtToEquity === undefined || debtToEquity < 0) return null
+    if (debtToEquity === undefined || debtToEquity < 0 || !isFinite(debtToEquity)) return null
 
     // Lower debt-to-equity ratios get higher scores
-    // Normalize around typical D/E ranges (0-3)
-    const normalizedDE = Math.max(0, Math.min(3, debtToEquity))
-    return 1 - (normalizedDE / 3)
+    // D/E under 0.3 is excellent, under 0.6 is good, over 2.0 is concerning
+    // Normalize around typical D/E ranges (0-5)
+    const normalizedDE = Math.max(0, Math.min(5, debtToEquity))
+    const score = Math.max(0, Math.min(1, 1 - (normalizedDE / 5)))
+
+    return score
   }
 
   private calculateCurrentRatioScore(fundamentalData?: FundamentalDataPoint): number | null {
-    if (!fundamentalData?.currentRatio) return null
+    if (!fundamentalData?.currentRatio || !isFinite(fundamentalData.currentRatio)) return null
 
     const currentRatio = fundamentalData.currentRatio
 
-    // Optimal current ratio is around 2-3
-    if (currentRatio < 1) return 0 // Poor liquidity
-    if (currentRatio > 5) return 0.3 // Too much cash, inefficient
+    // Current ratio scoring with more realistic ranges
+    if (currentRatio < 0.5) return 0 // Very poor liquidity
+    if (currentRatio < 1) return 0.2 // Poor liquidity but not zero
+    if (currentRatio > 10) return 0.3 // Excessive cash, inefficient
 
-    // Peak score around 2-3
-    if (currentRatio >= 2 && currentRatio <= 3) return 1
+    // Optimal current ratio is around 1.5-4
+    if (currentRatio >= 1.5 && currentRatio <= 4) {
+      // Peak score in optimal range
+      return Math.min(1, 0.8 + (Math.min(currentRatio, 2.5) - 1.5) * 0.2)
+    }
 
-    // Scale down for values outside optimal range
-    if (currentRatio < 2) return currentRatio / 2
-    return 1 - ((currentRatio - 3) / 2) * 0.7
+    // Scale for values outside optimal range
+    if (currentRatio < 1.5) {
+      return Math.max(0.2, currentRatio / 1.5 * 0.8)
+    }
+
+    // currentRatio > 4
+    return Math.max(0.3, 1 - ((currentRatio - 4) / 6) * 0.7)
   }
 
   private calculateInterestCoverageScore(fundamentalData?: FundamentalDataPoint): number | null {
@@ -1264,33 +1309,57 @@ export class FactorLibrary {
   // ==================== VOLATILITY CALCULATIONS ====================
 
   private async calculateVolatilityScore(symbol: string, periods: number): Promise<number | null> {
+    console.log(`Calculating ${periods}-day volatility for ${symbol}`)
+
     const historicalData = await this.getHistoricalData(symbol, periods)
     if (!historicalData || historicalData.length < periods) {
+      console.warn(`Insufficient historical data for ${symbol}: got ${historicalData?.length || 0}, needed ${periods}`)
       return null
     }
 
     // Calculate daily returns
     const returns: number[] = []
-    for (let i = 0; i < periods - 1; i++) {
+    for (let i = 0; i < Math.min(periods - 1, historicalData.length - 1); i++) {
       const currentPrice = historicalData[i].close
       const previousPrice = historicalData[i + 1].close
-      if (previousPrice > 0) {
-        returns.push((currentPrice - previousPrice) / previousPrice)
+
+      if (previousPrice > 0 && currentPrice > 0) {
+        const dailyReturn = (currentPrice - previousPrice) / previousPrice
+        returns.push(dailyReturn)
       }
     }
 
-    if (returns.length === 0) return null
+    if (returns.length === 0) {
+      console.warn(`No valid returns calculated for ${symbol}`)
+      return null
+    }
+
+    console.log(`Calculated ${returns.length} daily returns for ${symbol}`)
 
     // Calculate volatility (standard deviation of returns)
     const meanReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length
     const variance = returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / returns.length
-    const volatility = Math.sqrt(variance) * Math.sqrt(252) // Annualized
+    const dailyVolatility = Math.sqrt(variance)
 
-    // Normalize volatility (typical range 0.1 to 1.0)
-    const normalizedVol = Math.max(0, Math.min(1, volatility))
+    // Annualized volatility (assuming 252 trading days per year)
+    const annualizedVolatility = dailyVolatility * Math.sqrt(252)
 
-    // Lower volatility gets higher score for quality-focused strategies
-    return 1 - normalizedVol
+    console.log(`${symbol} volatility stats:`, {
+      periods: returns.length,
+      dailyVol: dailyVolatility.toFixed(4),
+      annualizedVol: annualizedVolatility.toFixed(4),
+      meanReturn: meanReturn.toFixed(4)
+    })
+
+    // Normalize volatility for scoring
+    // Typical stock volatility ranges from 0.1 (10%) to 1.0 (100%) annualized
+    // Lower volatility = higher score (for quality/stability focused strategies)
+    const normalizedVol = Math.max(0, Math.min(1, annualizedVolatility))
+    const volatilityScore = 1 - normalizedVol
+
+    console.log(`${symbol} volatility score: ${volatilityScore.toFixed(3)} (lower volatility = higher score)`)
+
+    return Math.max(0, Math.min(1, volatilityScore))
   }
 
   private async calculateVolatilityRatio(symbol: string): Promise<number | null> {
@@ -1352,20 +1421,93 @@ export class FactorLibrary {
     return 1 - ((payoutRatio - 0.6) / 0.4)
   }
 
+  private calculateOperatingMarginScore(operatingMargin?: number): number | null {
+    if (operatingMargin === undefined) return null
+
+    // Higher operating margin is better
+    // Normalize around typical operating margin ranges (0% to 30%)
+    const normalizedMargin = Math.max(0, Math.min(0.3, operatingMargin))
+    return normalizedMargin / 0.3
+  }
+
+  private calculateNetMarginScore(netMargin?: number): number | null {
+    if (netMargin === undefined) return null
+
+    // Higher net profit margin is better
+    // Normalize around typical net margin ranges (0% to 25%)
+    const normalizedMargin = Math.max(0, Math.min(0.25, netMargin))
+    return normalizedMargin / 0.25
+  }
+
+  private calculatePriceToSalesDirectScore(priceToSalesRatio?: number): number | null {
+    if (priceToSalesRatio === undefined || priceToSalesRatio <= 0 || !isFinite(priceToSalesRatio)) return null
+
+    // Lower P/S ratios get higher scores
+    // Normalize around typical P/S ranges (0.1-15)
+    // Values under 2 are generally considered good value
+    const normalizedPS = Math.max(0.1, Math.min(15, priceToSalesRatio))
+    const score = Math.max(0, Math.min(1, 1 - ((normalizedPS - 0.1) / 14.9)))
+
+    return score
+  }
+
   // ==================== COMPOSITE CALCULATIONS ====================
 
   private calculateQualityComposite(fundamentalData?: FundamentalDataPoint): number | null {
-    const factors: (number | null)[] = [
-      this.calculateROEScore(fundamentalData?.roe),
-      this.calculateDebtEquityScore(fundamentalData?.debtToEquity),
-      this.calculateCurrentRatioScore(fundamentalData),
-      this.calculateInterestCoverageScore(fundamentalData)
+    if (!fundamentalData) {
+      console.warn('No fundamental data available for quality composite calculation')
+      return null
+    }
+
+    console.log(`Calculating quality composite for data:`, {
+      roe: fundamentalData.roe,
+      debtToEquity: fundamentalData.debtToEquity,
+      currentRatio: fundamentalData.currentRatio,
+      operatingMargin: fundamentalData.operatingMargin,
+      netProfitMargin: fundamentalData.netProfitMargin,
+      grossProfitMargin: fundamentalData.grossProfitMargin
+    })
+
+    const factors: { name: string; value: number | null; weight: number }[] = [
+      // ROE - Return on Equity (most important quality metric)
+      { name: 'ROE', value: this.calculateROEScore(fundamentalData.roe), weight: 0.30 },
+
+      // Debt management - critical for quality assessment
+      { name: 'Debt/Equity', value: this.calculateDebtEquityScore(fundamentalData.debtToEquity), weight: 0.25 },
+
+      // Liquidity and financial health
+      { name: 'Current Ratio', value: this.calculateCurrentRatioScore(fundamentalData), weight: 0.20 },
+
+      // Profitability margins - use both operating and gross margins with fallback
+      { name: 'Operating Margin', value: this.calculateOperatingMarginScore(fundamentalData.operatingMargin), weight: 0.15 },
+      { name: 'Gross Profit Margin', value: this.calculateOperatingMarginScore(fundamentalData.grossProfitMargin), weight: 0.10 }
     ]
 
-    const validFactors = factors.filter((f): f is number => f !== null)
-    if (validFactors.length === 0) return null
+    let totalWeightedScore = 0
+    let totalWeight = 0
+    let validFactors = 0
 
-    return validFactors.reduce((sum, f) => sum + f, 0) / validFactors.length
+    factors.forEach(factor => {
+      if (factor.value !== null && !isNaN(factor.value) && isFinite(factor.value)) {
+        totalWeightedScore += factor.value * factor.weight
+        totalWeight += factor.weight
+        validFactors++
+        console.log(`Quality factor ${factor.name}: ${factor.value.toFixed(3)} (weight: ${factor.weight})`)
+      } else {
+        console.log(`Quality factor ${factor.name}: No valid data (${factor.value})`)
+      }
+    })
+
+    // Require at least 2 valid factors for quality assessment
+    if (validFactors < 2) {
+      console.warn(`Insufficient quality factors: only ${validFactors} valid factors found`)
+      return null
+    }
+
+    const qualityScore = totalWeightedScore / totalWeight
+    console.log(`Quality composite score: ${qualityScore.toFixed(3)} (based on ${validFactors} factors, ${totalWeight.toFixed(2)} total weight)`)
+
+    return Math.max(0, Math.min(1, qualityScore))
   }
 
   private async calculateMomentumComposite(
@@ -1373,34 +1515,103 @@ export class FactorLibrary {
     marketData: MarketDataPoint,
     technicalData?: TechnicalDataPoint
   ): Promise<number | null> {
-    const factors: (number | null)[] = [
-      await this.calculateMomentum(symbol, 21),
-      await this.calculateMomentum(symbol, 63),
-      this.calculateRSIScore(technicalData?.rsi),
-      this.calculateMACDScore(technicalData?.macd)
+    console.log(`Calculating momentum composite for ${symbol}`)
+
+    const factors: { name: string; value: number | null; weight: number }[] = [
+      // Short-term momentum (3 weeks)
+      { name: '1-month momentum', value: await this.calculateMomentum(symbol, 21), weight: 0.25 },
+
+      // Medium-term momentum (3 months)
+      { name: '3-month momentum', value: await this.calculateMomentum(symbol, 63), weight: 0.30 },
+
+      // Long-term momentum (6 months)
+      { name: '6-month momentum', value: await this.calculateMomentum(symbol, 126), weight: 0.25 },
+
+      // Technical momentum indicators
+      { name: 'RSI', value: this.calculateRSIScore(technicalData?.rsi), weight: 0.10 },
+      { name: 'MACD', value: this.calculateMACDScore(technicalData?.macd), weight: 0.10 }
     ]
 
-    const validFactors = factors.filter((f): f is number => f !== null)
-    if (validFactors.length === 0) return null
+    let totalWeightedScore = 0
+    let totalWeight = 0
 
-    return validFactors.reduce((sum, f) => sum + f, 0) / validFactors.length
+    for (const factor of factors) {
+      if (factor.value !== null && !isNaN(factor.value)) {
+        totalWeightedScore += factor.value * factor.weight
+        totalWeight += factor.weight
+        console.log(`Momentum factor ${factor.name}: ${factor.value.toFixed(3)} (weight: ${factor.weight})`)
+      } else {
+        console.log(`Momentum factor ${factor.name}: No data available`)
+      }
+    }
+
+    if (totalWeight === 0) {
+      console.warn(`No valid momentum factors found for ${symbol}`)
+      return null
+    }
+
+    const momentumScore = totalWeightedScore / totalWeight
+    console.log(`Momentum composite score for ${symbol}: ${momentumScore.toFixed(3)} (based on ${totalWeight.toFixed(2)} total weight)`)
+
+    return Math.max(0, Math.min(1, momentumScore))
   }
 
   private calculateValueComposite(
     fundamentalData?: FundamentalDataPoint,
     marketData?: MarketDataPoint
   ): number | null {
-    const factors: (number | null)[] = [
-      this.calculatePEScore(fundamentalData?.peRatio),
-      this.calculatePBScore(fundamentalData?.pbRatio),
-      this.calculateEVEBITDAScore(fundamentalData),
-      this.calculatePriceToSalesScore(fundamentalData, marketData)
+    if (!fundamentalData) {
+      console.warn('No fundamental data available for value composite calculation')
+      return null
+    }
+
+    console.log(`Calculating value composite for data:`, {
+      peRatio: fundamentalData.peRatio,
+      pbRatio: fundamentalData.pbRatio,
+      priceToSales: fundamentalData.priceToSales,
+      evEbitda: fundamentalData.evEbitda,
+      marketCap: marketData?.marketCap
+    })
+
+    const factors: { name: string; value: number | null; weight: number }[] = [
+      // P/E Ratio - Most important valuation metric
+      { name: 'P/E Ratio', value: this.calculatePEScore(fundamentalData.peRatio), weight: 0.35 },
+
+      // P/B Ratio - Book value based valuation
+      { name: 'P/B Ratio', value: this.calculatePBScore(fundamentalData.pbRatio), weight: 0.25 },
+
+      // Price-to-Sales - Revenue based valuation (use correct property name)
+      { name: 'P/S Ratio', value: this.calculatePriceToSalesDirectScore(fundamentalData.priceToSales), weight: 0.25 },
+
+      // EV/EBITDA - Enterprise value metric
+      { name: 'EV/EBITDA', value: this.calculateEVEBITDAScore(fundamentalData), weight: 0.15 }
     ]
 
-    const validFactors = factors.filter((f): f is number => f !== null)
-    if (validFactors.length === 0) return null
+    let totalWeightedScore = 0
+    let totalWeight = 0
+    let validFactors = 0
 
-    return validFactors.reduce((sum, f) => sum + f, 0) / validFactors.length
+    factors.forEach(factor => {
+      if (factor.value !== null && !isNaN(factor.value) && isFinite(factor.value)) {
+        totalWeightedScore += factor.value * factor.weight
+        totalWeight += factor.weight
+        validFactors++
+        console.log(`Value factor ${factor.name}: ${factor.value.toFixed(3)} (weight: ${factor.weight})`)
+      } else {
+        console.log(`Value factor ${factor.name}: No valid data (${factor.value})`)
+      }
+    })
+
+    // Require at least 2 valid factors for value assessment
+    if (validFactors < 2) {
+      console.warn(`Insufficient value factors: only ${validFactors} valid factors found`)
+      return null
+    }
+
+    const valueScore = totalWeightedScore / totalWeight
+    console.log(`Value composite score: ${valueScore.toFixed(3)} (based on ${validFactors} factors, ${totalWeight.toFixed(2)} total weight)`)
+
+    return Math.max(0, Math.min(1, valueScore))
   }
 
   // ==================== UTILITY METHODS ====================
@@ -1430,9 +1641,37 @@ export class FactorLibrary {
   }
 
   private async fetchHistoricalPrices(symbol: string, periods: number): Promise<HistoricalPrice[]> {
-    // Placeholder for historical data fetching
-    // This would integrate with your existing MCP sources
-    return []
+    try {
+      console.log(`Fetching ${periods} days of historical data for ${symbol}`)
+
+      // Get historical OHLC data from TwelveDataAPI
+      const historicalData = await this.twelveDataAPI.getHistoricalOHLC(symbol, periods)
+
+      if (!historicalData || historicalData.length === 0) {
+        console.warn(`No historical data available for ${symbol}`)
+        return []
+      }
+
+      // Convert HistoricalOHLC to our HistoricalPrice format
+      const convertedData: HistoricalPrice[] = historicalData.map(ohlc => ({
+        timestamp: ohlc.timestamp,
+        open: ohlc.open,
+        high: ohlc.high,
+        low: ohlc.low,
+        close: ohlc.close,
+        volume: ohlc.volume
+      }))
+
+      // Sort by timestamp descending (most recent first) for momentum calculations
+      convertedData.sort((a, b) => b.timestamp - a.timestamp)
+
+      console.log(`Successfully fetched ${convertedData.length} historical price points for ${symbol}`)
+      return convertedData
+
+    } catch (error) {
+      console.error(`Error fetching historical data for ${symbol}:`, error)
+      return []
+    }
   }
 
   /**

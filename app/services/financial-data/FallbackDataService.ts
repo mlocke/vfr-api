@@ -766,8 +766,9 @@ export class FallbackDataService implements FinancialDataProvider {
     const sanitizedSymbol = symbol.toUpperCase()
 
     // Get available sources that support fundamental ratios
+    // Yahoo Finance now provides fundamental data via yfinance Python library
     const fundamentalSources = this.dataSources.filter(source =>
-      ['Financial Modeling Prep', 'EODHD API'].includes(source.name) &&
+      ['Financial Modeling Prep', 'EODHD API', 'Yahoo Finance'].includes(source.name) &&
       this.canMakeRequest(source) &&
       source.provider.getFundamentalRatios
     )

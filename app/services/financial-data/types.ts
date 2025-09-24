@@ -19,6 +19,7 @@ export interface StockData {
   afterHoursPrice?: number
   afterHoursChange?: number
   afterHoursChangePercent?: number
+  sector?: string
   timestamp: number
   source: string
 }
@@ -61,6 +62,18 @@ export interface FundamentalRatios {
   netProfitMargin?: number
   dividendYield?: number
   payoutRatio?: number
+  interestCoverage?: number
+  revenueGrowth?: number
+  earningsGrowth?: number
+  eps?: number
+  bookValuePerShare?: number
+  beta?: number
+  marketCap?: number
+  enterpriseValue?: number
+  sharesOutstanding?: number
+  sector?: string
+  industry?: string
+  lastUpdated?: string
   timestamp: number
   source: string
   period?: 'annual' | 'quarterly' | 'ttm'

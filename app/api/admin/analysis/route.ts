@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { financialDataService, StockData } from '../../../services/financial-data'
+import { financialDataService, StockData, FundamentalRatios, HistoricalOHLC } from '../../../services/financial-data'
 import { TechnicalIndicatorService } from '../../../services/technical-analysis/TechnicalIndicatorService'
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { OHLCData } from '../../../services/technical-analysis/types'
@@ -34,6 +34,7 @@ const AdminAnalysisRequestSchema = z.object({
 
 // Enhanced response format with comprehensive analysis
 interface AdminAnalysisStockData extends StockData {
+  fundamentals?: FundamentalRatios
   technicalAnalysis?: {
     score: number
     trend: {
@@ -350,7 +351,7 @@ async function enhanceStockWithComprehensiveAnalysis(stock: StockData): Promise<
   const enhancedStock: AdminAnalysisStockData = { ...stock }
 
   // Get historical data for technical analysis
-  let historicalData = []
+  let historicalData: HistoricalOHLC[] = []
   try {
     historicalData = await financialDataService.getHistoricalOHLC(stock.symbol, 50)
   } catch (error) {

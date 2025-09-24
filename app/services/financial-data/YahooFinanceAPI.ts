@@ -4,7 +4,12 @@
  * Note: Using unofficial Yahoo Finance API endpoints
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis, FundamentalRatios } from './types'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import path from 'path'
+
+const execAsync = promisify(exec)
 
 export class YahooFinanceAPI implements FinancialDataProvider {
   name = 'Yahoo Finance'
@@ -65,6 +70,99 @@ export class YahooFinanceAPI implements FinancialDataProvider {
       return null
     } catch (error) {
       console.error(`Yahoo Finance company info error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Get fundamental ratios using yfinance Python library
+   * This provides comprehensive fundamental data for free
+   */
+  async getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null> {
+    try {
+      console.log(`📊 Fetching fundamental data from yfinance for ${symbol}`)
+
+      // Path to the Python script
+      const pythonScriptPath = path.join(process.cwd(), 'scripts', 'fetch_fundamentals.py')
+
+      // Execute Python script with the symbol
+      const { stdout, stderr } = await execAsync(
+        `python3 "${pythonScriptPath}" "${symbol}"`,
+        { timeout: 15000 } // 15 second timeout
+      )
+
+      if (stderr && !stderr.includes('FutureWarning')) {
+        console.warn(`⚠️ yfinance stderr for ${symbol}:`, stderr)
+      }
+
+      // Parse JSON response
+      const data = JSON.parse(stdout)
+
+      if (!data.success) {
+        console.error(`❌ yfinance failed for ${symbol}:`, data.error)
+        return null
+      }
+
+      // Map yfinance data to our FundamentalRatios interface
+      const fundamentalRatios: FundamentalRatios = {
+        symbol: data.symbol,
+
+        // Valuation Ratios
+        peRatio: data.peRatio,
+        pegRatio: data.pegRatio,
+        pbRatio: data.pbRatio,
+        priceToSales: data.priceToSales,
+        priceToFreeCashFlow: data.priceToFreeCashFlow,
+        // evToRevenue and evToEbitda might need to be added to FundamentalRatios type
+        // For now, we'll skip them to avoid TypeScript errors
+
+        // Financial Health
+        debtToEquity: data.debtToEquity,
+        currentRatio: data.currentRatio,
+        quickRatio: data.quickRatio,
+        interestCoverage: data.interestCoverage,
+
+        // Profitability
+        roe: data.roe,
+        roa: data.roa,
+        grossProfitMargin: data.grossProfitMargin,
+        operatingMargin: data.operatingMargin,
+        netProfitMargin: data.netProfitMargin,
+
+        // Dividend Metrics
+        dividendYield: data.dividendYield,
+        payoutRatio: data.payoutRatio,
+
+        // Growth Metrics
+        revenueGrowth: data.revenueGrowth,
+        earningsGrowth: data.earningsGrowth,
+        eps: data.earningsPerShare,
+        bookValuePerShare: data.bookValue,
+
+        // Additional Info
+        beta: data.beta,
+        marketCap: data.marketCap,
+        enterpriseValue: data.enterpriseValue,
+        sharesOutstanding: data.sharesOutstanding,
+
+        // Metadata
+        sector: data.sector,
+        industry: data.industry,
+        lastUpdated: new Date().toISOString(),
+        timestamp: Date.now(),
+        source: 'yahoo_finance'
+      }
+
+      console.log(`✅ yfinance fundamental data retrieved for ${symbol}:`, {
+        peRatio: fundamentalRatios.peRatio?.toFixed(2),
+        roe: fundamentalRatios.roe ? (fundamentalRatios.roe * 100).toFixed(2) + '%' : 'N/A',
+        debtToEquity: fundamentalRatios.debtToEquity?.toFixed(2)
+      })
+
+      return fundamentalRatios
+
+    } catch (error) {
+      console.error(`❌ Error fetching yfinance data for ${symbol}:`, error)
       return null
     }
   }
