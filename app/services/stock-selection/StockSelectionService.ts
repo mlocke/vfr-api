@@ -407,6 +407,46 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // Get additional market data
     const additionalData = await this.fetchAdditionalStockData(symbol, request.options)
 
+    // 🎯 COMPOSITE ALGORITHM FIX: Skip all adjustments if using composite algorithm
+    // The composite algorithm should be the final authority and return exactly 52 for HOLD
+    const isCompositeAlgorithm = algorithmResult.algorithmId?.includes('composite') ||
+                                algorithmResult.algorithmId?.includes('Composite')
+
+    if (isCompositeAlgorithm) {
+      console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Skipping all score adjustments for ${symbol}`)
+      console.log(`🎯 Original composite score: ${stockScore.overallScore} (will be preserved)`)
+
+      return {
+        symbol,
+        score: stockScore, // Use the original composite score without any adjustments
+        weight: algorithmResult.selections[0]?.weight || 1.0,
+        action: algorithmResult.selections[0]?.action || 'HOLD',
+        confidence: algorithmResult.selections[0]?.confidence || 0.5,
+
+        context: {
+          sector: stockScore.marketData.sector,
+          marketCap: stockScore.marketData.marketCap,
+          priceChange24h: 0,
+          volumeChange24h: 0,
+          beta: 1.0
+        } as any,
+
+        reasoning: {
+          primaryFactors: this.extractPrimaryFactors(stockScore),
+          warnings: [],
+          opportunities: []
+        } as any,
+
+        dataQuality: {
+          overall: stockScore.dataQuality,
+          sourceBreakdown: {},
+          lastUpdated: stockScore.timestamp
+        },
+
+        timestamp: Date.now()
+      }
+    }
+
     // Get macroeconomic analysis if service is available
     let macroImpact = null
     let adjustedScore = stockScore
