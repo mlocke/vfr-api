@@ -276,7 +276,9 @@ export class FactorLibrary {
         // ==================== COMPOSITE FACTORS ====================
         case 'composite':
           // MAIN COMPOSITE ALGORITHM - matches debug algorithm exactly
-          result = await this.calculateMainComposite(symbol, marketData, fundamentalData, technicalData)
+          // Extract sentiment score from technicalData if available (passed by AlgorithmEngine)
+          const sentimentScore = (technicalData as any)?.sentimentScore
+          result = await this.calculateMainComposite(symbol, marketData, fundamentalData, technicalData, sentimentScore)
           break
         case 'quality_composite':
           result = this.calculateQualityComposite(fundamentalData)
@@ -1607,30 +1609,32 @@ export class FactorLibrary {
   /**
    * Main composite algorithm with real factor calculations and proper utilization tracking
    * Returns calculated score based on actual data analysis
+   * INCLUDES SENTIMENT INTEGRATION (10% weight as per roadmap)
    */
   private async calculateMainComposite(
     symbol: string,
     marketData: MarketDataPoint,
     fundamentalData?: FundamentalDataPoint,
-    technicalData?: TechnicalDataPoint
+    technicalData?: TechnicalDataPoint,
+    sentimentScore?: number
   ): Promise<number> {
-    console.log(`🎯 Calculating MAIN composite score for ${symbol} with real factor analysis`)
+    console.log(`🎯 Calculating MAIN composite score for ${symbol} with real factor analysis + sentiment`)
 
     let totalScore = 0
     let totalWeight = 0
     const factorContributions: string[] = []
 
-    // Technical Analysis composite (weight: 0.4) - The critical 40% technical weighting!
+    // Technical Analysis composite (weight: 0.35) - Reduced from 40% to accommodate sentiment
     const technicalScore = await this.calculateTechnicalOverallScore(symbol)
     if (technicalScore !== null) {
-      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 0.4) ⚡`)
-      totalScore += technicalScore * 0.4
-      totalWeight += 0.4
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 0.35) ⚡`)
+      totalScore += technicalScore * 0.35
+      totalWeight += 0.35
       factorContributions.push('technicalAnalysis', 'technical_overall_score')
     } else {
       console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.4
-      totalWeight += 0.4
+      totalScore += 0.5 * 0.35
+      totalWeight += 0.35
     }
 
     // Fundamental Analysis composite (weight: 0.25) - Quality factors
@@ -1646,36 +1650,49 @@ export class FactorLibrary {
       totalWeight += 0.25
     }
 
-    // Value composite (weight: 0.25) - Valuation metrics
+    // Value composite (weight: 0.20) - Reduced from 25% to accommodate sentiment
     const valueScore = this.calculateValueComposite(fundamentalData, marketData)
     if (valueScore !== null) {
-      console.log(`Value Analysis: ${valueScore.toFixed(3)} (weight: 0.25)`)
-      totalScore += valueScore * 0.25
-      totalWeight += 0.25
+      console.log(`Value Analysis: ${valueScore.toFixed(3)} (weight: 0.20)`)
+      totalScore += valueScore * 0.20
+      totalWeight += 0.20
       factorContributions.push('fundamentalData', 'value_composite')
     } else {
       console.log('Value Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.25
-      totalWeight += 0.25
+      totalScore += 0.5 * 0.20
+      totalWeight += 0.20
     }
 
-    // Volatility/Risk (weight: 0.1) - Risk assessment
+    // 🆕 SENTIMENT ANALYSIS (weight: 0.10) - NEW INTEGRATION!
+    if (sentimentScore !== undefined && sentimentScore !== null) {
+      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 0.10) - INTEGRATED!`)
+      totalScore += sentimentScore * 0.10
+      totalWeight += 0.10
+      factorContributions.push('sentimentAnalysis', 'sentiment_composite')
+    } else {
+      console.log('📰 Sentiment Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.10
+      totalWeight += 0.10
+    }
+
+    // Volatility/Risk (weight: 0.10) - Risk assessment
     const riskScore = await this.calculateVolatilityScore(symbol, 30)
     if (riskScore !== null) {
-      console.log(`Risk Assessment: ${riskScore.toFixed(3)} (weight: 0.1)`)
-      totalScore += riskScore * 0.1
-      totalWeight += 0.1
+      console.log(`Risk Assessment: ${riskScore.toFixed(3)} (weight: 0.10)`)
+      totalScore += riskScore * 0.10
+      totalWeight += 0.10
       factorContributions.push('volatility_30d')
     } else {
       console.log('Risk Assessment: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.1
-      totalWeight += 0.1
+      totalScore += 0.5 * 0.10
+      totalWeight += 0.10
     }
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
     console.log(`🎯 Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
+    console.log(`   Total weights: Technical(35%) + Fundamental(25%) + Value(20%) + Sentiment(10%) + Risk(10%) = 100%`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
     // Store factor contributions for utilization tracking

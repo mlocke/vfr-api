@@ -18,6 +18,8 @@ import { QualityScore, ConflictResolutionStrategy } from '../types/core-types'
 import { FallbackDataService } from '../financial-data/FallbackDataService'
 import { FactorLibrary } from './FactorLibrary'
 import { AlgorithmCache } from './AlgorithmCache'
+import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
+import { RedisCache } from '../cache/RedisCache'
 
 interface MarketDataPoint {
   symbol: string
@@ -39,20 +41,33 @@ interface FundamentalDataPoint {
   [key: string]: any
 }
 
+interface TechnicalDataPoint {
+  symbol: string
+  rsi?: number
+  macd?: { signal: number; histogram: number; macd: number }
+  sma?: { [period: string]: number }
+  volatility?: number
+  sentimentScore?: number // 🆕 SENTIMENT INTEGRATION
+  [key: string]: any
+}
+
 export class AlgorithmEngine {
   private fallbackDataService: FallbackDataService
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
+  private sentimentService: SentimentAnalysisService
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
     fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
-    cache: AlgorithmCache
+    cache: AlgorithmCache,
+    sentimentService?: SentimentAnalysisService
   ) {
     this.fallbackDataService = fallbackDataService
     this.factorLibrary = factorLibrary
     this.cache = cache
+    this.sentimentService = sentimentService || new SentimentAnalysisService(new RedisCache())
   }
 
   /**
@@ -428,11 +443,30 @@ export class AlgorithmEngine {
       console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Using enhanced composite factor calculation`)
 
       try {
+        // 🆕 PRE-FETCH SENTIMENT DATA for composite algorithm
+        let sentimentScore: number | undefined
+        try {
+          console.log(`📰 Pre-fetching sentiment data for ${symbol}...`)
+          const sentimentResult = await this.sentimentService.getSentimentIndicators(symbol)
+          sentimentScore = sentimentResult ? sentimentResult.aggregatedScore : undefined
+          console.log(`📰 Sentiment pre-fetched for ${symbol}: ${sentimentScore}`)
+        } catch (sentimentError) {
+          console.warn(`Failed to fetch sentiment for ${symbol}:`, sentimentError)
+          sentimentScore = undefined // Will use fallback in FactorLibrary
+        }
+
+        // Create technical data with sentiment score for FactorLibrary
+        const technicalDataWithSentiment: TechnicalDataPoint = {
+          symbol,
+          sentimentScore
+        }
+
         const compositeScore = await this.factorLibrary.calculateFactor(
           'composite',
           symbol,
           marketData,
-          fundamentalData
+          fundamentalData,
+          technicalDataWithSentiment
         )
 
         if (compositeScore !== null && !isNaN(compositeScore)) {

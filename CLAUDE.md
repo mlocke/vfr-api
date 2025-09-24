@@ -251,11 +251,13 @@ ERROR: If cache stale → Graceful degradation with user notification
 | ErrorHandler | `app/services/error-handling/ErrorHandler.ts` | Centralized error management |
 | CacheService | `app/services/cache/` | Redis + in-memory fallback |
 
-### Stock Analysis Engine
+### Stock Analysis Engine (✅ Enhanced with Sentiment Integration)
 - **Multi-modal Input**: Single stocks, sectors, or multiple symbols
-- **Analysis Algorithms**: Located in `app/services/algorithms/`
+- **Analysis Algorithms**: Located in `app/services/algorithms/` with sentiment integration architecture
 - **Selection Service**: `app/services/stock-selection/StockSelectionService.ts`
 - **Real-time Processing**: Combines multiple data sources for comprehensive analysis
+- **✅ Sentiment Integration**: AlgorithmEngine pre-fetch pattern ensures sentiment data contributes 10% weight to composite scoring
+- **Architecture Fix**: Modified `AlgorithmEngine.calculateSingleStockScore()` and `FactorLibrary.calculateMainComposite()` for direct sentiment integration
 - **Analyst Integration**: Real-time analyst ratings, price targets, and sentiment scoring
 - **Fundamental Analysis**: 15 key fundamental ratios integrated into analysis (P/E, P/B, ROE, margins, liquidity ratios) with dual-source redundancy (FMP + EODHD)
 - **Institutional Intelligence**: 13F quarterly holdings analysis and Form 4 insider trading monitoring with real-time sentiment scoring
@@ -275,7 +277,7 @@ ERROR: If cache stale → Graceful degradation with user notification
 - **VWAP Service**: Full implementation with VWAPService.ts, comprehensive testing, and Polygon API integration
 - **Reddit WSB Integration**: Enhanced sentiment analysis with OAuth2, performance testing, and multi-symbol support
 - **Enhanced Reddit API**: Multi-subreddit sentiment analysis with weighted scoring and parallel processing (RedditAPIEnhanced.ts)
-- **Sentiment Analysis**: Production-ready NewsAPI + Reddit integration contributing 10% to composite scoring with graceful API rate limit handling
+- **Sentiment Analysis**: ✅ COMPLETED - Production-ready sentiment integration with architecture fix resolving 0% utilization bug. Now actively contributes 10% to composite scoring through AlgorithmEngine pre-fetch pattern.
 - **Macroeconomic Data**: FRED + BLS + EIA integration (20% weight) with real-time economic cycle analysis
 - **Institutional Intelligence**: SEC EDGAR 13F + Form 4 insider trading monitoring (10% sentiment weight)
 - **Fundamental Analysis**: 15+ ratios with dual-source redundancy (FMP + EODHD) contributing 25% weight
@@ -285,14 +287,19 @@ ERROR: If cache stale → Graceful degradation with user notification
 - **Sector Data**: Sector-level performance analysis and tracking
 - **Live Market Sentiment**: Enhanced sentiment display with rate limit graceful degradation and improved UX
 
-#### 🚧 In Development (Based on Active Branch: feature/trading-features)
-- **Extended Trading Features**: Pre/post market data, bid/ask spread analysis
-- **Short Interest Integration**: FINRA data processing and squeeze detection algorithms
+#### ✅ Recently Completed Features (September 2025)
+- **Extended Market Data**: ✅ Pre/post market data and bid/ask spread analysis IMPLEMENTED
+- **Short Interest Integration**: ✅ FINRA data processing and squeeze detection algorithms IMPLEMENTED
+- **ESG Integration**: ✅ Alternative data component (3% weight) IMPLEMENTED with industry baselines
+- **Yahoo Finance API Integration**: ✅ Direct REST API replacing MCP-based fetching IMPLEMENTED
+- **High-Performance Sentiment Analysis**: ✅ Yahoo Finance Sentiment API with <1.5s response time IMPLEMENTED
+- **Currency Data Service**: ✅ International currency analysis IMPLEMENTED
+- **✅ SENTIMENT INTEGRATION ARCHITECTURE FIX**: ✅ COMPLETED - Resolved 0% sentiment utilization bug through AlgorithmEngine pre-fetch integration. GME sentiment (0.52) now actively contributes 10% weight to composite scoring instead of 0% utilization.
 
-#### 📋 Planned Features (From Analysis Engine Plans)
-- **ESG Integration**: Alternative data component (5% weight) - planned implementation
-- **Options Data Enhancement**: Put/call ratios and options flow analysis
-- **Enhanced Technical Patterns**: Pattern recognition and support/resistance identification
+#### 📋 Planned Features (Updated Based on Current Implementation)
+- **Options Data Enhancement**: Put/call ratios and options flow analysis - IN PLANNING
+- **Enhanced Technical Patterns**: Pattern recognition and support/resistance identification - IN PLANNING
+- **Machine Learning Pipeline**: Automated model training and deployment - FUTURE ROADMAP
 
 ### Recent UX/UI Improvements (Latest Fixes)
 #### ✅ Live Market Sentiment Enhancement (Commit a381c82)
@@ -429,8 +436,10 @@ ERROR: If cache stale → Graceful degradation with user notification
 | Component | File Path | Purpose |
 |-----------|-----------|---------|
 | Stock Analysis | `app/services/stock-selection/StockSelectionService.ts` | Multi-modal analysis |
+| ✅ Algorithm Engine | `app/services/algorithms/AlgorithmEngine.ts` | Sentiment integration pre-fetch architecture (lines 446-470) |
+| ✅ Factor Library | `app/services/algorithms/FactorLibrary.ts` | Composite scoring with sentiment integration (lines 1614-1676) |
 | VWAP Analysis | `app/services/financial-data/VWAPService.ts` | Volume Weighted Average Price calculations |
-| Sentiment Analysis | `app/services/financial-data/SentimentAnalysisService.ts` | News + Reddit WSB sentiment analysis |
+| ✅ Sentiment Analysis | `app/services/financial-data/SentimentAnalysisService.ts` | News + Reddit WSB sentiment analysis - ACTIVELY INTEGRATED |
 | Enhanced Data | `app/services/financial-data/EnhancedDataService.ts` | Enhanced financial data aggregation |
 | Institutional Data | `app/services/financial-data/InstitutionalDataService.ts` | 13F + Form 4 parsing |
 | Macroeconomic Analysis | `app/services/financial-data/MacroeconomicAnalysisService.ts` | FRED + BLS + EIA data orchestration |

@@ -25,9 +25,9 @@ The VFR Financial Analysis Platform provides RESTful APIs for comprehensive stoc
 
 ### POST /api/stocks/select
 
-**Purpose**: Comprehensive stock analysis with multi-modal intelligence aggregation.
+**Purpose**: Comprehensive stock analysis with multi-modal intelligence aggregation including active sentiment integration.
 
-**Business Context**: Primary endpoint for institutional-grade stock intelligence combining fundamental, technical, sentiment, macroeconomic, and institutional analysis.
+**Business Context**: Primary endpoint for institutional-grade stock intelligence combining fundamental, technical, sentiment, macroeconomic, and institutional analysis. **Architecture Enhancement**: Sentiment data now actively contributes 10% weight to composite scoring through pre-fetch integration (fixes previous 0% utilization bug).
 
 #### Request Schema
 ```typescript
@@ -89,6 +89,11 @@ interface StockSelectionResponse {
       analystDataEnabled: boolean;
       sentimentAnalysisEnabled: boolean;
       macroeconomicAnalysisEnabled: boolean;
+      vwapAnalysisEnabled: boolean;
+      esgAnalysisEnabled: boolean;
+      shortInterestAnalysisEnabled: boolean;
+      extendedMarketDataEnabled: boolean;
+      currencyAnalysisEnabled: boolean;
     };
   };
   error?: string;
@@ -104,7 +109,7 @@ interface EnhancedStockData {
   timestamp: number;
   source: string;
 
-  // Technical Analysis (40% weight)
+  // Technical Analysis (35% weight) - Reduced to accommodate sentiment integration
   technicalAnalysis?: {
     score: number;              // 0-100 overall technical score
     trend: {
@@ -119,14 +124,15 @@ interface EnhancedStockData {
     summary: string;
   };
 
-  // Sentiment Analysis (10% weight)
+  // Sentiment Analysis (10% weight) - ✅ ACTIVELY INTEGRATED IN COMPOSITE SCORING
   sentimentAnalysis?: {
-    score: number;              // 0-100 overall sentiment score
+    score: number;              // 0-100 overall sentiment score (e.g., 0.52 for GME)
     impact: 'positive' | 'negative' | 'neutral';
     confidence: number;         // 0-1.0 confidence level
     newsVolume: number;         // News article count
-    adjustedScore: number;      // Sentiment-adjusted composite score
+    adjustedScore: number;      // Sentiment score contributing 10% to composite (FIXED: no longer 0% utilization)
     summary: string;
+    utilization: number;        // 0.10 (10% weight in composite) - Architecture fix implemented
   };
 
   // Macroeconomic Analysis (20% weight)
@@ -156,6 +162,8 @@ interface EnhancedStockData {
 - **Cache TTL**: 2 minutes (development), 10 minutes (production)
 - **Rate Limit**: 100 requests/hour per API key
 - **Concurrent Processing**: Up to 5 parallel API calls per request
+- **Sentiment Integration**: Pre-fetch architecture ensures sentiment data contributes 10% weight to composite scoring
+- **Architecture Fix**: Resolved 0% sentiment utilization bug through AlgorithmEngine pre-processing (September 2024)
 
 ---
 

@@ -121,7 +121,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         this.fallbackDataService,
         enhancedFactorLibrary,
         algorithmCache,
-        this.config
+        this.config,
+        this.sentimentService // Pass sentiment service for integration
       )
     } else {
       // Create standard FactorLibrary with cache (but no technical service)
@@ -132,7 +133,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         this.fallbackDataService,
         standardFactorLibrary,
         algorithmCache,
-        this.config
+        this.config,
+        this.sentimentService // Pass sentiment service for integration
       )
     }
 

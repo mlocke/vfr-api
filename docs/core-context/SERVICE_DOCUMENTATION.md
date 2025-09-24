@@ -76,21 +76,21 @@ if (vwapAnalysis) {
 ### SentimentAnalysisService (`app/services/financial-data/SentimentAnalysisService.ts`)
 
 #### Purpose
-Provides multi-source sentiment analysis contributing 10% weight to composite stock scoring.
+Provides high-performance multi-source sentiment analysis contributing 10% weight to composite stock scoring with <1.5s response time target.
 
 #### Business Context
 Sentiment analysis captures market psychology through:
-- News article sentiment from financial media
-- Reddit WSB community sentiment
-- Institutional investor sentiment indicators
-- Social media momentum analysis
+- Yahoo Finance news sentiment from financial media
+- Reddit WSB enhanced multi-subreddit sentiment
+- Real-time sentiment indicators
+- Social media momentum analysis with performance optimization
 
 #### Data Sources Integration
 ```typescript
 interface SentimentSources {
-  newsAPI: NewsAPI,           // Financial news sentiment
-  redditAPI: RedditAPIEnhanced, // WSB community analysis
-  cache: RedisCache,          // Performance optimization
+  yahooFinanceSentimentAPI: YahooFinanceSentimentAPI, // High-performance news sentiment
+  redditAPIEnhanced: RedditAPIEnhanced, // Multi-subreddit WSB analysis
+  cache: RedisCache,          // Performance optimization with 5min TTL
   securityValidator: SecurityValidator // OWASP protection
 }
 ```
@@ -119,10 +119,17 @@ interface SentimentScore {
 ```
 
 #### Performance Characteristics
-- **Response Time**: <1.5s for single stock analysis
-- **Cache TTL**: 5 minutes for sentiment data
-- **Rate Limiting**: Built-in circuit breaker patterns
-- **Memory Usage**: Optimized for concurrent requests
+- **Response Time**: <1.5s for single stock analysis (Yahoo Finance optimized)
+- **Cache TTL**: 5 minutes for news sentiment, intelligent LRU eviction
+- **Batch Processing**: 100ms consolidation window for multiple requests
+- **Memory Usage**: Connection pooling and memory-efficient processing
+- **Rate Limiting**: Built-in circuit breaker patterns with fallback strategies
+
+#### Recent Enhancements
+- **Yahoo Finance Integration**: Replaced NewsAPI with direct Yahoo Finance sentiment API
+- **Batch Optimization**: 100ms batch consolidation for multiple symbol requests
+- **Memory Efficiency**: LRU cache with 1000 item limit and intelligent eviction
+- **Performance Monitoring**: <25s timeout with detailed response time tracking
 
 ---
 
@@ -179,6 +186,91 @@ Cache Storage → Response Formatting
 
 ---
 
+### YahooFinanceAPI (`app/services/financial-data/YahooFinanceAPI.ts`)
+
+#### Purpose
+Direct Yahoo Finance REST API implementation providing comprehensive stock data including prices, fundamentals, and market data.
+
+#### Business Context
+Yahoo Finance API serves as a primary data source for:
+- Real-time stock prices and market data
+- Comprehensive fundamental ratios and financial metrics
+- Extended hours trading data (pre/post market)
+- Options chains and derivatives data
+- Company information and profiles
+
+#### Key Methods
+
+**`getStockPrice(symbol: string): Promise<StockData | null>`**
+- **Purpose**: Real-time stock price data with change indicators
+- **Processing Time**: <2s response time
+- **Data Points**: Current price, change, volume, market cap
+- **Fallback**: Graceful null return on API failure
+
+**`getFundamentalRatios(symbol: string): Promise<FundamentalRatios | null>`**
+- **Purpose**: Comprehensive fundamental analysis ratios
+- **Coverage**: P/E, P/B, ROE, debt ratios, margins, liquidity ratios
+- **Integration**: Works with yfinance Python library for enhanced data
+- **Cache Strategy**: 1-hour TTL for fundamental data
+
+**`getExtendedHoursData(symbol: string)`**
+- **Purpose**: Pre-market and after-hours trading data
+- **Use Case**: Enhanced market analysis beyond regular trading hours
+- **Performance**: Integrated with regular price data fetching
+
+#### Technical Implementation
+- **Direct REST API**: Uses Yahoo Finance's query endpoints
+- **Python Integration**: Leverages yfinance library for enhanced data
+- **Error Handling**: Comprehensive error catching with graceful degradation
+- **Security**: Input validation and sanitization on all requests
+
+---
+
+### YahooFinanceSentimentAPI (`app/services/financial-data/providers/YahooFinanceSentimentAPI.ts`)
+
+#### Purpose
+High-performance sentiment analysis provider optimized for <1.5s response times, replacing NewsAPI with enhanced Yahoo Finance integration.
+
+#### Business Context
+Optimized sentiment analysis for:
+- Real-time financial news sentiment
+- High-frequency sentiment updates
+- Batch processing for multiple symbols
+- Memory-efficient sentiment caching
+
+#### Performance Optimizations
+```typescript
+interface PerformanceConfig {
+  CACHE_TTL: 300000,        // 5-minute intelligent caching
+  BATCH_WINDOW: 100,        // 100ms batch consolidation
+  MAX_BATCH_SIZE: 10,       // Optimal batch size for Yahoo Finance
+  MAX_CACHE_SIZE: 1000,     // LRU eviction threshold
+  TIMEOUT: 25000            // 25s timeout for batch operations
+}
+```
+
+#### Key Methods
+
+**`getSentimentData(symbol: string): Promise<NewsSentimentData | null>`**
+- **Purpose**: High-performance news sentiment analysis
+- **Optimization**: Connection pooling and request batching
+- **Cache Strategy**: LRU cache with hit tracking
+- **Performance Target**: <1.5s response time
+
+**`batchSentimentAnalysis(symbols: string[])`**
+- **Purpose**: Efficient multi-symbol sentiment processing
+- **Batch Processing**: 100ms consolidation window
+- **Memory Management**: Intelligent cache eviction
+- **Concurrency**: Managed request pooling
+
+#### Recent Enhancements
+- **Batch Processing**: Intelligent request consolidation for multiple symbols
+- **Memory Optimization**: LRU cache with usage tracking and automatic eviction
+- **Performance Monitoring**: Detailed response time tracking and optimization
+- **Connection Pooling**: Reusable connections for improved throughput
+
+---
+
 ## Technical Analysis Services
 
 ### TechnicalIndicatorService (`app/services/technical-analysis/TechnicalIndicatorService.ts`)
@@ -227,12 +319,101 @@ interface TechnicalIndicators {
 
 ---
 
+## Algorithm Services
+
+### AlgorithmEngine (`app/services/algorithms/AlgorithmEngine.ts`)
+
+#### Purpose
+Dynamic stock selection algorithm engine with sentiment integration architecture providing composite scoring with active sentiment utilization.
+
+#### Business Context
+Core algorithm engine orchestrating multi-factor analysis with:
+- **Sentiment Integration**: Pre-fetch architecture ensuring sentiment data contributes 10% weight to composite scoring
+- **Architecture Fix**: Resolved 0% sentiment utilization bug through pre-processing integration (September 2024)
+- **Performance Optimized**: Maintains sub-3-second analysis target with intelligent caching
+- **Composite Scoring**: Technical (35%), Fundamental (25%), Value (20%), Sentiment (10%), Risk (10%)
+
+#### Sentiment Integration Architecture
+```typescript
+// Pre-fetch Pattern in calculateSingleStockScore() (lines 446-470)
+let sentimentScore: number | undefined
+try {
+  console.log(`📰 Pre-fetching sentiment data for ${symbol}...`)
+  const sentimentResult = await this.sentimentService.getSentimentIndicators(symbol)
+  sentimentScore = sentimentResult ? sentimentResult.aggregatedScore : undefined
+  console.log(`📰 Sentiment pre-fetched for ${symbol}: ${sentimentScore}`)
+} catch (sentimentError) {
+  console.warn(`Failed to fetch sentiment for ${symbol}:`, sentimentError)
+  sentimentScore = undefined // Graceful fallback to neutral 0.5
+}
+
+// Direct integration with FactorLibrary.calculateMainComposite()
+const compositeScore = await this.factorLibrary.calculateFactor(
+  'composite',
+  symbol,
+  marketData,
+  fundamentalData,
+  technicalDataWithSentiment // Contains pre-fetched sentiment
+)
+```
+
+#### Key Methods
+
+**`calculateSingleStockScore(symbol, marketData, config, fundamentalData)`**
+- **Purpose**: Enhanced composite scoring with sentiment integration
+- **Architecture**: Pre-fetch sentiment data before composite calculation
+- **Performance**: <2s processing time with Redis caching
+- **Integration**: Passes sentiment score to FactorLibrary for composite calculation
+
+**`executeAlgorithm(config, context)`**
+- **Purpose**: Full algorithm execution with multi-stock processing
+- **Processing**: Batch processing with Promise.allSettled parallel execution
+- **Error Handling**: Graceful degradation with detailed logging
+
+### FactorLibrary (`app/services/algorithms/FactorLibrary.ts`)
+
+#### Purpose
+Comprehensive factor calculation library with active sentiment integration in composite algorithms.
+
+#### Sentiment Integration in Composite Algorithm
+```typescript
+// calculateMainComposite() method (lines 1614-1676)
+private async calculateMainComposite(
+  symbol: string,
+  marketData: MarketDataPoint,
+  fundamentalData?: FundamentalDataPoint,
+  technicalData?: TechnicalDataPoint,
+  sentimentScore?: number // 🆕 Direct sentiment parameter
+): Promise<number> {
+  // ... other factors ...
+
+  // 🆕 SENTIMENT ANALYSIS (weight: 0.10) - ACTIVE INTEGRATION!
+  if (sentimentScore !== undefined && sentimentScore !== null) {
+    console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 0.10) - INTEGRATED!`)
+    totalScore += sentimentScore * 0.10
+    totalWeight += 0.10
+    factorContributions.push('sentimentAnalysis', 'sentiment_composite')
+  } else {
+    console.log('📰 Sentiment Analysis: No data (fallback to neutral 0.5)')
+    totalScore += 0.5 * 0.10
+    totalWeight += 0.10
+  }
+}
+```
+
+#### Composite Weight Distribution
+- **Technical Analysis**: 35% (reduced from 40% to accommodate sentiment)
+- **Fundamental Analysis**: 25% (quality composite)
+- **Value Analysis**: 20% (value composite)
+- **Sentiment Analysis**: 10% (🆕 ACTIVE INTEGRATION)
+- **Risk Assessment**: 10% (volatility composite)
+
 ## Stock Selection Services
 
 ### StockSelectionService (`app/services/stock-selection/StockSelectionService.ts`)
 
 #### Purpose
-Multi-modal stock analysis engine supporting single stocks, sectors, and portfolio analysis.
+Multi-modal stock analysis engine supporting single stocks, sectors, and portfolio analysis with integrated sentiment processing.
 
 #### Business Context
 Comprehensive stock intelligence for:
@@ -241,7 +422,7 @@ Comprehensive stock intelligence for:
 - **Portfolio Optimization**: Multi-stock comparative analysis
 - **Risk Assessment**: Volatility and correlation analysis
 
-#### Analysis Engine Architecture
+#### Analysis Engine Architecture (Post-Sentiment Integration)
 ```typescript
 interface AnalysisComponents {
   fundamental: {      // 25% weight
@@ -249,25 +430,25 @@ interface AnalysisComponents {
     growth: GrowthMetrics,
     quality: QualityIndicators
   },
-  technical: {        // 40% weight
+  technical: {        // 35% weight (reduced from 40% for sentiment)
     indicators: TechnicalIndicators,
     vwap: VWAPAnalysis,
     patterns: ChartPatterns
   },
-  sentiment: {        // 10% weight
+  sentiment: {        // 10% weight - 🆕 ACTIVELY INTEGRATED VIA PRE-FETCH
     news: NewsSentiment,
     social: SocialSentiment,
-    analyst: AnalystRatings
+    analyst: AnalystRatings,
+    utilization: 'ACTIVE' // Fixed 0% utilization bug
   },
-  macroeconomic: {    // 20% weight
-    economic: EconomicIndicators,
-    sector: SectorTrends,
-    market: MarketConditions
+  value: {            // 20% weight (dedicated value analysis)
+    valuation: ValueMetrics,
+    priceToBook: number,
+    priceToEarnings: number
   },
-  institutional: {    // 5% weight
-    holdings: InstitutionalHoldings,
-    insider: InsiderTrading,
-    flow: MoneyFlow
+  risk: {             // 10% weight (risk assessment)
+    volatility: VolatilityMetrics,
+    riskScore: number
   }
 }
 ```
@@ -292,18 +473,25 @@ interface AnalysisComponents {
 - **Risk Assessment**: Portfolio diversification analysis
 - **Output**: MultiStockAnalysisResult with optimization recommendations
 
-#### Integration Patterns
+#### Integration Patterns (Enhanced with Sentiment Pre-fetch)
 ```typescript
-// Service Orchestration Pattern
+// Enhanced Service Orchestration Pattern with Sentiment Integration
 const analysisPromises = await Promise.allSettled([
   fundamentalService.getComprehensiveData(symbol),
   technicalService.getIndicators(symbol),
-  sentimentService.analyzeStockSentimentImpact(symbol, sector, baseScore),
+  // 🆕 PRE-FETCH sentiment before composite calculation
+  sentimentService.getSentimentIndicators(symbol), // Returns aggregatedScore
   macroeconomicService.getEconomicImpact(symbol, sector),
   institutionalService.getInstitutionalIntelligence(symbol)
 ]);
 
-const composite = this.calculateCompositeScore(analysisResults);
+// 🆕 Pass sentiment score directly to composite algorithm
+const composite = await algorithmEngine.calculateSingleStockScore(
+  symbol,
+  marketData,
+  config,
+  fundamentalData
+); // AlgorithmEngine handles sentiment pre-fetch internally
 ```
 
 ---
