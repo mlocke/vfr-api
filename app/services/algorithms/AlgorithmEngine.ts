@@ -75,7 +75,7 @@ export class AlgorithmEngine {
       this.activeExecutions.set(executionId, execution)
 
       // Step 1: Get universe of stocks to evaluate
-      const universe = await this.getStockUniverse(config)
+      const universe = await this.getStockUniverse(config, context)
       console.log(`Algorithm ${config.name}: Evaluating ${universe.length} stocks`)
 
       // Step 2: Fetch and fuse market data for all stocks
@@ -136,9 +136,21 @@ export class AlgorithmEngine {
   }
 
   /**
-   * Get stock universe based on configuration
+   * Get stock universe based on configuration and context
    */
-  private async getStockUniverse(config: AlgorithmConfiguration): Promise<string[]> {
+  private async getStockUniverse(config: AlgorithmConfiguration, context?: AlgorithmContext): Promise<string[]> {
+    // ✅ CRITICAL FIX: Use symbols from context if provided (for single stock analysis)
+    if (context?.symbols && context.symbols.length > 0) {
+      console.log(`Using symbols from context: [${context.symbols.join(', ')}]`)
+      return context.symbols
+    }
+
+    // ✅ FALLBACK: Use symbols from scope if available
+    if (context?.scope?.symbols && context.scope.symbols.length > 0) {
+      console.log(`Using symbols from scope: [${context.scope.symbols.join(', ')}]`)
+      return context.scope.symbols
+    }
+
     const cacheKey = this.cache.getCacheKeys().universe(config.id)
 
     // Try cache first

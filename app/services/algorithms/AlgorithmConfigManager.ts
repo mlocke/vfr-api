@@ -699,7 +699,44 @@ export class AlgorithmConfigManager {
     // Implementation would depend on your database
     // This is where you'd SELECT from algorithm_configurations table
     console.log(`Fetching configuration ${configId} from database`)
+
+    // For development: return default configuration from templates if no DB configuration found
+    if (configId === 'composite' || configId === 'default') {
+      console.log('Creating default composite algorithm configuration')
+      return this.createDefaultConfiguration()
+    }
+
     return null
+  }
+
+  /**
+   * Create a default algorithm configuration for fallback purposes
+   */
+  private createDefaultConfiguration(): AlgorithmConfiguration {
+    const template = this.templates.get('balanced_quality')
+    if (!template) {
+      throw new Error('Default template not found')
+    }
+
+    return {
+      id: 'composite',
+      name: 'Composite Analysis Algorithm',
+      description: 'Default comprehensive analysis combining multiple factors',
+      type: template.template.type!,
+      enabled: true,
+      selectionCriteria: template.template.selectionCriteria!,
+      universe: template.template.universe!,
+      weights: template.template.weights!,
+      selection: template.template.selection!,
+      risk: template.template.risk!,
+      dataFusion: template.template.dataFusion!,
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        createdBy: 'system',
+        version: 1
+      }
+    }
   }
 
   /**

@@ -215,6 +215,21 @@ export interface SelectionResponse {
     cacheHitRate: number
     analysisMode: SelectionMode
     qualityScore: QualityScore
+
+    // Comprehensive analysis input services tracking
+    analysisInputServices?: {
+      [serviceName: string]: {
+        enabled: boolean
+        status: 'active' | 'unavailable' | 'disabled'
+        description: string
+        components: {
+          [componentName: string]: any
+        }
+        utilizationInResults: string
+        weightInCompositeScore?: string
+        weightInTechnicalScore?: string
+      }
+    }
   }
 
   // Error handling

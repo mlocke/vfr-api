@@ -113,111 +113,214 @@ interface SimpleStockResponse {
   error?: string
 }
 
-// Initialize services (lazy initialization)
-let technicalService: TechnicalIndicatorService | null = null
-let sentimentService: SentimentAnalysisService | null = null
-let macroService: MacroeconomicAnalysisService | null = null
-let esgService: ESGDataService | null = null
-let shortInterestService: ShortInterestService | null = null
-let extendedMarketService: ExtendedMarketDataService | null = null
+// Optimized Service Factory with API Key Validation and Singleton Management
+interface ServiceConfig {
+  enabled: boolean
+  hasRequiredKeys: boolean
+  instance: any
+  error?: string
+}
+
+class OptimizedServiceFactory {
+  private static sharedCache: RedisCache | null = null
+  private static services: Map<string, ServiceConfig> = new Map()
+
+  /**
+   * Get shared cache instance for memory efficiency
+   */
+  private static getSharedCache(): RedisCache {
+    if (!this.sharedCache) {
+      this.sharedCache = new RedisCache()
+    }
+    return this.sharedCache
+  }
+
+  /**
+   * Pre-validate API keys for fast startup failure detection
+   */
+  private static validateServiceApiKeys(): Map<string, boolean> {
+    const keyValidation = new Map<string, boolean>()
+
+    // Technical Service - always enabled (no API keys required)
+    keyValidation.set('technical', true)
+
+    // Sentiment Service - requires NewsAPI key
+    keyValidation.set('sentiment', !!process.env.NEWSAPI_KEY)
+
+    // Macroeconomic Service - requires at least one API key (FRED/BLS/EIA)
+    keyValidation.set('macroeconomic', !!(
+      process.env.FRED_API_KEY ||
+      process.env.BLS_API_KEY ||
+      process.env.EIA_API_KEY
+    ))
+
+    // ESG Service - requires ESG or FMP API key
+    keyValidation.set('esg', !!(
+      process.env.ESG_API_KEY ||
+      process.env.FINANCIAL_MODELING_PREP_API_KEY
+    ))
+
+    // Short Interest Service - requires FINRA or Polygon API key
+    keyValidation.set('shortInterest', !!(
+      process.env.FINRA_API_KEY ||
+      process.env.POLYGON_API_KEY
+    ))
+
+    // Extended Market Service - requires Polygon API key
+    keyValidation.set('extendedMarket', !!process.env.POLYGON_API_KEY)
+
+    return keyValidation
+  }
+
+  /**
+   * Initialize service with proper error handling and memory optimization
+   */
+  private static initializeService(serviceType: string): ServiceConfig {
+    const cache = this.getSharedCache()
+    const keyValidation = this.validateServiceApiKeys()
+    const hasKeys = keyValidation.get(serviceType) || false
+
+    if (!hasKeys) {
+      return {
+        enabled: false,
+        hasRequiredKeys: false,
+        instance: null,
+        error: `Missing required API keys for ${serviceType} service`
+      }
+    }
+
+    try {
+      let instance = null
+
+      switch (serviceType) {
+        case 'technical':
+          instance = new TechnicalIndicatorService(cache)
+          break
+
+        case 'sentiment':
+          const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY!)
+          instance = new SentimentAnalysisService(newsAPI, cache)
+          break
+
+        case 'macroeconomic':
+          instance = new MacroeconomicAnalysisService({
+            fredApiKey: process.env.FRED_API_KEY,
+            blsApiKey: process.env.BLS_API_KEY,
+            eiaApiKey: process.env.EIA_API_KEY
+          })
+          break
+
+        case 'esg':
+          instance = new ESGDataService({
+            apiKey: process.env.ESG_API_KEY || process.env.FINANCIAL_MODELING_PREP_API_KEY!
+          })
+          break
+
+        case 'shortInterest':
+          instance = new ShortInterestService({
+            finraApiKey: process.env.FINRA_API_KEY,
+            polygonApiKey: process.env.POLYGON_API_KEY
+          })
+          break
+
+        case 'extendedMarket':
+          const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY!)
+          instance = new ExtendedMarketDataService(polygonAPI, cache)
+          break
+
+        default:
+          throw new Error(`Unknown service type: ${serviceType}`)
+      }
+
+      return {
+        enabled: true,
+        hasRequiredKeys: true,
+        instance,
+        error: undefined
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.warn(`Failed to initialize ${serviceType} service:`, errorMessage)
+
+      return {
+        enabled: false,
+        hasRequiredKeys: true,
+        instance: null,
+        error: errorMessage
+      }
+    }
+  }
+
+  /**
+   * Get service with lazy initialization and caching
+   */
+  static getService<T>(serviceType: string): T | null {
+    if (!this.services.has(serviceType)) {
+      const config = this.initializeService(serviceType)
+      this.services.set(serviceType, config)
+    }
+
+    const config = this.services.get(serviceType)!
+    return config.enabled ? config.instance : null
+  }
+
+  /**
+   * Get service availability without initializing
+   */
+  static isServiceAvailable(serviceType: string): boolean {
+    const keyValidation = this.validateServiceApiKeys()
+    return keyValidation.get(serviceType) || false
+  }
+
+  /**
+   * Get all service statuses for metadata
+   */
+  static getServiceStatuses(): Record<string, boolean> {
+    const keyValidation = this.validateServiceApiKeys()
+    const statuses: Record<string, boolean> = {}
+
+    keyValidation.forEach((hasKeys, serviceType) => {
+      statuses[serviceType] = hasKeys
+    })
+
+    return statuses
+  }
+
+  /**
+   * Memory cleanup for testing/development
+   */
+  static cleanup(): void {
+    this.services.clear()
+    this.sharedCache = null
+  }
+}
 
 /**
- * Get or initialize technical analysis service
+ * Optimized service getters with fast startup and error handling
  */
 function getTechnicalService(): TechnicalIndicatorService {
-  if (!technicalService) {
-    const cache = new RedisCache()
-    technicalService = new TechnicalIndicatorService(cache)
-  }
-  return technicalService
+  return OptimizedServiceFactory.getService<TechnicalIndicatorService>('technical')!
 }
 
-/**
- * Get or initialize sentiment analysis service
- */
 function getSentimentService(): SentimentAnalysisService | null {
-  if (!sentimentService) {
-    try {
-      const cache = new RedisCache()
-      const newsAPI = new NewsAPI(process.env.NEWSAPI_KEY)
-      sentimentService = new SentimentAnalysisService(newsAPI, cache)
-    } catch (error) {
-      console.warn('Failed to initialize sentiment service:', error)
-      return null
-    }
-  }
-  return sentimentService
+  return OptimizedServiceFactory.getService<SentimentAnalysisService>('sentiment')
 }
 
-/**
- * Get or initialize macroeconomic analysis service
- */
 function getMacroService(): MacroeconomicAnalysisService | null {
-  if (!macroService) {
-    try {
-      macroService = new MacroeconomicAnalysisService({
-        fredApiKey: process.env.FRED_API_KEY,
-        blsApiKey: process.env.BLS_API_KEY,
-        eiaApiKey: process.env.EIA_API_KEY
-      })
-    } catch (error) {
-      console.warn('Failed to initialize macroeconomic service:', error)
-      return null
-    }
-  }
-  return macroService
+  return OptimizedServiceFactory.getService<MacroeconomicAnalysisService>('macroeconomic')
 }
 
-/**
- * Get or initialize ESG analysis service
- */
 function getESGService(): ESGDataService | null {
-  if (!esgService) {
-    try {
-      esgService = new ESGDataService({
-        apiKey: process.env.ESG_API_KEY || process.env.FINANCIAL_MODELING_PREP_API_KEY
-      })
-    } catch (error) {
-      console.warn('Failed to initialize ESG service:', error)
-      return null
-    }
-  }
-  return esgService
+  return OptimizedServiceFactory.getService<ESGDataService>('esg')
 }
 
-/**
- * Get or initialize short interest analysis service
- */
 function getShortInterestService(): ShortInterestService | null {
-  if (!shortInterestService) {
-    try {
-      shortInterestService = new ShortInterestService({
-        finraApiKey: process.env.FINRA_API_KEY,
-        polygonApiKey: process.env.POLYGON_API_KEY
-      })
-    } catch (error) {
-      console.warn('Failed to initialize short interest service:', error)
-      return null
-    }
-  }
-  return shortInterestService
+  return OptimizedServiceFactory.getService<ShortInterestService>('shortInterest')
 }
 
-/**
- * Get or initialize extended market data service
- */
 function getExtendedMarketService(): ExtendedMarketDataService | null {
-  if (!extendedMarketService) {
-    try {
-      const cache = new RedisCache()
-      const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
-      extendedMarketService = new ExtendedMarketDataService(polygonAPI, cache)
-    } catch (error) {
-      console.warn('Failed to initialize extended market service:', error)
-      return null
-    }
-  }
-  return extendedMarketService
+  return OptimizedServiceFactory.getService<ExtendedMarketDataService>('extendedMarket')
 }
 
 /**
@@ -700,11 +803,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           technicalAnalysisEnabled: true,
           fundamentalDataEnabled: true,
           analystDataEnabled: true,
-          sentimentAnalysisEnabled: getSentimentService() !== null,
-          macroeconomicAnalysisEnabled: getMacroService() !== null,
-          esgAnalysisEnabled: getESGService() !== null,
-          shortInterestAnalysisEnabled: getShortInterestService() !== null,
-          extendedMarketDataEnabled: getExtendedMarketService() !== null
+          sentimentAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('sentiment'),
+          macroeconomicAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('macroeconomic'),
+          esgAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('esg'),
+          shortInterestAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('shortInterest'),
+          extendedMarketDataEnabled: OptimizedServiceFactory.isServiceAvailable('extendedMarket')
         }
       }
     }

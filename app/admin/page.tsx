@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminStatusMonitor from "../components/AdminStatusMonitor";
-import DataSourceToggle from "../components/ui/DataSourceToggle";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
 
 // Data source configuration interface
@@ -210,9 +209,6 @@ export default function AdminDashboard() {
 
 	// State management
 	const [selectedDataSources, setSelectedDataSources] = useState<string[]>([]);
-	const [enabledDataSources, setEnabledDataSources] = useState<Set<string>>(
-		new Set() // Start with no data sources enabled by default
-	);
 	const [testConfig, setTestConfig] = useState<TestConfig>({
 		selectedDataSources: [],
 		testType: "connection",
@@ -230,62 +226,6 @@ export default function AdminDashboard() {
 		setTestConfig(prev => ({ ...prev, selectedDataSources }));
 	}, [selectedDataSources]);
 
-	// Load data source states from API on component mount
-	useEffect(() => {
-		const loadDataSourceStates = async () => {
-			try {
-				// Get auth token or use development token
-				const authToken = localStorage.getItem("auth_token") || "dev-admin-token";
-
-				const response = await fetch("/api/admin/data-sources", {
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${authToken}`,
-					},
-				});
-
-				if (response.ok) {
-					const contentType = response.headers.get("content-type");
-					if (contentType && contentType.includes("application/json")) {
-						const data = await response.json();
-						setEnabledDataSources(new Set(data.enabledDataSources));
-						console.log("✅ Loaded data source states:", data.enabledDataSources);
-					} else {
-						console.warn("⚠️ Expected JSON but received:", contentType);
-						const text = await response.text();
-						console.warn("Response text:", text.substring(0, 200));
-					}
-				} else {
-					console.warn("❌ Failed to load data source states. Status:", response.status);
-
-					// Try to parse error response
-					try {
-						const errorData = await response.json();
-						console.warn("Error details:", errorData);
-					} catch (parseError) {
-						console.warn("Could not parse error response:", parseError);
-						const text = await response.text();
-						if (text.includes("<!DOCTYPE")) {
-							console.error(
-								"🚨 API returned HTML instead of JSON - service initialization may have failed"
-							);
-						}
-					}
-
-					// If unauthorized, try to set a dev token for next time
-					if (response.status === 401 && !localStorage.getItem("auth_token")) {
-						localStorage.setItem("auth_token", "dev-admin-token");
-						console.log("Set development auth token");
-					}
-				}
-			} catch (error) {
-				console.error("❌ Error loading data source states:", error);
-				console.log("🔧 This may indicate service initialization issues in development");
-			}
-		};
-
-		loadDataSourceStates();
-	}, []);
 
 	// Data source selection handlers
 	const handleDataSourceToggle = (dataSourceId: string) => {
@@ -325,103 +265,6 @@ export default function AdminDashboard() {
 		});
 	};
 
-	// Data source enable/disable handler
-	const handleDataSourceEnableToggle = async (
-		dataSourceId: string,
-		enabled: boolean
-	): Promise<void> => {
-		// Early return if trying to disable an already disabled data source
-		if (!enabled && !enabledDataSources.has(dataSourceId)) return;
-
-		try {
-			// Optimistic update
-			setEnabledDataSources(prev => {
-				const newSet = new Set(prev);
-				if (enabled) {
-					newSet.add(dataSourceId);
-				} else {
-					newSet.delete(dataSourceId);
-				}
-				return newSet;
-			});
-
-			// Call the actual DataSourceConfigManager API
-			const authToken = localStorage.getItem("auth_token") || "dev-admin-token";
-			const response = await fetch(`/api/admin/data-sources/${dataSourceId}/toggle`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${authToken}`,
-				},
-			});
-
-			if (!response.ok) {
-				let errorMessage = "Failed to toggle data source";
-				try {
-					const contentType = response.headers.get("content-type");
-					if (contentType && contentType.includes("application/json")) {
-						const errorData = await response.json();
-						errorMessage = errorData.error || errorMessage;
-					} else {
-						const textResponse = await response.text();
-						if (textResponse.includes("<!DOCTYPE")) {
-							errorMessage = `🚨 API returned HTML instead of JSON (Status: ${response.status}) - service initialization failed`;
-							console.error(
-								"HTML response received:",
-								textResponse.substring(0, 300)
-							);
-						} else {
-							errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-						}
-					}
-				} catch (parseError) {
-					console.warn("Could not parse error response:", parseError);
-					errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-				}
-				throw new Error(errorMessage);
-			}
-
-			// Verify response is JSON before parsing
-			const contentType = response.headers.get("content-type");
-			if (!contentType || !contentType.includes("application/json")) {
-				const text = await response.text();
-				throw new Error(
-					`Expected JSON response but received ${contentType}. Response: ${text.substring(0, 200)}`
-				);
-			}
-
-			const result = await response.json();
-			console.log(`Data source ${dataSourceId} toggle result:`, result);
-
-			// Verify the optimistic update matches the API response
-			// If there's a mismatch, correct it
-			setEnabledDataSources(prev => {
-				const newSet = new Set(prev);
-				if (result.data?.enabled) {
-					newSet.add(dataSourceId);
-				} else {
-					newSet.delete(dataSourceId);
-				}
-				return newSet;
-			});
-		} catch (error) {
-			console.error(
-				`Failed to ${enabled ? "enable" : "disable"} data source ${dataSourceId}:`,
-				error
-			);
-			// Revert optimistic update on error
-			setEnabledDataSources(prev => {
-				const newSet = new Set(prev);
-				if (!enabled) {
-					newSet.add(dataSourceId);
-				} else {
-					newSet.delete(dataSourceId);
-				}
-				return newSet;
-			});
-			throw error;
-		}
-	};
 
 	// Test execution handler
 	const handleRunTests = async () => {
@@ -994,16 +837,7 @@ export default function AdminDashboard() {
 												cursor: "pointer",
 												transition: "all 0.3s ease",
 											}}
-											onClick={e => {
-												// Only toggle test selection if clicking on the main area, not the toggle component
-												if (
-													!(e.target as HTMLElement).closest(
-														'[role="switch"]'
-													)
-												) {
-													handleDataSourceToggle(dataSource.id);
-												}
-											}}
+											onClick={() => handleDataSourceToggle(dataSource.id)}
 											onMouseEnter={e => {
 												if (!selectedDataSources.includes(dataSource.id)) {
 													e.currentTarget.style.background =
@@ -1054,7 +888,6 @@ export default function AdminDashboard() {
 													style={{
 														flex: 1,
 														minWidth: 0,
-														paddingRight: "0.5rem",
 													}}
 												>
 													<div
@@ -1083,29 +916,6 @@ export default function AdminDashboard() {
 													</div>
 												</div>
 
-												{/* Data Source Enable/Disable Toggle - Fixed alignment */}
-												<div
-													style={{
-														display: "flex",
-														alignItems: "center",
-														justifyContent: "flex-end",
-														minWidth: "140px", // Fixed width for consistent alignment
-													}}
-												>
-													<DataSourceToggle
-														dataSourceId={dataSource.id}
-														dataSourceName={dataSource.name}
-														enabled={enabledDataSources.has(
-															dataSource.id
-														)}
-														status={
-															enabledDataSources.has(dataSource.id)
-																? dataSource.status
-																: "offline"
-														}
-														onToggle={handleDataSourceEnableToggle}
-													/>
-												</div>
 											</div>
 										</div>
 									))}

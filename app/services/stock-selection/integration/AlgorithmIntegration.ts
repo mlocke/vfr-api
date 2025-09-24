@@ -151,6 +151,15 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
       runId: request.requestId || `run_${Date.now()}`,
       startTime: Date.now(),
 
+      // ✅ CRITICAL FIX: Add symbols to context so algorithm knows what to analyze
+      symbols: scope.symbols || [],
+      scope: {
+        mode: scope.mode,
+        symbols: scope.symbols,
+        sector: scope.sector,
+        maxResults: scope.maxResults
+      },
+
       marketData: {
         timestamp: Date.now(),
         marketOpen: this.isMarketOpen(),
@@ -281,10 +290,27 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     const serviceConfig = this.selectionConfig.getConfig()
     const dataStatus: any = {}
 
-    for (const source of Object.keys(serviceConfig.dataSources)) {
+    // Get data sources from either dataSources property or getDataSourceConfig method
+    let dataSources: any = null
+    if (serviceConfig.dataSources) {
+      dataSources = serviceConfig.dataSources
+    } else if (serviceConfig.getDataSourceConfig && typeof serviceConfig.getDataSourceConfig === 'function') {
+      dataSources = serviceConfig.getDataSourceConfig()
+    }
+
+    // Handle case where no data sources are available
+    if (!dataSources || typeof dataSources !== 'object') {
+      console.warn('No data sources available in service config, using default')
+      dataSources = {
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
+        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+      }
+    }
+
+    for (const source of Object.keys(dataSources)) {
       dataStatus[source] = {
         available: true, // This would be checked in real implementation
-        latency: serviceConfig.dataSources[source].timeout / 2, // Estimated
+        latency: dataSources[source].timeout / 2, // Estimated
         lastUpdate: Date.now() - (options?.useRealTimeData ? 0 : 60000) // 1 min ago if not real-time
       }
     }

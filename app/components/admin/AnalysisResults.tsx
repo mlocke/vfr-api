@@ -10,7 +10,7 @@ interface AnalysisResultsProps {
 }
 
 export default function AnalysisResults({ results, error, isRunning }: AnalysisResultsProps) {
-  const [activeTab, setActiveTab] = useState<'summary' | 'raw' | 'performance'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'raw' | 'performance' | 'inputs'>('summary');
   const [copySuccess, setCopySuccess] = useState(false);
 
   const handleCopyResults = async () => {
@@ -48,6 +48,20 @@ Macroeconomic Analysis: ${metadata.macroeconomicAnalysisEnabled ? 'Enabled' : 'D
 ESG Analysis: ${metadata.esgAnalysisEnabled ? 'Enabled' : 'Disabled'}`;
         } else {
           textToCopy = 'No performance data available';
+        }
+      } else if (activeTab === 'inputs') {
+        if (results.success && results.data?.metadata?.analysisInputServices) {
+          const services = results.data.metadata.analysisInputServices;
+          textToCopy = Object.entries(services).map(([serviceName, service]: [string, any]) => {
+            return `${serviceName.toUpperCase()}:
+Status: ${service.status}
+Description: ${service.description}
+Utilization: ${service.utilizationInResults}
+Weight: ${service.weightInCompositeScore || service.weightInTechnicalScore || 'N/A'}
+Components: ${Object.keys(service.components).length} components`;
+          }).join('\n\n');
+        } else {
+          textToCopy = 'No input services data available';
         }
       }
 
@@ -160,7 +174,7 @@ ESG Analysis: ${metadata.esgAnalysisEnabled ? 'Enabled' : 'Disabled'}`;
             flexShrink: 0,
           }}
         >
-          {(['summary', 'raw', 'performance'] as const).map(tab => (
+          {(['summary', 'raw', 'performance', 'inputs'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -311,6 +325,146 @@ ESG Analysis: ${metadata.esgAnalysisEnabled ? 'Enabled' : 'Disabled'}`;
                   <p>ESG Analysis: {results.data.metadata.esgAnalysisEnabled ? '✅' : '❌'}</p>
                   <p>Short Interest Analysis: {results.data.metadata.shortInterestAnalysisEnabled ? '✅' : '❌'}</p>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'inputs' && results.success && results.data?.metadata?.analysisInputServices && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                <div style={{ marginBottom: "1rem" }}>
+                  <h4 style={{ color: "white", margin: "0 0 0.5rem 0", fontSize: "1rem" }}>
+                    🔬 Analysis Input Services Status
+                  </h4>
+                  <p style={{ color: "rgba(255, 255, 255, 0.7)", fontSize: "0.85rem", margin: 0 }}>
+                    Comprehensive overview of all input services and their utilization in this analysis
+                  </p>
+                </div>
+
+                {Object.entries(results.data.metadata.analysisInputServices).map(([serviceName, service]: [string, any]) => (
+                  <div
+                    key={serviceName}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.05)",
+                      border: `1px solid ${service.status === 'active' ? 'rgba(34, 197, 94, 0.3)' :
+                               service.status === 'unavailable' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+                      borderRadius: "8px",
+                      padding: "1rem",
+                    }}
+                  >
+                    {/* Service Header */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                      <div>
+                        <h5 style={{
+                          color: "white",
+                          margin: 0,
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          textTransform: "capitalize"
+                        }}>
+                          {serviceName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                        </h5>
+                        <p style={{
+                          color: "rgba(255, 255, 255, 0.6)",
+                          fontSize: "0.8rem",
+                          margin: "0.25rem 0 0 0"
+                        }}>
+                          {service.description}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <span
+                          style={{
+                            background: service.status === 'active' ? "rgba(34, 197, 94, 0.2)" :
+                                       service.status === 'unavailable' ? "rgba(239, 68, 68, 0.2)" : "rgba(251, 191, 36, 0.2)",
+                            color: service.status === 'active' ? "rgba(34, 197, 94, 0.9)" :
+                                   service.status === 'unavailable' ? "rgba(239, 68, 68, 0.9)" : "rgba(251, 191, 36, 0.9)",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {service.status}
+                        </span>
+                        <span style={{
+                          color: "rgba(255, 255, 255, 0.8)",
+                          fontSize: "0.8rem",
+                          fontWeight: "500"
+                        }}>
+                          {service.utilizationInResults} used
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Service Weight */}
+                    {(service.weightInCompositeScore || service.weightInTechnicalScore) && (
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <span style={{
+                          background: "rgba(99, 102, 241, 0.2)",
+                          color: "rgba(99, 102, 241, 0.9)",
+                          padding: "0.2rem 0.5rem",
+                          borderRadius: "4px",
+                          fontSize: "0.75rem",
+                          fontWeight: "500"
+                        }}>
+                          Weight: {service.weightInCompositeScore || service.weightInTechnicalScore}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Service Components */}
+                    {Object.keys(service.components).length > 0 && (
+                      <div>
+                        <h6 style={{
+                          color: "rgba(255, 255, 255, 0.9)",
+                          fontSize: "0.85rem",
+                          margin: "0 0 0.5rem 0",
+                          fontWeight: "500"
+                        }}>
+                          Components ({Object.keys(service.components).length})
+                        </h6>
+                        <div style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                          gap: "0.5rem"
+                        }}>
+                          {Object.entries(service.components).map(([componentName, componentData]: [string, any]) => (
+                            <div
+                              key={componentName}
+                              style={{
+                                background: "rgba(0, 0, 0, 0.2)",
+                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                borderRadius: "4px",
+                                padding: "0.5rem",
+                              }}
+                            >
+                              <div style={{
+                                fontSize: "0.8rem",
+                                fontWeight: "500",
+                                color: "rgba(255, 255, 255, 0.9)",
+                                marginBottom: "0.25rem",
+                                textTransform: "capitalize"
+                              }}>
+                                {componentName.replace(/([A-Z])/g, ' $1')}
+                              </div>
+                              <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.6)" }}>
+                                {typeof componentData === 'object' ? (
+                                  Object.entries(componentData).map(([key, value]: [string, any]) => (
+                                    <div key={key}>
+                                      <span style={{ color: "rgba(255, 255, 255, 0.4)" }}>{key}:</span> {String(value)}
+                                    </div>
+                                  ))
+                                ) : (
+                                  String(componentData)
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </>

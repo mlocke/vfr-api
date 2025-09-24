@@ -28,6 +28,19 @@ export interface AnalysisResponse {
       esgAnalysisEnabled?: boolean;
       shortInterestAnalysisEnabled?: boolean;
       extendedMarketDataEnabled?: boolean;
+      analysisInputServices?: {
+        [serviceName: string]: {
+          enabled: boolean
+          status: 'active' | 'unavailable' | 'disabled'
+          description: string
+          components: {
+            [componentName: string]: any
+          }
+          utilizationInResults: string
+          weightInCompositeScore?: string
+          weightInTechnicalScore?: string
+        }
+      };
     };
   };
   error?: string;
@@ -44,7 +57,7 @@ export default function AnalysisEngineTest() {
     setResults(null);
 
     try {
-      const response = await fetch('/api/stocks/select', {
+      const response = await fetch('/api/stocks/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

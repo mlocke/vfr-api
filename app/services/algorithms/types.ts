@@ -166,6 +166,15 @@ export interface AlgorithmContext {
   runId: string
   startTime: number
 
+  // ✅ CRITICAL FIX: Symbols to analyze
+  symbols?: string[]
+  scope?: {
+    mode: any
+    symbols?: string[]
+    sector?: any
+    maxResults?: number
+  }
+
   // Market context
   marketData: {
     timestamp: number
