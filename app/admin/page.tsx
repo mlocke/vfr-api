@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminStatusMonitor from "../components/AdminStatusMonitor";
 import DataSourceToggle from "../components/ui/DataSourceToggle";
+import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
 
 // Data source configuration interface
 interface DataSourceConfig {
@@ -1809,6 +1810,9 @@ export default function AdminDashboard() {
 								)}
 							</div>
 						</div>
+
+						{/* Analysis Engine Test Section */}
+						<AnalysisEngineTest />
 					</div>
 				</section>
 

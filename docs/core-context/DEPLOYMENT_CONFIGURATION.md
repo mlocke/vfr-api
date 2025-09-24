@@ -276,6 +276,7 @@ networks:
 ```
 
 #### Application Dockerfile
+
 ```dockerfile
 # Multi-stage build for production optimization
 FROM node:18-alpine AS base
@@ -293,7 +294,7 @@ RUN npm ci --only=production && npm cache clean --force
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY .. .
 
 # Build the application
 RUN npm run build

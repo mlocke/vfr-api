@@ -51,7 +51,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ## Core Documentation
 
-### 1. [System Architecture](./SYSTEM_ARCHITECTURE.md) - Foundation Context
+### 1. [System Architecture](SYSTEM_ARCHITECTURE.md) - Foundation Context
 
 **🎯 AI Agent Use Case**: Understanding system design patterns, data flow, and architectural decisions
 
@@ -73,7 +73,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ---
 
-### 2. [Service Documentation](./SERVICE_DOCUMENTATION.md) - Implementation Context
+### 2. [Service Documentation](SERVICE_DOCUMENTATION.md) - Implementation Context
 
 **🎯 AI Agent Use Case**: Understanding service-specific implementation patterns, performance characteristics, and integration requirements
 
@@ -102,7 +102,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ---
 
-### 3. [API Documentation](./API_DOCUMENTATION.md)
+### 3. [API Documentation](API_DOCUMENTATION.md)
 **Purpose**: Complete REST API reference with request/response formats and integration patterns.
 
 **API Categories**:
@@ -128,7 +128,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ---
 
-### 4. [Development Guidelines](./DEVELOPMENT_GUIDELINES.md)
+### 4. [Development Guidelines](DEVELOPMENT_GUIDELINES.md)
 **Purpose**: Comprehensive development workflow, testing strategies, and troubleshooting procedures.
 
 **Development Workflow**:
@@ -155,7 +155,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ---
 
-### 5. [Deployment & Configuration](./DEPLOYMENT_CONFIGURATION.md)
+### 5. [Deployment & Configuration](DEPLOYMENT_CONFIGURATION.md)
 **Purpose**: Production deployment procedures, infrastructure requirements, and operational guidance.
 
 **Infrastructure Architecture**:
@@ -185,8 +185,8 @@ User Need → Context Analysis → Document Selection → Action Path
 ## Supporting Documentation
 
 ### Existing Specialized Documentation
-1. **[Security Architecture](./security-architecture.md)**: OWASP compliance and security patterns
-2. **[Error Handling Standards](./error-handling-standards.md)**: Centralized error management
+1. **[Security Architecture](security-architecture.md)**: OWASP compliance and security patterns
+2. **[Error Handling Standards](error-handling-standards.md)**: Centralized error management
 3. **[API Integration Guide](./context/api-integration-guide.md)**: External API integration patterns
 4. **[Implementation Guide](./implementation-guide.md)**: Detailed implementation procedures
 
@@ -200,7 +200,7 @@ User Need → Context Analysis → Document Selection → Action Path
 ## Quick Start Guides
 
 ### For Developers (First Time Setup)
-1. **Environment Setup**: Follow [Development Guidelines](./DEVELOPMENT_GUIDELINES.md#environment-setup)
+1. **Environment Setup**: Follow [Development Guidelines](DEVELOPMENT_GUIDELINES.mdnvironment-setup)
 2. **API Keys**: Configure 12+ financial API keys in `.env`
 3. **Database Setup**: Run `docker-compose -f docker-compose.dev.yml up -d`
 4. **Start Development**: `npm run dev:clean`
@@ -215,7 +215,7 @@ User Need → Context Analysis → Document Selection → Action Path
 5. **Error Handling**: Implement fallback for 5xx responses
 
 ### For System Administrators
-1. **Infrastructure**: Review [Deployment Configuration](./DEPLOYMENT_CONFIGURATION.md#infrastructure-architecture)
+1. **Infrastructure**: Review [Deployment Configuration](DEPLOYMENT_CONFIGURATION.mdnfrastructure-architecture)
 2. **Environment Variables**: Configure all required API keys and database URLs
 3. **Database Setup**: Initialize PostgreSQL, Redis, and InfluxDB
 4. **SSL Configuration**: Set up certificates and secure endpoints
@@ -284,11 +284,11 @@ User Need → Context Analysis → Document Selection → Action Path
 
 | Issue | Symptoms | Quick Fix | Documentation |
 |-------|----------|-----------|--------------|
-| Port Conflicts | "EADDRINUSE: address already in use" | `npm run dev:clean` | [Dev Guidelines](./DEVELOPMENT_GUIDELINES.md#troubleshooting) |
-| Memory Issues | Slow tests, heap errors | `export NODE_OPTIONS="--max-old-space-size=8192"` | [Dev Guidelines](./DEVELOPMENT_GUIDELINES.md#memory-management) |
-| API Rate Limits | 429 errors, API failures | Check admin dashboard, enable caching | [API Docs](./API_DOCUMENTATION.md#rate-limiting) |
-| Cache Issues | Stale data, inconsistent responses | `redis-cli FLUSHDB`, restart services | [Deployment](./DEPLOYMENT_CONFIGURATION.md#redis-configuration) |
-| Database Connectivity | Connection timeouts | Check Docker services, verify credentials | [Deployment](./DEPLOYMENT_CONFIGURATION.md#database-setup--migration) |
+| Port Conflicts | "EADDRINUSE: address already in use" | `npm run dev:clean` | [Dev Guidelines](DEVELOPMENT_GUIDELINES.mdroubleshooting) |
+| Memory Issues | Slow tests, heap errors | `export NODE_OPTIONS="--max-old-space-size=8192"` | [Dev Guidelines](DEVELOPMENT_GUIDELINES.mdemory-management) |
+| API Rate Limits | 429 errors, API failures | Check admin dashboard, enable caching | [API Docs](API_DOCUMENTATION.mdate-limiting) |
+| Cache Issues | Stale data, inconsistent responses | `redis-cli FLUSHDB`, restart services | [Deployment](DEPLOYMENT_CONFIGURATION.mdedis-configuration) |
+| Database Connectivity | Connection timeouts | Check Docker services, verify credentials | [Deployment](DEPLOYMENT_CONFIGURATION.mdatabase-setup--migration) |
 
 ### Emergency Procedures
 1. **Service Outage**: Check `/api/health`, restart affected services
