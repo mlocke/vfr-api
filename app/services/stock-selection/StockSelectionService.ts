@@ -122,7 +122,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         enhancedFactorLibrary,
         algorithmCache,
         this.config,
-        this.sentimentService // Pass sentiment service for integration
+        this.sentimentService, // Pass sentiment service for integration
+        this.vwapService, // Pass VWAP service for integration
+        this.macroeconomicService // Pass macroeconomic service for integration
       )
     } else {
       // Create standard FactorLibrary with cache (but no technical service)
@@ -134,7 +136,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         standardFactorLibrary,
         algorithmCache,
         this.config,
-        this.sentimentService // Pass sentiment service for integration
+        this.sentimentService, // Pass sentiment service for integration
+        this.vwapService, // Pass VWAP service for integration
+        this.macroeconomicService // Pass macroeconomic service for integration
       )
     }
 
@@ -934,7 +938,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
             hasServiceData = Object.keys(factorScores).some(factor =>
               factor.includes('rsi') || factor.includes('macd') || factor.includes('technical') ||
               factor.includes('momentum') || factor.includes('bollinger') || factor.includes('sma') ||
-              factor.includes('ema') || factor.includes('stochastic') || factor.includes('williams')
+              factor.includes('ema') || factor.includes('stochastic') || factor.includes('williams') ||
+              factor === 'technical_overall_score' // ✅ PERFORMANCE FIX: Direct match for composite technical score
             )
             break
           case 'fundamentals':
@@ -952,12 +957,14 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
           case 'macroeconomicAnalysis':
             hasServiceData = Object.keys(factorScores).some(factor =>
               factor.includes('macro') || factor.includes('economic') || factor.includes('fred') ||
-              factor.includes('bls') || factor.includes('eia')
+              factor.includes('bls') || factor.includes('eia') ||
+              factor === 'macroeconomic_sector_impact' || factor === 'macroeconomic_composite' // 🆕 DIRECT FACTOR TRACKING
             )
             break
           case 'vwapAnalysis':
             hasServiceData = Object.keys(factorScores).some(factor =>
-              factor.includes('vwap') || factor.includes('volume')
+              factor.includes('vwap') || factor.includes('volume') ||
+              factor === 'vwap_deviation_score' || factor === 'vwap_trading_signals' // 🆕 DIRECT FACTOR TRACKING
             )
             break
         }
@@ -978,6 +985,28 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
              selection.score.factorScores.quality_composite !== 0.5) ||
             (selection.score.factorScores.value_composite &&
              selection.score.factorScores.value_composite !== 0.5)) {
+          hasServiceData = true
+        }
+      }
+
+      // 🆕 Enhanced tracking for VWAP service utilization
+      if (!hasServiceData && serviceKey === 'vwapAnalysis' && selection.score) {
+        if ((selection.score.factorScores.vwap_deviation_score &&
+             selection.score.factorScores.vwap_deviation_score !== 0.5) ||
+            (selection.score.factorScores.vwap_trading_signals &&
+             selection.score.factorScores.vwap_trading_signals !== 0.5) ||
+            (selection.score.factorScores.vwap_position &&
+             selection.score.factorScores.vwap_position !== 0.5)) {
+          hasServiceData = true
+        }
+      }
+
+      // 🆕 Enhanced tracking for macroeconomic service utilization
+      if (!hasServiceData && serviceKey === 'macroeconomicAnalysis' && selection.score) {
+        if ((selection.score.factorScores.macroeconomic_sector_impact &&
+             selection.score.factorScores.macroeconomic_sector_impact !== 0.5) ||
+            (selection.score.factorScores.macroeconomic_composite &&
+             selection.score.factorScores.macroeconomic_composite !== 0.5)) {
           hasServiceData = true
         }
       }

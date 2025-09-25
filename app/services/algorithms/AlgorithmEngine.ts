@@ -19,6 +19,8 @@ import { FallbackDataService } from '../financial-data/FallbackDataService'
 import { FactorLibrary } from './FactorLibrary'
 import { AlgorithmCache } from './AlgorithmCache'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
+import { VWAPService } from '../financial-data/VWAPService'
+import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
 import { RedisCache } from '../cache/RedisCache'
 
 interface MarketDataPoint {
@@ -48,6 +50,8 @@ interface TechnicalDataPoint {
   sma?: { [period: string]: number }
   volatility?: number
   sentimentScore?: number // 🆕 SENTIMENT INTEGRATION
+  vwapAnalysis?: any // 🆕 VWAP INTEGRATION
+  macroeconomicContext?: any // 🆕 MACROECONOMIC INTEGRATION
   [key: string]: any
 }
 
@@ -56,18 +60,24 @@ export class AlgorithmEngine {
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
   private sentimentService: SentimentAnalysisService
+  private vwapService?: VWAPService
+  private macroeconomicService?: MacroeconomicAnalysisService
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
     fallbackDataService: FallbackDataService,
     factorLibrary: FactorLibrary,
     cache: AlgorithmCache,
-    sentimentService?: SentimentAnalysisService
+    sentimentService?: SentimentAnalysisService,
+    vwapService?: VWAPService,
+    macroeconomicService?: MacroeconomicAnalysisService
   ) {
     this.fallbackDataService = fallbackDataService
     this.factorLibrary = factorLibrary
     this.cache = cache
     this.sentimentService = sentimentService || new SentimentAnalysisService(new RedisCache())
+    this.vwapService = vwapService
+    this.macroeconomicService = macroeconomicService
   }
 
   /**
@@ -455,10 +465,43 @@ export class AlgorithmEngine {
           sentimentScore = undefined // Will use fallback in FactorLibrary
         }
 
-        // Create technical data with sentiment score for FactorLibrary
-        const technicalDataWithSentiment: TechnicalDataPoint = {
+        // 🆕 PRE-FETCH VWAP DATA for composite algorithm
+        let vwapAnalysis: any | undefined
+        if (this.vwapService) {
+          try {
+            console.log(`📊 Pre-fetching VWAP analysis for ${symbol}...`)
+            vwapAnalysis = await this.vwapService.getVWAPAnalysis(symbol)
+            console.log(`📊 VWAP pre-fetched for ${symbol}: ${vwapAnalysis ? 'success' : 'no data'}`)
+          } catch (vwapError) {
+            console.warn(`Failed to fetch VWAP for ${symbol}:`, vwapError)
+            vwapAnalysis = undefined
+          }
+        }
+
+        // 🆕 PRE-FETCH MACROECONOMIC CONTEXT for composite algorithm
+        let macroeconomicContext: any | undefined
+        if (this.macroeconomicService && marketData.sector) {
+          try {
+            console.log(`🌍 Pre-fetching macroeconomic context for ${symbol} (${marketData.sector})...`)
+            const macroImpact = await this.macroeconomicService.analyzeStockMacroImpact(
+              symbol,
+              marketData.sector,
+              marketData.price
+            )
+            macroeconomicContext = macroImpact
+            console.log(`🌍 Macro context pre-fetched for ${symbol}: ${macroImpact ? 'success' : 'no data'}`)
+          } catch (macroError) {
+            console.warn(`Failed to fetch macro context for ${symbol}:`, macroError)
+            macroeconomicContext = undefined
+          }
+        }
+
+        // Create enhanced technical data with all pre-fetched services for FactorLibrary
+        const enhancedTechnicalData: TechnicalDataPoint = {
           symbol,
-          sentimentScore
+          sentimentScore,
+          vwapAnalysis,
+          macroeconomicContext
         }
 
         const compositeScore = await this.factorLibrary.calculateFactor(
@@ -466,7 +509,7 @@ export class AlgorithmEngine {
           symbol,
           marketData,
           fundamentalData,
-          technicalDataWithSentiment
+          enhancedTechnicalData
         )
 
         if (compositeScore !== null && !isNaN(compositeScore)) {
@@ -475,8 +518,15 @@ export class AlgorithmEngine {
           // Calculate sub-component scores for proper utilization tracking
           const componentFactors: { [factor: string]: number } = { 'composite': compositeScore }
 
-          // Calculate individual composite components if they would contribute
+          // ✅ PERFORMANCE FIX: Calculate individual composite components for proper tracking
           try {
+            // Technical Analysis Score (35% weight) - CRITICAL for utilization tracking
+            const technicalOverallScore = await this.factorLibrary.calculateFactor('technical_overall_score', symbol, marketData, fundamentalData)
+            if (technicalOverallScore !== null && technicalOverallScore !== 0.5) {
+              componentFactors['technical_overall_score'] = technicalOverallScore
+              console.log(`✅ Technical overall score for ${symbol}: ${technicalOverallScore.toFixed(3)} - TRACKED`)
+            }
+
             const qualityScore = await this.factorLibrary.calculateFactor('quality_composite', symbol, marketData, fundamentalData)
             if (qualityScore !== null && qualityScore !== 0.5) {
               componentFactors['quality_composite'] = qualityScore
@@ -496,6 +546,43 @@ export class AlgorithmEngine {
             if (volatilityScore !== null && volatilityScore !== 0.5) {
               componentFactors['volatility_30d'] = volatilityScore
             }
+
+            // ✅ PERFORMANCE ENHANCEMENT: Add sentiment tracking for completeness
+            if (sentimentScore !== undefined && sentimentScore !== null && sentimentScore !== 0.5) {
+              componentFactors['sentiment_composite'] = sentimentScore
+              console.log(`✅ Sentiment score for ${symbol}: ${sentimentScore.toFixed(3)} - TRACKED`)
+            }
+
+            // 🆕 VWAP SERVICE TRACKING - Calculate VWAP factors for utilization tracking
+            if (vwapAnalysis) {
+              const vwapDeviationScore = await this.factorLibrary.calculateFactor('vwap_deviation_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (vwapDeviationScore !== null && vwapDeviationScore !== 0.5) {
+                componentFactors['vwap_deviation_score'] = vwapDeviationScore
+                console.log(`✅ VWAP deviation score for ${symbol}: ${vwapDeviationScore.toFixed(3)} - TRACKED`)
+              }
+
+              const vwapTradingSignals = await this.factorLibrary.calculateFactor('vwap_trading_signals', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (vwapTradingSignals !== null && vwapTradingSignals !== 0.5) {
+                componentFactors['vwap_trading_signals'] = vwapTradingSignals
+                console.log(`✅ VWAP trading signals for ${symbol}: ${vwapTradingSignals.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 MACROECONOMIC SERVICE TRACKING - Calculate macro factors for utilization tracking
+            if (macroeconomicContext) {
+              const macroSectorImpact = await this.factorLibrary.calculateFactor('macroeconomic_sector_impact', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (macroSectorImpact !== null && macroSectorImpact !== 0.5) {
+                componentFactors['macroeconomic_sector_impact'] = macroSectorImpact
+                console.log(`✅ Macro sector impact for ${symbol}: ${macroSectorImpact.toFixed(3)} - TRACKED`)
+              }
+
+              const macroComposite = await this.factorLibrary.calculateFactor('macroeconomic_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (macroComposite !== null && macroComposite !== 0.5) {
+                componentFactors['macroeconomic_composite'] = macroComposite
+                console.log(`✅ Macroeconomic composite for ${symbol}: ${macroComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
           } catch (componentError) {
             console.warn('Error calculating composite components:', componentError)
           }
@@ -543,14 +630,16 @@ export class AlgorithmEngine {
     let totalWeightedScore = 0
     let totalWeight = 0
 
+    console.log(`🧮 Calculating individual factors for ${symbol} (${config.weights.length} factors configured)`)
+
     for (const weight of config.weights) {
       if (!weight.enabled) {
-        console.log(`Factor ${weight.factor} is disabled, skipping`)
+        console.log(`⏭️  Factor ${weight.factor} is disabled, skipping`)
         continue
       }
 
       try {
-        console.log(`Calculating factor ${weight.factor} for ${symbol}...`)
+        console.log(`🔧 Calculating factor ${weight.factor} for ${symbol} (weight: ${weight.weight})...`)
         const factorScore = await this.factorLibrary.calculateFactor(
           weight.factor,
           symbol,
@@ -562,14 +651,16 @@ export class AlgorithmEngine {
           factorScores[weight.factor] = factorScore
           totalWeightedScore += factorScore * weight.weight
           totalWeight += weight.weight
-          console.log(`Factor ${weight.factor} = ${factorScore}, weight = ${weight.weight}`)
+          console.log(`✅ Factor ${weight.factor} = ${factorScore.toFixed(4)}, weight = ${weight.weight}, contribution = ${(factorScore * weight.weight).toFixed(4)}`)
         } else {
-          console.warn(`Factor ${weight.factor} returned null or NaN for ${symbol}`)
+          console.warn(`⚠️  Factor ${weight.factor} returned null or NaN for ${symbol}`)
         }
       } catch (error) {
-        console.warn(`Error calculating factor ${weight.factor} for ${symbol}:`, error)
+        console.warn(`❌ Error calculating factor ${weight.factor} for ${symbol}:`, error)
       }
     }
+
+    console.log(`📊 Factor calculation summary for ${symbol}: ${Object.keys(factorScores).length} factors calculated, total weight: ${totalWeight}`)
 
     // If no factors calculated successfully, use a simple default scoring
     if (totalWeight === 0) {

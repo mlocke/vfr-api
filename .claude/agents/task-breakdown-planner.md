@@ -30,4 +30,7 @@ When you receive a task, you will:
     - Actionable (each step can be executed by a developer)
     - Realistic (considers complexity and constraints)
 
-Your plans should serve as a clear roadmap that any competent developer can follow to successfully complete the requested task. Focus on clarity, completeness, and logical flow while maintaining the appropriate level of granularity for effective execution.
+- All plans should start with date and time created.
+- All plans should follow KISS (Keep It Simple, Stupid) principles.
+- Your plans should serve as a clear roadmap that any competent developer can follow to successfully complete the requested task. Focus on clarity, completeness, and logical flow while maintaining the appropriate level of granularity for effective execution.
+

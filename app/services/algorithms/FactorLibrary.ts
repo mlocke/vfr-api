@@ -50,6 +50,9 @@ interface TechnicalDataPoint {
   macd?: { signal: number; histogram: number; macd: number }
   sma?: { [period: string]: number }
   volatility?: number
+  sentimentScore?: number // 🆕 SENTIMENT INTEGRATION
+  vwapAnalysis?: any // 🆕 VWAP INTEGRATION
+  macroeconomicContext?: any // 🆕 MACROECONOMIC INTEGRATION
   [key: string]: any
 }
 
@@ -249,6 +252,20 @@ export class FactorLibrary {
           break
         case 'technical_overall_score':
           result = await this.calculateTechnicalOverallScore(symbol)
+          break
+
+        // ==================== ENHANCED SERVICE INTEGRATION FACTORS ====================
+        case 'vwap_deviation_score':
+          result = this.calculateVWAPDeviationScore(technicalData?.vwapAnalysis)
+          break
+        case 'vwap_trading_signals':
+          result = this.calculateVWAPTradingSignals(technicalData?.vwapAnalysis)
+          break
+        case 'macroeconomic_sector_impact':
+          result = this.calculateMacroeconomicSectorImpact(technicalData?.macroeconomicContext, marketData?.sector)
+          break
+        case 'macroeconomic_composite':
+          result = this.calculateMacroeconomicComposite(technicalData?.macroeconomicContext)
           break
 
         // ==================== VOLATILITY FACTORS ====================
@@ -1012,8 +1029,21 @@ export class FactorLibrary {
   private async calculateTechnicalOverallScore(symbol: string): Promise<number | null> {
 
     try {
-      const historicalData = await this.getHistoricalData(symbol, 250)
-      if (!historicalData || historicalData.length < 50) return null
+      console.log(`🔍 Attempting to calculate technical overall score for ${symbol}`)
+
+      // Try to get historical data with fallback to shorter periods
+      let historicalData = await this.getHistoricalData(symbol, 250)
+      if (!historicalData || historicalData.length < 50) {
+        console.log(`⚠️ Insufficient long-term data for ${symbol} (${historicalData?.length || 0} points), trying shorter period`)
+        historicalData = await this.getHistoricalData(symbol, 100)
+      }
+
+      if (!historicalData || historicalData.length < 20) {
+        console.log(`❌ Insufficient historical data for technical analysis of ${symbol}: ${historicalData?.length || 0} points`)
+        return null
+      }
+
+      console.log(`✅ Using ${historicalData.length} data points for technical analysis of ${symbol}`)
 
       const ohlcData: OHLCData[] = historicalData.map(h => ({
         timestamp: h.timestamp,
@@ -1029,11 +1059,13 @@ export class FactorLibrary {
         ohlcData
       })
 
+      console.log(`📊 Technical analysis result for ${symbol}: ${technicalResult.score.total}/100`)
+
       // Return normalized score (0-1 scale from 0-100 scale)
       return technicalResult.score.total / 100
 
     } catch (error) {
-      console.error(`Error calculating technical overall score for ${symbol}:`, error)
+      console.error(`❌ Error calculating technical overall score for ${symbol}:`, error)
       return null
     }
   }
@@ -1695,12 +1727,20 @@ export class FactorLibrary {
     console.log(`   Total weights: Technical(35%) + Fundamental(25%) + Value(20%) + Sentiment(10%) + Risk(10%) = 100%`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
-    // Store factor contributions for utilization tracking
+    // Store factor contributions for utilization tracking with performance optimization
     this.factorCache.set(`${symbol}_composite_factors`, {
       value: finalScore,
       timestamp: Date.now(),
       factors: factorContributions
     } as any)
+
+    // ✅ PERFORMANCE FIX: Also cache individual technical score for direct tracking
+    if (technicalScore !== null) {
+      this.factorCache.set(`technical_overall_score_${symbol}_${Math.floor(Date.now() / 60000)}`, {
+        value: technicalScore,
+        timestamp: Date.now()
+      })
+    }
 
     return Math.max(0, Math.min(1, finalScore))
   }
@@ -1829,6 +1869,10 @@ export class FactorLibrary {
       'atr_volatility', 'volatility_breakout',
       'candlestick_patterns', 'chart_patterns', 'support_resistance',
 
+      // Enhanced Service Integration Factors
+      'vwap_deviation_score', 'vwap_trading_signals',
+      'macroeconomic_sector_impact', 'macroeconomic_composite',
+
       // Volatility
       'volatility_30d', 'volatility_ratio', 'beta',
 
@@ -1887,5 +1931,145 @@ export class FactorLibrary {
     if (totalSize < 1024) return `${totalSize}B`
     if (totalSize < 1024 * 1024) return `${Math.round(totalSize / 1024)}KB`
     return `${Math.round(totalSize / (1024 * 1024))}MB`
+  }
+
+  // ==================== ENHANCED SERVICE INTEGRATION CALCULATIONS ====================
+
+  /**
+   * Calculate VWAP deviation score using pre-fetched VWAPService data
+   * This replaces the old calculateVWAPPosition method with direct service integration
+   */
+  private calculateVWAPDeviationScore(vwapAnalysis?: any): number | null {
+    console.log('📊 Calculating VWAP deviation score from pre-fetched data...')
+
+    if (!vwapAnalysis) {
+      console.warn('📊 No VWAP analysis data provided - using fallback')
+      return null
+    }
+
+    try {
+      const deviationPercent = Math.abs(vwapAnalysis.deviationPercent)
+
+      // Convert VWAP deviation to 0-1 score
+      // Higher deviation = more trading opportunity (higher score)
+      if (deviationPercent > 3.0) return 0.9 // Strong deviation
+      if (deviationPercent > 1.5) return 0.7 // Moderate deviation
+      if (deviationPercent > 0.5) return 0.5 // Mild deviation
+      return 0.3 // Close to VWAP
+
+    } catch (error) {
+      console.error('📊 Error calculating VWAP deviation score:', error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate VWAP trading signals score using pre-fetched VWAPService data
+   */
+  private calculateVWAPTradingSignals(vwapAnalysis?: any): number | null {
+    console.log('📊 Calculating VWAP trading signals from pre-fetched data...')
+
+    if (!vwapAnalysis) {
+      console.warn('📊 No VWAP analysis data provided - using fallback')
+      return null
+    }
+
+    try {
+      const { signal, strength } = vwapAnalysis
+
+      let score = 0.5 // Neutral baseline
+
+      // Signal direction scoring
+      if (signal === 'above') {
+        score = 0.7 // Price above VWAP is generally bullish
+      } else if (signal === 'below') {
+        score = 0.3 // Price below VWAP is generally bearish
+      }
+
+      // Strength adjustment
+      const strengthMultiplier =
+        strength === 'strong' ? 1.2 :
+        strength === 'moderate' ? 1.0 : 0.8
+
+      score *= strengthMultiplier
+
+      console.log(`📊 VWAP trading signal: ${signal} with ${strength} strength = ${score.toFixed(3)}`)
+      return Math.max(0, Math.min(1, score))
+
+    } catch (error) {
+      console.error('📊 Error calculating VWAP trading signals:', error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate macroeconomic sector impact using pre-fetched MacroeconomicAnalysisService data
+   */
+  private calculateMacroeconomicSectorImpact(macroContext?: any, sector?: string): number | null {
+    console.log('🌍 Calculating macroeconomic sector impact from pre-fetched data...')
+
+    if (!macroContext || !sector) {
+      console.warn('🌍 No macroeconomic context or sector provided - using fallback')
+      return null
+    }
+
+    try {
+      const { sectorImpact, impact } = macroContext
+
+      // Use the macro impact score directly
+      let score = 0.5 // Neutral baseline
+
+      if (impact === 'positive') {
+        score = 0.8
+      } else if (impact === 'negative') {
+        score = 0.2
+      }
+
+      // Apply sector-specific adjustment if available
+      if (sectorImpact && typeof sectorImpact === 'number') {
+        score = (score + sectorImpact) / 2
+      }
+
+      console.log(`🌍 Macro sector impact for ${sector}: ${impact} = ${score.toFixed(3)}`)
+      return Math.max(0, Math.min(1, score))
+
+    } catch (error) {
+      console.error('🌍 Error calculating macroeconomic sector impact:', error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate macroeconomic composite score using pre-fetched MacroeconomicAnalysisService data
+   */
+  private calculateMacroeconomicComposite(macroContext?: any): number | null {
+    console.log('🌍 Calculating macroeconomic composite from pre-fetched data...')
+
+    if (!macroContext) {
+      console.warn('🌍 No macroeconomic context provided - using fallback')
+      return null
+    }
+
+    try {
+      const { macroScore, adjustedScore, confidence } = macroContext
+
+      // Use the adjusted score if available, otherwise use macro score
+      let score = adjustedScore || macroScore || 5.0
+
+      // Normalize from 0-10 scale to 0-1 scale
+      score = score / 10
+
+      // Apply confidence weighting
+      if (confidence && confidence < 0.7) {
+        score = (score + 0.5) / 2 // Blend with neutral when confidence is low
+      }
+
+      console.log(`🌍 Macroeconomic composite score: ${score.toFixed(3)} (confidence: ${confidence || 'unknown'})`)
+      return Math.max(0, Math.min(1, score))
+
+    } catch (error) {
+      console.error('🌍 Error calculating macroeconomic composite:', error)
+      return null
+    }
   }
 }
