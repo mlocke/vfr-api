@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "analysisId": "frontend_1758814997828_f0ccc3",
+    "timestamp": 1758814997828,
+    "requestId": "frontend_1758814981895_q777v1zz9",
+    "mode": "sector",
+    "processingTime": 15935,
+    "dataSourcesUsed": [],
+    "serviceHealth": {
+      "totalServices": 0,
+      "activeServices": 0,
+      "degradedServices": []
+    }
+  },
+  "input": {
+    "sector": {
+      "id": "technology",
+      "label": "Technology",
+      "category": "sector"
+    }
+  },
+  "results": {
+    "success": false,
+    "topSelections": [],
+    "analysisInputServices": {}
+  },
+  "errors": [
+    "Incomplete data for AACIW: missing core financial data"
+  ]
+}

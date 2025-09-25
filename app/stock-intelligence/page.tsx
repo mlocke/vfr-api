@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import SectorDropdown, { SectorOption } from '../components/SectorDropdown'
 import StockAutocomplete from '../components/StockAutocomplete'
 import { SelectionMode } from '../services/stock-selection/types'
+import ErrorDisplay from '../components/analysis/ErrorDisplay'
 
 // Type definitions for API communication
 interface AnalysisRequest {
@@ -103,6 +104,40 @@ interface AnalysisResult {
   message?: string
 }
 
+// Frontend Analysis API Types
+interface FrontendAnalysisRequest {
+  mode: 'single' | 'sector' | 'multiple'
+  sector?: {
+    id: string
+    label: string
+    category: 'sector' | 'index' | 'etf'
+  }
+  symbols?: string[]
+  options?: {
+    useRealTimeData: boolean
+    includeSentiment: boolean
+    includeNews: boolean
+    timeout: number
+  }
+}
+
+interface FrontendAnalysisResponse {
+  success: boolean
+  data?: {
+    analysisId: string
+    filePath: string
+    resultsCount: number
+    processingTime: number
+    metadata: {
+      mode: string
+      timestamp: number
+      dataSourcesUsed: string[]
+      analysisInputServices: Record<string, any>
+    }
+  }
+  error?: string
+}
+
 export default function DeepAnalysisPage() {
   // Add CSS animations via style tag
   const animationStyles = `
@@ -133,6 +168,11 @@ export default function DeepAnalysisPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errorType, setErrorType] = useState<'validation' | 'api' | 'network' | 'timeout'>('api')
+  const [frontendAnalysisResult, setFrontendAnalysisResult] = useState<FrontendAnalysisResponse['data'] | null>(null)
+  const [analysisStartTime, setAnalysisStartTime] = useState<number>(0)
+  const [elapsedTime, setElapsedTime] = useState<number>(0)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const handleSectorChange = (sector: SectorOption) => {
     setSelectedSector(sector)
@@ -295,7 +335,7 @@ export default function DeepAnalysisPage() {
   return (
     <>
       {/* CSS Animations */}
-      <style jsx>{animationStyles}</style>
+      <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
 
       {/* Background Animation - Consistent with homepage */}
       <div className="bg-animation">
@@ -1069,6 +1109,155 @@ export default function DeepAnalysisPage() {
                       backdropFilter: 'blur(10px)',
                       color: 'white',
                       padding: '1rem 2rem',
+                      border: '2px solid rgba(255, 255, 255, 0.2)',
+                      borderRadius: '12px',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                      e.currentTarget.style.borderColor = 'rgba(0, 200, 83, 0.5)'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                    }}
+                  >
+                    <span>🔄</span>
+                    Start New Analysis
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Frontend Analysis Success State */}
+            {frontendAnalysisResult && (
+              <div className="analysis-success" style={{
+                background: 'rgba(0, 200, 83, 0.1)',
+                backdropFilter: 'blur(20px)',
+                border: '2px solid rgba(0, 200, 83, 0.5)',
+                borderRadius: '20px',
+                padding: '2rem',
+                textAlign: 'center',
+                animation: 'fadeInUp 0.4s ease-out',
+                marginTop: '2rem'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                  ✅
+                </div>
+
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  color: 'rgba(0, 200, 83, 0.9)',
+                  marginBottom: '1rem'
+                }}>
+                  Analysis Complete!
+                </h3>
+
+                <div style={{
+                  background: 'rgba(0, 200, 83, 0.1)',
+                  border: '1px solid rgba(0, 200, 83, 0.3)',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  marginBottom: '2rem',
+                  textAlign: 'left'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '1rem',
+                    fontSize: '0.9rem',
+                    color: 'rgba(255, 255, 255, 0.8)'
+                  }}>
+                    <div>
+                      <strong>Processing Time:</strong> {frontendAnalysisResult.processingTime}ms
+                    </div>
+                    <div>
+                      <strong>Results Count:</strong> {frontendAnalysisResult.resultsCount} stocks
+                    </div>
+                    <div>
+                      <strong>Analysis Mode:</strong> {frontendAnalysisResult.metadata.mode}
+                    </div>
+                    <div>
+                      <strong>Data Sources:</strong> {frontendAnalysisResult.metadata.dataSourcesUsed.length} sources
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginTop: '1rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid rgba(0, 200, 83, 0.3)'
+                  }}>
+                    <p style={{
+                      margin: 0,
+                      fontSize: '0.85rem',
+                      color: 'rgba(255, 255, 255, 0.6)'
+                    }}>
+                      <strong>Analysis File:</strong> {frontendAnalysisResult.filePath}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="success-actions" style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap'
+                }}>
+                  <a
+                    href={`/analysis-results/${frontendAnalysisResult.filePath}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '1rem 2rem',
+                      background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.9), rgba(0, 150, 60, 0.9))',
+                      color: 'white',
+                      textDecoration: 'none',
+                      borderRadius: '12px',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 15px rgba(0, 200, 83, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 200, 83, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 200, 83, 0.3)'
+                    }}
+                  >
+                    <span>📊</span>
+                    View Analysis Results
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      setFrontendAnalysisResult(null)
+                      setError(null)
+                      setSelectedSector(undefined)
+                      setSelectedSymbols([])
+                      setAnalysisType(null)
+                      setShowConfirmation(false)
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '1rem 2rem',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(10px)',
+                      color: 'white',
                       border: '2px solid rgba(255, 255, 255, 0.2)',
                       borderRadius: '12px',
                       fontSize: '1.1rem',

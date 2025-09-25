@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "analysisId": "frontend_1758815017618_588bd0",
+    "timestamp": 1758815017618,
+    "requestId": "frontend_1758815012277_6sv3aymql",
+    "mode": "multiple",
+    "processingTime": 5344,
+    "dataSourcesUsed": [],
+    "serviceHealth": {
+      "totalServices": 0,
+      "activeServices": 0,
+      "degradedServices": []
+    }
+  },
+  "input": {
+    "symbols": [
+      "AAPL",
+      "MSFT"
+    ]
+  },
+  "results": {
+    "success": false,
+    "topSelections": [],
+    "analysisInputServices": {}
+  },
+  "errors": [
+    "Incomplete data for MSFT: missing core financial data"
+  ]
+}
