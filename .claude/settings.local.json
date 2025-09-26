@@ -71,7 +71,8 @@
       "mcp__playwright__browser_console_messages",
       "WebFetch(domain:developers.google.com)",
       "Bash(mkdir:*)",
-      "WebFetch(domain:site.financialmodelingprep.com)"
+      "WebFetch(domain:site.financialmodelingprep.com)",
+      "Bash(redis-cli:*)"
     ],
     "deny": [],
     "ask": []

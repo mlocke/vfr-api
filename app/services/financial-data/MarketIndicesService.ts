@@ -87,7 +87,8 @@ export class MarketIndicesService {
   }
 
   private initializeProviders() {
-    // Priority order for index data: FMP (300/min) → TwelveData (8/min) → Polygon (5/min)
+    // ✅ OPTIMIZED: Priority order for index data to avoid 429 rate limits
+    // FMP (300/min) → TwelveData (8/min) → Yahoo (unlimited) → Polygon (5/min)
     if (process.env.FMP_API_KEY) {
       this.providers.set('fmp', new FinancialModelingPrepAPI())
     }
@@ -112,10 +113,11 @@ export class MarketIndicesService {
     }
 
     // Special handling for VIX - use Yahoo Finance first since TwelveData doesn't support it
-    let providerOrder = ['twelvedata', 'polygon', 'fmp', 'yahoo']
+    // Priority order optimized for rate limits: FMP (300/min) → TwelveData (8/min) → Yahoo → Polygon (5/min)
+    let providerOrder = ['fmp', 'twelvedata', 'yahoo', 'polygon']
     let querySymbol = symbol
     if (symbol === 'VIX') {
-      providerOrder = ['yahoo', 'polygon', 'fmp'] // Skip TwelveData for VIX
+      providerOrder = ['yahoo', 'fmp', 'polygon'] // Skip TwelveData for VIX
       querySymbol = '^VIX' // Yahoo Finance uses ^VIX for VIX index
     }
 
