@@ -1,0 +1,262 @@
+/**
+ * Earnings Transcript Service
+ * Analyzes earnings call transcripts and extracts sentiment and insights
+ * Provides NLP-powered analysis of management tone and analyst sentiment
+ */
+
+import { EarningsTranscript, TranscriptAnalysis, EarningsSentiment, NLPInsight } from './types'
+import { createServiceErrorHandler } from '../error-handling'
+import SecurityValidator from '../security/SecurityValidator'
+import { redisCache } from '../cache/RedisCache'
+
+export class EarningsTranscriptService {
+  private readonly errorHandler: ReturnType<typeof createServiceErrorHandler>
+  private readonly cacheTTL = 7200000 // 2 hours cache for transcript data
+
+  constructor() {
+    this.errorHandler = createServiceErrorHandler('EarningsTranscriptService')
+  }
+
+  /**
+   * Get earnings transcript for a specific symbol and period
+   * @param symbol Stock symbol
+   * @param quarter Quarter identifier (e.g., 'Q3', 'Q4')
+   * @param year Year
+   * @returns Promise<EarningsTranscript | null>
+   */
+  async getEarningsTranscript(symbol: string, quarter: string, year: number): Promise<EarningsTranscript | null> {
+    try {
+      SecurityValidator.validateSymbol(symbol)
+
+      const cacheKey = `earnings-transcript:${symbol.toUpperCase()}:${quarter}:${year}`
+      const cachedData = await redisCache.get<EarningsTranscript>(cacheKey)
+
+      if (cachedData) {
+        return cachedData
+      }
+
+      // Mock implementation - would integrate with actual transcript APIs
+      const mockTranscript: EarningsTranscript = {
+        symbol: symbol.toUpperCase(),
+        quarter,
+        year,
+        fiscalPeriod: `${quarter} ${year}`,
+        date: new Date().toISOString().split('T')[0],
+        participants: [
+          {
+            name: 'John CEO',
+            title: 'Chief Executive Officer',
+            company: `${symbol.toUpperCase()} Corp`,
+            type: 'Executive'
+          },
+          {
+            name: 'Jane Analyst',
+            title: 'Senior Analyst',
+            company: 'Investment Firm',
+            type: 'Analyst'
+          }
+        ],
+        transcript: `Sample earnings call transcript for ${symbol.toUpperCase()}. Management discusses strong performance and positive outlook for the coming quarters.`,
+        keyTopics: ['Revenue Growth', 'Margin Expansion', 'Market Position', 'Future Guidance'],
+        sentiment: 'POSITIVE',
+        confidence: 0.8,
+        source: 'EarningsTranscriptService',
+        timestamp: Date.now()
+      }
+
+      await redisCache.set(cacheKey, mockTranscript, this.cacheTTL)
+      return mockTranscript
+
+    } catch (error) {
+      this.errorHandler.errorHandler.handleError('getEarningsTranscript', error, { symbol, quarter, year })
+      return null
+    }
+  }
+
+  /**
+   * Analyze earnings transcript using NLP
+   * @param transcript Earnings transcript to analyze
+   * @returns Promise<TranscriptAnalysis>
+   */
+  async analyzeTranscript(transcript: EarningsTranscript): Promise<TranscriptAnalysis> {
+    try {
+      const cacheKey = `transcript-analysis:${transcript.symbol}:${transcript.quarter}:${transcript.year}`
+      const cachedData = await redisCache.get<TranscriptAnalysis>(cacheKey)
+
+      if (cachedData) {
+        return cachedData
+      }
+
+      // Mock NLP analysis - would use actual NLP services
+      const keyInsights: NLPInsight[] = [
+        {
+          topic: 'Revenue Growth',
+          sentiment: 0.7,
+          confidence: 0.85,
+          mentions: 5,
+          keyPhrases: ['strong growth', 'increased revenue', 'market expansion'],
+          context: 'Management emphasized strong revenue growth across all segments'
+        },
+        {
+          topic: 'Future Outlook',
+          sentiment: 0.6,
+          confidence: 0.8,
+          mentions: 3,
+          keyPhrases: ['positive outlook', 'optimistic guidance', 'strong pipeline'],
+          context: 'Positive guidance for upcoming quarters with strong pipeline'
+        }
+      ]
+
+      const analysis: TranscriptAnalysis = {
+        symbol: transcript.symbol,
+        transcript,
+        sentimentBreakdown: {
+          overall: 0.65,
+          guidance: 0.7,
+          performance: 0.6,
+          outlook: 0.7
+        },
+        keyInsights,
+        managementTone: 'OPTIMISTIC',
+        analystSentiment: 'POSITIVE',
+        redFlags: [],
+        positiveSignals: [
+          'Strong revenue growth mentioned',
+          'Positive guidance provided',
+          'Market expansion opportunities identified'
+        ],
+        timestamp: Date.now(),
+        source: 'EarningsTranscriptService'
+      }
+
+      await redisCache.set(cacheKey, analysis, this.cacheTTL)
+      return analysis
+
+    } catch (error) {
+      throw this.errorHandler.handleError('analyzeTranscript', error, { symbol: transcript.symbol })
+    }
+  }
+
+  /**
+   * Get earnings sentiment analysis for a symbol
+   * @param symbol Stock symbol
+   * @returns Promise<EarningsSentiment>
+   */
+  async getEarningsSentiment(symbol: string): Promise<EarningsSentiment> {
+    try {
+      SecurityValidator.validateSymbol(symbol)
+
+      const cacheKey = `earnings-sentiment:${symbol.toUpperCase()}`
+      const cachedData = await redisCache.get<EarningsSentiment>(cacheKey)
+
+      if (cachedData) {
+        return cachedData
+      }
+
+      // Get recent transcripts (mock data)
+      const recentTranscripts: TranscriptAnalysis[] = []
+      const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+      const currentYear = new Date().getFullYear()
+
+      for (const quarter of quarters.slice(0, 2)) { // Last 2 quarters
+        const transcript = await this.getEarningsTranscript(symbol, quarter, currentYear)
+        if (transcript) {
+          const analysis = await this.analyzeTranscript(transcript)
+          recentTranscripts.push(analysis)
+        }
+      }
+
+      const avgSentiment = recentTranscripts.reduce((sum, t) => sum + t.sentimentBreakdown.overall, 0) / recentTranscripts.length || 0.5
+      const sentimentScore = Math.round((avgSentiment + 1) * 5) // Convert -1:1 to 0:10
+
+      const sentiment: EarningsSentiment = {
+        symbol: symbol.toUpperCase(),
+        recentTranscripts,
+        trendingSentiment: avgSentiment > 0.1 ? 'IMPROVING' : avgSentiment < -0.1 ? 'DECLINING' : 'STABLE',
+        sentimentScore,
+        confidence: 0.8,
+        keyThemes: ['Revenue Growth', 'Market Position', 'Future Guidance'],
+        timestamp: Date.now(),
+        source: 'EarningsTranscriptService'
+      }
+
+      await redisCache.set(cacheKey, sentiment, this.cacheTTL)
+      return sentiment
+
+    } catch (error) {
+      throw this.errorHandler.handleError('getEarningsSentiment', error, { symbol })
+    }
+  }
+
+  /**
+   * Get earnings transcripts for multiple symbols
+   * @param symbols Array of stock symbols
+   * @returns Promise<EarningsSentiment[]>
+   */
+  async getEarningsSentimentBatch(symbols: string[]): Promise<EarningsSentiment[]> {
+    try {
+      if (!symbols || symbols.length === 0) {
+        throw new Error('Symbols array is required')
+      }
+
+      const results = await Promise.allSettled(
+        symbols.map(symbol => this.getEarningsSentiment(symbol))
+      )
+
+      return results
+        .filter((result): result is PromiseFulfilledResult<EarningsSentiment> => result.status === 'fulfilled')
+        .map(result => result.value)
+
+    } catch (error) {
+      throw this.errorHandler.handleError('getEarningsSentimentBatch', error, { symbols })
+    }
+  }
+
+  /**
+   * Search transcripts by keyword or topic
+   * @param symbol Stock symbol
+   * @param keyword Keyword to search for
+   * @param limit Maximum number of results
+   * @returns Promise<NLPInsight[]>
+   */
+  async searchTranscriptsByKeyword(symbol: string, keyword: string, limit: number = 10): Promise<NLPInsight[]> {
+    try {
+      SecurityValidator.validateSymbol(symbol)
+
+      // Mock search implementation
+      const mockResults: NLPInsight[] = [
+        {
+          topic: keyword,
+          sentiment: 0.5,
+          confidence: 0.75,
+          mentions: 3,
+          keyPhrases: [keyword, `${keyword} growth`, `${keyword} strategy`],
+          context: `Analysis of ${keyword} mentions in recent earnings calls`
+        }
+      ]
+
+      return mockResults.slice(0, limit)
+
+    } catch (error) {
+      throw this.errorHandler.handleError('searchTranscriptsByKeyword', error, { symbol, keyword })
+    }
+  }
+
+  /**
+   * Health check for the service
+   * @returns Promise<boolean>
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      await this.getEarningsSentiment('AAPL')
+      return true
+    } catch (error) {
+      this.errorHandler.handleError('healthCheck', error)
+      return false
+    }
+  }
+}
+
+// Export singleton instance
+export const earningsTranscriptService = new EarningsTranscriptService()
+export default earningsTranscriptService

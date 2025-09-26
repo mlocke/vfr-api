@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFR Modal Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111827;
+            color: white;
+            padding: 20px;
+        }
+        .debug-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .test-button {
+            background: linear-gradient(135deg, rgba(0, 200, 83, 0.9), rgba(0, 150, 60, 0.9));
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 10px;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success {
+            background: rgba(0, 200, 83, 0.1);
+            border: 1px solid rgba(0, 200, 83, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 VFR Modal Crash Debug Tool</h1>
+    <p>Debug tools to analyze the modal crash issue with processing time 6453ms, results count 1 stock, single analysis mode.</p>
+
+    <div class="debug-section">
+        <h2>📊 Test Analysis File Data</h2>
+        <button class="test-button" onclick="testAnalysisFile()">Load & Validate Analysis File</button>
+        <div id="analysisFileResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🎭 Test Modal Rendering</h2>
+        <button class="test-button" onclick="testModalRendering()">Test Modal with Analysis Data</button>
+        <div id="modalResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔬 Data Transformation Test</h2>
+        <button class="test-button" onclick="testDataTransformation()">Test Data Transformers</button>
+        <div id="transformResult"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>📝 Error Logs</h2>
+        <div id="errorLog"></div>
+    </div>
+
+    <script>
+        let analysisData = null;
+
+        // Mock console logging for debugging
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            logError('ERROR', args.join(' '));
+        };
+
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            logError('WARN', args.join(' '));
+        };
+
+        function logError(type, message) {
+            const errorLog = document.getElementById('errorLog');
+            const timestamp = new Date().toLocaleTimeString();
+            errorLog.innerHTML += `<div class="error">[${timestamp}] ${type}: ${message}</div>`;
+        }
+
+        function showSuccess(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="success">✅ ${message}</div>`;
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        async function testAnalysisFile() {
+            try {
+                const response = await fetch('/analysis-results/analysis-1758834202994-single-09f7a4.json');
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load analysis file: ${response.status}`);
+                }
+
+                analysisData = await response.json();
+
+                // Validate the data structure
+                const validation = validateAnalysisData(analysisData);
+
+                if (validation.valid) {
+                    showSuccess('analysisFileResult', `Analysis file loaded successfully. Found ${analysisData.results.topSelections.length} stock(s).`);
+
+                    // Show sample data
+                    const sampleStock = analysisData.results.topSelections[0];
+                    document.getElementById('analysisFileResult').innerHTML += `
+                        <h3>Sample Stock Data:</h3>
+                        <pre>${JSON.stringify({
+                            symbol: sampleStock.symbol,
+                            action: sampleStock.action,
+                            confidence: sampleStock.confidence,
+                            score: sampleStock.score.factorScores
+                        }, null, 2)}</pre>
+                    `;
+                } else {
+                    showError('analysisFileResult', `Data validation failed: ${validation.errors.join(', ')}`);
+                }
+            } catch (error) {
+                showError('analysisFileResult', `Failed to load analysis file: ${error.message}`);
+                console.error('Analysis file test failed:', error);
+            }
+        }
+
+        function validateAnalysisData(data) {
+            const errors = [];
+
+            if (!data) {
+                errors.push('No data provided');
+                return { valid: false, errors };
+            }
+
+            if (!data.results || !data.results.topSelections) {
+                errors.push('Missing topSelections in results');
+            }
+
+            if (data.results.topSelections && data.results.topSelections.length === 0) {
+                errors.push('No stocks in topSelections');
+            }
+
+            if (data.results.topSelections && data.results.topSelections.length > 0) {
+                const stock = data.results.topSelections[0];
+
+                if (!stock.symbol) errors.push('Missing symbol');
+                if (!stock.score) errors.push('Missing score object');
+                if (!stock.action) errors.push('Missing action');
+                if (stock.confidence === undefined) errors.push('Missing confidence');
+                if (!stock.context) errors.push('Missing context');
+                if (!stock.reasoning) errors.push('Missing reasoning');
+
+                if (stock.score) {
+                    if (stock.score.factorScores === undefined) errors.push('Missing factorScores');
+                    if (stock.score.overallScore === undefined) errors.push('Missing overallScore');
+                    if (!stock.score.marketData) errors.push('Missing marketData');
+                }
+            }
+
+            return {
+                valid: errors.length === 0,
+                errors
+            };
+        }
+
+        function testModalRendering() {
+            if (!analysisData) {
+                showError('modalResult', 'Please load analysis file first');
+                return;
+            }
+
+            try {
+                const stock = analysisData.results.topSelections[0];
+
+                // Test the data transformation logic that would happen in React
+                const transformedStock = transformStockForDialog(stock);
+
+                if (transformedStock) {
+                    showSuccess('modalResult', 'Data transformation successful - Modal should be able to render');
+
+                    // Show transformed data structure
+                    document.getElementById('modalResult').innerHTML += `
+                        <h3>Transformed Stock Data:</h3>
+                        <pre>${JSON.stringify({
+                            symbol: transformedStock.symbol,
+                            score: transformedStock.score.factorScores,
+                            action: transformedStock.action,
+                            confidence: transformedStock.confidence
+                        }, null, 2)}</pre>
+                    `;
+                } else {
+                    showError('modalResult', 'Data transformation failed');
+                }
+            } catch (error) {
+                showError('modalResult', `Modal rendering test failed: ${error.message}`);
+                console.error('Modal rendering test failed:', error);
+            }
+        }
+
+        function transformStockForDialog(stock) {
+            try {
+                // Mimic the transformStockForDialog function from the React component
+                const transformedStock = {
+                    symbol: stock.symbol,
+                    score: {
+                        symbol: stock.symbol,
+                        overallScore: stock.score?.overall || 0,
+                        factorScores: {
+                            composite: stock.score?.overall || 0,
+                            technical_overall_score: stock.score?.technical || 0,
+                            quality_composite: stock.score?.fundamental || 0,
+                            momentum_composite: stock.score?.technical || 0,
+                            value_composite: stock.score?.fundamental || 0,
+                            volatility_30d: 0.5,
+                            sentiment_composite: stock.score?.sentiment || 0,
+                            vwap_deviation_score: 0.3,
+                            vwap_trading_signals: 0.24,
+                            macroeconomic_sector_impact: 0.9,
+                            macroeconomic_composite: 1
+                        },
+                        dataQuality: stock.dataQuality?.overall || {
+                            overall: 0.9,
+                            metrics: {
+                                freshness: 0.95,
+                                completeness: 0.9,
+                                accuracy: 0.95,
+                                sourceReputation: 0.9,
+                                latency: 0
+                            },
+                            timestamp: Date.now(),
+                            source: 'composite'
+                        },
+                        timestamp: Date.now(),
+                        marketData: {
+                            price: 423.84,
+                            volume: stock.context?.volumeChange24h || 87766581,
+                            marketCap: stock.context?.marketCap || 0,
+                            sector: stock.context?.sector || 'Unknown',
+                            exchange: stock.symbol
+                        },
+                        algorithmMetrics: {
+                            quality: {
+                                score: stock.score?.overall || 0
+                            }
+                        }
+                    },
+                    weight: stock.weight,
+                    action: stock.action,
+                    confidence: stock.confidence,
+                    context: stock.context,
+                    reasoning: stock.reasoning,
+                    dataQuality: stock.dataQuality
+                };
+
+                return transformedStock;
+            } catch (error) {
+                console.error('Stock transformation failed:', error);
+                throw error;
+            }
+        }
+
+        function testDataTransformation() {
+            if (!analysisData) {
+                showError('transformResult', 'Please load analysis file first');
+                return;
+            }
+
+            try {
+                const stock = analysisData.results.topSelections[0];
+
+                // Test various data access patterns
+                const tests = [
+                    {
+                        name: 'Basic Properties',
+                        test: () => stock.symbol && stock.action && stock.confidence !== undefined
+                    },
+                    {
+                        name: 'Score Object',
+                        test: () => stock.score && typeof stock.score === 'object'
+                    },
+                    {
+                        name: 'Factor Scores',
+                        test: () => stock.score.factorScores && typeof stock.score.factorScores === 'object'
+                    },
+                    {
+                        name: 'Market Data',
+                        test: () => stock.score.marketData && stock.score.marketData.price !== undefined
+                    },
+                    {
+                        name: 'Context',
+                        test: () => stock.context && stock.context.sector
+                    },
+                    {
+                        name: 'Reasoning',
+                        test: () => stock.reasoning && Array.isArray(stock.reasoning.primaryFactors)
+                    },
+                    {
+                        name: 'Data Quality',
+                        test: () => stock.dataQuality && stock.dataQuality.overall
+                    }
+                ];
+
+                let passed = 0;
+                let failed = 0;
+                let results = '';
+
+                tests.forEach(test => {
+                    try {
+                        const result = test.test();
+                        if (result) {
+                            passed++;
+                            results += `✅ ${test.name}: PASS\\n`;
+                        } else {
+                            failed++;
+                            results += `❌ ${test.name}: FAIL\\n`;
+                        }
+                    } catch (error) {
+                        failed++;
+                        results += `❌ ${test.name}: ERROR - ${error.message}\\n`;
+                    }
+                });
+
+                if (failed === 0) {
+                    showSuccess('transformResult', `All data transformation tests passed (${passed}/${passed + failed})`);
+                } else {
+                    showError('transformResult', `Some tests failed (${passed}/${passed + failed} passed)`);
+                }
+
+                document.getElementById('transformResult').innerHTML += `<pre>${results}</pre>`;
+
+            } catch (error) {
+                showError('transformResult', `Data transformation test failed: ${error.message}`);
+                console.error('Data transformation test failed:', error);
+            }
+        }
+
+        // Auto-run initial test
+        window.addEventListener('load', () => {
+            console.log('VFR Modal Debug Tool loaded');
+        });
+    </script>
+</body>
+</html>

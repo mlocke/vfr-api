@@ -124,6 +124,223 @@ export interface RatingChange {
   source: string
 }
 
+/**
+ * FMP-specific Financial Statements
+ * Comprehensive financial data unique to FMP
+ */
+export interface FinancialStatement {
+  symbol: string
+  date: string
+  period: 'annual' | 'quarterly'
+  revenue: number
+  costOfRevenue: number
+  grossProfit: number
+  grossProfitRatio: number
+  researchAndDevelopment: number
+  generalAndAdministrativeExpenses: number
+  sellingAndMarketingExpenses: number
+  sellingGeneralAndAdministrativeExpenses: number
+  operatingExpenses: number
+  operatingIncome: number
+  operatingIncomeRatio: number
+  totalOtherIncomeExpenses: number
+  incomeBeforeTax: number
+  incomeBeforeTaxRatio: number
+  incomeTaxExpense: number
+  netIncome: number
+  netIncomeRatio: number
+  eps: number
+  epsdiluted: number
+  weightedAverageShsOut: number
+  weightedAverageShsOutDil: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Balance Sheet Data
+ * Enhanced balance sheet information
+ */
+export interface BalanceSheet {
+  symbol: string
+  date: string
+  period: 'annual' | 'quarterly'
+  cashAndCashEquivalents: number
+  shortTermInvestments: number
+  cashAndShortTermInvestments: number
+  netReceivables: number
+  inventory: number
+  otherCurrentAssets: number
+  totalCurrentAssets: number
+  propertyPlantEquipmentNet: number
+  goodwill: number
+  intangibleAssets: number
+  goodwillAndIntangibleAssets: number
+  longTermInvestments: number
+  taxAssets: number
+  otherNonCurrentAssets: number
+  totalNonCurrentAssets: number
+  totalAssets: number
+  accountPayables: number
+  shortTermDebt: number
+  taxPayables: number
+  deferredRevenue: number
+  otherCurrentLiabilities: number
+  totalCurrentLiabilities: number
+  longTermDebt: number
+  deferredRevenueNonCurrent: number
+  deferredTaxLiabilitiesNonCurrent: number
+  otherNonCurrentLiabilities: number
+  totalNonCurrentLiabilities: number
+  totalLiabilities: number
+  preferredStock: number
+  commonStock: number
+  retainedEarnings: number
+  accumulatedOtherComprehensiveIncomeLoss: number
+  othertotalStockholdersEquity: number
+  totalStockholdersEquity: number
+  totalEquity: number
+  totalLiabilitiesAndStockholdersEquity: number
+  minorityInterest: number
+  totalLiabilitiesAndTotalEquity: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Cash Flow Statement
+ * Complete cash flow analysis
+ */
+export interface CashFlowStatement {
+  symbol: string
+  date: string
+  period: 'annual' | 'quarterly'
+  netIncome: number
+  depreciationAndAmortization: number
+  deferredIncomeTax: number
+  stockBasedCompensation: number
+  changeInWorkingCapital: number
+  accountsReceivables: number
+  inventory: number
+  accountsPayables: number
+  otherWorkingCapital: number
+  otherNonCashItems: number
+  netCashProvidedByOperatingActivities: number
+  investmentsInPropertyPlantAndEquipment: number
+  acquisitionsNet: number
+  purchasesOfInvestments: number
+  salesMaturitiesOfInvestments: number
+  otherInvestingActivites: number
+  netCashUsedForInvestingActivites: number
+  debtRepayment: number
+  commonStockIssued: number
+  commonStockRepurchased: number
+  dividendsPaid: number
+  otherFinancingActivites: number
+  netCashUsedProvidedByFinancingActivities: number
+  effectOfForexChangesOnCash: number
+  netChangeInCash: number
+  cashAtEndOfPeriod: number
+  cashAtBeginningOfPeriod: number
+  operatingCashFlow: number
+  capitalExpenditure: number
+  freeCashFlow: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Economics Data
+ * Economic calendar and events
+ */
+export interface EconomicEvent {
+  date: string
+  time: string
+  country: string
+  event: string
+  currency: string
+  previous: number | null
+  estimate: number | null
+  actual: number | null
+  change: number | null
+  changePercentage: number | null
+  impact: 'Low' | 'Medium' | 'High'
+  unit?: string
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Dividend Data
+ * Enhanced dividend information
+ */
+export interface DividendData {
+  symbol: string
+  date: string
+  label: string
+  adjDividend: number
+  dividend: number
+  recordDate: string
+  paymentDate: string
+  declarationDate: string
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Stock Split Data
+ */
+export interface StockSplit {
+  symbol: string
+  date: string
+  label: string
+  numerator: number
+  denominator: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP ESG Ratings
+ * Environmental, Social, and Governance scores
+ */
+export interface ESGRating {
+  symbol: string
+  companyName: string
+  environmentalScore: number
+  socialScore: number
+  governanceScore: number
+  ESGScore: number
+  environmentalGrade: string
+  socialGrade: string
+  governanceGrade: string
+  ESGGrade: string
+  timestamp: number
+  source: string
+}
+
+/**
+ * FMP Treasury Rates
+ * Government bond yields and rates
+ */
+export interface TreasuryRate {
+  date: string
+  month1: number
+  month2: number
+  month3: number
+  month6: number
+  year1: number
+  year2: number
+  year3: number
+  year5: number
+  year7: number
+  year10: number
+  year20: number
+  year30: number
+  timestamp: number
+  source: string
+}
+
 export interface HistoricalOHLC {
   timestamp: number
   open: number
@@ -145,6 +362,15 @@ export interface FinancialDataProvider {
   getPriceTargets?(symbol: string): Promise<PriceTarget | null>
   getRecentRatingChanges?(symbol: string, limit?: number): Promise<RatingChange[]>
   getStocksBySector?(sector: string, limit?: number): Promise<StockData[]>
+  // Enhanced FMP-specific methods
+  getIncomeStatement?(symbol: string, period?: 'annual' | 'quarterly', limit?: number): Promise<FinancialStatement[]>
+  getBalanceSheet?(symbol: string, period?: 'annual' | 'quarterly', limit?: number): Promise<BalanceSheet[]>
+  getCashFlowStatement?(symbol: string, period?: 'annual' | 'quarterly', limit?: number): Promise<CashFlowStatement[]>
+  getEconomicCalendar?(from?: string, to?: string): Promise<EconomicEvent[]>
+  getDividendData?(symbol: string, from?: string, to?: string): Promise<DividendData[]>
+  getStockSplitData?(symbol: string, from?: string, to?: string): Promise<StockSplit[]>
+  getESGRating?(symbol: string): Promise<ESGRating | null>
+  getTreasuryRates?(from?: string, to?: string): Promise<TreasuryRate[]>
   healthCheck(): Promise<boolean>
 }
 
@@ -489,6 +715,85 @@ export interface SectorCurrencyImpact {
   riskLevel: 'low' | 'medium' | 'high'
 }
 
+/**
+ * Sector Performance Ranking Types
+ * Supporting comprehensive sector performance analysis with multi-timeframe rankings
+ */
+
+export interface SectorPerformanceRanking {
+  sector: string
+  symbol: string           // ETF symbol representing the sector
+  name: string             // Human readable sector name
+  ranking: number          // Overall ranking (1 = best performing)
+  returns: {
+    oneDay: number         // 1-day return %
+    fiveDay: number        // 5-day return %
+    oneMonth: number       // 1-month return %
+    threeMonth: number     // 3-month return %
+    yearToDate: number     // Year-to-date return %
+  }
+  rankings: {
+    oneDay: number         // 1-day ranking (1-11)
+    fiveDay: number        // 5-day ranking (1-11)
+    oneMonth: number       // 1-month ranking (1-11)
+    threeMonth: number     // 3-month ranking (1-11)
+    yearToDate: number     // YTD ranking (1-11)
+  }
+  momentum: {
+    direction: 'up' | 'down' | 'neutral'
+    strength: 'weak' | 'moderate' | 'strong'
+    velocity: number       // Rate of change acceleration
+    consistency: number    // Consistency score 0-1
+  }
+  technicalSignals: {
+    trend: 'bullish' | 'bearish' | 'neutral'
+    support: number        // Support level price
+    resistance: number     // Resistance level price
+    rsi: number           // Relative Strength Index
+    macdSignal: 'buy' | 'sell' | 'hold'
+  }
+  relativeStrength: number // vs S&P 500 baseline
+  volatility: number       // Volatility measure
+  volume: {
+    current: number        // Current volume
+    average: number        // Average volume (20-day)
+    ratio: number         // Current/average ratio
+  }
+  marketCap: number        // ETF Assets Under Management
+  confidence: number       // Data quality confidence 0-1
+  timestamp: number        // Unix timestamp
+  source: string          // Data source identifier
+}
+
+export interface SectorRankingResponse {
+  rankings: SectorPerformanceRanking[]
+  marketContext: {
+    phase: 'bull' | 'bear' | 'sideways'
+    sentiment: 'risk-on' | 'risk-off' | 'neutral'
+    volatility: 'low' | 'medium' | 'high'
+    trend: 'up' | 'down' | 'sideways'
+  }
+  rotationSignals: {
+    intoSectors: string[]    // Sectors showing inflow momentum
+    outOfSectors: string[]   // Sectors showing outflow momentum
+    strength: number         // Rotation strength 0-10
+  }
+  bestPerformers: {
+    oneDay: SectorPerformanceRanking[]
+    fiveDay: SectorPerformanceRanking[]
+    oneMonth: SectorPerformanceRanking[]
+  }
+  worstPerformers: {
+    oneDay: SectorPerformanceRanking[]
+    fiveDay: SectorPerformanceRanking[]
+    oneMonth: SectorPerformanceRanking[]
+  }
+  dataQuality: 'excellent' | 'good' | 'fair' | 'poor'
+  timestamp: number
+  source: string
+  errors?: string[]
+}
+
 export interface CurrencyAnalysis {
   dxyIndex: DollarIndex
   majorPairs: CurrencyPair[]
@@ -526,6 +831,56 @@ export interface VWAPAnalysis {
   deviationPercent: number
   signal: 'above' | 'below' | 'at'
   strength: 'weak' | 'moderate' | 'strong'
+  timestamp: number
+}
+
+/**
+ * Historical VWAP Trend Analysis Types
+ * Supporting trend analysis over different timeframes
+ */
+export interface HistoricalVWAP {
+  symbol: string
+  date: string // ISO date string
+  vwap: number
+  currentPrice: number
+  deviation: number
+  deviationPercent: number
+  volume: number
+  timestamp: number
+}
+
+export interface VWAPTrendAnalysis {
+  symbol: string
+  timeframe: '1D' | '5D' | '1M' | '3M'
+  trendDirection: 'uptrend' | 'downtrend' | 'sideways'
+  trendStrength: 'weak' | 'moderate' | 'strong'
+  trendScore: number // -1 to 1 (-1=strong downtrend, 1=strong uptrend)
+  averageDeviation: number
+  volatility: number
+  momentum: number // Rate of change in trend
+  historicalData: HistoricalVWAP[]
+  confidence: number // 0-1 confidence in trend analysis
+  timestamp: number
+  source: string
+}
+
+export interface VWAPTrendInsights {
+  symbol: string
+  currentTrend: VWAPTrendAnalysis
+  multiTimeframeTrends: {
+    oneDay: VWAPTrendAnalysis | null
+    fiveDay: VWAPTrendAnalysis | null
+    oneMonth: VWAPTrendAnalysis | null
+  }
+  trendConvergence: 'bullish' | 'bearish' | 'mixed' | 'neutral'
+  trendScore: number // Combined multi-timeframe score
+  keyInsights: string[]
+  tradingSignals: Array<{
+    signal: 'BUY' | 'SELL' | 'HOLD'
+    timeframe: string
+    reasoning: string
+    confidence: number
+  }>
   timestamp: number
 }
 
@@ -581,4 +936,382 @@ export interface ExtendedMarketData {
   liquidityMetrics: LiquidityMetrics | null
   timestamp: number
   source: string
+}
+
+/**
+ * Congressional Trading Service Types
+ * For tracking political insider trading and congressional stock transactions
+ */
+
+export interface CongressionalTrade {
+  symbol: string
+  politician: string
+  house: 'Senate' | 'House' | 'Other'
+  state: string
+  party: 'Republican' | 'Democrat' | 'Independent' | 'Other'
+  transactionType: 'Purchase' | 'Sale' | 'Exchange' | 'Other'
+  transactionDate: string
+  disclosureDate: string
+  amount: string // Range like "$1,001-$15,000"
+  amountMin?: number // Estimated minimum value
+  amountMax?: number // Estimated maximum value
+  asset: string // Asset description
+  ticker?: string // If available
+  confidence: number // 0-1 data quality score
+  source: string
+  timestamp: number
+}
+
+export interface PoliticalInsiderSignal {
+  symbol: string
+  totalTransactions: number
+  recentPurchases: number
+  recentSales: number
+  netSentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  sentimentScore: number // -10 to +10
+  bipartisanSupport: boolean
+  significantTrades: CongressionalTrade[]
+  timeframe: string // e.g., '90D', '180D'
+  confidence: number
+  lastUpdated: number
+  analysis: string
+  source: string
+}
+
+export interface CongressionalAnalysis {
+  symbol: string
+  trades: CongressionalTrade[]
+  politicalSentiment: PoliticalInsiderSignal
+  insights: string[]
+  riskFactors: string[]
+  opportunities: string[]
+  overallRating: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * Earnings Transcript Service Types
+ * For analyzing earnings call transcripts and extracting sentiment
+ */
+
+export interface EarningsTranscript {
+  symbol: string
+  quarter: string
+  year: number
+  fiscalPeriod: string
+  date: string
+  participants: Array<{
+    name: string
+    title: string
+    company: string
+    type: 'Executive' | 'Analyst'
+  }>
+  transcript: string
+  keyTopics: string[]
+  sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL'
+  confidence: number
+  source: string
+  timestamp: number
+}
+
+export interface TranscriptAnalysis {
+  symbol: string
+  transcript: EarningsTranscript
+  sentimentBreakdown: {
+    overall: number // -1 to +1
+    guidance: number
+    performance: number
+    outlook: number
+  }
+  keyInsights: NLPInsight[]
+  managementTone: 'CONFIDENT' | 'CAUTIOUS' | 'DEFENSIVE' | 'OPTIMISTIC' | 'NEUTRAL'
+  analystSentiment: 'POSITIVE' | 'NEGATIVE' | 'MIXED' | 'NEUTRAL'
+  redFlags: string[]
+  positiveSignals: string[]
+  timestamp: number
+  source: string
+}
+
+export interface EarningsSentiment {
+  symbol: string
+  recentTranscripts: TranscriptAnalysis[]
+  trendingSentiment: 'IMPROVING' | 'DECLINING' | 'STABLE'
+  sentimentScore: number // 0-10
+  confidence: number
+  keyThemes: string[]
+  timestamp: number
+  source: string
+}
+
+export interface NLPInsight {
+  topic: string
+  sentiment: number // -1 to +1
+  confidence: number
+  mentions: number
+  keyPhrases: string[]
+  context: string
+}
+
+/**
+ * Enhanced Sentiment Analysis Types
+ * Multi-source sentiment aggregation and analysis
+ */
+
+export interface SentimentAnalysis {
+  symbol: string
+  sources: Array<{
+    name: string
+    sentiment: number // -1 to +1
+    confidence: number
+    weight: number
+    lastUpdated: number
+  }>
+  aggregatedSentiment: number // -1 to +1
+  sentimentCategory: 'VERY_POSITIVE' | 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'VERY_NEGATIVE'
+  volatility: number // Sentiment volatility measure
+  trend: 'IMPROVING' | 'DECLINING' | 'STABLE'
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+export interface MultiSourceSentiment {
+  symbol: string
+  news: SentimentAnalysis
+  social: SentimentAnalysis
+  analyst: SentimentAnalysis
+  insider: SentimentAnalysis
+  composite: {
+    score: number // -1 to +1
+    confidence: number
+    category: 'VERY_POSITIVE' | 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE' | 'VERY_NEGATIVE'
+  }
+  timestamp: number
+  source: string
+}
+
+export interface SentimentSignal {
+  symbol: string
+  signal: 'BUY' | 'SELL' | 'HOLD'
+  strength: 'WEAK' | 'MODERATE' | 'STRONG'
+  sentiment: MultiSourceSentiment
+  reasoning: string[]
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * Institutional Performance Service Types
+ * Performance benchmarking and analysis
+ */
+
+export interface InstitutionalPerformance {
+  symbol: string
+  institution: string
+  performanceMetrics: PerformanceMetric[]
+  benchmarkComparison: BenchmarkComparison
+  riskMetrics: {
+    volatility: number
+    sharpeRatio: number
+    maxDrawdown: number
+    beta: number
+  }
+  holdingPeriod: string
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+export interface PerformanceMetric {
+  metric: string
+  value: number
+  percentile: number
+  period: string
+  benchmark?: number
+}
+
+export interface BenchmarkComparison {
+  symbol: string
+  benchmarkReturn: number
+  institutionalReturn: number
+  alpha: number
+  trackingError: number
+  informationRatio: number
+  outperformance: number // percentage points
+  period: string
+}
+
+/**
+ * Owner Earnings Service Types
+ * Calculating and analyzing owner earnings
+ */
+
+export interface OwnerEarnings {
+  symbol: string
+  period: string
+  reportedEarnings: number
+  depreciation: number
+  amortization: number
+  maintenanceCapex: number
+  ownerEarnings: number
+  ownerEarningsPerShare: number
+  ownerEarningsYield: number
+  cashConversionRatio: number
+  qualityScore: number // 0-10
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+export interface OwnerEarningsAnalysis {
+  symbol: string
+  historicalData: OwnerEarnings[]
+  trend: 'IMPROVING' | 'DECLINING' | 'STABLE'
+  averageYield: number
+  qualityAssessment: 'HIGH' | 'MEDIUM' | 'LOW'
+  keyInsights: string[]
+  investmentRating: 'ATTRACTIVE' | 'FAIR' | 'UNATTRACTIVE'
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+/**
+ * Revenue Segmentation Service Types
+ * Revenue analysis by geographic and product segments
+ */
+
+export interface RevenueSegmentation {
+  symbol: string
+  period: string
+  totalRevenue: number
+  geographicSegments: GeographicRevenue[]
+  productSegments: ProductRevenue[]
+  segmentAnalysis: SegmentAnalysis
+  timestamp: number
+  source: string
+}
+
+export interface GeographicRevenue {
+  region: string
+  revenue: number
+  percentage: number
+  growthRate: number
+  margin?: number
+  currency: string
+}
+
+export interface ProductRevenue {
+  product: string
+  revenue: number
+  percentage: number
+  growthRate: number
+  margin?: number
+  category: string
+}
+
+export interface SegmentAnalysis {
+  symbol: string
+  diversificationScore: number // 0-10
+  geographicRisk: 'LOW' | 'MEDIUM' | 'HIGH'
+  productConcentration: number // 0-1 (1 = highly concentrated)
+  growthSegments: string[]
+  riskSegments: string[]
+  opportunities: string[]
+  keyInsights: string[]
+  confidence: number
+}
+
+/**
+ * Historical Sector Performance Data
+ * Multi-timeframe historical data for ranking calculations
+ */
+
+export interface SectorHistoricalData {
+  symbol: string
+  sector: string
+  prices: Array<{
+    date: string           // ISO date string
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+    adjustedClose: number
+  }>
+  calculatedReturns: {
+    oneDay: number
+    fiveDay: number
+    oneMonth: number
+    threeMonth: number
+    yearToDate: number
+  }
+  technicalIndicators: {
+    sma20: number         // 20-day Simple Moving Average
+    sma50: number         // 50-day Simple Moving Average
+    rsi: number          // 14-day RSI
+    macd: {
+      value: number
+      signal: number
+      histogram: number
+    }
+  }
+  timestamp: number
+  source: string
+}
+
+/**
+ * Sector Rotation Service Types
+ * Sector rotation analysis and momentum tracking
+ */
+
+export interface SectorRotation {
+  period: string
+  rotationPhase: 'EARLY_CYCLE' | 'MID_CYCLE' | 'LATE_CYCLE' | 'RECESSION'
+  leadingSectors: string[]
+  laggingSectors: string[]
+  rotationStrength: number // 0-10
+  confidence: number
+  timestamp: number
+  source: string
+}
+
+export interface SectorPerformance {
+  sector: string
+  returns: {
+    oneWeek: number
+    oneMonth: number
+    threeMonths: number
+    oneYear: number
+    oneDay?: number        // Added for consistency with SectorPerformanceRanking
+    fiveDay?: number       // Added for consistency with SectorPerformanceRanking
+    yearToDate?: number    // Added for consistency with SectorPerformanceRanking
+  }
+  momentum: SectorMomentum
+  relativeStrength: number // vs S&P 500
+  volatility: number
+  trend: 'OUTPERFORMING' | 'UNDERPERFORMING' | 'INLINE'
+  timestamp: number
+}
+
+export interface SectorMomentum {
+  sector: string
+  momentum: number // -10 to +10
+  acceleration: number
+  volume: number
+  breadth: number // percentage of stocks outperforming
+  technicalRating: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL'
+}
+
+export interface RotationPattern {
+  fromSector: string
+  toSector: string
+  strength: number // 0-10
+  duration: string
+  confidence: number
+  historicalAccuracy: number
+  triggers: string[]
 }

@@ -3,7 +3,7 @@
  * Provides access to 800,000+ economic time series from the Federal Reserve Bank of St. Louis
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, TreasuryRate } from './types'
 import { RedisCache } from '../cache/RedisCache'
 
 interface FREDObservation {
@@ -545,11 +545,11 @@ export class FREDAPI implements FinancialDataProvider {
   /**
    * Get treasury rates with analysis data for Tier 1 analysis
    */
-  async getTreasuryRates(): Promise<{[key: string]: number} | null> {
+  async getTreasuryRates(from?: string, to?: string): Promise<TreasuryRate[]> {
     try {
       if (!this.apiKey) {
         console.warn('FRED API key not configured')
-        return null
+        return []
       }
 
       // Treasury rate series from FRED
@@ -564,14 +564,40 @@ export class FREDAPI implements FinancialDataProvider {
         '30Y': 'DGS30'
       }
 
-      const rates: {[key: string]: number} = {}
+      const treasuryRate: TreasuryRate = {
+        date: new Date().toISOString().split('T')[0],
+        month1: 0,
+        month2: 0,
+        month3: 0,
+        month6: 0,
+        year1: 0,
+        year2: 0,
+        year3: 0,
+        year5: 0,
+        year7: 0,
+        year10: 0,
+        year20: 0,
+        year30: 0,
+        timestamp: Date.now(),
+        source: 'fred'
+      }
 
       // Get all treasury rates in parallel
       const promises = Object.entries(treasurySeries).map(async ([period, seriesId]) => {
         try {
           const observation = await this.getLatestObservation(seriesId)
           if (observation && observation.value !== '.') {
-            rates[period] = parseFloat(observation.value)
+            const rate = parseFloat(observation.value)
+            switch(period) {
+              case '3M': treasuryRate.month3 = rate; break
+              case '6M': treasuryRate.month6 = rate; break
+              case '1Y': treasuryRate.year1 = rate; break
+              case '2Y': treasuryRate.year2 = rate; break
+              case '5Y': treasuryRate.year5 = rate; break
+              case '10Y': treasuryRate.year10 = rate; break
+              case '20Y': treasuryRate.year20 = rate; break
+              case '30Y': treasuryRate.year30 = rate; break
+            }
           }
         } catch (error) {
           console.warn(`Failed to get ${period} treasury rate:`, error)
@@ -580,11 +606,11 @@ export class FREDAPI implements FinancialDataProvider {
 
       await Promise.all(promises)
 
-      console.log('📊 Treasury rates collected:', rates)
-      return Object.keys(rates).length > 0 ? rates : null
+      console.log('📊 Treasury rates collected:', treasuryRate)
+      return [treasuryRate]
     } catch (error) {
       console.error('FRED treasury rates error:', error)
-      return null
+      return []
     }
   }
 

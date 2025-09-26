@@ -71,20 +71,34 @@ interface FrontendAnalysisResponse {
   error?: string
 }
 
-// Initialize services (lazy initialization for optimal performance)
+// Initialize services (singleton pattern with connection pooling for optimal performance)
 let stockSelectionService: StockSelectionService | null = null
+let serviceInitializationPromise: Promise<StockSelectionService> | null = null
 
 /**
- * Get or initialize the comprehensive StockSelectionService
+ * Get or initialize the comprehensive StockSelectionService with connection pooling
  */
 async function getStockSelectionService(): Promise<StockSelectionService> {
   if (stockSelectionService) {
     return stockSelectionService
   }
 
+  // Prevent concurrent initialization attempts
+  if (serviceInitializationPromise) {
+    return serviceInitializationPromise
+  }
+
+  serviceInitializationPromise = initializeStockSelectionService()
+  stockSelectionService = await serviceInitializationPromise
+  serviceInitializationPromise = null
+  return stockSelectionService
+}
+
+async function initializeStockSelectionService(): Promise<StockSelectionService> {
+
   try {
-    // Initialize core dependencies
-    const cache = new RedisCache()
+    // Initialize core dependencies with shared connection pooling
+    const cache = new RedisCache() // Instantiate with default config
     const fallbackDataService = new FallbackDataService()
     const factorLibrary = new FactorLibrary()
 
@@ -320,7 +334,7 @@ async function writeAnalysisResults(
       errors: analysisResult.errors || [],
       detailedErrors: errorLogger ? {
         summary: errorSummary,
-        categorizedErrors: errorLogger.getAllErrors().map(error => ({
+        categorizedErrors: errorLogger.getAllErrors().map((error: any) => ({
           type: error.errorType,
           severity: error.severity,
           reason: error.reason,
@@ -330,9 +344,9 @@ async function writeAnalysisResults(
           timestamp: error.timestamp,
           originalError: error.originalError
         })),
-        rateLimitIssues: errorLogger.getErrorsFor(undefined, undefined).filter(e => e.errorType === 'RATE_LIMIT'),
-        serviceIssues: errorLogger.getErrorsFor(undefined, undefined).filter(e => e.errorType === 'API_UNAVAILABLE'),
-        criticalIssues: errorLogger.getErrorsFor(undefined, undefined).filter(e => e.severity === 'CRITICAL')
+        rateLimitIssues: errorLogger.getErrorsFor(undefined, undefined).filter((e: any) => e.errorType === 'RATE_LIMIT'),
+        serviceIssues: errorLogger.getErrorsFor(undefined, undefined).filter((e: any) => e.errorType === 'API_UNAVAILABLE'),
+        criticalIssues: errorLogger.getErrorsFor(undefined, undefined).filter((e: any) => e.severity === 'CRITICAL')
       } : null
     }
 

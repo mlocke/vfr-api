@@ -9,6 +9,7 @@ import { TechnicalAnalysisResult, OHLCData } from '../technical-analysis/types'
 import { TwelveDataAPI } from '../financial-data/TwelveDataAPI'
 import { HistoricalOHLC } from '../financial-data/types'
 import { RedisCache } from '../cache/RedisCache'
+import { VWAPService } from '../financial-data/VWAPService'
 
 interface MarketDataPoint {
   symbol: string
@@ -71,11 +72,12 @@ export class FactorLibrary {
   private technicalService: TechnicalIndicatorService
   private twelveDataAPI: TwelveDataAPI
   private cache: RedisCache
+  private vwapService?: VWAPService
 
   /**
    * Initialize with cache and create TechnicalIndicatorService
    */
-  constructor(cache?: RedisCache, technicalService?: TechnicalIndicatorService) {
+  constructor(cache?: RedisCache, technicalService?: TechnicalIndicatorService, vwapService?: VWAPService) {
     // Initialize cache - create new instance if not provided
     this.cache = cache || new RedisCache()
 
@@ -83,6 +85,7 @@ export class FactorLibrary {
     this.technicalService = technicalService || new TechnicalIndicatorService(this.cache)
 
     this.twelveDataAPI = new TwelveDataAPI()
+    this.vwapService = vwapService
   }
 
   /**
@@ -260,6 +263,10 @@ export class FactorLibrary {
           break
         case 'vwap_trading_signals':
           result = this.calculateVWAPTradingSignals(technicalData?.vwapAnalysis)
+          break
+
+        case 'vwap_trend_analysis':
+          result = await this.calculateVWAPTrendScore(symbol, technicalData?.vwapAnalysis)
           break
         case 'macroeconomic_sector_impact':
           result = this.calculateMacroeconomicSectorImpact(technicalData?.macroeconomicContext, marketData?.sector)
@@ -1999,6 +2006,54 @@ export class FactorLibrary {
     } catch (error) {
       console.error('📊 Error calculating VWAP trading signals:', error)
       return null
+    }
+  }
+
+  /**
+   * Calculate VWAP trend score using historical trend analysis
+   * Integrates multi-timeframe VWAP trends into scoring system
+   */
+  private async calculateVWAPTrendScore(symbol: string, vwapAnalysis?: any): Promise<number | null> {
+    console.log('📊 Calculating VWAP trend score with historical analysis...')
+
+    if (!this.vwapService) {
+      console.warn('📊 VWAPService not available - skipping trend analysis')
+      return null
+    }
+
+    try {
+      // Get historical VWAP trend insights
+      const trendInsights = await this.vwapService.getVWAPTrendInsights(symbol)
+
+      if (!trendInsights) {
+        console.warn(`📊 No VWAP trend insights available for ${symbol} - using fallback`)
+        return this.calculateVWAPTradingSignals(vwapAnalysis) // Fallback to current analysis
+      }
+
+      // Base score from multi-timeframe trend analysis
+      let trendScore = trendInsights.trendScore
+
+      // Normalize trend score from [-1, 1] to [0, 1] for consistency
+      const normalizedTrendScore = (trendScore + 1) / 2
+
+      // Weight the trend score based on confidence
+      const confidenceWeight = trendInsights.currentTrend.confidence
+      const weightedScore = (normalizedTrendScore * confidenceWeight) + (0.5 * (1 - confidenceWeight))
+
+      // Apply convergence bonus/penalty
+      if (trendInsights.trendConvergence === 'bullish') {
+        return Math.min(weightedScore + 0.1, 1.0)
+      } else if (trendInsights.trendConvergence === 'bearish') {
+        return Math.max(weightedScore - 0.1, 0.0)
+      }
+
+      console.log(`📊 VWAP trend analysis for ${symbol}: trend=${trendScore.toFixed(3)}, confidence=${confidenceWeight.toFixed(3)}, final=${weightedScore.toFixed(3)}`)
+      return weightedScore
+
+    } catch (error) {
+      console.error(`📊 Error calculating VWAP trend score for ${symbol}:`, error)
+      // Fallback to current VWAP analysis if trend analysis fails
+      return this.calculateVWAPTradingSignals(vwapAnalysis)
     }
   }
 

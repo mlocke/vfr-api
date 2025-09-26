@@ -113,8 +113,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     // Initialize FactorLibrary with cache and technical service
     if (technicalService) {
-      // Create enhanced FactorLibrary with technical analysis
-      const enhancedFactorLibrary = new FactorLibrary(cache, technicalService)
+      // Create enhanced FactorLibrary with technical analysis and VWAP service
+      const enhancedFactorLibrary = new FactorLibrary(cache, technicalService, this.vwapService)
 
       // Initialize integration layers with enhanced FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(
@@ -127,8 +127,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         this.macroeconomicService // Pass macroeconomic service for integration
       )
     } else {
-      // Create standard FactorLibrary with cache (but no technical service)
-      const standardFactorLibrary = new FactorLibrary(cache)
+      // Create standard FactorLibrary with cache and VWAP service (but no technical service)
+      const standardFactorLibrary = new FactorLibrary(cache, undefined, this.vwapService)
 
       // Initialize integration layers with standard FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(

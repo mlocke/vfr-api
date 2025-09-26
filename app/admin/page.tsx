@@ -67,12 +67,12 @@ export default function AdminDashboard() {
 		},
 		{
 			id: "fmp",
-			name: "Financial Modeling Prep API",
+			name: "Financial Modeling Prep API (Starter Plan)",
 			category: "financial",
-			description: "Financial modeling & analysis",
+			description: "PRIMARY: 300 calls/min - Financial modeling & analysis with premium endpoints",
 			status: "online",
 			enabled: true,
-			rateLimit: 300,
+			rateLimit: 18000, // 300 calls/min = 18,000/hour for display purposes
 			timeout: 8000,
 		},
 		{

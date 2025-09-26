@@ -504,7 +504,7 @@ describe('Frontend Analysis API Security Tests', () => {
         method: 'GET'
       })
 
-      const response = await GET(request)
+      const response = await GET()
       const data = await response.json()
 
       expect(response.status).toBe(429)
@@ -519,7 +519,7 @@ describe('Frontend Analysis API Security Tests', () => {
         method: 'GET'
       })
 
-      const response = await GET(request)
+      const response = await GET()
       const data = await response.json()
 
       expect(response.status).toBe(200)

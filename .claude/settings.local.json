@@ -70,7 +70,8 @@
       "mcp__playwright__browser_press_key",
       "mcp__playwright__browser_console_messages",
       "WebFetch(domain:developers.google.com)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "WebFetch(domain:site.financialmodelingprep.com)"
     ],
     "deny": [],
     "ask": []

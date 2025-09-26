@@ -60,3 +60,6 @@ __pycache__/
 # Test results
 test-results/
 logs/
+
+# Analysis results - generated data files
+public/analysis-results/

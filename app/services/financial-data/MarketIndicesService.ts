@@ -87,15 +87,15 @@ export class MarketIndicesService {
   }
 
   private initializeProviders() {
-    // Priority order for index data
+    // Priority order for index data: FMP (300/min) → TwelveData (8/min) → Polygon (5/min)
+    if (process.env.FMP_API_KEY) {
+      this.providers.set('fmp', new FinancialModelingPrepAPI())
+    }
     if (process.env.TWELVE_DATA_API_KEY) {
       this.providers.set('twelvedata', new TwelveDataAPI())
     }
     if (process.env.POLYGON_API_KEY) {
       this.providers.set('polygon', new PolygonAPI())
-    }
-    if (process.env.FMP_API_KEY) {
-      this.providers.set('fmp', new FinancialModelingPrepAPI())
     }
     // Yahoo as fallback (no key required)
     this.providers.set('yahoo', new YahooFinanceAPI())

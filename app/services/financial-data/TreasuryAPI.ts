@@ -4,7 +4,7 @@
  * Documentation: https://fred.stlouisfed.org/docs/api/fred/
  */
 
-import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types'
+import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, TreasuryRate } from './types'
 import { FREDAPI } from './FREDAPI'
 
 export class TreasuryAPI implements FinancialDataProvider {
@@ -84,12 +84,12 @@ export class TreasuryAPI implements FinancialDataProvider {
   /**
    * Get all treasury rates for Tier 1 analysis
    */
-  async getTreasuryRates(): Promise<{[key: string]: number} | null> {
+  async getTreasuryRates(from?: string, to?: string): Promise<TreasuryRate[]> {
     try {
-      return await this.fredAPI.getTreasuryRates()
+      return await this.fredAPI.getTreasuryRates(from, to)
     } catch (error) {
       console.error('Treasury rates error:', error)
-      return null
+      return []
     }
   }
 

@@ -8,6 +8,8 @@ import { MarketIndicesService, MarketIndicesData } from './MarketIndicesService'
 import { FREDAPI } from './FREDAPI'
 import { RedisCache } from '../cache/RedisCache'
 import ErrorHandler from '../error-handling/ErrorHandler'
+import { SectorDataService } from './SectorDataService'
+import { SectorPerformanceRanking } from './types'
 
 export interface SentimentScore {
   value: number           // 0-100 (0=extreme fear, 50=neutral, 100=extreme greed)
@@ -61,12 +63,14 @@ export class MarketSentimentService {
   private marketIndicesService: MarketIndicesService
   private fredAPI: FREDAPI
   private cache: RedisCache
+  private sectorDataService: SectorDataService
   private cacheTTL = 3600000 // 1 hour cache (was 60000)
 
   constructor() {
     this.marketIndicesService = new MarketIndicesService()
     this.fredAPI = new FREDAPI()
     this.cache = new RedisCache()
+    this.sectorDataService = new SectorDataService()
   }
 
   /**
@@ -467,5 +471,150 @@ export class MarketSentimentService {
       volume: { current: 0, average: 0, ratio: 1 },
       timestamp: Date.now()
     }
+  }
+
+  /**
+   * Get market sentiment enhanced with sector performance rankings
+   * Combines traditional sentiment indicators with sector rotation analysis
+   */
+  async getEnhancedMarketSentimentWithRankings(): Promise<MarketSentimentData & {
+    sectorRankings: {
+      topPerformers: Array<{
+        sector: string;
+        symbol: string;
+        ranking: number;
+        performance: number;
+        sentiment: 'positive' | 'negative' | 'neutral';
+      }>;
+      rotationSignals: {
+        intoSectors: string[];
+        outOfSectors: string[];
+        strength: number;
+      };
+      marketContext: {
+        phase: 'bull' | 'bear' | 'sideways';
+        sentiment: 'risk-on' | 'risk-off' | 'neutral';
+      };
+    }
+  }> {
+    try {
+      const cacheKey = 'enhanced-market-sentiment-rankings'
+
+      // Check cache first
+      const cached = await this.cache.get(cacheKey)
+      if (cached) {
+        return JSON.parse(cached)
+      }
+
+      // Get both traditional sentiment and sector rankings in parallel
+      const [sentimentData, sectorRankings] = await Promise.allSettled([
+        this.getMarketSentiment(),
+        this.sectorDataService.getSectorPerformanceRankings()
+      ])
+
+      const baseSentiment = sentimentData.status === 'fulfilled'
+        ? sentimentData.value
+        : await this.getMarketSentiment() // Fallback
+
+      const rankings = sectorRankings.status === 'fulfilled'
+        ? sectorRankings.value
+        : null
+
+      // Enhanced data structure
+      const enhancedSentiment = {
+        ...baseSentiment,
+        sectorRankings: {
+          topPerformers: rankings
+            ? rankings.rankings.slice(0, 5).map(ranking => ({
+                sector: ranking.sector,
+                symbol: ranking.symbol,
+                ranking: ranking.ranking,
+                performance: ranking.returns.oneMonth,
+                sentiment: this.categorizeSectorSentiment(ranking.returns.oneMonth)
+              }))
+            : [],
+          rotationSignals: rankings
+            ? rankings.rotationSignals
+            : { intoSectors: [], outOfSectors: [], strength: 0 },
+          marketContext: rankings
+            ? rankings.marketContext
+            : { phase: 'sideways' as const, sentiment: 'neutral' as const }
+        }
+      }
+
+      // Cache enhanced results for 30 minutes
+      await this.cache.set(cacheKey, JSON.stringify(enhancedSentiment), 1800000)
+
+      return enhancedSentiment
+
+    } catch (error) {
+      console.error('Enhanced Market Sentiment with Rankings error:', error)
+      // Fall back to basic sentiment if rankings fail
+      const baseSentiment = await this.getMarketSentiment()
+      return {
+        ...baseSentiment,
+        sectorRankings: {
+          topPerformers: [],
+          rotationSignals: { intoSectors: [], outOfSectors: [], strength: 0 },
+          marketContext: { phase: 'sideways' as const, sentiment: 'neutral' as const }
+        }
+      }
+    }
+  }
+
+  /**
+   * Get sector rankings summary for quick integration with other services
+   */
+  async getSectorRankingsSummary(): Promise<{
+    leadingSectors: string[];
+    laggingSectors: string[];
+    rotationStrength: number;
+    marketPhase: string;
+    confidence: number;
+  }> {
+    try {
+      const rankings = await this.sectorDataService.getSectorRankingsQuick()
+
+      const sorted = rankings.sort((a, b) => a.ranking - b.ranking)
+      const leadingSectors = sorted.slice(0, 3).map(r => r.sector)
+      const laggingSectors = sorted.slice(-3).map(r => r.sector)
+
+      // Calculate rotation strength based on performance spread
+      const topPerformance = sorted[0]?.returns.oneMonth || 0
+      const bottomPerformance = sorted[sorted.length - 1]?.returns.oneMonth || 0
+      const rotationStrength = Math.min(10, Math.max(0, (topPerformance - bottomPerformance) / 2))
+
+      // Determine market phase from average performance
+      const avgPerformance = sorted.reduce((sum, sector) => sum + sector.returns.oneMonth, 0) / sorted.length
+      let marketPhase = 'sideways'
+      if (avgPerformance > 3) marketPhase = 'bull'
+      else if (avgPerformance < -3) marketPhase = 'bear'
+
+      return {
+        leadingSectors,
+        laggingSectors,
+        rotationStrength,
+        marketPhase,
+        confidence: 0.8 // High confidence in sector data
+      }
+    } catch (error) {
+      console.warn('Sector rankings summary failed, using defaults:', error)
+      return {
+        leadingSectors: ['Technology', 'Healthcare'],
+        laggingSectors: ['Energy', 'Utilities'],
+        rotationStrength: 5,
+        marketPhase: 'sideways',
+        confidence: 0.3 // Low confidence in fallback data
+      }
+    }
+  }
+
+  /**
+   * Categorize sector sentiment based on performance
+   */
+  private categorizeSectorSentiment(performance: number): 'positive' | 'negative' | 'neutral' {
+    if (performance > 2) return 'positive'
+    if (performance < -2) return 'negative'
+    return 'neutral'
   }
 }

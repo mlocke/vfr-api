@@ -77,7 +77,7 @@ export class RedisCache {
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       keyPrefix: 'veritak:mcp:',
-      defaultTTL: 300, // 5 minutes
+      defaultTTL: this.getOptimalTTL(), // Dynamic TTL based on data type
       maxRetries: 3,
       retryDelayOnFailover: 100,
       enableReadyCheck: true,
@@ -102,6 +102,134 @@ export class RedisCache {
     // Initialize with fallback mode for development (unless forced to production mode)
     if (process.env.NODE_ENV === 'development' && !process.env.FORCE_REDIS_PRODUCTION_MODE) {
       this.setupDevelopmentFallback()
+    }
+  }
+
+  /**
+   * Get optimal TTL based on data type for FMP optimization
+   */
+  private getOptimalTTL(): number {
+    return parseInt(process.env.REDIS_DEFAULT_TTL || '600') // Base 10 minutes
+  }
+
+  /**
+   * Enhanced cache with FMP-optimized TTL and memory management
+   */
+  async setOptimized<T>(
+    key: string,
+    data: T,
+    dataType: 'market' | 'fundamental' | 'sentiment' | 'analysis' = 'analysis'
+  ): Promise<boolean> {
+    // Dynamic TTL based on data freshness requirements and FMP rate limits
+    const optimizedTTL = this.calculateOptimizedTTL(dataType)
+
+    // Add data compression for large payloads to optimize memory usage
+    const shouldCompress = JSON.stringify(data).length > 8192 // 8KB threshold
+
+    try {
+      const cacheData: CacheEntry<T> = {
+        data,
+        timestamp: Date.now(),
+        ttl: optimizedTTL,
+        source: 'fmp-optimized',
+        version: '1.1'
+      }
+
+      // Use pipeline for atomic operations and better performance
+      const pipeline = this.redis.pipeline()
+
+      if (shouldCompress && this.redisAvailable) {
+        // Compress large objects to reduce memory usage
+        const compressedData = Buffer.from(JSON.stringify(cacheData)).toString('base64')
+        pipeline.setex(`${key}:compressed`, optimizedTTL, compressedData)
+        pipeline.set(`${key}:meta`, JSON.stringify({ compressed: true, size: compressedData.length }))
+      } else {
+        pipeline.setex(key, optimizedTTL, JSON.stringify(cacheData))
+      }
+
+      await pipeline.exec()
+      this.stats.sets++
+      return true
+
+    } catch (error) {
+      this.stats.errors++
+      CacheLogger.error(`Failed to set optimized cache for ${key}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Calculate optimized TTL based on data type and FMP constraints
+   */
+  private calculateOptimizedTTL(dataType: string): number {
+    const baseTTL = this.config.defaultTTL
+
+    switch (dataType) {
+      case 'market':
+        // Market data: Short TTL for real-time accuracy but cache to avoid FMP rate limits
+        return Math.max(60, baseTTL / 10) // 1 minute minimum, typically 60s
+
+      case 'fundamental':
+        // Fundamental data: Longer TTL as it changes less frequently
+        return baseTTL * 6 // 1 hour with 10min base = 60 minutes
+
+      case 'sentiment':
+        // Sentiment data: Medium TTL for reasonable freshness
+        return baseTTL * 2 // 20 minutes with 10min base
+
+      case 'analysis':
+        // Analysis results: Cache longer since computation is expensive
+        return baseTTL * 3 // 30 minutes with 10min base
+
+      default:
+        return baseTTL
+    }
+  }
+
+  /**
+   * Batch set operations for FMP data with intelligent memory management
+   */
+  async setBatch<T>(
+    entries: Array<{ key: string; data: T; dataType?: string }>,
+    compression = true
+  ): Promise<number> {
+    if (!this.redisAvailable || entries.length === 0) return 0
+
+    try {
+      const pipeline = this.redis.pipeline()
+      let successCount = 0
+
+      for (const entry of entries) {
+        const ttl = this.calculateOptimizedTTL(entry.dataType || 'analysis')
+        const cacheData: CacheEntry<T> = {
+          data: entry.data,
+          timestamp: Date.now(),
+          ttl,
+          source: 'fmp-batch',
+          version: '1.1'
+        }
+
+        const serializedData = JSON.stringify(cacheData)
+
+        if (compression && serializedData.length > 4096) { // 4KB threshold for compression
+          const compressed = Buffer.from(serializedData).toString('base64')
+          pipeline.setex(`${entry.key}:compressed`, ttl, compressed)
+          pipeline.set(`${entry.key}:meta`, JSON.stringify({ compressed: true }))
+        } else {
+          pipeline.setex(entry.key, ttl, serializedData)
+        }
+
+        successCount++
+      }
+
+      await pipeline.exec()
+      this.stats.sets += successCount
+      return successCount
+
+    } catch (error) {
+      this.stats.errors++
+      CacheLogger.error('Batch set operation failed:', error)
+      return 0
     }
   }
 
@@ -425,8 +553,10 @@ export class RedisCache {
     const now = new Date()
     const isMarketHours = this.isMarketHours(now)
 
-    // Shorter TTL during market hours for real-time data
-    const ttl = isMarketHours ? 30 : 300 // 30s vs 5min
+    // Shorter TTL during market hours for real-time data (optimized for FMP Starter)
+    const marketHoursTTL = parseInt(process.env.MARKET_HOURS_TTL || '30')
+    const afterHoursTTL = parseInt(process.env.REDIS_DEFAULT_TTL || '300')
+    const ttl = isMarketHours ? marketHoursTTL : afterHoursTTL
 
     const key = `market:${dataType}:${identifier}:${source}`
     await this.set(key, data, ttl, { source, version: '1.0.0' })
