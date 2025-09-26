@@ -71,11 +71,40 @@ export class RedisCache {
   private healthCheckInterval?: NodeJS.Timeout
   private redisAvailable: boolean = false
 
-  constructor(config?: Partial<CacheConfig>) {
-    this.config = {
+  /**
+   * Parse Redis URL and extract connection parameters
+   * Supports both REDIS_URL and individual host/port/password env vars
+   */
+  private parseRedisUrl(): { host: string; port: number; password?: string } {
+    const redisUrl = process.env.REDIS_URL
+
+    if (redisUrl && redisUrl !== '') {
+      try {
+        const url = new URL(redisUrl)
+        return {
+          host: url.hostname || 'localhost',
+          port: parseInt(url.port) || 6379,
+          password: url.password || undefined
+        }
+      } catch (error) {
+        CacheLogger.warn(`⚠️ Invalid REDIS_URL format: ${redisUrl}, falling back to individual env vars`)
+      }
+    }
+
+    // Fallback to individual environment variables
+    return {
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
+      password: process.env.REDIS_PASSWORD || undefined
+    }
+  }
+
+  constructor(config?: Partial<CacheConfig>) {
+    const redisConfig = this.parseRedisUrl()
+    this.config = {
+      host: redisConfig.host,
+      port: redisConfig.port,
+      password: redisConfig.password,
       keyPrefix: 'veritak:mcp:',
       defaultTTL: this.getOptimalTTL(), // Dynamic TTL based on data type
       maxRetries: 3,
@@ -241,7 +270,9 @@ export class RedisCache {
   }
 
   private initializeRedis() {
-    // Primary Redis connection
+    CacheLogger.log(`🔗 Initializing Redis connection to ${this.config.host}:${this.config.port}`)
+
+    // Primary Redis connection with enhanced retry strategy
     this.redis = new Redis({
       host: this.config.host,
       port: this.config.port,
@@ -251,7 +282,13 @@ export class RedisCache {
       enableReadyCheck: this.config.enableReadyCheck,
       lazyConnect: this.config.lazyConnect,
       connectTimeout: 10000,
-      commandTimeout: 5000
+      commandTimeout: 5000,
+      retryStrategy: (times: number) => {
+        const delay = Math.min(times * 50, 2000)
+        CacheLogger.log(`🔄 Redis retry attempt ${times}, waiting ${delay}ms`)
+        return delay
+      },
+      showFriendlyErrorStack: process.env.NODE_ENV === 'development'
     })
 
     // Event handlers
@@ -709,19 +746,45 @@ export class RedisCache {
   }
 
   /**
-   * Ping Redis server for health checks
+   * Ping Redis server for health checks with reconnection attempts
    */
   async ping(): Promise<string> {
     try {
-      if (!this.isRedisAvailable()) {
+      if (this.isRedisAvailable()) {
+        return await this.redis.ping()
+      } else if (this.redis.status === 'connecting') {
+        // Wait briefly for connection
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        return await this.redis.ping()
+      } else {
+        // Attempt reconnection if not connected
+        await this.attemptReconnection()
+        if (this.isRedisAvailable()) {
+          return await this.redis.ping()
+        }
         return 'PONG (fallback)'
       }
-      return await this.redis.ping()
     } catch (error) {
       const normalizedError = ErrorHandler.normalizeError(error)
-      CacheLogger.warn(`⚠️ Redis ping failed (may not be available in development): ${normalizedError.message}`)
+      CacheLogger.warn(`⚠️ Redis ping failed: ${normalizedError.message}`)
       this.redisAvailable = false
       return 'PONG (fallback)'
+    }
+  }
+
+  /**
+   * Attempt to reconnect to Redis if disconnected
+   */
+  private async attemptReconnection(): Promise<void> {
+    if (!this.redisAvailable && this.redis.status !== 'connecting') {
+      try {
+        CacheLogger.log('🔄 Attempting Redis reconnection...')
+        await this.redis.connect()
+        this.redisAvailable = true
+        CacheLogger.log('✅ Redis reconnection successful')
+      } catch (error) {
+        CacheLogger.warn('Redis reconnection failed, will retry later')
+      }
     }
   }
 

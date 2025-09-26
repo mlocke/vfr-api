@@ -59,7 +59,7 @@ export class SymbolDataService {
   private dataSources: SymbolDataSource[] = [
     {
       name: 'Alpha Vantage LISTING_STATUS',
-      url: 'https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo',
+      url: `https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=${process.env.ALPHA_VANTAGE_API_KEY || 'demo'}`,
       format: 'csv',
       parser: this.parseAlphaVantageCSV.bind(this),
       isAvailable: this.checkAlphaVantageAvailability.bind(this)

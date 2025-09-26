@@ -337,13 +337,26 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
         ? metricsResponse.data[0]
         : {}
 
-      // Securely parse and validate numeric values
+      // Securely parse and validate numeric values with proper decimal rounding
       const parseSecureNumeric = (value: any, fieldName: string, allowNegative: boolean = false): number | undefined => {
         if (value === null || value === undefined || value === '') {
           return undefined
         }
 
-        const validation = securityValidator.validateNumeric(value, {
+        // Round to 6 decimal places BEFORE validation to prevent FMP precision warnings
+        let numericValue: number
+        try {
+          numericValue = parseFloat(value)
+          if (isNaN(numericValue)) {
+            return undefined
+          }
+          // Round to 6 decimal places to meet validation requirements
+          numericValue = Math.round(numericValue * 1000000) / 1000000
+        } catch (error) {
+          return undefined
+        }
+
+        const validation = securityValidator.validateNumeric(numericValue, {
           allowNegative,
           allowZero: true,
           min: allowNegative ? undefined : 0,
@@ -354,13 +367,13 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
         if (!validation.isValid) {
           this.errorHandler.logger.warn(`Invalid ${fieldName} value for ${sanitizedSymbol}`, {
             fieldName,
-            value,
+            value: numericValue,
             errors: validation.errors
           })
           return undefined
         }
 
-        return parseFloat(value)
+        return numericValue
       }
 
       const result: FundamentalRatios = {
