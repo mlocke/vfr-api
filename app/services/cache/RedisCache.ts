@@ -147,7 +147,7 @@ export class RedisCache {
   async setOptimized<T>(
     key: string,
     data: T,
-    dataType: 'market' | 'fundamental' | 'sentiment' | 'analysis' = 'analysis'
+    dataType: 'market' | 'fundamental' | 'sentiment' | 'analysis' | 'options' | 'options_chain' | 'put_call_ratio' = 'analysis'
   ): Promise<boolean> {
     // Dynamic TTL based on data freshness requirements and FMP rate limits
     const optimizedTTL = this.calculateOptimizedTTL(dataType)
@@ -188,15 +188,31 @@ export class RedisCache {
   }
 
   /**
-   * Calculate optimized TTL based on data type and FMP constraints
+   * Calculate optimized TTL based on data type and market conditions
    */
   private calculateOptimizedTTL(dataType: string): number {
     const baseTTL = this.config.defaultTTL
+    const now = new Date()
+    const hour = now.getUTCHours() - 5 // EST adjustment
+    const day = now.getUTCDay()
+    const isMarketHours = day >= 1 && day <= 5 && hour >= 9 && hour < 16
+    const isWeekend = day === 0 || day === 6
 
     switch (dataType) {
       case 'market':
-        // Market data: Short TTL for real-time accuracy but cache to avoid FMP rate limits
-        return Math.max(60, baseTTL / 10) // 1 minute minimum, typically 60s
+        // Market data: Dynamic TTL based on market hours
+        if (isWeekend) return 1800 // 30 minutes on weekends
+        return isMarketHours ? 30 : 300 // 30s during market, 5min after hours
+
+      case 'options':
+        // Options data: Optimized for high-frequency updates during market hours
+        if (isWeekend) return 1800 // 30 minutes on weekends
+        return isMarketHours ? 30 : 300 // 30s during market, 5min after hours
+
+      case 'options_chain':
+        // Options chains: More aggressive caching due to large payload
+        if (isWeekend) return 3600 // 1 hour on weekends
+        return isMarketHours ? 60 : 600 // 1min during market, 10min after hours
 
       case 'fundamental':
         // Fundamental data: Longer TTL as it changes less frequently
@@ -600,6 +616,88 @@ export class RedisCache {
   }
 
   /**
+   * Cache options data with performance optimization and compression
+   */
+  async cacheOptionsData(
+    symbol: string,
+    dataType: 'options' | 'options_chain' | 'put_call_ratio',
+    data: any,
+    source: string
+  ): Promise<boolean> {
+    try {
+      const key = `options:${dataType}:${symbol.toUpperCase()}:${source}`
+      const ttl = this.calculateOptimizedTTL(dataType)
+
+      // Use setOptimized for automatic compression on large options datasets
+      return await this.setOptimized(key, data, dataType)
+
+    } catch (error) {
+      CacheLogger.error(`Failed to cache options data for ${symbol}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Get cached options data with performance tracking
+   */
+  async getCachedOptionsData<T>(
+    symbol: string,
+    dataType: 'options' | 'options_chain' | 'put_call_ratio',
+    sources: string[] = ['eodhd', 'polygon', 'yahoo']
+  ): Promise<T | null> {
+    const keys = sources.map(source => `options:${dataType}:${symbol.toUpperCase()}:${source}`)
+    const results = await this.mget<T>(keys)
+
+    // Return first available result from preferred sources
+    for (const key of keys) {
+      if (results[key]) {
+        this.stats.hits++
+        return results[key]
+      }
+    }
+
+    this.stats.misses++
+    return null
+  }
+
+  /**
+   * Batch cache options data for multiple symbols
+   */
+  async batchCacheOptionsData(
+    optionsData: Array<{
+      symbol: string
+      dataType: 'options' | 'options_chain' | 'put_call_ratio'
+      data: any
+      source: string
+    }>
+  ): Promise<number> {
+    const entries = optionsData.map(item => ({
+      key: `options:${item.dataType}:${item.symbol.toUpperCase()}:${item.source}`,
+      data: item.data,
+      dataType: item.dataType
+    }))
+
+    return await this.setBatch(entries, true) // Enable compression
+  }
+
+  /**
+   * Clean up expired options data to optimize memory
+   */
+  async cleanupOptionsData(): Promise<number> {
+    try {
+      const pattern = 'options:*'
+      const deletedKeys = await this.invalidatePattern(pattern)
+
+      CacheLogger.log(`🧹 Cleaned up ${deletedKeys} expired options cache entries`)
+      return deletedKeys
+
+    } catch (error) {
+      CacheLogger.error('Failed to cleanup options data:', error)
+      return 0
+    }
+  }
+
+  /**
    * Invalidate cache by pattern
    */
   async invalidatePattern(pattern: string): Promise<number> {
@@ -618,28 +716,46 @@ export class RedisCache {
   }
 
   /**
-   * Warm cache with frequently accessed data
+   * Warm cache with frequently accessed data including options
    */
-  async warmCache(symbols: string[], sources: string[] = ['polygon', 'alphavantage']): Promise<void> {
+  async warmCache(
+    symbols: string[],
+    sources: string[] = ['polygon', 'alphavantage'],
+    includeOptions: boolean = false
+  ): Promise<void> {
     CacheLogger.log(`🔥 Warming cache for ${symbols.length} symbols from ${sources.length} sources...`)
 
-    const warmingPromises = symbols.flatMap(symbol =>
-      sources.map(async source => {
+    const warmingPromises = symbols.flatMap(symbol => {
+      const stockPromises = sources.map(async source => {
         const key = `stock:price:${symbol}:${source}`
-        // This would typically fetch fresh data and cache it
-        // For now, we'll just ensure the key structure exists
-        CacheLogger.log(`🔥 Warmed cache key: ${key}`)
+        CacheLogger.log(`🔥 Warmed stock cache key: ${key}`)
       })
-    )
+
+      if (includeOptions) {
+        const optionsPromises = sources.map(async source => {
+          const optionsKeys = [
+            `options:options:${symbol}:${source}`,
+            `options:put_call_ratio:${symbol}:${source}`,
+            `options:options_chain:${symbol}:${source}`
+          ]
+          optionsKeys.forEach(key => {
+            CacheLogger.log(`🔥 Warmed options cache key: ${key}`)
+          })
+        })
+        return [...stockPromises, ...optionsPromises]
+      }
+
+      return stockPromises
+    })
 
     await Promise.all(warmingPromises)
-    CacheLogger.log('✅ Cache warming complete')
+    CacheLogger.log('✅ Cache warming complete (including options data)')
   }
 
   /**
-   * Get cache statistics
+   * Get cache statistics with options-specific metrics
    */
-  async getStats(): Promise<CacheStats> {
+  async getStats(): Promise<CacheStats & { optionsMetrics?: any }> {
     try {
       const info = await this.redis.info('memory')
       const memoryMatch = info.match(/used_memory_human:(\S+)/)
@@ -648,7 +764,20 @@ export class RedisCache {
       const keyCount = await this.redis.dbsize()
       this.stats.totalKeys = keyCount
 
-      return { ...this.stats }
+      // Get options-specific metrics
+      const optionsKeys = await this.redis.keys(`${this.config.keyPrefix}options:*`)
+      const optionsMetrics = {
+        totalOptionsKeys: optionsKeys.length,
+        optionsChainKeys: optionsKeys.filter(k => k.includes('options_chain')).length,
+        putCallRatioKeys: optionsKeys.filter(k => k.includes('put_call_ratio')).length,
+        optionsAnalysisKeys: optionsKeys.filter(k => k.includes('options:')).length,
+        optionsMemoryUsage: this.calculateOptionsMemoryUsage(optionsKeys.length, keyCount)
+      }
+
+      return {
+        ...this.stats,
+        optionsMetrics
+      }
     } catch (error) {
       CacheLogger.error('❌ Error getting cache stats:', error)
       return this.stats
@@ -656,7 +785,16 @@ export class RedisCache {
   }
 
   /**
-   * Health check and monitoring
+   * Calculate estimated memory usage for options data
+   */
+  private calculateOptionsMemoryUsage(optionsKeys: number, totalKeys: number): string {
+    if (totalKeys === 0) return '0%'
+    const percentage = (optionsKeys / totalKeys) * 100
+    return `${percentage.toFixed(1)}%`
+  }
+
+  /**
+   * Health check and monitoring with options-specific cleanup
    */
   private startHealthCheck() {
     this.healthCheckInterval = setInterval(async () => {
@@ -669,6 +807,12 @@ export class RedisCache {
         if (stats.totalKeys > 10000) {
           CacheLogger.log('🧹 Auto-cleanup: Cache is getting full, running maintenance...')
           await this.cleanup()
+
+          // Additional cleanup for options data if cache is still full
+          if (stats.optionsMetrics && stats.optionsMetrics.totalOptionsKeys > 5000) {
+            CacheLogger.log('🧹 Auto-cleanup: Running options-specific cleanup...')
+            await this.cleanupOptionsData()
+          }
         }
       } catch (error) {
         CacheLogger.error('❌ Redis health check failed:', error)

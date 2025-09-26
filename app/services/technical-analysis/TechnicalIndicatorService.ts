@@ -40,22 +40,30 @@ import {
   PSARResult,
   CandlestickPattern,
   ChartPattern,
-  TechnicalAnalysisPerformance
+  TechnicalAnalysisPerformance,
+  OptionsSignalsResult,
+  OptionsIVRegime,
+  OptionsPCRatioSignal,
+  OptionsFlowTechnicalSignal
 } from './types'
 
 import { RedisCache } from '../cache/RedisCache'
+import { OptionsAnalysisService } from '../financial-data/OptionsAnalysisService'
+import { OptionsAnalysisMetrics, OptionsSignals } from '../types/OptionsTypes'
 
 /**
- * Main Technical Indicator Service
+ * Main Technical Indicator Service with Options Integration
  */
 export class TechnicalIndicatorService {
   private cache: RedisCache
   private defaultConfig: TechnicalAnalysisConfig
   private performanceTracker: Map<string, TechnicalAnalysisPerformance> = new Map()
+  private optionsService: OptionsAnalysisService
 
   constructor(cache: RedisCache) {
     this.cache = cache
     this.defaultConfig = this.createDefaultConfig()
+    this.optionsService = new OptionsAnalysisService(cache)
   }
 
   /**
@@ -80,22 +88,24 @@ export class TechnicalIndicatorService {
     }
 
     try {
-      // Calculate all indicator categories in parallel
-      const [trendAnalysis, momentumAnalysis, volumeAnalysis, volatilityAnalysis, patterns] = await Promise.all([
+      // Calculate all indicator categories in parallel, including options analysis
+      const [trendAnalysis, momentumAnalysis, volumeAnalysis, volatilityAnalysis, patterns, optionsAnalysis] = await Promise.all([
         this.calculateTrendIndicators(ohlcData, config),
         this.calculateMomentumIndicators(ohlcData, config),
         this.calculateVolumeIndicators(ohlcData, config),
         this.calculateVolatilityIndicators(ohlcData, config),
-        this.detectPatterns(ohlcData, config)
+        this.detectPatterns(ohlcData, config),
+        this.calculateOptionsAnalysis(symbol, config)
       ])
 
-      // Calculate overall technical score
+      // Calculate overall technical score with options integration
       const score = this.calculateTechnicalScore(
         trendAnalysis,
         momentumAnalysis,
         volumeAnalysis,
         volatilityAnalysis,
-        patterns
+        patterns,
+        optionsAnalysis
       )
 
       const result: TechnicalAnalysisResult = {
@@ -106,6 +116,7 @@ export class TechnicalIndicatorService {
         volume: volumeAnalysis,
         volatility: volatilityAnalysis,
         patterns,
+        options: optionsAnalysis,
         score,
         metadata: {
           calculationTime: Date.now() - startTime,
@@ -434,21 +445,34 @@ export class TechnicalIndicatorService {
   }
 
   /**
-   * Calculate overall technical score (0-100)
+   * Calculate overall technical score (0-100) with options integration
+   * Options signals contribute 15% weight within the 40% technical analysis allocation
    */
   private calculateTechnicalScore(
     trend: any,
     momentum: any,
     volume: any,
     volatility: any,
-    patterns: any
+    patterns: any,
+    options?: any
   ): any {
-    // Weight distribution matching the 40% technical analysis requirement
-    const weights = {
-      trend: 0.4,      // 40% of technical score
-      momentum: 0.35,  // 35% of technical score
-      volume: 0.15,    // 15% of technical score
-      patterns: 0.1    // 10% of technical score
+    // Weight distribution with options integration (total = 100%)
+    // When options available: traditional indicators get 85%, options get 15%
+    // When options unavailable: traditional indicators maintain full weights
+    const hasOptions = options && options.available
+
+    const weights = hasOptions ? {
+      trend: 0.34,      // 34% of technical score (reduced from 40%)
+      momentum: 0.30,   // 30% of technical score (reduced from 35%)
+      volume: 0.11,     // 11% of technical score (reduced from 15%)
+      patterns: 0.1,    // 10% of technical score (unchanged)
+      options: 0.15     // 15% of technical score (new)
+    } : {
+      trend: 0.4,       // 40% of technical score (original)
+      momentum: 0.35,   // 35% of technical score (original)
+      volume: 0.15,     // 15% of technical score (original)
+      patterns: 0.1,    // 10% of technical score (original)
+      options: 0         // 0% when options not available
     }
 
     // Calculate individual scores (0-100)
@@ -456,24 +480,69 @@ export class TechnicalIndicatorService {
     const momentumScore = this.calculateMomentumScore(momentum) * 100
     const volumeScore = this.calculateVolumeScore(volume) * 100
     const patternsScore = this.calculatePatternsScore(patterns) * 100
+    const optionsScore = hasOptions ? this.calculateOptionsScore(options) * 100 : 0
 
     // Calculate weighted total
-    const totalScore = (
+    let totalScore = (
       trendScore * weights.trend +
       momentumScore * weights.momentum +
       volumeScore * weights.volume +
       patternsScore * weights.patterns
     )
 
+    if (hasOptions) {
+      totalScore += optionsScore * weights.options
+    }
+
+    const breakdown: any = {
+      trend: Math.round(trendScore),
+      momentum: Math.round(momentumScore),
+      volume: Math.round(volumeScore),
+      patterns: Math.round(patternsScore)
+    }
+
+    if (hasOptions) {
+      breakdown.options = Math.round(optionsScore)
+    }
+
     return {
       total: Math.round(totalScore),
-      breakdown: {
-        trend: Math.round(trendScore),
-        momentum: Math.round(momentumScore),
-        volume: Math.round(volumeScore),
-        patterns: Math.round(patternsScore)
-      }
+      breakdown
     }
+  }
+
+  /**
+   * Calculate options score from options analysis data
+   */
+  private calculateOptionsScore(options: any): number {
+    if (!options || !options.available || !options.signals) {
+      return 0.5 // Neutral score when options data unavailable
+    }
+
+    const signals = options.signals
+    let score = 0.5 // Base neutral score
+
+    // P/C ratio contribution (25% of options score)
+    const pcScore = signals.putCallSignal / 100
+    score += (pcScore - 0.5) * 0.25
+
+    // IV signal contribution (25% of options score)
+    const ivScore = signals.impliedVolatilitySignal / 100
+    score += (ivScore - 0.5) * 0.25
+
+    // Flow signal contribution (30% of options score)
+    const flowScore = signals.flowSignal / 100
+    score += (flowScore - 0.5) * 0.30
+
+    // Greeks signal contribution (20% of options score)
+    const greeksScore = signals.greeksSignal / 100
+    score += (greeksScore - 0.5) * 0.20
+
+    // Apply confidence weighting
+    const confidence = options.confidence / 100
+    score = (score * confidence) + (0.5 * (1 - confidence))
+
+    return Math.max(0, Math.min(1, score))
   }
 
   /**
@@ -974,5 +1043,165 @@ export class TechnicalIndicatorService {
 
   updateConfig(newConfig: Partial<TechnicalAnalysisConfig>): void {
     this.defaultConfig = { ...this.defaultConfig, ...newConfig }
+  }
+
+  /**
+   * Calculate comprehensive options analysis for technical integration
+   */
+  private async calculateOptionsAnalysis(symbol: string, config: TechnicalAnalysisConfig): Promise<any> {
+    try {
+      // Get options data with timeout for performance
+      const optionsData = await Promise.race([
+        this.optionsService.analyzeOptionsData(symbol),
+        new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Options analysis timeout')), 2000)
+        )
+      ])
+
+      if (!optionsData) {
+        return {
+          available: false,
+          signals: null,
+          confidence: 0
+        }
+      }
+
+      // Calculate technical options signals
+      const signals = await this.calculateOptionsSignals(optionsData)
+
+      return {
+        available: true,
+        signals,
+        confidence: optionsData.confidence || 70
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.log(`Options analysis unavailable for ${symbol}: ${errorMessage}`)
+      return {
+        available: false,
+        signals: null,
+        confidence: 0
+      }
+    }
+  }
+
+  /**
+   * Convert options analysis data to technical signals
+   */
+  private async calculateOptionsSignals(optionsData: OptionsAnalysisMetrics): Promise<OptionsSignalsResult> {
+    const startTime = Date.now()
+
+    try {
+      // P/C Ratio Signal (0-100 scale)
+      const pcSignal = this.calculatePCRatioSignal(optionsData.putCallRatio)
+
+      // IV Signal (0-100 scale)
+      const ivSignal = this.calculateIVSignal(optionsData.volatilityAnalysis)
+
+      // Flow Signal (0-100 scale)
+      const flowSignal = this.calculateFlowSignal(optionsData.flowSignals)
+
+      // Greeks Signal (0-100 scale)
+      const greeksSignal = this.calculateGreeksSignal(optionsData)
+
+      // Composite score with equal weighting
+      const composite = (
+        pcSignal * 0.25 +
+        ivSignal * 0.25 +
+        flowSignal * 0.30 +
+        greeksSignal * 0.20
+      )
+
+      return {
+        putCallSignal: pcSignal,
+        impliedVolatilitySignal: ivSignal,
+        flowSignal,
+        greeksSignal,
+        composite,
+        confidence: optionsData.confidence,
+        timestamp: Date.now()
+      }
+
+    } catch (error) {
+      console.error('Error calculating options signals:', error)
+      // Return neutral signals on error
+      return {
+        putCallSignal: 50,
+        impliedVolatilitySignal: 50,
+        flowSignal: 50,
+        greeksSignal: 50,
+        composite: 50,
+        confidence: 0,
+        timestamp: Date.now()
+      }
+    }
+  }
+
+  /**
+   * Calculate P/C ratio technical signal
+   */
+  private calculatePCRatioSignal(pcRatio: any): number {
+    if (!pcRatio || pcRatio.volumeRatio === undefined) return 50
+
+    const ratio = pcRatio.volumeRatio
+
+    // P/C ratio interpretation:
+    // < 0.7 = Bullish (high call volume) = 70-100
+    // 0.7-1.3 = Neutral = 30-70
+    // > 1.3 = Bearish (high put volume) = 0-30
+
+    if (ratio < 0.7) {
+      // Bullish territory - more calls than puts
+      return Math.min(100, 70 + ((0.7 - ratio) / 0.7) * 30)
+    } else if (ratio > 1.3) {
+      // Bearish territory - more puts than calls
+      return Math.max(0, 30 - ((ratio - 1.3) / 1.0) * 30)
+    } else {
+      // Neutral territory
+      return 50 + ((1.0 - ratio) / 0.3) * 20
+    }
+  }
+
+  /**
+   * Calculate IV technical signal
+   */
+  private calculateIVSignal(volatilityAnalysis: any): number {
+    if (!volatilityAnalysis) return 50
+
+    const ivPercentile = volatilityAnalysis.impliedVolatilityPercentile || 50
+
+    // IV percentile interpretation:
+    // < 30th percentile = Low IV = Consider buying options = 70-100
+    // 30-70th percentile = Normal IV = Neutral = 30-70
+    // > 70th percentile = High IV = Consider selling premium = 0-30
+
+    if (ivPercentile < 30) {
+      return 70 + ((30 - ivPercentile) / 30) * 30
+    } else if (ivPercentile > 70) {
+      return 30 - ((ivPercentile - 70) / 30) * 30
+    } else {
+      return 30 + ((ivPercentile - 30) / 40) * 40
+    }
+  }
+
+  /**
+   * Calculate options flow technical signal
+   */
+  private calculateFlowSignal(flowSignals: any): number {
+    if (!flowSignals) return 50
+
+    // Use the composite flow signal directly
+    return Math.max(0, Math.min(100, flowSignals.composite || 50))
+  }
+
+  /**
+   * Calculate Greeks-based technical signal
+   */
+  private calculateGreeksSignal(optionsData: any): number {
+    // For now, return neutral as Greeks analysis would require
+    // more complex interpretation of delta, gamma, theta exposure
+    // This can be enhanced with specific Greeks analysis in the future
+    return 50
   }
 }

@@ -69,7 +69,7 @@ export class SimpleCache {
     let validItems = 0
     let expiredItems = 0
 
-    for (const [, item] of this.memoryCache) {
+    for (const [, item] of Array.from(this.memoryCache)) {
       if (item.expires > now) {
         validItems++
       } else {
@@ -92,7 +92,7 @@ export class SimpleCache {
     const now = Date.now()
     const toDelete: string[] = []
 
-    for (const [key, item] of this.memoryCache) {
+    for (const [key, item] of Array.from(this.memoryCache)) {
       if (item.expires <= now) {
         toDelete.push(key)
       }

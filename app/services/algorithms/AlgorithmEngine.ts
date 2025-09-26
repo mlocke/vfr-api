@@ -56,7 +56,25 @@ interface TechnicalDataPoint {
   institutionalData?: any // 🆕 INSTITUTIONAL DATA INTEGRATION
   shortInterestData?: any // 🆕 SHORT INTEREST INTEGRATION
   extendedMarketData?: any // 🆕 EXTENDED MARKET DATA INTEGRATION
+  optionsData?: OptionsDataPoint // 🆕 OPTIONS INTEGRATION
   [key: string]: any
+}
+
+interface OptionsDataPoint {
+  putCallRatio?: number
+  impliedVolatilityPercentile?: number
+  optionsFlow?: {
+    sentiment: number // -1 to 1 scale
+    volume: number
+    openInterest: number
+  }
+  greeks?: {
+    delta: number
+    gamma: number
+    theta: number
+    vega: number
+  }
+  volumeDivergence?: number // Ratio of options volume to stock volume
 }
 
 export class AlgorithmEngine {

@@ -96,6 +96,16 @@ export default function AdminDashboard() {
 			timeout: 8000,
 		},
 		{
+			id: "eodhd_unicornbay",
+			name: "EODHD UnicornBay Options",
+			category: "financial",
+			description: "Advanced options data with 40+ fields, Greeks, IV surface",
+			status: "online",
+			enabled: true,
+			rateLimit: 100000,
+			timeout: 15000,
+		},
+		{
 			id: "yahoo",
 			name: "Yahoo Finance API",
 			category: "financial",
