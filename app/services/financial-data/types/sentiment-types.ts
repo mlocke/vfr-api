@@ -17,6 +17,7 @@ export interface NewsSentimentData {
 export interface SentimentIndicators {
   news: NewsSentimentData
   reddit?: RedditSentimentData // Optional Reddit sentiment
+  options?: OptionsSentimentData // Optional options sentiment
   aggregatedScore: number // 0-1 composite sentiment score
   confidence: number // Overall confidence in sentiment data
   lastUpdated: number
@@ -27,6 +28,7 @@ export interface SentimentScore {
   components: {
     news: number // News sentiment component (0-1)
     reddit?: number // Reddit sentiment component (0-1, optional)
+    options?: number // Options sentiment component (0-1, optional)
   }
   confidence: number // 0-1 confidence in the score
   reasoning: string[]
@@ -74,6 +76,7 @@ export interface SentimentConfig {
   weights: {
     news: number // Weight for news sentiment
     reddit: number // Weight for Reddit sentiment
+    options: number // Weight for options sentiment
   }
   thresholds: {
     confidenceThreshold: number
@@ -249,6 +252,27 @@ export interface RedditSentimentData {
     comments: number
     url: string
   }>
+}
+
+export interface OptionsSentimentData {
+  symbol: string
+  sentiment: number // 0-1 (negative to positive)
+  confidence: number // 0-1 confidence in sentiment analysis
+  putCallRatio: number // Volume-based P/C ratio
+  openInterestRatio: number // OI-based P/C ratio
+  sentimentSignal: 'BULLISH' | 'BEARISH' | 'NEUTRAL' // Interpreted signal
+  signalStrength: 'WEAK' | 'MODERATE' | 'STRONG' // Signal confidence
+  unusualActivity: boolean // Indicates unusual options activity
+  institutionalFlow: 'INFLOW' | 'OUTFLOW' | 'NEUTRAL' // Large volume patterns
+  volumeAnalysis: {
+    totalVolume: number
+    callVolume: number
+    putVolume: number
+    largeTransactions: number
+  }
+  timeframe: string // Time period analyzed
+  lastUpdated: number
+  insights: string[] // Specific options insights
 }
 
 export interface RedditAPIResponse {

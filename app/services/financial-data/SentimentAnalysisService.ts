@@ -6,6 +6,7 @@
 
 import YahooFinanceSentimentAPI from './providers/YahooFinanceSentimentAPI'
 import RedditAPIEnhanced from './providers/RedditAPIEnhanced'
+import { OptionsAnalysisService } from './OptionsAnalysisService'
 import { RedisCache } from '../cache/RedisCache'
 import { SecurityValidator } from '../security/SecurityValidator'
 import {
@@ -17,22 +18,26 @@ import {
   SentimentConfig,
   SentimentCache,
   NewsSentimentData,
-  RedditSentimentData
+  RedditSentimentData,
+  OptionsSentimentData
 } from './types/sentiment-types'
 
 export class SentimentAnalysisService {
   private yahooSentimentAPI: YahooFinanceSentimentAPI
   private redditAPI: RedditAPIEnhanced | null
+  private optionsAnalysisService: OptionsAnalysisService | null
   private cache: RedisCache
   private config: SentimentConfig
   private securityValidator: SecurityValidator
 
   constructor(
     cache: RedisCache,
-    redditAPI?: RedditAPIEnhanced
+    redditAPI?: RedditAPIEnhanced,
+    optionsAnalysisService?: OptionsAnalysisService
   ) {
     this.yahooSentimentAPI = new YahooFinanceSentimentAPI()
     this.redditAPI = redditAPI || null
+    this.optionsAnalysisService = optionsAnalysisService || null
     this.cache = cache
     this.config = this.createDefaultConfig()
     this.securityValidator = SecurityValidator.getInstance()
@@ -44,6 +49,16 @@ export class SentimentAnalysisService {
         console.log('Reddit API Enhanced initialized for multi-subreddit sentiment analysis')
       } catch (error) {
         console.warn('Failed to initialize Reddit API Enhanced:', error)
+      }
+    }
+
+    // Initialize Options Analysis Service if not provided
+    if (!this.optionsAnalysisService) {
+      try {
+        this.optionsAnalysisService = new OptionsAnalysisService(cache)
+        console.log('Options Analysis Service initialized for options sentiment analysis')
+      } catch (error) {
+        console.warn('Failed to initialize Options Analysis Service:', error)
       }
     }
   }
@@ -207,8 +222,31 @@ export class SentimentAnalysisService {
         }
       }
 
+      // Fetch options sentiment using put/call ratio analysis
+      let optionsData: OptionsSentimentData | undefined
+      if (this.optionsAnalysisService) {
+        try {
+          console.log('📊 Fetching options sentiment from P/C ratio analysis...')
+          const rawOptionsData = await this.getOptionsSentiment(sanitizedSymbol)
+
+          if (rawOptionsData) {
+            console.log(`✅ Options sentiment: ${rawOptionsData.sentiment.toFixed(2)} (P/C: ${rawOptionsData.putCallRatio.toFixed(2)}, ${rawOptionsData.sentimentSignal})`)
+
+            // Filter out options data with zero confidence
+            if (rawOptionsData.confidence === 0) {
+              console.log('📊 Options data has zero confidence, excluding from analysis')
+              optionsData = undefined
+            } else {
+              optionsData = rawOptionsData
+            }
+          }
+        } catch (error) {
+          console.warn('Options sentiment fetch failed:', error)
+        }
+      }
+
       // Check if we have any meaningful sentiment data
-      if (!newsData && !redditData) {
+      if (!newsData && !redditData && !optionsData) {
         console.warn('No meaningful sentiment data available from any source')
         return null
       }
@@ -216,6 +254,7 @@ export class SentimentAnalysisService {
       // Calculate aggregated score with dynamic weighting
       const newsWeight = this.config.weights.news
       const redditWeight = this.config.weights.reddit
+      const optionsWeight = this.config.weights.options
 
       let aggregatedScore = 0
       let totalWeight = 0
@@ -239,11 +278,23 @@ export class SentimentAnalysisService {
         }
       }
 
+      // Add options sentiment if available
+      if (optionsData) {
+        aggregatedScore += optionsData.sentiment * optionsWeight
+        totalWeight += optionsWeight
+
+        // If no news or Reddit data, use options confidence as base
+        if (!newsData && !redditData) {
+          baseConfidence = optionsData.confidence
+        }
+      }
+
       // Normalize by total weight
       aggregatedScore = totalWeight > 0 ? aggregatedScore / totalWeight : 0.5
 
       // Calculate confidence (higher with multiple sources)
-      const multiSourceBonus = (newsData && redditData) ? 0.1 : 0 // 10% bonus for having both sources
+      const sourceCount = [newsData, redditData, optionsData].filter(Boolean).length
+      const multiSourceBonus = sourceCount > 1 ? (sourceCount - 1) * 0.05 : 0 // 5% bonus per additional source
       const confidence = Math.min(baseConfidence + multiSourceBonus, 1.0)
 
       // Create fallback news data if needed (for Reddit-only sentiment)
@@ -261,6 +312,7 @@ export class SentimentAnalysisService {
       const indicators: SentimentIndicators = {
         news: finalNewsData,
         reddit: redditData,
+        options: optionsData,
         aggregatedScore,
         confidence,
         lastUpdated: Date.now()
@@ -290,6 +342,62 @@ export class SentimentAnalysisService {
   }
 
   /**
+   * Get options sentiment using Put/Call ratio analysis
+   */
+  private async getOptionsSentiment(symbol: string): Promise<OptionsSentimentData | null> {
+    try {
+      if (!this.optionsAnalysisService) {
+        return null
+      }
+
+      // Get P/C ratio data from options service
+      const putCallData = await this.optionsAnalysisService.calculateUnicornBayPutCallSignals(symbol)
+      if (!putCallData) {
+        return null
+      }
+
+      // Get enhanced options analysis for additional context
+      const optionsAnalysis = await this.optionsAnalysisService.analyzeOptionsData(symbol)
+
+      // Convert P/C ratio to sentiment score (-1 to +1 scale, then normalized to 0-1)
+      const sentiment = this.calculatePutCallSentiment(putCallData, optionsAnalysis)
+
+      // Determine signal strength based on volume and unusual activity
+      const signalStrength = this.determineOptionsSignalStrength(putCallData, optionsAnalysis)
+
+      // Generate options-specific insights
+      const insights = this.generateOptionsInsights(putCallData, optionsAnalysis, sentiment)
+
+      const optionsSentiment: OptionsSentimentData = {
+        symbol,
+        sentiment,
+        confidence: this.calculateOptionsConfidence(putCallData, optionsAnalysis),
+        putCallRatio: putCallData.volumeRatio,
+        openInterestRatio: putCallData.openInterestRatio,
+        sentimentSignal: this.interpretPutCallSignal(putCallData.volumeRatio),
+        signalStrength,
+        unusualActivity: (optionsAnalysis?.unusualActivity?.largeTransactions ?? 0) > 0,
+        institutionalFlow: this.determineInstitutionalFlow(putCallData, optionsAnalysis),
+        volumeAnalysis: {
+          totalVolume: putCallData.totalCallVolume + putCallData.totalPutVolume,
+          callVolume: putCallData.totalCallVolume,
+          putVolume: putCallData.totalPutVolume,
+          largeTransactions: optionsAnalysis?.unusualActivity?.largeTransactions || 0
+        },
+        timeframe: '1d',
+        lastUpdated: Date.now(),
+        insights
+      }
+
+      return optionsSentiment
+
+    } catch (error) {
+      console.error(`Failed to get options sentiment for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Calculate comprehensive sentiment score
    */
   private calculateSentimentScore(indicators: SentimentIndicators): SentimentScore {
@@ -300,6 +408,7 @@ export class SentimentAnalysisService {
     // Calculate weighted sentiment from multiple sources
     const newsScore = this.normalizeToZeroOne(indicators.news.sentiment)
     let redditScore = 0
+    let optionsScore = 0
 
     if (indicators.reddit) {
       redditScore = indicators.reddit.sentiment
@@ -309,6 +418,25 @@ export class SentimentAnalysisService {
         opportunities.push('Strong retail investor sentiment on WSB may drive momentum')
       } else if (redditScore < 0.3) {
         warnings.push('Negative retail sentiment on WSB could create selling pressure')
+      }
+    }
+
+    if (indicators.options) {
+      optionsScore = indicators.options.sentiment
+      reasoning.push(`Options sentiment: ${(optionsScore * 100).toFixed(0)}% (P/C: ${indicators.options.putCallRatio.toFixed(2)}, ${indicators.options.sentimentSignal})`)
+
+      if (indicators.options.putCallRatio > 1.2) {
+        warnings.push('High put/call ratio suggests bearish institutional sentiment')
+      } else if (indicators.options.putCallRatio < 0.8) {
+        opportunities.push('Low put/call ratio indicates bullish options positioning')
+      }
+
+      if (indicators.options.unusualActivity) {
+        if (indicators.options.institutionalFlow === 'INFLOW') {
+          opportunities.push('Unusual institutional options inflow detected')
+        } else if (indicators.options.institutionalFlow === 'OUTFLOW') {
+          warnings.push('Institutional options outflow may signal distribution')
+        }
       }
     }
 
@@ -349,7 +477,8 @@ export class SentimentAnalysisService {
       overall: Math.max(0, Math.min(1, overall)),
       components: {
         news: newsScore,
-        reddit: indicators.reddit ? redditScore : undefined
+        reddit: indicators.reddit ? redditScore : undefined,
+        options: indicators.options ? optionsScore : undefined
       },
       confidence: indicators.confidence,
       reasoning,
@@ -486,8 +615,9 @@ export class SentimentAnalysisService {
         fallback: []
       },
       weights: {
-        news: 0.7, // 70% weight for company sentiment (Yahoo Finance)
-        reddit: 0.3 // 30% weight for Reddit WSB sentiment
+        news: 0.55, // 55% weight for company sentiment (Yahoo Finance)
+        reddit: 0.30, // 30% weight for Reddit WSB sentiment
+        options: 0.15 // 15% weight for options sentiment (P/C ratio analysis)
       },
       thresholds: {
         confidenceThreshold: 0.3,
@@ -501,6 +631,165 @@ export class SentimentAnalysisService {
   }
 
   /**
+   * Calculate sentiment score from P/C ratio data
+   * P/C ratio interpretation: >1.2 bearish, <0.8 bullish, 0.8-1.2 neutral
+   */
+  private calculatePutCallSentiment(putCallData: any, optionsAnalysis: any): number {
+    const pcRatio = putCallData.volumeRatio
+
+    // Base sentiment from P/C ratio (inverted since high P/C = bearish)
+    let baseSentiment = 0.5 // Neutral baseline
+
+    if (pcRatio > 1.2) {
+      // Bearish: Higher put volume relative to calls
+      baseSentiment = Math.max(0, 0.5 - ((pcRatio - 1.2) * 0.25))
+    } else if (pcRatio < 0.8) {
+      // Bullish: Higher call volume relative to puts
+      baseSentiment = Math.min(1, 0.5 + ((0.8 - pcRatio) * 0.625))
+    }
+
+    // Adjust for unusual activity (institutional signals)
+    if (optionsAnalysis?.unusualActivity?.largeTransactions > 0) {
+      const volumeRatio = optionsAnalysis.unusualActivity.volumeRatio
+      if (volumeRatio > 2) {
+        // High unusual activity amplifies the signal
+        if (baseSentiment > 0.5) {
+          baseSentiment = Math.min(1, baseSentiment + 0.1)
+        } else {
+          baseSentiment = Math.max(0, baseSentiment - 0.1)
+        }
+      }
+    }
+
+    return baseSentiment
+  }
+
+  /**
+   * Interpret P/C ratio signal direction
+   */
+  private interpretPutCallSignal(pcRatio: number): 'BULLISH' | 'BEARISH' | 'NEUTRAL' {
+    if (pcRatio > 1.2) return 'BEARISH'
+    if (pcRatio < 0.8) return 'BULLISH'
+    return 'NEUTRAL'
+  }
+
+  /**
+   * Determine options signal strength based on volume and activity
+   */
+  private determineOptionsSignalStrength(putCallData: any, optionsAnalysis: any): 'WEAK' | 'MODERATE' | 'STRONG' {
+    const totalVolume = putCallData.totalCallVolume + putCallData.totalPutVolume
+    const pcRatio = putCallData.volumeRatio
+    const unusualActivity = optionsAnalysis?.unusualActivity?.largeTransactions || 0
+
+    // Strong signal criteria
+    if (totalVolume > 10000 && (pcRatio > 1.5 || pcRatio < 0.6) && unusualActivity > 0) {
+      return 'STRONG'
+    }
+
+    // Moderate signal criteria
+    if (totalVolume > 5000 && (pcRatio > 1.3 || pcRatio < 0.7)) {
+      return 'MODERATE'
+    }
+
+    return 'WEAK'
+  }
+
+  /**
+   * Calculate confidence for options sentiment
+   */
+  private calculateOptionsConfidence(putCallData: any, optionsAnalysis: any): number {
+    let confidence = 0.3 // Base confidence
+
+    const totalVolume = putCallData.totalCallVolume + putCallData.totalPutVolume
+
+    // Volume-based confidence
+    if (totalVolume > 20000) confidence += 0.3
+    else if (totalVolume > 10000) confidence += 0.2
+    else if (totalVolume > 5000) confidence += 0.1
+
+    // P/C ratio extremes increase confidence
+    const pcRatio = putCallData.volumeRatio
+    if (pcRatio > 1.5 || pcRatio < 0.5) confidence += 0.2
+    else if (pcRatio > 1.3 || pcRatio < 0.7) confidence += 0.1
+
+    // Unusual activity boosts confidence
+    if (optionsAnalysis?.unusualActivity?.largeTransactions > 0) {
+      confidence += 0.2
+    }
+
+    return Math.min(1.0, confidence)
+  }
+
+  /**
+   * Determine institutional flow direction
+   */
+  private determineInstitutionalFlow(putCallData: any, optionsAnalysis: any): 'INFLOW' | 'OUTFLOW' | 'NEUTRAL' {
+    const totalVolume = putCallData.totalCallVolume + putCallData.totalPutVolume
+    const largeTransactions = optionsAnalysis?.unusualActivity?.largeTransactions || 0
+
+    if (largeTransactions === 0 || totalVolume < 5000) {
+      return 'NEUTRAL'
+    }
+
+    const pcRatio = putCallData.volumeRatio
+
+    // High call volume with large transactions = bullish inflow
+    if (pcRatio < 0.8 && largeTransactions > 0) {
+      return 'INFLOW'
+    }
+
+    // High put volume with large transactions = bearish outflow
+    if (pcRatio > 1.2 && largeTransactions > 0) {
+      return 'OUTFLOW'
+    }
+
+    return 'NEUTRAL'
+  }
+
+  /**
+   * Generate options-specific insights
+   */
+  private generateOptionsInsights(putCallData: any, optionsAnalysis: any, sentiment: number): string[] {
+    const insights: string[] = []
+    const pcRatio = putCallData.volumeRatio
+    const totalVolume = putCallData.totalCallVolume + putCallData.totalPutVolume
+
+    // Volume insights
+    if (totalVolume > 20000) {
+      insights.push(`High options volume: ${totalVolume.toLocaleString()} contracts`)
+    } else if (totalVolume > 10000) {
+      insights.push(`Moderate options volume: ${totalVolume.toLocaleString()} contracts`)
+    }
+
+    // P/C ratio insights
+    if (pcRatio > 1.5) {
+      insights.push(`Very high put/call ratio (${pcRatio.toFixed(2)}) indicates strong bearish sentiment`)
+    } else if (pcRatio > 1.2) {
+      insights.push(`Elevated put/call ratio (${pcRatio.toFixed(2)}) suggests bearish positioning`)
+    } else if (pcRatio < 0.5) {
+      insights.push(`Very low put/call ratio (${pcRatio.toFixed(2)}) indicates strong bullish sentiment`)
+    } else if (pcRatio < 0.8) {
+      insights.push(`Low put/call ratio (${pcRatio.toFixed(2)}) suggests bullish positioning`)
+    }
+
+    // Unusual activity insights
+    const largeTransactions = optionsAnalysis?.unusualActivity?.largeTransactions || 0
+    if (largeTransactions > 0) {
+      insights.push(`${largeTransactions} large block transaction${largeTransactions > 1 ? 's' : ''} detected`)
+    }
+
+    // Open interest insights
+    if (putCallData.openInterestRatio !== putCallData.volumeRatio) {
+      const oiDiff = Math.abs(putCallData.openInterestRatio - putCallData.volumeRatio)
+      if (oiDiff > 0.3) {
+        insights.push(`Divergence between volume and open interest P/C ratios suggests fresh positioning`)
+      }
+    }
+
+    return insights
+  }
+
+  /**
    * Health check
    */
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
@@ -508,13 +797,24 @@ export class SentimentAnalysisService {
       const yahooSentimentHealth = await this.yahooSentimentAPI.healthCheck()
       const cacheHealth = await this.cache.ping() === 'PONG'
 
+      let optionsHealth = false
+      if (this.optionsAnalysisService) {
+        try {
+          const optionsHealthCheck = await this.optionsAnalysisService.healthCheckEnhanced()
+          optionsHealth = optionsHealthCheck.available
+        } catch (error) {
+          console.warn('Options health check failed:', error)
+        }
+      }
+
       const healthy = yahooSentimentHealth && cacheHealth
 
       return {
         status: healthy ? 'healthy' : 'unhealthy',
         details: {
           yahooFinanceSentiment: yahooSentimentHealth,
-          cache: cacheHealth
+          cache: cacheHealth,
+          optionsAnalysis: optionsHealth
         }
       }
     } catch (error) {

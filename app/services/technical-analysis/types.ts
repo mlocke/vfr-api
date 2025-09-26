@@ -240,6 +240,13 @@ export interface TechnicalAnalysisResult {
     confidence: number
   }
 
+  // Options analysis (new integration)
+  options?: {
+    signals: OptionsSignalsResult
+    available: boolean
+    confidence: number
+  }
+
   // Overall technical score
   score: {
     total: number // 0-100 scale
@@ -248,6 +255,7 @@ export interface TechnicalAnalysisResult {
       momentum: number
       volume: number
       patterns: number
+      options?: number // New options component
     }
   }
 
@@ -379,3 +387,38 @@ export type TechnicalIndicatorResult =
   | PSARResult
 
 export type Pattern = CandlestickPattern | ChartPattern
+
+/**
+ * Options-specific technical indicators
+ */
+export interface OptionsSignalsResult {
+  putCallSignal: number // 0-100 scale
+  impliedVolatilitySignal: number // 0-100 scale
+  flowSignal: number // 0-100 scale
+  greeksSignal: number // 0-100 scale
+  composite: number // Weighted composite
+  confidence: number // Data quality confidence
+  timestamp: number
+}
+
+export interface OptionsIVRegime {
+  level: 'LOW' | 'MEDIUM' | 'HIGH'
+  percentile: number
+  signal: 'BUY_VOLATILITY' | 'SELL_VOLATILITY' | 'NEUTRAL'
+  trend: 'EXPANDING' | 'CONTRACTING' | 'STABLE'
+}
+
+export interface OptionsPCRatioSignal {
+  ratio: number
+  signal: 'BULLISH' | 'BEARISH' | 'NEUTRAL'
+  strength: 'WEAK' | 'MODERATE' | 'STRONG'
+  extremeLevel: boolean
+}
+
+export interface OptionsFlowTechnicalSignal {
+  momentum: number
+  convexity: number
+  termStructure: number
+  divergence: boolean
+  institutionalSignals: string[]
+}

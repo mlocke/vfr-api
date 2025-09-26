@@ -435,6 +435,13 @@ export interface PutCallRatio {
       remainingRequests: number
       resetTime: number
     }
+    // UnicornBay enhanced metadata
+    liquidityFilteredRatio?: number
+    highLiquidityContracts?: number
+    enhancedMetrics?: {
+      avgCallLiquidity?: number
+      avgPutLiquidity?: number
+    }
   }
 }
 

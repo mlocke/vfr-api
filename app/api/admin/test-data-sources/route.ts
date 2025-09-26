@@ -63,6 +63,7 @@ const DATA_SOURCE_CONFIGS = {
   eia: { name: 'EIA API', timeout: 8000 },
   twelvedata: { name: 'TwelveData API', timeout: 8000 },
   eodhd: { name: 'EODHD API', timeout: 8000 },
+  eodhd_unicornbay: { name: 'EODHD UnicornBay Options', timeout: 15000 },
   options: { name: 'Options Data Service', timeout: 15000 },
   enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
   technical_indicators: { name: 'Technical Indicators Service', timeout: 5000 },
@@ -275,7 +276,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -531,6 +532,19 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         }
         break
 
+      case 'eodhd_unicornbay':
+        console.log('🦄 Testing EODHD UnicornBay Options API...')
+        const unicornBayAPI = new EODHDAPI(undefined, timeout, true)
+
+        // Comprehensive UnicornBay testing
+        const unicornBayTests = await testUnicornBayFeatures(unicornBayAPI, timeout)
+
+        testData = {
+          ...unicornBayTests,
+          testType: 'unicornbay_comprehensive_options_analysis'
+        }
+        break
+
       case 'market_indices':
         console.log('📈 Getting Market Indices data...')
         const indicesService = new MarketIndicesService()
@@ -583,21 +597,26 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         const optionsChain = await optionsDataService.getOptionsChain(testSymbol)
         const providerConfig = optionsDataService.getProviderConfig()
 
+        // Test UnicornBay integration within OptionsDataService
+        const unicornBayIntegration = await testOptionsServiceUnicornBayIntegration(optionsDataService, testSymbol)
+
         testData = {
           serviceStatus: optionsStatus,
           putCallRatio: optionsPutCallRatio,
           optionsAnalysis: optionsFullAnalysis,
           optionsChain: optionsChain ? {
             symbol: optionsChain.symbol,
-            callsCount: optionsChain.calls.length,
-            putsCount: optionsChain.puts.length,
-            expirations: optionsChain.expirationDates.slice(0, 3),
-            strikes: optionsChain.strikes.slice(0, 10)
+            callsCount: optionsChain.calls?.length || 0,
+            putsCount: optionsChain.puts?.length || 0,
+            expirations: optionsChain.expirationDates?.slice(0, 3) || [],
+            strikes: optionsChain.strikes?.slice(0, 10) || [],
+            contractCount: (optionsChain.calls?.length || 0) + (optionsChain.puts?.length || 0)
           } : null,
           providerConfiguration: providerConfig,
+          unicornBayIntegration,
           testSymbol,
           currentTime: new Date().toISOString(),
-          testType: 'comprehensive_options_analysis'
+          testType: 'comprehensive_options_analysis_with_unicornbay'
         }
         break
 
@@ -968,6 +987,34 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         documentation: 'https://eodhd.com/financial-apis/',
         rateLimit: '100,000 requests per day'
       },
+      eodhd_unicornbay: {
+        baseUrl: 'https://eodhd.com/api',
+        endpoints: [
+          { path: '/options/{symbol}.US', description: 'UnicornBay Options Chain (40+ fields)', method: 'GET' },
+          { path: '/options/{symbol}.US?from={date}&to={date}', description: 'Historical Options Data', method: 'GET' },
+          { path: '/options/iv-surface/{symbol}.US', description: 'Implied Volatility Surface', method: 'GET' },
+          { path: '/options/greeks/{symbol}.US', description: 'Options Greeks Analysis', method: 'GET' },
+          { path: '/options/volume-analysis/{symbol}.US', description: 'Options Volume & Open Interest', method: 'GET' },
+          { path: '/options/put-call-ratio/{symbol}.US', description: 'Put/Call Ratio Analysis', method: 'GET' },
+          { path: '/options/max-pain/{symbol}.US', description: 'Max Pain Analysis', method: 'GET' },
+          { path: '/options/flow/{symbol}.US', description: 'Unusual Options Activity', method: 'GET' },
+          { path: '/options/strategy-analysis/{symbol}.US', description: 'Options Strategy Recommendations', method: 'GET' },
+          { path: '/options/earnings-impact/{symbol}.US', description: 'Earnings Impact on Options', method: 'GET' }
+        ],
+        authentication: 'API Key + UnicornBay subscription required',
+        documentation: 'https://eodhd.com/financial-apis/options-data-api/',
+        rateLimit: '100,000 requests per day (UnicornBay features included)',
+        unicornBayFeatures: {
+          advancedGreeks: 'Delta, Gamma, Theta, Vega, Rho with high precision',
+          ivSurface: '3D Implied Volatility Surface visualization',
+          volumeAnalysis: 'Real-time volume and open interest tracking',
+          unusualActivity: 'Detection of unusual options flow and activity',
+          strategyAnalysis: 'AI-powered options strategy recommendations',
+          earningsImpact: 'Pre/post earnings options behavior analysis',
+          maxPain: 'Real-time max pain calculations',
+          liquidityMetrics: 'Bid-ask spread quality and liquidity scoring'
+        }
+      },
       market_indices: {
         baseUrl: 'Internal Service',
         endpoints: [
@@ -1036,7 +1083,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -1204,5 +1251,542 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
   } catch (error) {
     console.error(`❌ Performance test failed for ${dataSourceId}:`, error)
     return null
+  }
+}
+
+/**
+ * Test UnicornBay connection and availability
+ */
+async function testUnicornBayConnection(timeout: number): Promise<boolean> {
+  try {
+    console.log('🦄 Testing UnicornBay Options API connection...')
+
+    const eodhdAPI = new EODHDAPI(undefined, timeout, true)
+
+    // Test basic options availability
+    const optionsAvailability = await eodhdAPI.checkOptionsAvailability()
+
+    // Check if UnicornBay features are accessible
+    const unicornBayTest = await testUnicornBayEndpoint(timeout)
+
+    return optionsAvailability && unicornBayTest
+  } catch (error) {
+    console.error('❌ UnicornBay connection test failed:', error)
+    return false
+  }
+}
+
+/**
+ * Test specific UnicornBay endpoint
+ */
+async function testUnicornBayEndpoint(timeout: number): Promise<boolean> {
+  try {
+    const apiKey = process.env.EODHD_API_KEY
+    if (!apiKey) {
+      console.warn('⚠️ No EODHD API key available for UnicornBay testing')
+      return false
+    }
+
+    // Test UnicornBay options endpoint with SPY
+    const url = `https://eodhd.com/api/options/SPY.US?api_token=${apiKey}&fmt=json`
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'VFR-Financial-Analysis-Platform/1.0'
+      }
+    })
+
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      const data = await response.json()
+      // Check if we get UnicornBay-specific fields
+      const hasUnicornBayFields = data && Array.isArray(data) && data.length > 0 &&
+        data[0].hasOwnProperty('delta') && data[0].hasOwnProperty('gamma')
+
+      console.log('🦄 UnicornBay endpoint test result:', {
+        status: response.status,
+        hasData: !!data,
+        hasUnicornBayFields,
+        contractCount: Array.isArray(data) ? data.length : 0
+      })
+
+      return hasUnicornBayFields
+    }
+
+    return false
+  } catch (error) {
+    console.error('❌ UnicornBay endpoint test failed:', error)
+    return false
+  }
+}
+
+/**
+ * Comprehensive UnicornBay features testing
+ */
+async function testUnicornBayFeatures(api: any, timeout: number): Promise<any> {
+  const testSymbol = 'SPY'
+  const results: any = {
+    timestamp: Date.now(),
+    testSymbol,
+    featureTests: {},
+    performanceMetrics: {},
+    availability: {},
+    dataQuality: {}
+  }
+
+  try {
+    console.log(`🦄 Running comprehensive UnicornBay tests for ${testSymbol}...`)
+
+    // Test 1: Basic Options Chain with UnicornBay fields
+    const startTime = Date.now()
+    try {
+      const optionsChain = await api.getOptionsChain(testSymbol)
+      const latency = Date.now() - startTime
+
+      results.featureTests.optionsChain = {
+        success: !!optionsChain,
+        latency,
+        contractCount: (optionsChain?.calls?.length || 0) + (optionsChain?.puts?.length || 0),
+        hasGreeks: optionsChain?.calls?.[0]?.delta !== undefined || optionsChain?.puts?.[0]?.delta !== undefined,
+        hasIV: optionsChain?.calls?.[0]?.impliedVolatility !== undefined || optionsChain?.puts?.[0]?.impliedVolatility !== undefined
+      }
+    } catch (error) {
+      results.featureTests.optionsChain = {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+
+    // Test 2: Put/Call Ratio Analysis
+    try {
+      const putCallRatio = await api.getPutCallRatio(testSymbol)
+      results.featureTests.putCallRatio = {
+        success: !!putCallRatio,
+        volumeRatio: putCallRatio?.volumeRatio,
+        openInterestRatio: putCallRatio?.openInterestRatio,
+        hasMetadata: !!putCallRatio?.metadata
+      }
+    } catch (error) {
+      results.featureTests.putCallRatio = {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+
+    // Test 3: Options Analysis (comprehensive)
+    try {
+      const optionsAnalysis = await api.getOptionsAnalysisFreeTier(testSymbol)
+      results.featureTests.optionsAnalysis = {
+        success: !!optionsAnalysis,
+        hasSentiment: !!optionsAnalysis?.sentiment,
+        hasTrend: !!optionsAnalysis?.trend,
+        confidence: optionsAnalysis?.confidence
+      }
+    } catch (error) {
+      results.featureTests.optionsAnalysis = {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+
+    // Test 4: UnicornBay-specific endpoint availability
+    results.availability = await testUnicornBayEndpointAvailability(timeout)
+
+    // Test 5: Performance benchmarks
+    results.performanceMetrics = await benchmarkUnicornBayPerformance(testSymbol, timeout)
+
+    // Test 6: Data quality assessment
+    results.dataQuality = await assessUnicornBayDataQuality(testSymbol, timeout)
+
+    // Overall UnicornBay status
+    const successfulTests = Object.values(results.featureTests).filter((test: any) => test.success).length
+    const totalTests = Object.keys(results.featureTests).length
+
+    results.overallStatus = {
+      testsCompleted: totalTests,
+      testsSuccessful: successfulTests,
+      successRate: (successfulTests / totalTests) * 100,
+      unicornBayAvailable: successfulTests > 0,
+      recommendedUsage: successfulTests >= 2 ? 'production' : 'limited',
+      limitations: successfulTests < totalTests ? 'Some features require paid UnicornBay subscription' : 'All features available'
+    }
+
+    console.log('🦄 UnicornBay comprehensive test completed:', {
+      successRate: results.overallStatus.successRate,
+      availableFeatures: successfulTests,
+      totalFeatures: totalTests
+    })
+
+    return results
+
+  } catch (error) {
+    console.error('❌ UnicornBay comprehensive test failed:', error)
+    return {
+      ...results,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      overallStatus: {
+        testsCompleted: 0,
+        testsSuccessful: 0,
+        successRate: 0,
+        unicornBayAvailable: false,
+        recommendedUsage: 'unavailable',
+        limitations: 'UnicornBay features not accessible'
+      }
+    }
+  }
+}
+
+/**
+ * Test UnicornBay endpoint availability
+ */
+async function testUnicornBayEndpointAvailability(timeout: number): Promise<any> {
+  const endpoints = [
+    { name: 'options_chain', path: '/options/SPY.US' },
+    { name: 'iv_surface', path: '/options/iv-surface/SPY.US' },
+    { name: 'greeks', path: '/options/greeks/SPY.US' },
+    { name: 'volume_analysis', path: '/options/volume-analysis/SPY.US' },
+    { name: 'put_call_ratio', path: '/options/put-call-ratio/SPY.US' },
+    { name: 'max_pain', path: '/options/max-pain/SPY.US' },
+    { name: 'options_flow', path: '/options/flow/SPY.US' },
+    { name: 'strategy_analysis', path: '/options/strategy-analysis/SPY.US' },
+    { name: 'earnings_impact', path: '/options/earnings-impact/SPY.US' }
+  ]
+
+  const availability: any = {}
+  const apiKey = process.env.EODHD_API_KEY
+
+  if (!apiKey) {
+    console.warn('⚠️ No EODHD API key for endpoint availability testing')
+    return { error: 'No API key available' }
+  }
+
+  for (const endpoint of endpoints) {
+    try {
+      const url = `https://eodhd.com/api${endpoint.path}?api_token=${apiKey}&fmt=json`
+
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'VFR-Financial-Analysis-Platform/1.0'
+        }
+      })
+
+      clearTimeout(timeoutId)
+
+      availability[endpoint.name] = {
+        available: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        requiresSubscription: response.status === 402 || response.status === 403
+      }
+
+      // Small delay between requests to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+    } catch (error) {
+      availability[endpoint.name] = {
+        available: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
+  return availability
+}
+
+/**
+ * Benchmark UnicornBay performance
+ */
+async function benchmarkUnicornBayPerformance(symbol: string, timeout: number): Promise<any> {
+  const metrics = {
+    optionsChainLatency: 0,
+    putCallRatioLatency: 0,
+    analysisLatency: 0,
+    averageLatency: 0,
+    throughput: 0,
+    reliabilityScore: 0
+  }
+
+  try {
+    const api = new EODHDAPI(undefined, timeout, true)
+    const tests = []
+    const startTime = Date.now()
+
+    // Test options chain performance
+    tests.push(
+      api.getOptionsChain(symbol)
+        .then(() => ({ test: 'optionsChain', success: true, latency: Date.now() - startTime }))
+        .catch(() => ({ test: 'optionsChain', success: false, latency: Date.now() - startTime }))
+    )
+
+    // Test put/call ratio performance
+    tests.push(
+      api.getPutCallRatio(symbol)
+        .then(() => ({ test: 'putCallRatio', success: true, latency: Date.now() - startTime }))
+        .catch(() => ({ test: 'putCallRatio', success: false, latency: Date.now() - startTime }))
+    )
+
+    // Test options analysis performance
+    tests.push(
+      api.getOptionsAnalysisFreeTier(symbol)
+        .then(() => ({ test: 'analysis', success: true, latency: Date.now() - startTime }))
+        .catch(() => ({ test: 'analysis', success: false, latency: Date.now() - startTime }))
+    )
+
+    const results = await Promise.allSettled(tests)
+    const totalTime = Date.now() - startTime
+
+    let successfulTests = 0
+    let totalLatency = 0
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        const testResult = result.value
+        if (testResult.success) {
+          successfulTests++
+        }
+        totalLatency += testResult.latency
+        metrics[`${testResult.test}Latency` as keyof typeof metrics] = testResult.latency
+      }
+    })
+
+    metrics.averageLatency = totalLatency / results.length
+    metrics.throughput = (successfulTests / totalTime) * 1000 // requests per second
+    metrics.reliabilityScore = (successfulTests / results.length) * 100
+
+    return metrics
+
+  } catch (error) {
+    console.error('❌ UnicornBay performance benchmark failed:', error)
+    return {
+      ...metrics,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * Assess UnicornBay data quality
+ */
+async function assessUnicornBayDataQuality(symbol: string, timeout: number): Promise<any> {
+  const quality = {
+    dataCompleteness: 0,
+    fieldAccuracy: 0,
+    timeliness: 0,
+    overallScore: 0,
+    issues: [] as string[],
+    recommendations: [] as string[]
+  }
+
+  try {
+    const api = new EODHDAPI(undefined, timeout, true)
+
+    // Test data completeness
+    const optionsChain = await api.getOptionsChain(symbol)
+    if (optionsChain && (optionsChain.calls || optionsChain.puts)) {
+      const allContracts = [...(optionsChain.calls || []), ...(optionsChain.puts || [])]
+      const totalContracts = allContracts.length
+      const completeContracts = allContracts.filter(contract =>
+        contract.strike && contract.bid && contract.ask && contract.volume !== undefined
+      ).length
+
+      quality.dataCompleteness = (completeContracts / totalContracts) * 100
+    }
+
+    // Test field accuracy (check for realistic values)
+    if (optionsChain && (optionsChain.calls?.length > 0 || optionsChain.puts?.length > 0)) {
+      const sampleContract = optionsChain.calls?.[0] || optionsChain.puts?.[0]
+      let accurateFields = 0
+      let totalFields = 0
+
+      // Check realistic bid/ask spread
+      if (sampleContract.bid && sampleContract.ask) {
+        totalFields++
+        const spread = sampleContract.ask - sampleContract.bid
+        if (spread > 0 && spread < sampleContract.ask * 0.5) {
+          accurateFields++
+        } else {
+          quality.issues.push('Unrealistic bid-ask spreads detected')
+        }
+      }
+
+      // Check Greeks values
+      if (sampleContract.delta !== undefined) {
+        totalFields++
+        if (Math.abs(sampleContract.delta) <= 1) {
+          accurateFields++
+        } else {
+          quality.issues.push('Invalid delta values detected')
+        }
+      }
+
+      quality.fieldAccuracy = totalFields > 0 ? (accurateFields / totalFields) * 100 : 0
+    }
+
+    // Test timeliness (data freshness)
+    const putCallRatio = await api.getPutCallRatio(symbol)
+    if (putCallRatio && putCallRatio.timestamp) {
+      const dataAge = Date.now() - putCallRatio.timestamp
+      const maxAgeMinutes = 30 // Consider data fresh if less than 30 minutes old
+      quality.timeliness = Math.max(0, 100 - (dataAge / (maxAgeMinutes * 60 * 1000)) * 100)
+    }
+
+    // Calculate overall score
+    quality.overallScore = (quality.dataCompleteness + quality.fieldAccuracy + quality.timeliness) / 3
+
+    // Generate recommendations
+    if (quality.dataCompleteness < 80) {
+      quality.recommendations.push('Consider upgrading to UnicornBay premium for more complete data')
+    }
+    if (quality.fieldAccuracy < 90) {
+      quality.recommendations.push('Implement additional data validation for options fields')
+    }
+    if (quality.timeliness < 70) {
+      quality.recommendations.push('Increase cache refresh frequency for options data')
+    }
+
+    return quality
+
+  } catch (error) {
+    console.error('❌ UnicornBay data quality assessment failed:', error)
+    return {
+      ...quality,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * UnicornBay performance testing
+ */
+async function testUnicornBayPerformance(timeout: number): Promise<any> {
+  const testSymbols = ['SPY', 'QQQ', 'IWM', 'AAPL', 'TSLA']
+  const results = []
+  const startTime = Date.now()
+
+  try {
+    console.log('🦄 Running UnicornBay performance test across multiple symbols...')
+
+    for (const symbol of testSymbols) {
+      const symbolStartTime = Date.now()
+
+      try {
+        const api = new EODHDAPI(undefined, timeout, true)
+        const optionsData = await api.getOptionsChain(symbol)
+        const symbolLatency = Date.now() - symbolStartTime
+
+        results.push({
+          symbol,
+          success: !!optionsData,
+          latency: symbolLatency,
+          contractCount: (optionsData?.calls?.length || 0) + (optionsData?.puts?.length || 0),
+          hasUnicornBayFields: optionsData?.calls?.[0]?.delta !== undefined || optionsData?.puts?.[0]?.delta !== undefined
+        })
+
+        // Small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 200))
+
+      } catch (error) {
+        results.push({
+          symbol,
+          success: false,
+          latency: Date.now() - symbolStartTime,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+    }
+
+    const totalTime = Date.now() - startTime
+    const successfulRequests = results.filter(r => r.success).length
+    const avgLatency = results.reduce((sum, r) => sum + r.latency, 0) / results.length
+    const totalContracts = results.reduce((sum, r) => sum + (r.contractCount || 0), 0)
+
+    return {
+      testType: 'unicornbay_performance_benchmark',
+      totalSymbols: testSymbols.length,
+      successfulRequests,
+      totalTime,
+      avgLatency: Math.round(avgLatency),
+      throughput: Math.round((successfulRequests / totalTime) * 1000),
+      totalContracts,
+      contractsPerSecond: Math.round((totalContracts / totalTime) * 1000),
+      results,
+      performanceGrade: avgLatency < 2000 ? 'A' : avgLatency < 5000 ? 'B' : 'C',
+      unicornBayOptimized: results.some(r => r.hasUnicornBayFields)
+    }
+
+  } catch (error) {
+    console.error('❌ UnicornBay performance test failed:', error)
+    return {
+      testType: 'unicornbay_performance_benchmark',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      totalTime: Date.now() - startTime,
+      performanceGrade: 'F'
+    }
+  }
+}
+
+/**
+ * Test UnicornBay integration within OptionsDataService
+ */
+async function testOptionsServiceUnicornBayIntegration(optionsService: any, symbol: string): Promise<any> {
+  try {
+    console.log(`🦄 Testing OptionsDataService UnicornBay integration for ${symbol}...`)
+
+    const startTime = Date.now()
+
+    // Test if EODHD is set as preferred source
+    const availableProviders = optionsService.getAvailableProviders()
+    const providerConfig = optionsService.getProviderConfig()
+
+    // Set EODHD as preferred for UnicornBay testing
+    optionsService.setPreferredSource('eodhd')
+
+    // Test performance with UnicornBay features
+    const performanceReport = optionsService.getPerformanceReport()
+
+    // Test batch processing with UnicornBay optimization
+    const batchSymbols = [symbol, 'QQQ', 'IWM']
+    const batchResults = await optionsService.getBatchOptionsAnalysis(batchSymbols)
+
+    const totalTime = Date.now() - startTime
+
+    return {
+      availableProviders,
+      providerConfiguration: providerConfig,
+      preferredSource: 'eodhd', // Set for UnicornBay
+      performanceReport,
+      batchProcessing: {
+        symbolsProcessed: batchSymbols.length,
+        successfulResults: Array.from(batchResults.values()).filter(r => r !== null).length,
+        totalTime,
+        avgTimePerSymbol: Math.round(totalTime / batchSymbols.length)
+      },
+      unicornBayOptimizations: {
+        memoryOptimization: performanceReport.memoryEfficiency > 0,
+        cacheEfficiency: performanceReport.cacheHitRate,
+        latencyOptimization: performanceReport.averageLatency < 500
+      },
+      recommendations: {
+        useUnicornBay: performanceReport.performanceGrade === 'A',
+        upgradeSubscription: performanceReport.averageLatency > 1000,
+        cacheOptimization: performanceReport.cacheHitRate < 80
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ UnicornBay integration test failed:', error)
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      available: false
+    }
   }
 }

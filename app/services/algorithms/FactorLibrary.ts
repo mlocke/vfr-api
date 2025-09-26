@@ -60,7 +60,25 @@ interface TechnicalDataPoint {
   institutionalData?: any // 🆕 INSTITUTIONAL DATA INTEGRATION
   shortInterestData?: any // 🆕 SHORT INTEREST INTEGRATION
   extendedMarketData?: any // 🆕 EXTENDED MARKET DATA INTEGRATION
+  optionsData?: OptionsDataPoint // 🆕 OPTIONS INTEGRATION
   [key: string]: any
+}
+
+interface OptionsDataPoint {
+  putCallRatio?: number
+  impliedVolatilityPercentile?: number
+  optionsFlow?: {
+    sentiment: number // -1 to 1 scale
+    volume: number
+    openInterest: number
+  }
+  greeks?: {
+    delta: number
+    gamma: number
+    theta: number
+    vega: number
+  }
+  volumeDivergence?: number // Ratio of options volume to stock volume
 }
 
 interface HistoricalPrice {
@@ -274,6 +292,29 @@ export class FactorLibrary {
           break
         case 'technical_overall_score':
           result = await this.calculateTechnicalOverallScore(symbol)
+          break
+        case 'technical_overall_score_with_options':
+          result = await this.calculateTechnicalOverallScoreWithOptions(symbol, technicalData?.optionsData)
+          break
+
+        // ==================== OPTIONS INTELLIGENCE FACTORS ====================
+        case 'options_composite':
+          result = this.calculateOptionsScore(technicalData?.optionsData)
+          break
+        case 'put_call_ratio_score':
+          result = technicalData?.optionsData?.putCallRatio ? this.calculatePutCallRatioScore(technicalData.optionsData.putCallRatio) : null
+          break
+        case 'iv_percentile_score':
+          result = technicalData?.optionsData?.impliedVolatilityPercentile ? this.calculateIVPercentileScore(technicalData.optionsData.impliedVolatilityPercentile) : null
+          break
+        case 'options_flow_score':
+          result = technicalData?.optionsData?.optionsFlow ? this.calculateOptionsFlowScore(technicalData.optionsData.optionsFlow) : null
+          break
+        case 'greeks_score':
+          result = technicalData?.optionsData?.greeks ? this.calculateGreeksScore(technicalData.optionsData.greeks) : null
+          break
+        case 'volume_divergence_score':
+          result = technicalData?.optionsData?.volumeDivergence ? this.calculateVolumeDivergenceScore(technicalData.optionsData.volumeDivergence) : null
           break
 
         // ==================== ENHANCED SERVICE INTEGRATION FACTORS ====================
@@ -1134,6 +1175,224 @@ export class FactorLibrary {
   }
 
   /**
+   * Calculate enhanced technical analysis score with options integration
+   * 85% traditional technical analysis + 15% options intelligence
+   */
+  private async calculateTechnicalOverallScoreWithOptions(symbol: string, optionsData?: OptionsDataPoint): Promise<number | null> {
+
+    try {
+      console.log(`🔍 Calculating enhanced technical score with options integration for ${symbol}`)
+
+      // Calculate traditional technical analysis (85% weight)
+      const traditionalTechnicalScore = await this.calculateTechnicalOverallScore(symbol)
+      if (traditionalTechnicalScore === null) {
+        console.log(`❌ Failed to calculate traditional technical score for ${symbol}`)
+        return null
+      }
+
+      // Calculate options score (15% weight)
+      const optionsScore = this.calculateOptionsScore(optionsData)
+      if (optionsScore === null) {
+        console.log(`⚠️ No options data for ${symbol}, using traditional technical score only`)
+        return traditionalTechnicalScore
+      }
+
+      // Combine scores with institutional-grade weighting
+      const enhancedTechnicalScore = (traditionalTechnicalScore * 0.85) + (optionsScore * 0.15)
+
+      console.log(`🎯 Enhanced Technical Analysis for ${symbol}:`)
+      console.log(`   Traditional Technical: ${traditionalTechnicalScore.toFixed(3)} (85% weight)`)
+      console.log(`   Options Intelligence: ${optionsScore.toFixed(3)} (15% weight)`)
+      console.log(`   Combined Score: ${enhancedTechnicalScore.toFixed(3)}`)
+
+      return Math.max(0, Math.min(1, enhancedTechnicalScore))
+
+    } catch (error) {
+      console.error(`❌ Error calculating enhanced technical score for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate comprehensive options analysis score (0-1 scale)
+   * Integrates 5 key options intelligence factors for institutional-grade analysis
+   */
+  private calculateOptionsScore(optionsData?: OptionsDataPoint): number | null {
+    if (!optionsData) {
+      console.log('⚠️ No options data available - using neutral score')
+      return 0.5 // Neutral score when no options data
+    }
+
+    console.log('📊 Calculating options intelligence score...')
+
+    let totalScore = 0
+    let totalWeight = 0
+
+    // 1. PUT/CALL RATIO SIGNALS (30% of options score)
+    if (optionsData.putCallRatio !== undefined) {
+      const pcRatioScore = this.calculatePutCallRatioScore(optionsData.putCallRatio)
+      totalScore += pcRatioScore * 0.30
+      totalWeight += 0.30
+      console.log(`   P/C Ratio: ${optionsData.putCallRatio.toFixed(2)} → Score: ${pcRatioScore.toFixed(3)} (30% weight)`)
+    }
+
+    // 2. IMPLIED VOLATILITY PERCENTILE SIGNALS (25% of options score)
+    if (optionsData.impliedVolatilityPercentile !== undefined) {
+      const ivPercentileScore = this.calculateIVPercentileScore(optionsData.impliedVolatilityPercentile)
+      totalScore += ivPercentileScore * 0.25
+      totalWeight += 0.25
+      console.log(`   IV Percentile: ${optionsData.impliedVolatilityPercentile.toFixed(1)}% → Score: ${ivPercentileScore.toFixed(3)} (25% weight)`)
+    }
+
+    // 3. OPTIONS FLOW SENTIMENT (20% of options score)
+    if (optionsData.optionsFlow) {
+      const flowScore = this.calculateOptionsFlowScore(optionsData.optionsFlow)
+      totalScore += flowScore * 0.20
+      totalWeight += 0.20
+      console.log(`   Options Flow: ${optionsData.optionsFlow.sentiment.toFixed(2)} → Score: ${flowScore.toFixed(3)} (20% weight)`)
+    }
+
+    // 4. GREEKS RISK INDICATORS (15% of options score)
+    if (optionsData.greeks) {
+      const greeksScore = this.calculateGreeksScore(optionsData.greeks)
+      totalScore += greeksScore * 0.15
+      totalWeight += 0.15
+      console.log(`   Greeks Analysis → Score: ${greeksScore.toFixed(3)} (15% weight)`)
+    }
+
+    // 5. VOLUME DIVERGENCE (10% of options score)
+    if (optionsData.volumeDivergence !== undefined) {
+      const volumeDivergenceScore = this.calculateVolumeDivergenceScore(optionsData.volumeDivergence)
+      totalScore += volumeDivergenceScore * 0.10
+      totalWeight += 0.10
+      console.log(`   Volume Divergence: ${optionsData.volumeDivergence.toFixed(2)} → Score: ${volumeDivergenceScore.toFixed(3)} (10% weight)`)
+    }
+
+    if (totalWeight === 0) {
+      console.log('⚠️ No valid options factors found - using neutral score')
+      return 0.5
+    }
+
+    const finalOptionsScore = totalScore / totalWeight
+    console.log(`✅ Options Intelligence Score: ${finalOptionsScore.toFixed(3)} (${(totalWeight * 100).toFixed(0)}% data coverage)`)
+
+    return Math.max(0, Math.min(1, finalOptionsScore))
+  }
+
+  /**
+   * Calculate Put/Call ratio scoring (0-1 scale)
+   * Lower P/C ratios are generally more bullish
+   */
+  private calculatePutCallRatioScore(putCallRatio: number): number {
+    // Typical P/C ratio ranges: 0.5-1.5
+    // Below 0.7: Very bullish (score: 0.8-1.0)
+    // 0.7-1.0: Bullish (score: 0.6-0.8)
+    // 1.0-1.3: Neutral (score: 0.4-0.6)
+    // Above 1.3: Bearish (score: 0.0-0.4)
+
+    if (putCallRatio <= 0.7) {
+      return 0.8 + (0.7 - putCallRatio) * 0.4 // Very bullish territory
+    } else if (putCallRatio <= 1.0) {
+      return 0.6 + (1.0 - putCallRatio) * 0.67 // Bullish territory
+    } else if (putCallRatio <= 1.3) {
+      return 0.4 + (1.3 - putCallRatio) * 0.67 // Neutral territory
+    } else {
+      return Math.max(0, 0.4 - (putCallRatio - 1.3) * 0.3) // Bearish territory
+    }
+  }
+
+  /**
+   * Calculate Implied Volatility percentile scoring (0-1 scale)
+   * Higher IV percentiles can indicate oversold conditions or upcoming catalysts
+   */
+  private calculateIVPercentileScore(ivPercentile: number): number {
+    // IV Percentile ranges: 0-100
+    // 0-20: Low volatility, potential breakout (score: 0.6-0.7)
+    // 20-40: Normal volatility (score: 0.5-0.6)
+    // 40-60: Elevated volatility (score: 0.4-0.5)
+    // 60-80: High volatility (score: 0.3-0.4)
+    // 80-100: Extreme volatility, mean reversion likely (score: 0.2-0.3)
+
+    if (ivPercentile <= 20) {
+      return 0.6 + ivPercentile * 0.005 // Low vol breakout potential
+    } else if (ivPercentile <= 40) {
+      return 0.5 + (ivPercentile - 20) * 0.005 // Normal conditions
+    } else if (ivPercentile <= 60) {
+      return 0.4 + (60 - ivPercentile) * 0.005 // Elevated vol
+    } else if (ivPercentile <= 80) {
+      return 0.3 + (80 - ivPercentile) * 0.005 // High vol
+    } else {
+      return 0.2 + (100 - ivPercentile) * 0.005 // Extreme vol
+    }
+  }
+
+  /**
+   * Calculate options flow sentiment scoring (0-1 scale)
+   */
+  private calculateOptionsFlowScore(optionsFlow: { sentiment: number; volume: number; openInterest: number }): number {
+    // Sentiment ranges from -1 (very bearish) to +1 (very bullish)
+    // Transform to 0-1 scale with volume/open interest weighting
+
+    const baseSentimentScore = (optionsFlow.sentiment + 1) / 2 // Convert -1,1 to 0,1
+
+    // Volume and open interest provide confidence weighting
+    // Higher volume/OI = more reliable sentiment signal
+    const volumeWeight = Math.min(1, optionsFlow.volume / 1000000) // Normalize by 1M volume
+    const oiWeight = Math.min(1, optionsFlow.openInterest / 100000) // Normalize by 100K OI
+    const confidenceWeight = (volumeWeight + oiWeight) / 2
+
+    // Weight the sentiment by confidence, but don't go below 0.3 or above 0.7 for low confidence
+    if (confidenceWeight < 0.2) {
+      return 0.4 + baseSentimentScore * 0.2 // Low confidence: narrow range around neutral
+    } else {
+      return baseSentimentScore * confidenceWeight + (1 - confidenceWeight) * 0.5
+    }
+  }
+
+  /**
+   * Calculate Greeks-based risk scoring (0-1 scale)
+   */
+  private calculateGreeksScore(greeks: { delta: number; gamma: number; theta: number; vega: number }): number {
+    let score = 0.5 // Start neutral
+
+    // Delta analysis: Higher absolute delta indicates more directional exposure
+    const deltaScore = Math.abs(greeks.delta) // 0-1 scale naturally
+
+    // Gamma analysis: Higher gamma indicates more convexity (risk/reward)
+    const gammaScore = Math.min(1, Math.abs(greeks.gamma) * 100) // Scale gamma appropriately
+
+    // Theta analysis: Time decay impact (negative theta is typical)
+    const thetaScore = Math.max(0, Math.min(1, (-greeks.theta + 0.1) / 0.2)) // Normalize theta
+
+    // Vega analysis: Volatility sensitivity
+    const vegaScore = Math.min(1, Math.abs(greeks.vega) / 0.5) // Scale vega
+
+    // Weighted combination of greeks
+    score = (deltaScore * 0.4 + gammaScore * 0.3 + thetaScore * 0.2 + vegaScore * 0.1)
+
+    return Math.max(0, Math.min(1, score))
+  }
+
+  /**
+   * Calculate volume divergence scoring (0-1 scale)
+   */
+  private calculateVolumeDivergenceScore(volumeDivergence: number): number {
+    // Volume divergence: ratio of options volume to stock volume
+    // Higher ratios indicate more options activity relative to stock trading
+    // Typical ranges: 0.1-2.0
+
+    if (volumeDivergence <= 0.3) {
+      return 0.3 // Low options activity
+    } else if (volumeDivergence <= 0.7) {
+      return 0.4 + volumeDivergence * 0.29 // Normal activity
+    } else if (volumeDivergence <= 1.5) {
+      return 0.6 + (volumeDivergence - 0.7) * 0.25 // High activity
+    } else {
+      return Math.min(1, 0.8 + (volumeDivergence - 1.5) * 0.4) // Very high activity
+    }
+  }
+
+  /**
    * Helper method to find support/resistance levels
    */
   private findSupportResistanceLevels(prices: number[]): number[] {
@@ -1725,17 +1984,34 @@ export class FactorLibrary {
 
     // ==================== MATHEMATICALLY SOUND WEIGHT ALLOCATION (Total: 100%) ====================
 
-    // Technical Analysis composite (weight: 38.1%) - Primary technical indicators (40/105 * 100 = 38.1%)
-    const technicalScore = await this.calculateTechnicalOverallScore(symbol)
-    if (technicalScore !== null) {
-      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 38.1%) ⚡`)
-      totalScore += technicalScore * 0.381
-      totalWeight += 0.381
-      factorContributions.push('technicalAnalysis', 'technical_overall_score')
-    } else {
-      console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.381
-      totalWeight += 0.381
+    // Technical Analysis composite (weight: 38.1%) - Enhanced with options intelligence when available
+    // Uses 85% traditional technical + 15% options intelligence for institutional-grade analysis
+    let technicalScore: number | null = null
+
+    // Try enhanced technical analysis with options first
+    if (technicalData?.optionsData) {
+      technicalScore = await this.calculateTechnicalOverallScoreWithOptions(symbol, technicalData.optionsData)
+      if (technicalScore !== null) {
+        console.log(`Enhanced Technical Analysis (with options): ${technicalScore.toFixed(3)} (weight: 38.1%) 🎯⚡`)
+        totalScore += technicalScore * 0.381
+        totalWeight += 0.381
+        factorContributions.push('technicalAnalysis', 'technical_overall_score_with_options', 'options_intelligence')
+      }
+    }
+
+    // Fallback to traditional technical analysis if no options data or enhanced calculation failed
+    if (technicalScore === null) {
+      technicalScore = await this.calculateTechnicalOverallScore(symbol)
+      if (technicalScore !== null) {
+        console.log(`Traditional Technical Analysis: ${technicalScore.toFixed(3)} (weight: 38.1%) ⚡`)
+        totalScore += technicalScore * 0.381
+        totalWeight += 0.381
+        factorContributions.push('technicalAnalysis', 'technical_overall_score')
+      } else {
+        console.log('Technical Analysis: No data (fallback to neutral 0.5)')
+        totalScore += 0.5 * 0.381
+        totalWeight += 0.381
+      }
     }
 
     // Fundamental Analysis composite (weight: 23.8%) - Quality factors (25/105 * 100 = 23.8%)

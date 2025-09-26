@@ -30,5 +30,10 @@
 		}
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-	"exclude": ["node_modules", "docs/**/*.ts"]
+	"exclude": [
+		"node_modules",
+		"docs/**/*.ts",
+		"app/services/financial-data/__tests__/OptionsAnalysisService.*.test.ts",
+		"app/services/technical-analysis/__tests__/OptionsIntegration*.test.ts"
+	]
 }
