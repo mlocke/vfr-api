@@ -954,6 +954,68 @@ export class PolygonAPI implements FinancialDataProvider {
   }
 
   /**
+   * Get short volume data for a specific stock symbol
+   * Uses Polygon's /v1/short-volume endpoint for daily short sale volume data
+   */
+  async getShortVolume(symbol: string, date?: string): Promise<{
+    symbol: string
+    date: string
+    shortVolume: number
+    totalVolume: number
+    shortVolumeRatio: number
+    marketCenter: string
+    timestamp: number
+    source: 'polygon'
+  } | null> {
+    try {
+      if (!this.apiKey) {
+        console.warn('Polygon API key not configured')
+        return null
+      }
+
+      const upperSymbol = symbol.toUpperCase()
+
+      // Check rate limiting before making request
+      this.checkRateLimit(`/v1/short-volume`)
+
+      // Build endpoint - date is optional, defaults to latest available
+      let endpoint = `/v1/short-volume?symbol=${upperSymbol}&apikey=${this.apiKey}`
+      if (date) {
+        endpoint += `&date=${date}`
+      }
+
+      const response = await this.makeRequest(endpoint)
+
+      if (!response.success || !response.data?.results?.length) {
+        console.log(`No short volume data available for ${upperSymbol}`)
+        return null
+      }
+
+      // Get the latest record
+      const shortVolumeData = response.data.results[0]
+
+      // Calculate short volume ratio
+      const shortVolume = shortVolumeData.short_volume || 0
+      const totalVolume = shortVolumeData.total_volume || 0
+      const shortVolumeRatio = totalVolume > 0 ? shortVolume / totalVolume : 0
+
+      return {
+        symbol: upperSymbol,
+        date: shortVolumeData.date || new Date().toISOString().split('T')[0],
+        shortVolume,
+        totalVolume,
+        shortVolumeRatio: Number(shortVolumeRatio.toFixed(4)),
+        marketCenter: shortVolumeData.market_center || 'N/A',
+        timestamp: Date.now(),
+        source: 'polygon'
+      }
+    } catch (error) {
+      console.error(`Polygon short volume error for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Make HTTP request to Polygon API
    */
   private async makeRequest(endpoint: string): Promise<ApiResponse<any>> {

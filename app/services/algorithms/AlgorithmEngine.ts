@@ -21,6 +21,7 @@ import { AlgorithmCache } from './AlgorithmCache'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
 import { VWAPService } from '../financial-data/VWAPService'
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
+import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
 import { RedisCache } from '../cache/RedisCache'
 
 interface MarketDataPoint {
@@ -52,6 +53,9 @@ interface TechnicalDataPoint {
   sentimentScore?: number // 🆕 SENTIMENT INTEGRATION
   vwapAnalysis?: any // 🆕 VWAP INTEGRATION
   macroeconomicContext?: any // 🆕 MACROECONOMIC INTEGRATION
+  institutionalData?: any // 🆕 INSTITUTIONAL DATA INTEGRATION
+  shortInterestData?: any // 🆕 SHORT INTEREST INTEGRATION
+  extendedMarketData?: any // 🆕 EXTENDED MARKET DATA INTEGRATION
   [key: string]: any
 }
 
@@ -62,6 +66,7 @@ export class AlgorithmEngine {
   private sentimentService: SentimentAnalysisService
   private vwapService?: VWAPService
   private macroeconomicService?: MacroeconomicAnalysisService
+  private institutionalService?: InstitutionalDataService
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
@@ -70,7 +75,8 @@ export class AlgorithmEngine {
     cache: AlgorithmCache,
     sentimentService?: SentimentAnalysisService,
     vwapService?: VWAPService,
-    macroeconomicService?: MacroeconomicAnalysisService
+    macroeconomicService?: MacroeconomicAnalysisService,
+    institutionalService?: InstitutionalDataService
   ) {
     this.fallbackDataService = fallbackDataService
     this.factorLibrary = factorLibrary
@@ -78,6 +84,7 @@ export class AlgorithmEngine {
     this.sentimentService = sentimentService || new SentimentAnalysisService(new RedisCache())
     this.vwapService = vwapService
     this.macroeconomicService = macroeconomicService
+    this.institutionalService = institutionalService
   }
 
   /**
@@ -561,12 +568,75 @@ export class AlgorithmEngine {
           }
         }
 
+        // 🆕 PRE-FETCH ESG DATA for composite algorithm
+        let esgScore: number | undefined
+        try {
+          console.log(`🌱 Pre-fetching ESG data for ${symbol} (${marketData.sector})...`)
+          const { ESGDataService } = await import('../financial-data/ESGDataService')
+          const esgService = new ESGDataService()
+          const esgImpact = await esgService.getESGImpactForStock(symbol, marketData.sector || 'unknown', 0.5)
+          esgScore = esgImpact ? esgImpact.esgScore / 100 : undefined // Convert to 0-1 scale
+          console.log(`🌱 ESG pre-fetched for ${symbol}: ${esgScore ? esgScore.toFixed(3) : 'no data'}`)
+        } catch (esgError) {
+          console.warn(`Failed to fetch ESG for ${symbol}:`, esgError)
+          esgScore = undefined // Will use fallback in FactorLibrary
+        }
+
+        // 🆕 PRE-FETCH INSTITUTIONAL DATA for composite algorithm
+        let institutionalData: any | undefined
+        if (this.institutionalService) {
+          try {
+            console.log(`🏢 Pre-fetching institutional data for ${symbol}...`)
+            const institutionalIntelligence = await this.institutionalService.getInstitutionalIntelligence(symbol)
+            institutionalData = institutionalIntelligence
+            console.log(`🏢 Institutional data pre-fetched for ${symbol}: ${institutionalIntelligence ? `sentiment ${institutionalIntelligence.weightedSentiment}, score ${institutionalIntelligence.compositeScore.toFixed(2)}` : 'no data'}`)
+          } catch (institutionalError) {
+            console.warn(`Failed to fetch institutional data for ${symbol}:`, institutionalError)
+            institutionalData = undefined // Will use fallback in FactorLibrary
+          }
+        }
+
+        // 🆕 PRE-FETCH SHORT INTEREST DATA for composite algorithm
+        let shortInterestData: any | undefined
+        try {
+          console.log(`📊 Pre-fetching short interest data for ${symbol} (${marketData.sector})...`)
+          const { ShortInterestService } = await import('../financial-data/ShortInterestService')
+          const shortInterestService = new ShortInterestService()
+          const shortInterestImpact = await shortInterestService.getShortInterestImpactForStock(symbol, marketData.sector || 'unknown', 0.5)
+          shortInterestData = shortInterestImpact
+          console.log(`📊 Short interest pre-fetched for ${symbol}: ${shortInterestImpact ? `score ${shortInterestImpact.score?.toFixed(3)}, impact ${shortInterestImpact.impact}` : 'no data'}`)
+        } catch (shortInterestError) {
+          console.warn(`Failed to fetch short interest for ${symbol}:`, shortInterestError)
+          shortInterestData = undefined // Will use fallback in FactorLibrary
+        }
+
+        // 🆕 PRE-FETCH EXTENDED MARKET DATA for composite algorithm
+        let extendedMarketData: any | undefined
+        try {
+          console.log(`🕒 Pre-fetching extended market data for ${symbol}...`)
+          const { ExtendedMarketDataService } = await import('../financial-data/ExtendedMarketDataService')
+          const { PolygonAPI } = await import('../financial-data/PolygonAPI')
+          const polygonAPI = new PolygonAPI()
+          const redisCache = new RedisCache()
+          const extendedMarketService = new ExtendedMarketDataService(polygonAPI, redisCache)
+          const extendedData = await extendedMarketService.getExtendedMarketData(symbol)
+          extendedMarketData = extendedData
+          console.log(`🕒 Extended market data pre-fetched for ${symbol}: ${extendedData ? `extended hours data ${extendedData.extendedHours?.marketStatus || 'N/A'}, liquidity ${extendedData.liquidityMetrics?.liquidityScore || 'N/A'}` : 'no data'}`)
+        } catch (extendedMarketError) {
+          console.warn(`Failed to fetch extended market data for ${symbol}:`, extendedMarketError)
+          extendedMarketData = undefined // Will use fallback in FactorLibrary
+        }
+
         // Create enhanced technical data with all pre-fetched services for FactorLibrary
         const enhancedTechnicalData: TechnicalDataPoint = {
           symbol,
           sentimentScore,
           vwapAnalysis,
-          macroeconomicContext
+          macroeconomicContext,
+          esgScore,
+          institutionalData,
+          shortInterestData,
+          extendedMarketData
         }
 
         const compositeScore = await this.factorLibrary.calculateFactor(
@@ -652,6 +722,55 @@ export class AlgorithmEngine {
               if (macroComposite !== null && macroComposite !== 0.5) {
                 componentFactors['macroeconomic_composite'] = macroComposite
                 console.log(`✅ Macroeconomic composite for ${symbol}: ${macroComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 INSTITUTIONAL SERVICE TRACKING - Calculate institutional factors for utilization tracking
+            if (institutionalData) {
+              const institutionalSentiment = await this.factorLibrary.calculateFactor('institutional_sentiment', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (institutionalSentiment !== null && institutionalSentiment !== 0.5) {
+                componentFactors['institutional_sentiment'] = institutionalSentiment
+                console.log(`✅ Institutional sentiment for ${symbol}: ${institutionalSentiment.toFixed(3)} - TRACKED`)
+              }
+
+              const insiderActivity = await this.factorLibrary.calculateFactor('insider_activity_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (insiderActivity !== null && insiderActivity !== 0.5) {
+                componentFactors['insider_activity_score'] = insiderActivity
+                console.log(`✅ Insider activity score for ${symbol}: ${insiderActivity.toFixed(3)} - TRACKED`)
+              }
+
+              // 🆕 INSTITUTIONAL COMPOSITE - Enhanced institutional intelligence integration
+              const institutionalComposite = await this.factorLibrary.calculateFactor('institutional_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (institutionalComposite !== null && institutionalComposite !== 0.5) {
+                componentFactors['institutional_composite'] = institutionalComposite
+                console.log(`✅ Institutional composite for ${symbol}: ${institutionalComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 ESG SERVICE TRACKING - Calculate ESG factors for utilization tracking
+            if (esgScore !== undefined && esgScore !== null) {
+              const esgComposite = await this.factorLibrary.calculateFactor('esg_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (esgComposite !== null && esgComposite !== 0.5) {
+                componentFactors['esg_composite'] = esgComposite
+                console.log(`✅ ESG composite score for ${symbol}: ${esgComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 SHORT INTEREST SERVICE TRACKING - Calculate short interest factors for utilization tracking
+            if (shortInterestData) {
+              const shortInterestComposite = await this.factorLibrary.calculateFactor('short_interest_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (shortInterestComposite !== null && shortInterestComposite !== 0.5) {
+                componentFactors['short_interest_composite'] = shortInterestComposite
+                console.log(`✅ Short interest composite for ${symbol}: ${shortInterestComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 EXTENDED MARKET DATA SERVICE TRACKING - Calculate extended market factors for utilization tracking
+            if (extendedMarketData) {
+              const extendedMarketComposite = await this.factorLibrary.calculateFactor('extended_market_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (extendedMarketComposite !== null && extendedMarketComposite !== 0.5) {
+                componentFactors['extended_market_composite'] = extendedMarketComposite
+                console.log(`✅ Extended market composite for ${symbol}: ${extendedMarketComposite.toFixed(3)} - TRACKED`)
               }
             }
 
@@ -862,7 +981,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: equalWeight,
-      action: this.determineAction(score.symbol, context),
+      action: this.determineActionFromScore(score.overallScore),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -883,7 +1002,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: this.determineAction(score.symbol, context),
+      action: this.determineActionFromScore(score.overallScore),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -908,7 +1027,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: this.determineAction(score.symbol, context),
+      action: this.determineActionFromScore(score.overallScore),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -943,14 +1062,20 @@ export class AlgorithmEngine {
    * Determine action based on score using standard thresholds
    */
   private determineActionFromScore(score: number): 'BUY' | 'SELL' | 'HOLD' {
-    // Standard scoring thresholds:
-    // BUY: >= 70 (0.70)
-    // HOLD: 30-70 (0.30-0.70)
-    // SELL: <= 30 (0.30)
+    // FIX: Robust scoring thresholds that handle both 0-1 and 0-100 scales
+    // Auto-detect scale and normalize to consistent thresholds
 
-    if (score >= 0.70) {
+    // Normalize score to 0-1 scale if it appears to be on 0-100 scale
+    const normalizedScore = score > 1 ? score / 100 : score
+
+    // Logical thresholds for investment decisions:
+    // BUY: >= 70% (0.70) - Strong positive signal
+    // HOLD: 30%-70% (0.30-0.70) - Neutral range
+    // SELL: <= 30% (0.30) - Weak/negative signal
+
+    if (normalizedScore >= 0.70) {
       return 'BUY'
-    } else if (score <= 0.30) {
+    } else if (normalizedScore <= 0.30) {
       return 'SELL'
     } else {
       return 'HOLD'

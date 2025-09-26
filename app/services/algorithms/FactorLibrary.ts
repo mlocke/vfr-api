@@ -10,6 +10,9 @@ import { TwelveDataAPI } from '../financial-data/TwelveDataAPI'
 import { HistoricalOHLC } from '../financial-data/types'
 import { RedisCache } from '../cache/RedisCache'
 import { VWAPService } from '../financial-data/VWAPService'
+import { ESGDataService } from '../financial-data/ESGDataService'
+import { ShortInterestService } from '../financial-data/ShortInterestService'
+import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataService'
 
 interface MarketDataPoint {
   symbol: string
@@ -54,6 +57,9 @@ interface TechnicalDataPoint {
   sentimentScore?: number // 🆕 SENTIMENT INTEGRATION
   vwapAnalysis?: any // 🆕 VWAP INTEGRATION
   macroeconomicContext?: any // 🆕 MACROECONOMIC INTEGRATION
+  institutionalData?: any // 🆕 INSTITUTIONAL DATA INTEGRATION
+  shortInterestData?: any // 🆕 SHORT INTEREST INTEGRATION
+  extendedMarketData?: any // 🆕 EXTENDED MARKET DATA INTEGRATION
   [key: string]: any
 }
 
@@ -73,19 +79,32 @@ export class FactorLibrary {
   private twelveDataAPI: TwelveDataAPI
   private cache: RedisCache
   private vwapService?: VWAPService
+  private esgService?: ESGDataService
+  private shortInterestService?: ShortInterestService
+  private extendedMarketService?: ExtendedMarketDataService
 
   /**
    * Initialize with cache and create TechnicalIndicatorService
    */
-  constructor(cache?: RedisCache, technicalService?: TechnicalIndicatorService, vwapService?: VWAPService) {
+  constructor(
+    cache?: RedisCache,
+    technicalService?: TechnicalIndicatorService,
+    vwapService?: VWAPService,
+    esgService?: ESGDataService,
+    shortInterestService?: ShortInterestService,
+    extendedMarketService?: ExtendedMarketDataService
+  ) {
     // Initialize cache - create new instance if not provided
     this.cache = cache || new RedisCache()
 
-    // Initialize technical service - always available for 40% technical weighting
+    // Initialize technical service - always available for technical weighting
     this.technicalService = technicalService || new TechnicalIndicatorService(this.cache)
 
     this.twelveDataAPI = new TwelveDataAPI()
     this.vwapService = vwapService
+    this.esgService = esgService || new ESGDataService()
+    this.shortInterestService = shortInterestService
+    this.extendedMarketService = extendedMarketService
   }
 
   /**
@@ -297,12 +316,49 @@ export class FactorLibrary {
           result = this.calculatePayoutRatioScore(fundamentalData)
           break
 
+        // ==================== ESG FACTORS ====================
+        case 'esg_composite':
+          result = await this.calculateESGComposite(symbol, marketData.sector)
+          break
+        case 'esg_environmental':
+          result = await this.calculateESGFactor(symbol, marketData.sector, 'environmental')
+          break
+        case 'esg_social':
+          result = await this.calculateESGFactor(symbol, marketData.sector, 'social')
+          break
+        case 'esg_governance':
+          result = await this.calculateESGFactor(symbol, marketData.sector, 'governance')
+          break
+
+        // ==================== SHORT INTEREST FACTORS ====================
+        case 'short_interest_composite':
+          result = await this.calculateShortInterestComposite(symbol, technicalData)
+          break
+        case 'short_squeeze_potential':
+          result = await this.calculateShortSqueezePotential(symbol)
+          break
+
+        // ==================== EXTENDED MARKET DATA FACTORS ====================
+        case 'extended_market_composite':
+          result = await this.calculateExtendedMarketComposite(symbol, technicalData)
+          break
+        case 'liquidity_score':
+          result = await this.calculateLiquidityScore(symbol)
+          break
+        case 'bid_ask_efficiency':
+          result = await this.calculateBidAskEfficiency(symbol)
+          break
+
         // ==================== COMPOSITE FACTORS ====================
         case 'composite':
           // MAIN COMPOSITE ALGORITHM - matches debug algorithm exactly
-          // Extract sentiment score from technicalData if available (passed by AlgorithmEngine)
+          // Extract sentiment score, ESG score, macroeconomic context, short interest, and extended market data from technicalData if available (passed by AlgorithmEngine)
           const sentimentScore = (technicalData as any)?.sentimentScore
-          result = await this.calculateMainComposite(symbol, marketData, fundamentalData, technicalData, sentimentScore)
+          const esgScore = (technicalData as any)?.esgScore
+          const macroeconomicContext = (technicalData as any)?.macroeconomicContext
+          const shortInterestData = (technicalData as any)?.shortInterestData
+          const extendedMarketData = (technicalData as any)?.extendedMarketData
+          result = await this.calculateMainComposite(symbol, marketData, fundamentalData, technicalData, sentimentScore, esgScore, macroeconomicContext, shortInterestData, extendedMarketData)
           break
         case 'quality_composite':
           result = this.calculateQualityComposite(fundamentalData)
@@ -1648,90 +1704,122 @@ export class FactorLibrary {
   /**
    * Main composite algorithm with real factor calculations and proper utilization tracking
    * Returns calculated score based on actual data analysis
-   * INCLUDES SENTIMENT INTEGRATION (10% weight as per roadmap)
+   * INCLUDES ALL REQUIRED COMPONENTS with mathematically sound weight allocation totaling 100%
    */
   private async calculateMainComposite(
     symbol: string,
     marketData: MarketDataPoint,
     fundamentalData?: FundamentalDataPoint,
     technicalData?: TechnicalDataPoint,
-    sentimentScore?: number
+    sentimentScore?: number,
+    esgScore?: number,
+    macroeconomicContext?: any,
+    shortInterestData?: any,
+    extendedMarketData?: any
   ): Promise<number> {
-    console.log(`🎯 Calculating MAIN composite score for ${symbol} with real factor analysis + sentiment`)
+    console.log(`🎯 Calculating MAIN composite score for ${symbol} with ALL required components`)
 
     let totalScore = 0
     let totalWeight = 0
     const factorContributions: string[] = []
 
-    // Technical Analysis composite (weight: 0.35) - Reduced from 40% to accommodate sentiment
+    // ==================== MATHEMATICALLY SOUND WEIGHT ALLOCATION (Total: 100%) ====================
+
+    // Technical Analysis composite (weight: 38.1%) - Primary technical indicators (40/105 * 100 = 38.1%)
     const technicalScore = await this.calculateTechnicalOverallScore(symbol)
     if (technicalScore !== null) {
-      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 0.35) ⚡`)
-      totalScore += technicalScore * 0.35
-      totalWeight += 0.35
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 38.1%) ⚡`)
+      totalScore += technicalScore * 0.381
+      totalWeight += 0.381
       factorContributions.push('technicalAnalysis', 'technical_overall_score')
     } else {
       console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.35
-      totalWeight += 0.35
+      totalScore += 0.5 * 0.381
+      totalWeight += 0.381
     }
 
-    // Fundamental Analysis composite (weight: 0.25) - Quality factors
+    // Fundamental Analysis composite (weight: 23.8%) - Quality factors (25/105 * 100 = 23.8%)
     const fundamentalScore = this.calculateQualityComposite(fundamentalData)
     if (fundamentalScore !== null) {
-      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 0.25)`)
-      totalScore += fundamentalScore * 0.25
-      totalWeight += 0.25
+      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 23.8%)`)
+      totalScore += fundamentalScore * 0.238
+      totalWeight += 0.238
       factorContributions.push('fundamentalData', 'quality_composite')
     } else {
       console.log('Fundamental Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.25
-      totalWeight += 0.25
+      totalScore += 0.5 * 0.238
+      totalWeight += 0.238
     }
 
-    // Value composite (weight: 0.20) - Reduced from 25% to accommodate sentiment
-    const valueScore = this.calculateValueComposite(fundamentalData, marketData)
-    if (valueScore !== null) {
-      console.log(`Value Analysis: ${valueScore.toFixed(3)} (weight: 0.20)`)
-      totalScore += valueScore * 0.20
-      totalWeight += 0.20
-      factorContributions.push('fundamentalData', 'value_composite')
+    // 🆕 MACROECONOMIC ANALYSIS (weight: 19.0%) - Economic environment impact (20/105 * 100 = 19.0%)
+    const macroScore = this.calculateMacroeconomicComposite(macroeconomicContext)
+    if (macroScore !== null) {
+      console.log(`🌍 Macroeconomic Analysis: ${macroScore.toFixed(3)} (weight: 19.0%) - INTEGRATED!`)
+      totalScore += macroScore * 0.190
+      totalWeight += 0.190
+      factorContributions.push('macroeconomicAnalysis', 'macroeconomic_composite')
     } else {
-      console.log('Value Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.20
-      totalWeight += 0.20
+      console.log('🌍 Macroeconomic Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.190
+      totalWeight += 0.190
     }
 
-    // 🆕 SENTIMENT ANALYSIS (weight: 0.10) - NEW INTEGRATION!
+    // 🆕 SENTIMENT ANALYSIS (weight: 9.5%) - Market sentiment integration (10/105 * 100 = 9.5%)
     if (sentimentScore !== undefined && sentimentScore !== null) {
-      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 0.10) - INTEGRATED!`)
-      totalScore += sentimentScore * 0.10
-      totalWeight += 0.10
+      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 9.5%) - INTEGRATED!`)
+      totalScore += sentimentScore * 0.095
+      totalWeight += 0.095
       factorContributions.push('sentimentAnalysis', 'sentiment_composite')
     } else {
       console.log('📰 Sentiment Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.10
-      totalWeight += 0.10
+      totalScore += 0.5 * 0.095
+      totalWeight += 0.095
     }
 
-    // Volatility/Risk (weight: 0.10) - Risk assessment
-    const riskScore = await this.calculateVolatilityScore(symbol, 30)
-    if (riskScore !== null) {
-      console.log(`Risk Assessment: ${riskScore.toFixed(3)} (weight: 0.10)`)
-      totalScore += riskScore * 0.10
-      totalWeight += 0.10
-      factorContributions.push('volatility_30d')
+    // 🆕 EXTENDED MARKET DATA ANALYSIS (weight: 4.8%) - Liquidity and bid/ask analysis (5/105 * 100 = 4.8%)
+    const extendedMarketScore = await this.calculateExtendedMarketComposite(symbol)
+    if (extendedMarketScore !== null) {
+      console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 4.8%) - INTEGRATED!`)
+      totalScore += extendedMarketScore * 0.048
+      totalWeight += 0.048
+      factorContributions.push('extendedMarketData', 'extended_market_composite')
     } else {
-      console.log('Risk Assessment: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.10
-      totalWeight += 0.10
+      console.log('💹 Extended Market Data: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.048
+      totalWeight += 0.048
+    }
+
+    // 🆕 SHORT INTEREST ANALYSIS (weight: 2.4%) - Short squeeze potential (2.5/105 * 100 = 2.4%)
+    const shortInterestScore = await this.calculateShortInterestComposite(symbol)
+    if (shortInterestScore !== null) {
+      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 2.4%) - INTEGRATED!`)
+      totalScore += shortInterestScore * 0.024
+      totalWeight += 0.024
+      factorContributions.push('shortInterestAnalysis', 'short_interest_composite')
+    } else {
+      console.log('📊 Short Interest Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.024
+      totalWeight += 0.024
+    }
+
+    // 🆕 ESG ANALYSIS (weight: 2.4%) - Environmental, Social, Governance factors (2.5/105 * 100 = 2.4%)
+    if (esgScore !== undefined && esgScore !== null) {
+      console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 2.4%) - INTEGRATED!`)
+      totalScore += esgScore * 0.024
+      totalWeight += 0.024
+      factorContributions.push('esgAnalysis', 'esg_composite')
+    } else {
+      console.log('🌱 ESG Analysis: No data (fallback to neutral 0.6 - industry baseline)')
+      totalScore += 0.6 * 0.024
+      totalWeight += 0.024
     }
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
     console.log(`🎯 Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
-    console.log(`   Total weights: Technical(35%) + Fundamental(25%) + Value(20%) + Sentiment(10%) + Risk(10%) = 100%`)
+    console.log(`   Weight Allocation: Technical(38.1%) + Fundamental(23.8%) + Macroeconomic(19.0%) + Sentiment(9.5%) + Extended Market(4.8%) + Short Interest(2.4%) + ESG(2.4%) = 100.0%`)
+    console.log(`   ✅ WEIGHT VERIFICATION: Total weights = ${totalWeight.toFixed(3)} (target: 1.000)`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
     // Store factor contributions for utilization tracking with performance optimization
@@ -1750,6 +1838,62 @@ export class FactorLibrary {
     }
 
     return Math.max(0, Math.min(1, finalScore))
+  }
+
+  // ==================== ESG FACTOR CALCULATIONS ====================
+
+  /**
+   * Calculate ESG composite score combining E, S, G factors
+   */
+  private async calculateESGComposite(symbol: string, sector: string): Promise<number> {
+    try {
+      if (!this.esgService) {
+        console.warn('ESG service not available for composite calculation')
+        return 0.6 // Industry baseline
+      }
+
+      const esgImpact = await this.esgService.getESGImpactForStock(symbol, sector, 0.5)
+      if (esgImpact && esgImpact.esgScore > 0) {
+        // Convert ESG score (0-100) to factor score (0-1)
+        return esgImpact.esgScore / 100
+      }
+
+      return 0.6 // Industry baseline fallback
+    } catch (error) {
+      console.warn(`ESG composite calculation failed for ${symbol}:`, error)
+      return 0.6 // Industry baseline fallback
+    }
+  }
+
+  /**
+   * Calculate individual ESG factor (Environmental, Social, or Governance)
+   */
+  private async calculateESGFactor(symbol: string, sector: string, factor: 'environmental' | 'social' | 'governance'): Promise<number> {
+    try {
+      if (!this.esgService) {
+        console.warn(`ESG service not available for ${factor} factor`)
+        return 0.6 // Industry baseline
+      }
+
+      const esgScore = await this.esgService.getESGScore(symbol, sector)
+      if (esgScore) {
+        switch (factor) {
+          case 'environmental':
+            return esgScore.environmental / 100
+          case 'social':
+            return esgScore.social / 100
+          case 'governance':
+            return esgScore.governance / 100
+          default:
+            return 0.6
+        }
+      }
+
+      return 0.6 // Industry baseline fallback
+    } catch (error) {
+      console.warn(`ESG ${factor} factor calculation failed for ${symbol}:`, error)
+      return 0.6 // Industry baseline fallback
+    }
   }
 
   // ==================== UTILITY METHODS ====================
@@ -2125,6 +2269,213 @@ export class FactorLibrary {
     } catch (error) {
       console.error('🌍 Error calculating macroeconomic composite:', error)
       return null
+    }
+  }
+
+  // ==================== SHORT INTEREST CALCULATIONS ====================
+
+  /**
+   * Calculate Short Interest composite score
+   */
+  private async calculateShortInterestComposite(symbol: string, technicalData?: TechnicalDataPoint): Promise<number> {
+    try {
+      // 🆕 USE PRE-FETCHED DATA FIRST - Check if short interest data was pre-fetched
+      if (technicalData?.shortInterestData) {
+        const shortInterestImpact = technicalData.shortInterestData
+        console.log(`📊 Using pre-fetched short interest data for ${symbol}: score ${shortInterestImpact.score}`)
+        return shortInterestImpact.score || 0.5
+      }
+
+      // Fallback to service if no pre-fetched data
+      if (!this.shortInterestService) {
+        console.warn('Short Interest service not available')
+        return 0.5 // Neutral fallback
+      }
+
+      // Use default sector since we may not have sector data in all contexts
+      const shortInterestData = await this.shortInterestService.getShortInterestData(symbol, 'unknown')
+      if (shortInterestData && shortInterestData.shortInterestRatio > 0) {
+        // Convert short interest ratio to score (higher ratio = higher squeeze potential = higher score)
+        // Typical short interest ratios: 1-5% = low, 5-15% = medium, 15%+ = high squeeze potential
+        const normalizedRatio = Math.min(25, shortInterestData.shortInterestRatio) / 25
+        return normalizedRatio
+      }
+
+      return 0.5 // Neutral fallback
+    } catch (error) {
+      console.warn(`Short Interest composite calculation failed for ${symbol}:`, error)
+      return 0.5 // Neutral fallback
+    }
+  }
+
+  /**
+   * Calculate Short Squeeze potential score
+   */
+  private async calculateShortSqueezePotential(symbol: string): Promise<number> {
+    try {
+      if (!this.shortInterestService) {
+        console.warn('Short Interest service not available for squeeze potential')
+        return 0.5 // Neutral fallback
+      }
+
+      const shortInterestData = await this.shortInterestService.getShortInterestData(symbol, 'unknown')
+      if (shortInterestData) {
+        // Score based on multiple factors: short interest ratio, days to cover
+        let squeezeScore = 0
+
+        // Short interest ratio component (50% weight)
+        if (shortInterestData.shortInterestRatio > 15) squeezeScore += 0.5
+        else if (shortInterestData.shortInterestRatio > 5) squeezeScore += 0.3
+        else squeezeScore += 0.1
+
+        // Days to cover component (30% weight) - higher days to cover = higher squeeze potential
+        if (shortInterestData.daysTooCover > 7) {
+          squeezeScore += 0.3
+        } else if (shortInterestData.daysTooCover > 3) {
+          squeezeScore += 0.15
+        }
+
+        // Month-over-month change component (20% weight)
+        if (shortInterestData.percentageChange > 10) {
+          squeezeScore += 0.2 // Increasing short interest
+        } else if (shortInterestData.percentageChange > 0) {
+          squeezeScore += 0.1
+        }
+
+        return Math.min(1.0, squeezeScore)
+      }
+
+      return 0.5 // Neutral fallback
+    } catch (error) {
+      console.warn(`Short squeeze potential calculation failed for ${symbol}:`, error)
+      return 0.5 // Neutral fallback
+    }
+  }
+
+  // ==================== EXTENDED MARKET DATA CALCULATIONS ====================
+
+  /**
+   * Calculate Extended Market Data composite score
+   */
+  private async calculateExtendedMarketComposite(symbol: string, technicalData?: TechnicalDataPoint): Promise<number> {
+    try {
+      // 🆕 USE PRE-FETCHED DATA FIRST - Check if extended market data was pre-fetched
+      if (technicalData?.extendedMarketData) {
+        const extendedData = technicalData.extendedMarketData
+        console.log(`💹 Using pre-fetched extended market data for ${symbol}: status ${extendedData.extendedHours?.marketStatus || 'N/A'}`)
+
+        // Calculate score based on available extended market data
+        let compositeScore = 0.5 // Base score
+
+        // Market status scoring (30% weight)
+        if (extendedData.extendedHours?.marketStatus) {
+          const statusScore = extendedData.extendedHours.marketStatus === 'market-hours' ? 0.8 : 0.6
+          compositeScore += (statusScore - 0.5) * 0.3
+        }
+
+        // Liquidity metrics scoring (40% weight)
+        if (extendedData.liquidityMetrics?.liquidityScore > 0) {
+          const liquidityScore = extendedData.liquidityMetrics.liquidityScore / 10
+          compositeScore += (liquidityScore - 0.5) * 0.4
+        }
+
+        // Bid-ask spread scoring (30% weight)
+        if (extendedData.bidAskSpread?.spreadPercent > 0) {
+          const efficiencyScore = Math.max(0, 1 - (extendedData.bidAskSpread.spreadPercent / 5))
+          compositeScore += (efficiencyScore - 0.5) * 0.3
+        }
+
+        return Math.max(0.2, Math.min(1, compositeScore))
+      }
+
+      // Fallback to service if no pre-fetched data
+      if (!this.extendedMarketService) {
+        console.warn('Extended Market Data service not available')
+        return 0.5 // Neutral fallback
+      }
+
+      const [liquidityMetrics, bidAskSpread] = await Promise.all([
+        // Use batch method for single symbol
+        this.extendedMarketService.getBatchLiquidityMetrics([symbol]).then(map => map.get(symbol)),
+        this.extendedMarketService.getBidAskSpread(symbol)
+      ])
+
+      let compositeScore = 0.0 // Start with 0 and build up
+
+      // Liquidity score component (60% weight)
+      if (liquidityMetrics && liquidityMetrics.liquidityScore > 0) {
+        compositeScore += (liquidityMetrics.liquidityScore / 10) * 0.6
+      } else {
+        compositeScore += 0.5 * 0.6 // Neutral contribution
+      }
+
+      // Bid-ask efficiency component (40% weight)
+      if (bidAskSpread && bidAskSpread.spreadPercent > 0) {
+        // Lower spread percentage = better efficiency = higher score
+        const efficiencyScore = Math.max(0, 1 - (bidAskSpread.spreadPercent / 5)) // Normalize 0-5% spread to 0-1 score
+        compositeScore += efficiencyScore * 0.4
+      } else {
+        compositeScore += 0.5 * 0.4 // Neutral contribution
+      }
+
+      return Math.max(0, Math.min(1, compositeScore))
+    } catch (error) {
+      console.warn(`Extended Market Data composite calculation failed for ${symbol}:`, error)
+      return 0.5 // Neutral fallback
+    }
+  }
+
+  /**
+   * Calculate liquidity score
+   */
+  private async calculateLiquidityScore(symbol: string): Promise<number> {
+    try {
+      if (!this.extendedMarketService) {
+        console.warn('Extended Market Data service not available for liquidity score')
+        return 0.5 // Neutral fallback
+      }
+
+      const liquidityMap = await this.extendedMarketService.getBatchLiquidityMetrics([symbol])
+      const liquidityMetrics = liquidityMap.get(symbol)
+
+      if (liquidityMetrics && liquidityMetrics.liquidityScore > 0) {
+        // Convert 0-10 scale to 0-1 scale
+        return liquidityMetrics.liquidityScore / 10
+      }
+
+      return 0.5 // Neutral fallback
+    } catch (error) {
+      console.warn(`Liquidity score calculation failed for ${symbol}:`, error)
+      return 0.5 // Neutral fallback
+    }
+  }
+
+  /**
+   * Calculate bid-ask efficiency score
+   */
+  private async calculateBidAskEfficiency(symbol: string): Promise<number> {
+    try {
+      if (!this.extendedMarketService) {
+        console.warn('Extended Market Data service not available for bid-ask efficiency')
+        return 0.5 // Neutral fallback
+      }
+
+      const bidAskSpread = await this.extendedMarketService.getBidAskSpread(symbol)
+      if (bidAskSpread && bidAskSpread.spreadPercent > 0) {
+        // Lower spread percentage = better efficiency = higher score
+        // Typical spreads: 0.01-0.05% = excellent, 0.05-0.5% = good, 0.5-2% = fair, >2% = poor
+        const spreadPercent = bidAskSpread.spreadPercent
+
+        if (spreadPercent <= 0.05) return 0.9 // Excellent efficiency
+        if (spreadPercent <= 0.5) return 0.7   // Good efficiency
+        if (spreadPercent <= 2.0) return 0.5   // Fair efficiency
+        return 0.3 // Poor efficiency
+      }
+
+      return 0.5 // Neutral fallback
+    } catch (error) {
+      console.warn(`Bid-ask efficiency calculation failed for ${symbol}:`, error)
+      return 0.5 // Neutral fallback
     }
   }
 }

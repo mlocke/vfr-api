@@ -227,13 +227,13 @@ describe('FREDAPI Real API Integration Tests', () => {
         // Check for common treasury periods
         const expectedPeriods = ['3M', '2Y', '10Y', '30Y']
         const foundPeriods = expectedPeriods.filter(period =>
-          treasuryRates.hasOwnProperty(period) && typeof treasuryRates[period] === 'number'
+          treasuryRates.hasOwnProperty(period) && typeof (treasuryRates as any)[period] === 'number'
         )
 
         if (foundPeriods.length > 0) {
           console.log(`✓ FRED returned treasury rates for periods: ${foundPeriods.join(', ')}`)
           console.log('  Sample rates:', foundPeriods.reduce((acc, period) => {
-            acc[period] = treasuryRates[period]
+            acc[period] = (treasuryRates as any)[period]
             return acc
           }, {} as any))
         } else {

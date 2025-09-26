@@ -19,6 +19,7 @@ import { createServiceErrorHandler, ErrorType, ErrorCode } from '../error-handli
 import SecurityValidator from '../security/SecurityValidator'
 import { redisCache } from '../cache/RedisCache'
 import { XMLParser } from 'fast-xml-parser'
+import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 
 interface EdgarApiConfig extends ApiKeyConfig {
   baseUrl: string
@@ -36,7 +37,7 @@ interface InstitutionalDataCache {
 }
 
 export class InstitutionalDataService extends BaseFinancialDataProvider {
-  name = 'SEC EDGAR Institutional Data'
+  name = 'FMP Institutional Data (with SEC EDGAR fallback)'
   private errorHandler = createServiceErrorHandler('InstitutionalDataService')
   private cache: InstitutionalDataCache = {}
   private requestQueue: Array<() => Promise<any>> = []
@@ -50,6 +51,9 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
   private readonly requestDelay = 100
   protected readonly baseUrl: string
   protected readonly userAgent: string
+
+  // 🆕 FMP as primary data source
+  private readonly fmpAPI: FinancialModelingPrepAPI
 
   constructor(config?: Partial<EdgarApiConfig>) {
     const defaultConfig = {
@@ -67,6 +71,9 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
 
     this.baseUrl = config?.baseUrl || defaultConfig.baseUrl
     this.userAgent = config?.userAgent || defaultConfig.userAgent
+
+    // Initialize FMP API as primary data source
+    this.fmpAPI = new FinancialModelingPrepAPI()
 
     // Optimized XML parser for large 13F filings
     this.xmlParser = new XMLParser({
@@ -327,6 +334,47 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
     const sanitizedSymbol = this.normalizeSymbol(symbol)
 
     try {
+      // 🆕 PRIMARY: Try FMP comprehensive institutional data first
+      let institutionalData = null
+      try {
+        this.errorHandler.logger.info(`Fetching institutional data from FMP for ${sanitizedSymbol}`)
+        institutionalData = await this.fmpAPI.getComprehensiveInstitutionalData(sanitizedSymbol)
+
+        if (institutionalData && institutionalData.summary) {
+          this.errorHandler.logger.info(`FMP institutional data success for ${sanitizedSymbol}: ${institutionalData.summary.totalInstitutionalHolders} holders, sentiment ${institutionalData.summary.compositeSentiment}`)
+
+          // Convert FMP data to our internal format
+          const intelligence: InstitutionalIntelligence = {
+            symbol: sanitizedSymbol,
+            reportDate: new Date().toISOString().split('T')[0],
+            institutionalSentiment: this.convertFMPInstitutionalSentiment(institutionalData),
+            insiderSentiment: this.convertFMPInsiderSentiment(institutionalData),
+            compositeScore: institutionalData.summary.sentimentScore,
+            weightedSentiment: institutionalData.summary.compositeSentiment,
+            keyInsights: this.generateFMPKeyInsights(institutionalData),
+            riskFactors: this.identifyFMPRiskFactors(institutionalData),
+            opportunities: this.identifyFMPOpportunities(institutionalData),
+            dataQuality: {
+              institutionalDataAvailable: (institutionalData.institutionalOwnership?.length || 0) > 0,
+              insiderDataAvailable: (institutionalData.insiderTrading?.length || 0) > 0,
+              dataFreshness: this.calculateFMPDataFreshness(institutionalData),
+              completeness: institutionalData.summary.confidence
+            },
+            timestamp: Date.now(),
+            source: 'fmp_institutional'
+          }
+
+          // Update cache
+          this.updateCache(sanitizedSymbol, { sentiment: intelligence })
+          return intelligence
+        }
+      } catch (fmpError) {
+        this.errorHandler.logger.warn(`FMP institutional data failed for ${sanitizedSymbol}, falling back to SEC EDGAR`, { error: fmpError })
+      }
+
+      // 🔄 FALLBACK: Use SEC EDGAR if FMP fails or returns no data
+      this.errorHandler.logger.info(`Using SEC EDGAR fallback for ${sanitizedSymbol}`)
+
       // Fetch both datasets in parallel
       const [holdings, transactions] = await Promise.allSettled([
         this.getInstitutionalHoldings(sanitizedSymbol, 4),
@@ -1070,6 +1118,166 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
     if (holdings.length > 0) score += 0.3
     if (insiderActivity.length > 0) score += 0.2
     return Math.min(1.0, score)
+  }
+
+  /**
+   * 🆕 FMP Data Conversion Methods
+   */
+  private convertFMPInstitutionalSentiment(fmpData: any): InstitutionalSentiment | undefined {
+    if (!fmpData.institutionalOwnership || fmpData.institutionalOwnership.length === 0) {
+      return undefined
+    }
+
+    const holdings = fmpData.institutionalOwnership
+    const totalShares = holdings.reduce((sum: number, h: any) => sum + h.shares, 0)
+    const totalValue = holdings.reduce((sum: number, h: any) => sum + h.marketValue, 0)
+
+    return {
+      symbol: fmpData.symbol,
+      reportDate: new Date().toISOString().split('T')[0],
+      totalInstitutions: holdings.length,
+      totalShares,
+      totalValue,
+      averagePosition: totalValue / holdings.length,
+      institutionalOwnership: 0, // Would need float data to calculate
+      quarterlyChange: {
+        newPositions: holdings.filter((h: any) => h.changeType === 'NEW').length,
+        closedPositions: holdings.filter((h: any) => h.changeType === 'SOLD_OUT').length,
+        increasedPositions: holdings.filter((h: any) => h.changeType === 'ADDED').length,
+        decreasedPositions: holdings.filter((h: any) => h.changeType === 'REDUCED').length,
+        netSharesChange: 0,
+        netValueChange: 0,
+        flowScore: fmpData.summary.institutionalSentiment === 'BULLISH' ? 1 :
+                   fmpData.summary.institutionalSentiment === 'BEARISH' ? -1 : 0
+      },
+      topHolders: holdings.slice(0, 10).map((h: any) => ({
+        managerName: h.managerName,
+        managerId: h.managerId,
+        shares: h.shares,
+        value: h.marketValue,
+        percentOfTotal: h.percentOfShares,
+        changeFromPrevious: h.changePercent
+      })),
+      sentiment: fmpData.summary.institutionalSentiment,
+      sentimentScore: fmpData.summary.sentimentScore,
+      confidence: fmpData.summary.confidence,
+      timestamp: Date.now(),
+      source: 'fmp_institutional'
+    }
+  }
+
+  private convertFMPInsiderSentiment(fmpData: any): InsiderSentiment | undefined {
+    if (!fmpData.insiderTrading || fmpData.insiderTrading.length === 0) {
+      return undefined
+    }
+
+    const transactions = fmpData.insiderTrading
+    const buyTransactions = transactions.filter((t: any) => t.transactionType === 'BUY')
+    const sellTransactions = transactions.filter((t: any) => t.transactionType === 'SELL')
+
+    return {
+      symbol: fmpData.symbol,
+      period: '90D',
+      totalTransactions: transactions.length,
+      totalInsiders: new Set(transactions.map((t: any) => t.reportingOwnerId)).size,
+      netShares: transactions.reduce((sum: number, t: any) =>
+        sum + (t.transactionType === 'BUY' ? t.shares : -t.shares), 0
+      ),
+      netValue: transactions.reduce((sum: number, t: any) =>
+        sum + (t.transactionType === 'BUY' ? 1 : -1) * t.transactionValue, 0
+      ),
+      buyTransactions: buyTransactions.length,
+      sellTransactions: sellTransactions.length,
+      buyValue: buyTransactions.reduce((sum: number, t: any) => sum + t.transactionValue, 0),
+      sellValue: sellTransactions.reduce((sum: number, t: any) => sum + t.transactionValue, 0),
+      averageTransactionSize: transactions.reduce((sum: number, t: any) => sum + t.transactionValue, 0) / transactions.length,
+      insiderTypes: {
+        officers: { transactions: 0, netShares: 0, netValue: 0 },
+        directors: { transactions: 0, netShares: 0, netValue: 0 },
+        tenPercentOwners: { transactions: 0, netShares: 0, netValue: 0 },
+        other: { transactions: 0, netShares: 0, netValue: 0 }
+      },
+      recentActivity: transactions.slice(0, 10).map((t: any) => ({
+        date: t.transactionDate,
+        insiderName: t.reportingOwnerName,
+        relationship: t.relationship.join(', '),
+        transactionType: t.transactionType as 'BUY' | 'SELL',
+        shares: t.shares,
+        value: t.transactionValue,
+        significance: t.significance as 'LOW' | 'MEDIUM' | 'HIGH'
+      })),
+      sentiment: fmpData.summary.netInsiderSentiment,
+      sentimentScore: fmpData.summary.sentimentScore,
+      confidence: fmpData.summary.confidence,
+      timestamp: Date.now(),
+      source: 'fmp_insider'
+    }
+  }
+
+  private generateFMPKeyInsights(fmpData: any): string[] {
+    const insights: string[] = []
+    const summary = fmpData.summary
+
+    if (summary.totalInstitutionalHolders > 0) {
+      insights.push(`${summary.totalInstitutionalHolders} institutional holders with $${(summary.totalInstitutionalValue / 1e9).toFixed(1)}B total value`)
+    }
+
+    if (summary.recentInsiderActivity > 0) {
+      insights.push(`${summary.recentInsiderActivity} recent insider transactions (${summary.netInsiderSentiment.toLowerCase()} sentiment)`)
+    }
+
+    if (summary.institutionalSentiment !== 'NEUTRAL') {
+      insights.push(`Institutional sentiment: ${summary.institutionalSentiment.toLowerCase()}`)
+    }
+
+    return insights
+  }
+
+  private identifyFMPRiskFactors(fmpData: any): string[] {
+    const risks: string[] = []
+    const summary = fmpData.summary
+
+    if (summary.netInsiderSentiment === 'BEARISH') {
+      risks.push(`Recent insider selling activity detected (${summary.recentInsiderActivity} transactions)`)
+    }
+
+    if (summary.institutionalSentiment === 'BEARISH') {
+      risks.push('Institutional investors reducing positions')
+    }
+
+    if (summary.compositeSentiment === 'VERY_BEARISH' || summary.compositeSentiment === 'BEARISH') {
+      risks.push('Combined institutional and insider sentiment is negative')
+    }
+
+    return risks
+  }
+
+  private identifyFMPOpportunities(fmpData: any): string[] {
+    const opportunities: string[] = []
+    const summary = fmpData.summary
+
+    if (summary.netInsiderSentiment === 'BULLISH') {
+      opportunities.push(`Insider buying activity detected (${summary.recentInsiderActivity} transactions)`)
+    }
+
+    if (summary.institutionalSentiment === 'BULLISH') {
+      opportunities.push('Institutional investors increasing positions')
+    }
+
+    if (summary.compositeSentiment === 'VERY_BULLISH' || summary.compositeSentiment === 'BULLISH') {
+      opportunities.push('Strong combined institutional and insider sentiment')
+    }
+
+    return opportunities
+  }
+
+  private calculateFMPDataFreshness(fmpData: any): number {
+    const now = Date.now()
+    const timestamp = fmpData.timestamp || now
+    const ageInDays = (now - timestamp) / (24 * 60 * 60 * 1000)
+
+    // Return freshness as days, capped at 90 days
+    return Math.min(ageInDays, 90)
   }
 }
 

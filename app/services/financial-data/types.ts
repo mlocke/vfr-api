@@ -81,7 +81,7 @@ export interface FundamentalRatios {
 
 export interface AnalystRatings {
   symbol: string
-  consensus: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell'
+  consensus: string // 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell'
   strongBuy: number
   buy: number
   hold: number

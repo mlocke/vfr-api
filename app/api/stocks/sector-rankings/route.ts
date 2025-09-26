@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'full' // 'full' or 'quick'
 
     // Validate request parameters
-    SecurityValidator.validateStockSymbol(format)
+    SecurityValidator.validateSymbol(format)
 
     let rankings
     if (format === 'quick') {
@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
     // Validate inputs
     if (sectors && Array.isArray(sectors)) {
       sectors.forEach((sector: string) => {
-        SecurityValidator.validateStockSymbol(sector)
+        SecurityValidator.validateSymbol(sector)
       })
     }
 
     if (timeframe) {
-      SecurityValidator.validateStockSymbol(timeframe)
+      SecurityValidator.validateSymbol(timeframe)
     }
 
     // Get comprehensive rankings first

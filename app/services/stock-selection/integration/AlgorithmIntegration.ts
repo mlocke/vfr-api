@@ -11,6 +11,7 @@ import { FallbackDataService } from '../../financial-data/FallbackDataService'
 import SentimentAnalysisService from '../../financial-data/SentimentAnalysisService'
 import { VWAPService } from '../../financial-data/VWAPService'
 import { MacroeconomicAnalysisService } from '../../financial-data/MacroeconomicAnalysisService'
+import { InstitutionalDataService } from '../../financial-data/InstitutionalDataService'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,
@@ -44,14 +45,15 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     selectionConfig?: any,
     sentimentService?: SentimentAnalysisService,
     vwapService?: VWAPService,
-    macroeconomicService?: MacroeconomicAnalysisService
+    macroeconomicService?: MacroeconomicAnalysisService,
+    institutionalService?: InstitutionalDataService
   ) {
     this.factorLibrary = factorLibrary
     this.cache = cache
     this.selectionConfig = selectionConfig || this.createDefaultConfig()
     this.configManager = new AlgorithmConfigManager(factorLibrary, cache)
     // Pass all services to AlgorithmEngine for enhanced service integration
-    this.algorithmEngine = new AlgorithmEngine(fallbackDataService, factorLibrary, cache, sentimentService, vwapService, macroeconomicService)
+    this.algorithmEngine = new AlgorithmEngine(fallbackDataService, factorLibrary, cache, sentimentService, vwapService, macroeconomicService, institutionalService)
   }
 
   /**

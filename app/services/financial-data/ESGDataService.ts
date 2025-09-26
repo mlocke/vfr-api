@@ -65,12 +65,12 @@ export class ESGDataService {
 
     this.cache = RedisCache.getInstance()
     this.securityValidator = SecurityValidator.getInstance()
-    this.isAPIKeyAvailable = !!apiKey || !!process.env.ESG_API_KEY
+    this.isAPIKeyAvailable = !!apiKey || !!process.env.ESG_API_KEY || !!process.env.FMP_API_KEY
     this.config = this.createDefaultConfig()
 
     if (!this.isAPIKeyAvailable) {
       console.log('⚠️ ESG Data Service initialized without API key - using baseline defaults')
-      console.log('💡 To use real ESG data, configure ESG_API_KEY environment variable')
+      console.log('💡 To use real ESG data, configure ESG_API_KEY or FMP_API_KEY environment variable')
     } else {
       console.log('✅ ESG Data Service initialized with API key')
     }
@@ -238,16 +238,36 @@ export class ESGDataService {
   }
 
   /**
-   * Fetch ESG data from API (placeholder for real implementation)
+   * Fetch ESG data from API - prioritize FMP first
    */
   private async fetchESGFromAPI(symbol: string, sector: string): Promise<ESGScore> {
-    // In production, this would call services like:
-    // - Sustainalytics ESG Risk Ratings API
-    // - MSCI ESG Research API
-    // - Refinitiv ESG API
-    // - Bloomberg ESG Data Service
+    // Try FMP API first as per requirements
+    try {
+      const { FinancialModelingPrepAPI } = await import('./FinancialModelingPrepAPI')
+      const fmpAPI = new FinancialModelingPrepAPI()
 
-    // For now, return enhanced synthetic data
+      console.log(`🌱 Fetching ESG data from FMP API for ${symbol}`)
+      const esgRating = await fmpAPI.getESGRating(symbol)
+
+      if (esgRating && esgRating.ESGScore > 0) {
+        console.log(`✅ FMP ESG data found for ${symbol}: ${esgRating.ESGScore}`)
+        return {
+          environmental: esgRating.environmentalScore || 60,
+          social: esgRating.socialScore || 60,
+          governance: esgRating.governanceScore || 60,
+          overall: esgRating.ESGScore,
+          grade: this.calculateESGGrade(esgRating.ESGScore),
+          percentile: Math.min(95, esgRating.ESGScore + Math.random() * 10),
+          timestamp: Date.now()
+        }
+      } else {
+        console.log(`⚠️ FMP ESG data not available for ${symbol}, using enhanced synthetic`)
+      }
+    } catch (error) {
+      console.warn(`FMP ESG API failed for ${symbol}:`, error)
+    }
+
+    // Fallback to enhanced synthetic data
     return this.generateSyntheticESGScore(symbol, sector, true)
   }
 

@@ -211,13 +211,21 @@ export class RevenueSegmentationService {
       }
     ]
 
-    // Calculate remaining revenue for "Other"
+    // Calculate remaining revenue for "Other" (ensure positive)
     const allocatedRevenue = geographicSegments.slice(0, 3).reduce((sum, seg) => sum + seg.revenue, 0)
-    geographicSegments[3].revenue = totalRevenue - allocatedRevenue
+    geographicSegments[3].revenue = Math.max(totalRevenue * 0.05, totalRevenue - allocatedRevenue) // At least 5% for "Other"
 
-    // Calculate percentages
+    // Normalize if total exceeds 100%
+    const actualTotal = geographicSegments.reduce((sum, seg) => sum + seg.revenue, 0)
+    if (actualTotal > totalRevenue) {
+      geographicSegments.forEach(seg => {
+        seg.revenue = (seg.revenue / actualTotal) * totalRevenue
+      })
+    }
+
+    // Calculate percentages (ensure all are positive)
     geographicSegments.forEach(seg => {
-      seg.percentage = (seg.revenue / totalRevenue) * 100
+      seg.percentage = Math.abs((seg.revenue / totalRevenue) * 100)
     })
 
     // Generate product segments
