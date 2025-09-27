@@ -410,9 +410,9 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
               sentiment: optionsAnalysis.sentiment,
               confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
             } : {
-              message: 'Options data requires paid plan upgrade',
-              availableSources: optionsServiceStatus?.providerStatus ? Object.keys(optionsServiceStatus.providerStatus).filter((k: string) => optionsServiceStatus.providerStatus[k as keyof typeof optionsServiceStatus.providerStatus]?.available) : [],
-              recommendations: optionsServiceStatus?.recommendations || []
+              message: 'EODHD options data unavailable',
+              provider: optionsServiceStatus?.provider || 'EODHD',
+              status: optionsServiceStatus?.status || 'unavailable'
             }
           },
           testType: 'comprehensive_with_options_free_tier'
@@ -587,23 +587,117 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         break
 
       case 'options':
-        console.log('📊 Testing Options Data Service...')
+        console.log('📊 Testing Enhanced Options Data Service with Time-Based Analysis...')
         const optionsDataService = new OptionsDataService()
         const optionsStatus = await optionsDataService.getServiceStatus()
         const testSymbol = 'SPY'
 
         const optionsPutCallRatio = await optionsDataService.getPutCallRatio(testSymbol)
-        const optionsFullAnalysis = await optionsDataService.getOptionsAnalysis(testSymbol)
+
+        // Test both basic and enhanced time-based analysis
+        const optionsBasicAnalysis = await optionsDataService.getOptionsAnalysis(testSymbol, false)
+        const optionsEnhancedAnalysis = await optionsDataService.getOptionsAnalysis(testSymbol, true)
+
         const optionsChain = await optionsDataService.getOptionsChain(testSymbol)
-        const providerConfig = optionsDataService.getProviderConfig()
+        const providerInfo = optionsDataService.getProviderInfo()
 
         // Test UnicornBay integration within OptionsDataService
         const unicornBayIntegration = await testOptionsServiceUnicornBayIntegration(optionsDataService, testSymbol)
 
+        // Test additional symbols for time-based analysis validation
+        const additionalTestSymbols = ['AAPL', 'TSLA']
+        const timeBasedResults = []
+
+        for (const symbol of additionalTestSymbols) {
+          try {
+            const enhancedResult = await optionsDataService.getOptionsAnalysis(symbol, true)
+            timeBasedResults.push({
+              symbol,
+              success: !!enhancedResult,
+              hasTimeBasedAnalysis: !!enhancedResult?.timeBasedAnalysis,
+              shortTermSentiment: enhancedResult?.timeBasedAnalysis?.shortTerm?.sentiment,
+              mediumTermSignals: enhancedResult?.timeBasedAnalysis?.mediumTerm?.institutionalSignals?.length || 0,
+              longTermConfidence: enhancedResult?.timeBasedAnalysis?.longTerm?.confidence,
+              leapsAvailable: enhancedResult?.timeBasedAnalysis?.longTerm?.leapsAnalysis !== 'No LEAPS available - limited long-term positioning data',
+              strikePositioning: {
+                heavyCallActivity: enhancedResult?.timeBasedAnalysis?.strikePositioning?.heavyCallActivity?.length || 0,
+                heavyPutActivity: enhancedResult?.timeBasedAnalysis?.strikePositioning?.heavyPutActivity?.length || 0,
+                institutionalHedges: enhancedResult?.timeBasedAnalysis?.strikePositioning?.institutionalHedges?.length || 0,
+                unusualActivity: enhancedResult?.timeBasedAnalysis?.strikePositioning?.unusualActivity?.length || 0
+              }
+            })
+          } catch (error) {
+            timeBasedResults.push({
+              symbol,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            })
+          }
+        }
+
         testData = {
           serviceStatus: optionsStatus,
           putCallRatio: optionsPutCallRatio,
-          optionsAnalysis: optionsFullAnalysis,
+
+          // Basic vs Enhanced Analysis Comparison
+          analysisComparison: {
+            basic: optionsBasicAnalysis ? {
+              symbol: optionsBasicAnalysis.symbol,
+              trend: optionsBasicAnalysis.trend,
+              sentiment: optionsBasicAnalysis.sentiment,
+              confidence: optionsBasicAnalysis.confidence,
+              hasTimeBasedAnalysis: !!optionsBasicAnalysis.timeBasedAnalysis
+            } : null,
+            enhanced: optionsEnhancedAnalysis ? {
+              symbol: optionsEnhancedAnalysis.symbol,
+              trend: optionsEnhancedAnalysis.trend,
+              sentiment: optionsEnhancedAnalysis.sentiment,
+              confidence: optionsEnhancedAnalysis.confidence,
+              hasTimeBasedAnalysis: !!optionsEnhancedAnalysis.timeBasedAnalysis,
+              timeBasedFeatures: optionsEnhancedAnalysis.timeBasedAnalysis ? {
+                shortTermAnalysis: {
+                  sentiment: optionsEnhancedAnalysis.timeBasedAnalysis.shortTerm.sentiment,
+                  daysToExpiry: optionsEnhancedAnalysis.timeBasedAnalysis.shortTerm.daysToExpiry,
+                  confidence: optionsEnhancedAnalysis.timeBasedAnalysis.shortTerm.confidence,
+                  volumeRatio: optionsEnhancedAnalysis.timeBasedAnalysis.shortTerm.volumeRatio
+                },
+                mediumTermAnalysis: {
+                  sentiment: optionsEnhancedAnalysis.timeBasedAnalysis.mediumTerm.sentiment,
+                  daysToExpiry: optionsEnhancedAnalysis.timeBasedAnalysis.mediumTerm.daysToExpiry,
+                  institutionalSignalsCount: optionsEnhancedAnalysis.timeBasedAnalysis.mediumTerm.institutionalSignals.length,
+                  institutionalSignals: optionsEnhancedAnalysis.timeBasedAnalysis.mediumTerm.institutionalSignals
+                },
+                longTermAnalysis: {
+                  sentiment: optionsEnhancedAnalysis.timeBasedAnalysis.longTerm.sentiment,
+                  daysToExpiry: optionsEnhancedAnalysis.timeBasedAnalysis.longTerm.daysToExpiry,
+                  leapsAnalysis: optionsEnhancedAnalysis.timeBasedAnalysis.longTerm.leapsAnalysis,
+                  confidence: optionsEnhancedAnalysis.timeBasedAnalysis.longTerm.confidence
+                },
+                strikePositioning: {
+                  heavyCallActivity: optionsEnhancedAnalysis.timeBasedAnalysis.strikePositioning.heavyCallActivity,
+                  heavyPutActivity: optionsEnhancedAnalysis.timeBasedAnalysis.strikePositioning.heavyPutActivity,
+                  institutionalHedges: optionsEnhancedAnalysis.timeBasedAnalysis.strikePositioning.institutionalHedges,
+                  unusualActivityCount: optionsEnhancedAnalysis.timeBasedAnalysis.strikePositioning.unusualActivity.length,
+                  unusualActivity: optionsEnhancedAnalysis.timeBasedAnalysis.strikePositioning.unusualActivity
+                }
+              } : null
+            } : null
+          },
+
+          // Multi-symbol time-based validation
+          timeBasedValidation: {
+            additionalSymbols: timeBasedResults,
+            summary: {
+              totalTested: additionalTestSymbols.length,
+              successful: timeBasedResults.filter(r => r.success).length,
+              withTimeBasedAnalysis: timeBasedResults.filter(r => r.hasTimeBasedAnalysis).length,
+              avgInstitutionalSignals: timeBasedResults
+                .filter(r => r.success)
+                .reduce((sum, r) => sum + (r.mediumTermSignals || 0), 0) / Math.max(1, timeBasedResults.filter(r => r.success).length),
+              leapsAvailableCount: timeBasedResults.filter(r => r.leapsAvailable).length
+            }
+          },
+
           optionsChain: optionsChain ? {
             symbol: optionsChain.symbol,
             callsCount: optionsChain.calls?.length || 0,
@@ -612,11 +706,11 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
             strikes: optionsChain.strikes?.slice(0, 10) || [],
             contractCount: (optionsChain.calls?.length || 0) + (optionsChain.puts?.length || 0)
           } : null,
-          providerConfiguration: providerConfig,
+          providerConfiguration: providerInfo,
           unicornBayIntegration,
           testSymbol,
           currentTime: new Date().toISOString(),
-          testType: 'comprehensive_options_analysis_with_unicornbay'
+          testType: 'comprehensive_options_analysis_with_time_based_features'
         }
         break
 

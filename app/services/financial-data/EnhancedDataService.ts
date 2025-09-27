@@ -14,7 +14,7 @@ export class EnhancedDataService implements FinancialDataProvider {
 
   constructor() {
     this.dataSourceManager = new DataSourceManager()
-    this.optionsService = new OptionsDataService(this.dataSourceManager)
+    this.optionsService = new OptionsDataService()
   }
 
   /**
@@ -84,16 +84,10 @@ export class EnhancedDataService implements FinancialDataProvider {
   }
 
   /**
-   * Switch options data provider
+   * Get options provider info (EODHD only)
    */
-  setOptionsProvider(provider: DataSourceProvider, fallbacks?: DataSourceProvider[]): void {
-    this.optionsService.setPreferredSource(provider)
-    if (fallbacks) {
-      this.setDataSourcePreference('options_data', provider, fallbacks)
-      this.setDataSourcePreference('options_chain', provider, fallbacks)
-      this.setDataSourcePreference('put_call_ratio', provider, fallbacks)
-      this.setDataSourcePreference('options_analysis', provider, fallbacks)
-    }
+  getOptionsProviderInfo() {
+    return this.optionsService.getProviderInfo()
   }
 
   /**
@@ -184,7 +178,7 @@ export class EnhancedDataService implements FinancialDataProvider {
   configureForPremium(): void {
     this.setStockPriceProvider('polygon', ['alphavantage', 'fmp'])
     this.setCompanyInfoProvider('polygon', ['fmp', 'alphavantage'])
-    this.setOptionsProvider('polygon', ['twelvedata'])
+    // Options provider is EODHD only - no configuration needed
     this.setFundamentalsProvider('polygon', ['fmp', 'alphavantage'])
     this.setEconomicDataProvider('fred', ['alphavantage'])
 

@@ -135,7 +135,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         this.sentimentService, // Pass sentiment service for integration
         this.vwapService, // Pass VWAP service for integration
         this.macroeconomicService, // Pass macroeconomic service for integration
-        this.institutionalService // Pass institutional service for integration
+        this.institutionalService, // Pass institutional service for integration
+        this.optionsService // Pass options service for integration
       )
     } else {
       // Create standard FactorLibrary with cache and VWAP service (but no technical service)
@@ -150,7 +151,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         this.sentimentService, // Pass sentiment service for integration
         this.vwapService, // Pass VWAP service for integration
         this.macroeconomicService, // Pass macroeconomic service for integration
-        this.institutionalService // Pass institutional service for integration
+        this.institutionalService, // Pass institutional service for integration
+        this.optionsService // Pass options service for integration
       )
     }
 
@@ -963,7 +965,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
           }
         },
         utilizationInResults: this.calculateServiceUtilization(topSelections, 'optionsAnalysis'),
-        weightInCompositeScore: 'informational'
+        weightInCompositeScore: '5.0%'
       }
     }
 
@@ -998,6 +1000,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         break
       case 'extendedMarketData':
         if (!this.extendedMarketService) return '0%'
+        break
+      case 'optionsAnalysis':
+        if (!this.optionsService) return '0%'
         break
     }
 
@@ -1074,6 +1079,13 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
             hasServiceData = Object.keys(factorScores).some(factor =>
               factor.includes('premarket') || factor.includes('afterhours') ||
               factor.includes('extended') || factor === 'extended_hours_activity'
+            )
+            break
+          case 'optionsAnalysis':
+            hasServiceData = Object.keys(factorScores).some(factor =>
+              factor.includes('options') || factor === 'options_composite' ||
+              factor === 'options_flow_score' || factor === 'put_call_ratio' ||
+              factor.includes('max_pain') || factor.includes('implied_volatility')
             )
             break
         }

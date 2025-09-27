@@ -17,6 +17,7 @@ import { VWAPService } from '../../../services/financial-data/VWAPService'
 import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
+import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
 
 // Request validation - supports admin dashboard test format
@@ -115,6 +116,13 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
       console.warn('Extended market service not available:', error)
     }
 
+    let optionsService: OptionsDataService | undefined
+    try {
+      optionsService = new OptionsDataService(cache)
+    } catch (error) {
+      console.warn('Options service not available:', error)
+    }
+
     // Create the comprehensive service
     stockSelectionService = new StockSelectionService(
       fallbackDataService,
@@ -126,7 +134,9 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
       vwapService,
       esgService,
       shortInterestService,
-      extendedMarketService
+      extendedMarketService,
+      undefined, // institutionalService
+      optionsService
     )
 
     console.log('✅ Comprehensive StockSelectionService initialized with full analysisInputServices')
