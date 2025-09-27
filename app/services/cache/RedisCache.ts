@@ -638,6 +638,113 @@ export class RedisCache {
   }
 
   /**
+   * Cache ML prediction results with 5-minute TTL
+   */
+  async cacheMLPrediction(
+    symbol: string,
+    predictionType: 'price_target' | 'sentiment_score' | 'risk_assessment' | 'momentum',
+    prediction: any,
+    modelVersion: string = '1.0',
+    source: string = 'ml-engine'
+  ): Promise<boolean> {
+    try {
+      const key = `ml:prediction:${predictionType}:${symbol.toUpperCase()}:${modelVersion}`
+      const ttl = 300 // 5 minutes TTL for ML results
+
+      return await this.set(key, prediction, ttl, { source, version: modelVersion })
+
+    } catch (error) {
+      CacheLogger.error(`Failed to cache ML prediction for ${symbol}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Get cached ML prediction with fallback to multiple model versions
+   */
+  async getCachedMLPrediction<T>(
+    symbol: string,
+    predictionType: 'price_target' | 'sentiment_score' | 'risk_assessment' | 'momentum',
+    modelVersions: string[] = ['1.0', '0.9']
+  ): Promise<T | null> {
+    const keys = modelVersions.map(version => `ml:prediction:${predictionType}:${symbol.toUpperCase()}:${version}`)
+    const results = await this.mget<T>(keys)
+
+    // Return first available result from preferred model versions
+    for (const key of keys) {
+      if (results[key]) {
+        return results[key]
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Batch cache ML predictions for multiple symbols
+   */
+  async batchCacheMLPredictions(
+    predictions: Array<{
+      symbol: string
+      predictionType: 'price_target' | 'sentiment_score' | 'risk_assessment' | 'momentum'
+      prediction: any
+      modelVersion?: string
+      source?: string
+    }>
+  ): Promise<number> {
+    const entries = predictions.map(item => ({
+      key: `ml:prediction:${item.predictionType}:${item.symbol.toUpperCase()}:${item.modelVersion || '1.0'}`,
+      data: item.prediction,
+      ttl: 300, // 5 minutes TTL
+      metadata: {
+        source: item.source || 'ml-engine',
+        version: item.modelVersion || '1.0'
+      }
+    }))
+
+    try {
+      const pipe = this.redis.pipeline()
+
+      entries.forEach(({ key, data, ttl, metadata }) => {
+        const entry: CacheEntry = {
+          data,
+          timestamp: Date.now(),
+          ttl: ttl!,
+          source: metadata.source,
+          version: metadata.version
+        }
+        pipe.setex(key, ttl!, JSON.stringify(entry))
+      })
+
+      await pipe.exec()
+      this.stats.sets += entries.length
+      return entries.length
+
+    } catch (error) {
+      CacheLogger.error('Failed to batch cache ML predictions:', error)
+      this.stats.errors++
+      return 0
+    }
+  }
+
+  /**
+   * Clean up expired ML prediction data
+   */
+  async cleanupMLPredictions(): Promise<number> {
+    try {
+      const pattern = 'ml:prediction:*'
+      const deletedKeys = await this.invalidatePattern(pattern)
+
+      CacheLogger.log(`🧹 Cleaned up ${deletedKeys} expired ML prediction cache entries`)
+      return deletedKeys
+
+    } catch (error) {
+      CacheLogger.error('Failed to cleanup ML prediction data:', error)
+      return 0
+    }
+  }
+
+  /**
    * Get cached options data with performance tracking
    */
   async getCachedOptionsData<T>(
@@ -716,12 +823,13 @@ export class RedisCache {
   }
 
   /**
-   * Warm cache with frequently accessed data including options
+   * Warm cache with frequently accessed data including options and ML predictions
    */
   async warmCache(
     symbols: string[],
     sources: string[] = ['polygon', 'alphavantage'],
-    includeOptions: boolean = false
+    includeOptions: boolean = false,
+    includeMLPredictions: boolean = false
   ): Promise<void> {
     CacheLogger.log(`🔥 Warming cache for ${symbols.length} symbols from ${sources.length} sources...`)
 
@@ -730,6 +838,8 @@ export class RedisCache {
         const key = `stock:price:${symbol}:${source}`
         CacheLogger.log(`🔥 Warmed stock cache key: ${key}`)
       })
+
+      const promises = [...stockPromises]
 
       if (includeOptions) {
         const optionsPromises = sources.map(async source => {
@@ -742,20 +852,35 @@ export class RedisCache {
             CacheLogger.log(`🔥 Warmed options cache key: ${key}`)
           })
         })
-        return [...stockPromises, ...optionsPromises]
+        promises.push(...optionsPromises)
       }
 
-      return stockPromises
+      if (includeMLPredictions) {
+        const mlPromises = ['1.0', '0.9'].map(async version => {
+          const mlKeys = [
+            `ml:prediction:price_target:${symbol}:${version}`,
+            `ml:prediction:sentiment_score:${symbol}:${version}`,
+            `ml:prediction:risk_assessment:${symbol}:${version}`,
+            `ml:prediction:momentum:${symbol}:${version}`
+          ]
+          mlKeys.forEach(key => {
+            CacheLogger.log(`🔥 Warmed ML prediction cache key: ${key}`)
+          })
+        })
+        promises.push(...mlPromises)
+      }
+
+      return promises
     })
 
     await Promise.all(warmingPromises)
-    CacheLogger.log('✅ Cache warming complete (including options data)')
+    CacheLogger.log('✅ Cache warming complete (including options and ML prediction data)')
   }
 
   /**
-   * Get cache statistics with options-specific metrics
+   * Get cache statistics with options and ML prediction metrics
    */
-  async getStats(): Promise<CacheStats & { optionsMetrics?: any }> {
+  async getStats(): Promise<CacheStats & { optionsMetrics?: any; mlMetrics?: any }> {
     try {
       const info = await this.redis.info('memory')
       const memoryMatch = info.match(/used_memory_human:(\S+)/)
@@ -774,9 +899,21 @@ export class RedisCache {
         optionsMemoryUsage: this.calculateOptionsMemoryUsage(optionsKeys.length, keyCount)
       }
 
+      // Get ML prediction metrics
+      const mlKeys = await this.redis.keys(`${this.config.keyPrefix}ml:prediction:*`)
+      const mlMetrics = {
+        totalMLKeys: mlKeys.length,
+        priceTargetKeys: mlKeys.filter(k => k.includes('price_target')).length,
+        sentimentScoreKeys: mlKeys.filter(k => k.includes('sentiment_score')).length,
+        riskAssessmentKeys: mlKeys.filter(k => k.includes('risk_assessment')).length,
+        momentumKeys: mlKeys.filter(k => k.includes('momentum')).length,
+        mlMemoryUsage: this.calculateMLMemoryUsage(mlKeys.length, keyCount)
+      }
+
       return {
         ...this.stats,
-        optionsMetrics
+        optionsMetrics,
+        mlMetrics
       }
     } catch (error) {
       CacheLogger.error('❌ Error getting cache stats:', error)
@@ -794,7 +931,16 @@ export class RedisCache {
   }
 
   /**
-   * Health check and monitoring with options-specific cleanup
+   * Calculate estimated memory usage for ML prediction data
+   */
+  private calculateMLMemoryUsage(mlKeys: number, totalKeys: number): string {
+    if (totalKeys === 0) return '0%'
+    const percentage = (mlKeys / totalKeys) * 100
+    return `${percentage.toFixed(1)}%`
+  }
+
+  /**
+   * Health check and monitoring with options and ML prediction cleanup
    */
   private startHealthCheck() {
     this.healthCheckInterval = setInterval(async () => {
@@ -812,6 +958,12 @@ export class RedisCache {
           if (stats.optionsMetrics && stats.optionsMetrics.totalOptionsKeys > 5000) {
             CacheLogger.log('🧹 Auto-cleanup: Running options-specific cleanup...')
             await this.cleanupOptionsData()
+          }
+
+          // Additional cleanup for ML predictions if cache is still full
+          if (stats.mlMetrics && stats.mlMetrics.totalMLKeys > 3000) {
+            CacheLogger.log('🧹 Auto-cleanup: Running ML predictions cleanup...')
+            await this.cleanupMLPredictions()
           }
         }
       } catch (error) {

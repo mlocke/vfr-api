@@ -38,6 +38,7 @@ import ShortInterestService from '../financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataService'
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
 import { OptionsDataService } from '../financial-data/OptionsDataService'
+import { MLPredictionService } from '../ml/prediction/MLPredictionService'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
@@ -60,6 +61,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private extendedMarketService?: ExtendedMarketDataService
   private institutionalService?: InstitutionalDataService
   private optionsService?: OptionsDataService
+  private mlPredictionService?: MLPredictionService
   private errorHandler: ErrorHandler
 
   constructor(
@@ -74,7 +76,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     shortInterestService?: ShortInterestService,
     extendedMarketService?: ExtendedMarketDataService,
     institutionalService?: InstitutionalDataService,
-    optionsService?: OptionsDataService
+    optionsService?: OptionsDataService,
+    mlPredictionService?: MLPredictionService
   ) {
     super()
 
@@ -92,6 +95,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.extendedMarketService = extendedMarketService || undefined
     this.institutionalService = institutionalService || undefined
     this.optionsService = optionsService || undefined
+    this.mlPredictionService = mlPredictionService || undefined
     this.errorHandler = ErrorHandler.getInstance()
 
     // Initialize algorithm cache with proper config structure
@@ -532,6 +536,24 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
+    // ML Prediction Enhancement (Optional 6th Factor)
+    let mlPrediction = null
+    if (this.mlPredictionService) {
+      try {
+        const mlEnhancements = await this.mlPredictionService.getMLEnhancement([symbol], 'premium', new Map([[symbol, adjustedScore.overallScore]]))
+        const mlScore = mlEnhancements.get(symbol)
+        if (mlScore !== undefined) {
+          mlPrediction = { score: mlScore, adjustedScore: mlScore }
+          adjustedScore = {
+            ...adjustedScore,
+            overallScore: mlScore
+          }
+        }
+      } catch (error) {
+        console.warn(`ML prediction failed for ${symbol}:`, error)
+      }
+    }
+
     // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct
     const scoreBasedAction = this.determineActionFromScore(adjustedScore.overallScore)
 
@@ -552,8 +574,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       reasoning: {
         primaryFactors: primaryFactors,
-        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis),
-        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis),
+        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis, mlPrediction),
+        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis, mlPrediction),
         optionsAnalysis: optionsAnalysis
       } as any,
 
@@ -1966,7 +1988,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return uniqueFactors
   }
 
-  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any): string[] {
+  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any, mlPrediction?: any): string[] {
     const warnings = []
 
     if (stockScore.dataQuality.overall < 0.6) {
@@ -2078,7 +2100,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return warnings
   }
 
-  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any): string[] {
+  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any, mlPrediction?: any): string[] {
     const opportunities = []
 
     if (stockScore.overallScore > 0.8) {
@@ -2667,6 +2689,18 @@ class StockSelectionServiceFactory {
       console.warn('Failed to initialize options service:', error)
     }
 
+    // Initialize ML Prediction service - optional 6th factor for premium users
+    let mlPredictionService = undefined
+    const enableMLEnhancement = process.env.ENABLE_ML_ENHANCEMENT !== 'false' // Default enabled for premium
+    if (enableMLEnhancement) {
+      try {
+        mlPredictionService = new (await import('../ml/prediction/MLPredictionService')).MLPredictionService()
+        enabledServices.push('mlPrediction')
+      } catch (error) {
+        console.warn('Failed to initialize ML prediction service:', error)
+      }
+    }
+
     // Create optimized service instance
     const service = new StockSelectionService(
       fallbackDataService,
@@ -2680,7 +2714,8 @@ class StockSelectionServiceFactory {
       shortInterestService,
       extendedMarketService,
       undefined, // institutionalService (not initialized in this factory)
-      optionsService
+      optionsService,
+      mlPredictionService // Add ML service to constructor
     )
 
     const endTime = performance.now()

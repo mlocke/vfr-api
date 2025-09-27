@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import AdminStatusMonitor from "../components/AdminStatusMonitor";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
+import MLMonitoringPanel from "../components/admin/MLMonitoringPanel";
 
 // Data source configuration interface
 interface DataSourceConfig {
@@ -615,7 +616,7 @@ export default function AdminDashboard() {
 									margin: "0 auto",
 								}}
 							>
-								Monitor and test connections to all 15 financial data APIs
+								Monitor and test connections to all 15 financial data APIs and ML services
 							</p>
 						</div>
 
@@ -1630,6 +1631,9 @@ export default function AdminDashboard() {
 								)}
 							</div>
 						</div>
+
+						{/* ML Monitoring Section */}
+						<MLMonitoringPanel />
 
 						{/* Analysis Engine Test Section */}
 						<AnalysisEngineTest />
