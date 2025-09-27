@@ -645,6 +645,37 @@ export class AlgorithmEngine {
           extendedMarketData = undefined // Will use fallback in FactorLibrary
         }
 
+        // 🆕 PRE-FETCH OPTIONS DATA for composite algorithm
+        let optionsData: OptionsDataPoint | undefined
+        try {
+          console.log(`📊 Pre-fetching options data for ${symbol}...`)
+          const { OptionsDataService } = await import('../financial-data/OptionsDataService')
+          const optionsService = new OptionsDataService()
+          const optionsAnalysis = await optionsService.getOptionsAnalysis(symbol)
+
+          if (optionsAnalysis && optionsAnalysis.currentRatio) {
+            // Map OptionsAnalysis to OptionsDataPoint structure
+            optionsData = {
+              putCallRatio: optionsAnalysis.currentRatio.volumeRatio,
+              impliedVolatilityPercentile: undefined, // Not available in current interface
+              optionsFlow: {
+                sentiment: optionsAnalysis.sentiment === 'greed' ? 0.7 : optionsAnalysis.sentiment === 'fear' ? -0.7 : 0,
+                volume: optionsAnalysis.currentRatio.totalCallVolume + optionsAnalysis.currentRatio.totalPutVolume,
+                openInterest: optionsAnalysis.currentRatio.totalCallOpenInterest + optionsAnalysis.currentRatio.totalPutOpenInterest
+              },
+              greeks: undefined, // Not available in current interface
+              volumeDivergence: undefined // Not available in current interface
+            }
+            console.log(`📊 Options data pre-fetched for ${symbol}: P/C Ratio ${optionsData.putCallRatio?.toFixed(2) || 'N/A'}, Sentiment: ${optionsAnalysis.sentiment}`)
+          } else {
+            optionsData = undefined
+            console.log(`📊 No options data available for ${symbol}`)
+          }
+        } catch (optionsError) {
+          console.warn(`Failed to fetch options data for ${symbol}:`, optionsError)
+          optionsData = undefined // Will use fallback in FactorLibrary
+        }
+
         // Create enhanced technical data with all pre-fetched services for FactorLibrary
         const enhancedTechnicalData: TechnicalDataPoint = {
           symbol,
@@ -654,7 +685,8 @@ export class AlgorithmEngine {
           esgScore,
           institutionalData,
           shortInterestData,
-          extendedMarketData
+          extendedMarketData,
+          optionsData
         }
 
         const compositeScore = await this.factorLibrary.calculateFactor(
@@ -789,6 +821,28 @@ export class AlgorithmEngine {
               if (extendedMarketComposite !== null && extendedMarketComposite !== 0.5) {
                 componentFactors['extended_market_composite'] = extendedMarketComposite
                 console.log(`✅ Extended market composite for ${symbol}: ${extendedMarketComposite.toFixed(3)} - TRACKED`)
+              }
+            }
+
+            // 🆕 OPTIONS DATA SERVICE TRACKING - Calculate options factors for utilization tracking
+            if (optionsData) {
+              const optionsComposite = await this.factorLibrary.calculateFactor('options_composite', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (optionsComposite !== null && optionsComposite !== 0.5) {
+                componentFactors['options_composite'] = optionsComposite
+                console.log(`✅ Options composite for ${symbol}: ${optionsComposite.toFixed(3)} - TRACKED`)
+              }
+
+              // Track individual options factors for detailed analysis
+              const putCallRatioScore = await this.factorLibrary.calculateFactor('put_call_ratio_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (putCallRatioScore !== null && putCallRatioScore !== 0.5) {
+                componentFactors['put_call_ratio_score'] = putCallRatioScore
+                console.log(`✅ Put/Call ratio score for ${symbol}: ${putCallRatioScore.toFixed(3)} - TRACKED`)
+              }
+
+              const optionsFlowScore = await this.factorLibrary.calculateFactor('options_flow_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (optionsFlowScore !== null && optionsFlowScore !== 0.5) {
+                componentFactors['options_flow_score'] = optionsFlowScore
+                console.log(`✅ Options flow score for ${symbol}: ${optionsFlowScore.toFixed(3)} - TRACKED`)
               }
             }
 
