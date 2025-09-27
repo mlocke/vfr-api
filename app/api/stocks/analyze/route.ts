@@ -19,6 +19,8 @@ import ShortInterestService from '../../../services/financial-data/ShortInterest
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { MLPredictionService } from '../../../services/ml/prediction/MLPredictionService'
+import { FeatureEngineeringService } from '../../../services/ml/features/FeatureEngineeringService'
 
 // Request validation - supports admin dashboard test format
 const RequestSchema = z.object({
@@ -123,6 +125,13 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
       console.warn('Options service not available:', error)
     }
 
+    let mlPredictionService: MLPredictionService | undefined
+    try {
+      mlPredictionService = new MLPredictionService()
+    } catch (error) {
+      console.warn('ML prediction service not available:', error)
+    }
+
     // Create the comprehensive service
     stockSelectionService = new StockSelectionService(
       fallbackDataService,
@@ -136,7 +145,8 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
       shortInterestService,
       extendedMarketService,
       undefined, // institutionalService
-      optionsService
+      optionsService,
+      mlPredictionService
     )
 
     console.log('✅ Comprehensive StockSelectionService initialized with full analysisInputServices')

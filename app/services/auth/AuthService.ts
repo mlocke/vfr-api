@@ -549,6 +549,7 @@ export class AuthService {
           maxConcurrentRequests: user.subscription.limits.maxConcurrentRequests
         }
       },
+      mlTier: 'free',
       ipAddress: clientInfo.ipAddress,
       userAgent: clientInfo.userAgent,
       deviceFingerprint: clientInfo.deviceFingerprint

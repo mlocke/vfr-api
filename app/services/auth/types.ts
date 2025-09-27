@@ -118,6 +118,7 @@ export interface TokenPayload {
       maxConcurrentRequests: number
     }
   }
+  mlTier: string
 
   // Security context
   ipAddress: string
