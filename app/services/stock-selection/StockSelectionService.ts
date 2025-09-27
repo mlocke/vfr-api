@@ -37,6 +37,7 @@ import ESGDataService from '../financial-data/ESGDataService'
 import ShortInterestService from '../financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataService'
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
+import { OptionsDataService } from '../financial-data/OptionsDataService'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
@@ -58,6 +59,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private shortInterestService?: ShortInterestService
   private extendedMarketService?: ExtendedMarketDataService
   private institutionalService?: InstitutionalDataService
+  private optionsService?: OptionsDataService
   private errorHandler: ErrorHandler
 
   constructor(
@@ -71,7 +73,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     esgService?: ESGDataService,
     shortInterestService?: ShortInterestService,
     extendedMarketService?: ExtendedMarketDataService,
-    institutionalService?: InstitutionalDataService
+    institutionalService?: InstitutionalDataService,
+    optionsService?: OptionsDataService
   ) {
     super()
 
@@ -88,6 +91,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     this.shortInterestService = shortInterestService || undefined
     this.extendedMarketService = extendedMarketService || undefined
     this.institutionalService = institutionalService || undefined
+    this.optionsService = optionsService || undefined
     this.errorHandler = ErrorHandler.getInstance()
 
     // Initialize algorithm cache with proper config structure
@@ -513,6 +517,19 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
+    // Options Analysis Service
+    let optionsAnalysis = null
+    if (this.optionsService) {
+      try {
+        optionsAnalysis = await this.optionsService.getOptionsAnalysis(symbol)
+        if (optionsAnalysis) {
+          console.log(`📈 Options analysis completed for ${symbol}: P/C ratio ${optionsAnalysis.currentRatio?.volumeRatio || 'N/A'}`)
+        }
+      } catch (error) {
+        console.warn(`Options analysis failed for ${symbol}:`, error)
+      }
+    }
+
     // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct
     const scoreBasedAction = this.determineActionFromScore(adjustedScore.overallScore)
 
@@ -533,8 +550,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       reasoning: {
         primaryFactors: primaryFactors,
-        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact),
-        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact)
+        warnings: this.identifyWarnings(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis),
+        opportunities: this.identifyOpportunities(stockScore, additionalData, macroImpact, sentimentImpact, esgImpact, shortInterestImpact, optionsAnalysis),
+        optionsAnalysis: optionsAnalysis
       } as any,
 
       dataQuality: {
@@ -915,6 +933,37 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         },
         utilizationInResults: this.calculateExtendedMarketUtilization(topSelections),
         weightInCompositeScore: '5%'
+      },
+
+      // Options Analysis Service
+      optionsAnalysis: {
+        enabled: !!this.optionsService,
+        status: this.optionsService ? 'active' : 'unavailable',
+        description: 'Options analysis with put/call ratio and EODHD integration',
+        components: {
+          putCallRatio: {
+            enabled: !!this.optionsService,
+            source: 'EODHD + Polygon + Yahoo',
+            frequency: 'real-time'
+          },
+          optionsChain: {
+            enabled: !!this.optionsService,
+            coverage: 'strikes and expirations',
+            dataPoints: 'volume, OI, IV, Greeks'
+          },
+          maxPain: {
+            enabled: !!this.optionsService,
+            calculation: 'algorithmic max pain point',
+            purpose: 'price movement prediction'
+          },
+          impliedVolatility: {
+            enabled: !!this.optionsService,
+            analysis: 'average IV calculation',
+            insight: 'market uncertainty indicator'
+          }
+        },
+        utilizationInResults: this.calculateServiceUtilization(topSelections, 'optionsAnalysis'),
+        weightInCompositeScore: 'informational'
       }
     }
 
@@ -1905,7 +1954,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return uniqueFactors
   }
 
-  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any): string[] {
+  private identifyWarnings(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any): string[] {
     const warnings = []
 
     if (stockScore.dataQuality.overall < 0.6) {
@@ -2006,10 +2055,18 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       warnings.push('Poor ESG practices may impact long-term sustainability and investor appeal')
     }
 
+    // Options-based warnings
+    if (optionsAnalysis?.putCallRatio > 1.5) {
+      warnings.push('High put/call ratio indicates bearish options sentiment')
+    }
+    if (optionsAnalysis?.impliedVolatility && optionsAnalysis.impliedVolatility > 50) {
+      warnings.push('Elevated implied volatility suggests increased market uncertainty')
+    }
+
     return warnings
   }
 
-  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any): string[] {
+  private identifyOpportunities(stockScore: StockScore, additionalData?: any, macroImpact?: any, sentimentImpact?: any, esgImpact?: any, shortInterestImpact?: any, optionsAnalysis?: any): string[] {
     const opportunities = []
 
     if (stockScore.overallScore > 0.8) {
@@ -2109,6 +2166,17 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     }
     if (esgImpact?.impact === 'positive') {
       opportunities.push('Strong ESG practices attract sustainable investment and reduce regulatory risk')
+    }
+
+    // Options-based opportunities
+    if (optionsAnalysis?.putCallRatio < 0.7) {
+      opportunities.push('Low put/call ratio indicates bullish options sentiment')
+    }
+    if (optionsAnalysis?.maxPain && stockScore.marketData.price) {
+      const maxPainDistance = Math.abs(optionsAnalysis.maxPain - stockScore.marketData.price) / stockScore.marketData.price
+      if (maxPainDistance > 0.05) {
+        opportunities.push(`Options max pain at $${optionsAnalysis.maxPain} suggests potential price movement`)
+      }
     }
 
     return opportunities
@@ -2493,6 +2561,7 @@ class StockSelectionServiceFactory {
     let esgService: ESGDataService | undefined
     let shortInterestService: ShortInterestService | undefined
     let extendedMarketService: ExtendedMarketDataService | undefined
+    let optionsService: OptionsDataService | undefined
 
     // Technical service - always enabled (no API keys required)
     technicalService = new TechnicalIndicatorService(cache)
@@ -2578,6 +2647,14 @@ class StockSelectionServiceFactory {
       }
     }
 
+    // Initialize Options service - supports multiple providers (EODHD, Polygon, Yahoo)
+    try {
+      optionsService = new (await import('../financial-data/OptionsDataService')).OptionsDataService()
+      enabledServices.push('options')
+    } catch (error) {
+      console.warn('Failed to initialize options service:', error)
+    }
+
     // Create optimized service instance
     const service = new StockSelectionService(
       fallbackDataService,
@@ -2589,7 +2666,9 @@ class StockSelectionServiceFactory {
       vwapService,
       esgService,
       shortInterestService,
-      extendedMarketService
+      extendedMarketService,
+      undefined, // institutionalService (not initialized in this factory)
+      optionsService
     )
 
     const endTime = performance.now()

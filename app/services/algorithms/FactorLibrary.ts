@@ -1982,119 +1982,116 @@ export class FactorLibrary {
     let totalWeight = 0
     const factorContributions: string[] = []
 
-    // ==================== MATHEMATICALLY SOUND WEIGHT ALLOCATION (Total: 100%) ====================
+    // ==================== UPDATED WEIGHT ALLOCATION WITH DEDICATED OPTIONS ANALYSIS (Total: 100%) ====================
 
-    // Technical Analysis composite (weight: 38.1%) - Enhanced with options intelligence when available
-    // Uses 85% traditional technical + 15% options intelligence for institutional-grade analysis
-    let technicalScore: number | null = null
-
-    // Try enhanced technical analysis with options first
-    if (technicalData?.optionsData) {
-      technicalScore = await this.calculateTechnicalOverallScoreWithOptions(symbol, technicalData.optionsData)
-      if (technicalScore !== null) {
-        console.log(`Enhanced Technical Analysis (with options): ${technicalScore.toFixed(3)} (weight: 38.1%) 🎯⚡`)
-        totalScore += technicalScore * 0.381
-        totalWeight += 0.381
-        factorContributions.push('technicalAnalysis', 'technical_overall_score_with_options', 'options_intelligence')
-      }
+    // Technical Analysis composite (weight: 35.0%) - Pure technical indicators without options
+    // Reduced from 38.1% to accommodate dedicated options analysis component
+    const technicalScore = await this.calculateTechnicalOverallScore(symbol)
+    if (technicalScore !== null) {
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 35.0%) ⚡`)
+      totalScore += technicalScore * 0.350
+      totalWeight += 0.350
+      factorContributions.push('technicalAnalysis', 'technical_overall_score')
+    } else {
+      console.log('Technical Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.350
+      totalWeight += 0.350
     }
 
-    // Fallback to traditional technical analysis if no options data or enhanced calculation failed
-    if (technicalScore === null) {
-      technicalScore = await this.calculateTechnicalOverallScore(symbol)
-      if (technicalScore !== null) {
-        console.log(`Traditional Technical Analysis: ${technicalScore.toFixed(3)} (weight: 38.1%) ⚡`)
-        totalScore += technicalScore * 0.381
-        totalWeight += 0.381
-        factorContributions.push('technicalAnalysis', 'technical_overall_score')
-      } else {
-        console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-        totalScore += 0.5 * 0.381
-        totalWeight += 0.381
-      }
-    }
-
-    // Fundamental Analysis composite (weight: 23.8%) - Quality factors (25/105 * 100 = 23.8%)
+    // Fundamental Analysis composite (weight: 22.0%) - Quality factors (reduced from 23.8%)
     const fundamentalScore = this.calculateQualityComposite(fundamentalData)
     if (fundamentalScore !== null) {
-      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 23.8%)`)
-      totalScore += fundamentalScore * 0.238
-      totalWeight += 0.238
+      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 22.0%)`)
+      totalScore += fundamentalScore * 0.220
+      totalWeight += 0.220
       factorContributions.push('fundamentalData', 'quality_composite')
     } else {
       console.log('Fundamental Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.238
-      totalWeight += 0.238
+      totalScore += 0.5 * 0.220
+      totalWeight += 0.220
     }
 
-    // 🆕 MACROECONOMIC ANALYSIS (weight: 19.0%) - Economic environment impact (20/105 * 100 = 19.0%)
+    // 🆕 MACROECONOMIC ANALYSIS (weight: 18.0%) - Economic environment impact (reduced from 19.0%)
     const macroScore = this.calculateMacroeconomicComposite(macroeconomicContext)
     if (macroScore !== null) {
-      console.log(`🌍 Macroeconomic Analysis: ${macroScore.toFixed(3)} (weight: 19.0%) - INTEGRATED!`)
-      totalScore += macroScore * 0.190
-      totalWeight += 0.190
+      console.log(`🌍 Macroeconomic Analysis: ${macroScore.toFixed(3)} (weight: 18.0%) - INTEGRATED!`)
+      totalScore += macroScore * 0.180
+      totalWeight += 0.180
       factorContributions.push('macroeconomicAnalysis', 'macroeconomic_composite')
     } else {
       console.log('🌍 Macroeconomic Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.190
-      totalWeight += 0.190
+      totalScore += 0.5 * 0.180
+      totalWeight += 0.180
     }
 
-    // 🆕 SENTIMENT ANALYSIS (weight: 9.5%) - Market sentiment integration (10/105 * 100 = 9.5%)
+    // 🆕 SENTIMENT ANALYSIS (weight: 9.0%) - Market sentiment integration (reduced from 9.5%)
     if (sentimentScore !== undefined && sentimentScore !== null) {
-      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 9.5%) - INTEGRATED!`)
-      totalScore += sentimentScore * 0.095
-      totalWeight += 0.095
+      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 9.0%) - INTEGRATED!`)
+      totalScore += sentimentScore * 0.090
+      totalWeight += 0.090
       factorContributions.push('sentimentAnalysis', 'sentiment_composite')
     } else {
       console.log('📰 Sentiment Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.095
-      totalWeight += 0.095
+      totalScore += 0.5 * 0.090
+      totalWeight += 0.090
     }
 
-    // 🆕 EXTENDED MARKET DATA ANALYSIS (weight: 4.8%) - Liquidity and bid/ask analysis (5/105 * 100 = 4.8%)
+    // 🆕 OPTIONS ANALYSIS (weight: 5.0%) - Dedicated options intelligence component
+    const optionsScore = this.calculateOptionsScore(technicalData?.optionsData)
+    if (optionsScore !== null && technicalData?.optionsData) {
+      console.log(`📊 Options Analysis: ${optionsScore.toFixed(3)} (weight: 5.0%) - DEDICATED COMPONENT! 🎯`)
+      totalScore += optionsScore * 0.050
+      totalWeight += 0.050
+      factorContributions.push('optionsAnalysis', 'options_composite')
+    } else {
+      console.log('📊 Options Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.050
+      totalWeight += 0.050
+    }
+
+    // 🆕 EXTENDED MARKET DATA ANALYSIS (weight: 4.5%) - Liquidity and bid/ask analysis (reduced from 4.8%)
     const extendedMarketScore = await this.calculateExtendedMarketComposite(symbol)
     if (extendedMarketScore !== null) {
-      console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 4.8%) - INTEGRATED!`)
-      totalScore += extendedMarketScore * 0.048
-      totalWeight += 0.048
+      console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 4.5%) - INTEGRATED!`)
+      totalScore += extendedMarketScore * 0.045
+      totalWeight += 0.045
       factorContributions.push('extendedMarketData', 'extended_market_composite')
     } else {
       console.log('💹 Extended Market Data: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.048
-      totalWeight += 0.048
+      totalScore += 0.5 * 0.045
+      totalWeight += 0.045
     }
 
-    // 🆕 SHORT INTEREST ANALYSIS (weight: 2.4%) - Short squeeze potential (2.5/105 * 100 = 2.4%)
+    // 🆕 SHORT INTEREST ANALYSIS (weight: 2.25%) - Short squeeze potential (reduced from 2.4%)
     const shortInterestScore = await this.calculateShortInterestComposite(symbol)
     if (shortInterestScore !== null) {
-      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 2.4%) - INTEGRATED!`)
-      totalScore += shortInterestScore * 0.024
-      totalWeight += 0.024
+      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 2.25%) - INTEGRATED!`)
+      totalScore += shortInterestScore * 0.0225
+      totalWeight += 0.0225
       factorContributions.push('shortInterestAnalysis', 'short_interest_composite')
     } else {
       console.log('📊 Short Interest Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.024
-      totalWeight += 0.024
+      totalScore += 0.5 * 0.0225
+      totalWeight += 0.0225
     }
 
-    // 🆕 ESG ANALYSIS (weight: 2.4%) - Environmental, Social, Governance factors (2.5/105 * 100 = 2.4%)
+    // 🆕 ESG ANALYSIS (weight: 2.25%) - Environmental, Social, Governance factors (reduced from 2.4%)
     if (esgScore !== undefined && esgScore !== null) {
-      console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 2.4%) - INTEGRATED!`)
-      totalScore += esgScore * 0.024
-      totalWeight += 0.024
+      console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 2.25%) - INTEGRATED!`)
+      totalScore += esgScore * 0.0225
+      totalWeight += 0.0225
       factorContributions.push('esgAnalysis', 'esg_composite')
     } else {
       console.log('🌱 ESG Analysis: No data (fallback to neutral 0.6 - industry baseline)')
-      totalScore += 0.6 * 0.024
-      totalWeight += 0.024
+      totalScore += 0.6 * 0.0225
+      totalWeight += 0.0225
     }
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
     console.log(`🎯 Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
-    console.log(`   Weight Allocation: Technical(38.1%) + Fundamental(23.8%) + Macroeconomic(19.0%) + Sentiment(9.5%) + Extended Market(4.8%) + Short Interest(2.4%) + ESG(2.4%) = 100.0%`)
+    console.log(`   Weight Allocation: Technical(35.0%) + Fundamental(22.0%) + Macroeconomic(18.0%) + Sentiment(9.0%) + Options(5.0%) + Extended Market(4.5%) + Short Interest(2.25%) + ESG(2.25%) = 100.0%`)
     console.log(`   ✅ WEIGHT VERIFICATION: Total weights = ${totalWeight.toFixed(3)} (target: 1.000)`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
@@ -2105,10 +2102,17 @@ export class FactorLibrary {
       factors: factorContributions
     } as any)
 
-    // ✅ PERFORMANCE FIX: Also cache individual technical score for direct tracking
+    // ✅ PERFORMANCE FIX: Also cache individual technical and options scores for direct tracking
     if (technicalScore !== null) {
       this.factorCache.set(`technical_overall_score_${symbol}_${Math.floor(Date.now() / 60000)}`, {
         value: technicalScore,
+        timestamp: Date.now()
+      })
+    }
+
+    if (optionsScore !== null) {
+      this.factorCache.set(`options_composite_${symbol}_${Math.floor(Date.now() / 60000)}`, {
+        value: optionsScore,
         timestamp: Date.now()
       })
     }
