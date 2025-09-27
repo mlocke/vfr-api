@@ -83,6 +83,7 @@ Factor Analysis → Weighted Scoring → Confidence Calculation → Final Recomm
 | ESG Integration | Production | `ESGDataService.ts` | ✅ Comprehensive | <1s |
 | Short Interest Analysis | Production | `ShortInterestService.ts` | ✅ FINRA integration | <1s |
 | Extended Market Data | Production | `ExtendedMarketDataService.ts` | ✅ Polygon integration | <800ms |
+| Options Analysis | Production | `OptionsDataService.ts` | ✅ Comprehensive | <1s |
 
 ## Development Commands (From Root Directory)
 

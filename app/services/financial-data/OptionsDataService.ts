@@ -4,11 +4,6 @@
  * Features: memory-efficient processing, selective field extraction, optimized caching
  */
 
-import { DataSourceManager, DataSourceProvider } from './DataSourceManager'
-import { PolygonAPI } from './PolygonAPI'
-import { TwelveDataAPI } from './TwelveDataAPI'
-import { AlphaVantageAPI } from './AlphaVantageAPI'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { EODHDAPI } from './EODHDAPI'
 import { OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 import { RedisCache } from '../cache/RedisCache'
@@ -53,14 +48,45 @@ interface OptionsChainSummary {
   timestamp: number
   contractsByExpiry: Record<string, OptimizedOptionsContract[]>
   performanceMetrics: OptionsPerformanceMetrics
+  timeBasedAnalysis?: TimeBasedOptionsAnalysis
+}
+
+interface TimeBasedOptionsAnalysis {
+  shortTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    description: string
+  }
+  mediumTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    institutionalSignals: string[]
+    description: string
+  }
+  longTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    leapsAnalysis: string
+    description: string
+  }
+  strikePositioning: {
+    heavyCallActivity: number[]
+    heavyPutActivity: number[]
+    institutionalHedges: number[]
+    unusualActivity: string[]
+  }
 }
 
 export class OptionsDataService {
-  private dataSourceManager: DataSourceManager
-  private polygonAPI: PolygonAPI
-  private twelveDataAPI: TwelveDataAPI
-  private alphaVantageAPI: AlphaVantageAPI
-  private yahooFinanceAPI: YahooFinanceAPI
   private eodhdAPI: EODHDAPI
   private cache: RedisCache
 
@@ -87,39 +113,19 @@ export class OptionsDataService {
     memoryReductions: 0
   }
 
-  constructor(dataSourceManager?: DataSourceManager, cache?: RedisCache) {
-    this.dataSourceManager = dataSourceManager || new DataSourceManager()
-    this.polygonAPI = new PolygonAPI()
-    this.twelveDataAPI = new TwelveDataAPI()
-    this.alphaVantageAPI = new AlphaVantageAPI()
-    this.yahooFinanceAPI = new YahooFinanceAPI()
+  constructor(cache?: RedisCache) {
     this.eodhdAPI = new EODHDAPI()
     this.cache = cache || new RedisCache()
   }
 
   /**
-   * Set preferred options data source
+   * EODHD is the only provider for options data
    */
-  setPreferredSource(source: DataSourceProvider): void {
-    this.dataSourceManager.setDataSourcePreference('options_data', source)
-    this.dataSourceManager.setDataSourcePreference('options_chain', source)
-    this.dataSourceManager.setDataSourcePreference('put_call_ratio', source)
-    this.dataSourceManager.setDataSourcePreference('options_analysis', source)
-    console.log(`📊 Options data source set to: ${source}`)
-  }
-
-  /**
-   * Get current provider configuration
-   */
-  getProviderConfig() {
-    return this.dataSourceManager.getProviderConfigs()
-  }
-
-  /**
-   * Get available providers for options data
-   */
-  getAvailableProviders(): DataSourceProvider[] {
-    return this.dataSourceManager.getProvidersForDataType('options_data')
+  getProviderInfo() {
+    return {
+      provider: 'EODHD',
+      description: 'Exclusive options data provider with UnicornBay integration'
+    }
   }
 
   /**
@@ -137,35 +143,18 @@ export class OptionsDataService {
         return cached
       }
 
-      // Parallel processing with Promise.allSettled for better performance
-      const sources = this.dataSourceManager.getProvidersForDataType('put_call_ratio')
-      const promises = sources.slice(0, 3).map(async (source) => {
-        switch (source) {
-          case 'eodhd':
-            return await this.eodhdAPI.getPutCallRatio(symbol)
-          case 'polygon':
-            return await this.polygonAPI.getPutCallRatio(symbol)
-          case 'yahoo':
-            return await this.yahooFinanceAPI.getPutCallRatio(symbol)
-          default:
-            return null
-        }
-      })
+      // EODHD ONLY - No fallback mechanisms for options data
+      const result = await this.eodhdAPI.getPutCallRatio(symbol)
 
-      const results = await Promise.allSettled(promises)
-
-      // Return first successful result
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value) {
-          // Cache the result
-          await this.cacheOptionsData(cacheKey, result.value, ttl)
-
-          const latency = Date.now() - startTime
-          console.log(`📊 Put/call ratio for ${symbol}: ${latency}ms`)
-          return result.value
-        }
+      if (result) {
+        // Cache the result
+        await this.cacheOptionsData(cacheKey, result, ttl)
+        const latency = Date.now() - startTime
+        console.log(`📊 EODHD Put/call ratio for ${symbol}: ${latency}ms`)
+        return result
       }
 
+      console.log(`⚠️ EODHD: No put/call ratio data available for ${symbol}`)
       return null
 
     } catch (error) {
@@ -175,9 +164,10 @@ export class OptionsDataService {
   }
 
   /**
-   * Get high-performance options analysis with <500ms latency target
+   * Get enhanced options analysis with time-based sentiment detection
+   * Includes short-term (1-30 days), medium-term (1-3 months), and long-term (6+ months) analysis
    */
-  async getOptionsAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
+  async getOptionsAnalysis(symbol: string, includeTimeBasedAnalysis: boolean = true): Promise<OptionsAnalysis | null> {
     const startTime = Date.now()
     this.performanceMetrics.totalRequests++
 
@@ -194,52 +184,30 @@ export class OptionsDataService {
         return cached
       }
 
-      // Parallel data fetching with Promise.allSettled optimization
-      const sources = this.dataSourceManager.getProvidersForDataType('options_analysis')
-      const promises = sources.slice(0, 3).map(async (source) => {
-        const sourceStart = Date.now()
+      // EODHD ONLY - NO FALLBACKS for options analysis
+      let analysis = await this.getOptimizedEODHDAnalysis(symbol)
 
-        switch (source) {
-          case 'eodhd':
-            const analysis = await this.getOptimizedEODHDAnalysis(symbol)
-            return { source, analysis, latency: Date.now() - sourceStart }
-          case 'polygon':
-            const polygonAnalysis = await this.polygonAPI.getOptionsAnalysis(symbol)
-            return { source, analysis: polygonAnalysis, latency: Date.now() - sourceStart }
-          case 'yahoo':
-            const yahooAnalysis = await this.yahooFinanceAPI.getOptionsAnalysisFreeTier(symbol)
-            return { source, analysis: yahooAnalysis, latency: Date.now() - sourceStart }
-          default:
-            return { source, analysis: null, latency: Date.now() - sourceStart }
-        }
-      })
-
-      const results = await Promise.allSettled(promises)
-
-      // Select best result based on data completeness and latency
-      let bestResult: OptionsAnalysis | null = null
-      let bestLatency = Infinity
-
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value.analysis) {
-          if (result.value.latency < bestLatency) {
-            bestResult = result.value.analysis
-            bestLatency = result.value.latency
-          }
+      if (analysis && includeTimeBasedAnalysis) {
+        // Get options chain for time-based analysis
+        const optionsChain = await this.getOptionsChain(symbol)
+        if (optionsChain) {
+          const timeBasedAnalysis = this.generateTimeBasedAnalysis(optionsChain)
+          analysis.timeBasedAnalysis = timeBasedAnalysis
         }
       }
 
-      if (bestResult) {
+      if (analysis) {
         // Cache with compression for large datasets
-        await this.cacheOptionsData(cacheKey, bestResult, ttl)
+        await this.cacheOptionsData(cacheKey, analysis, ttl)
 
         const totalLatency = Date.now() - startTime
         this.updatePerformanceMetrics(totalLatency)
 
-        console.log(`📊 Options analysis for ${symbol}: ${totalLatency}ms (target: ${this.LATENCY_TARGET}ms)`)
-        return bestResult
+        console.log(`📊 EODHD Enhanced options analysis for ${symbol}: ${totalLatency}ms (target: ${this.LATENCY_TARGET}ms)`)
+        return analysis
       }
 
+      console.log(`⚠️ EODHD: No options analysis data available for ${symbol}`)
       return null
 
     } catch (error) {
@@ -265,43 +233,53 @@ export class OptionsDataService {
         return cached
       }
 
-      // Prioritize EODHD for UnicornBay integration, fallback to others
-      const sources = ['eodhd', 'polygon', 'yahoo']
+      // MULTI-SOURCE FALLBACK - Try EODHD first, then Yahoo Finance, then Polygon
+      let rawChain = await this.eodhdAPI.getOptionsChain(symbol, expiration)
 
-      for (const source of sources) {
+      // If EODHD fails, try Yahoo Finance fallback
+      if (!rawChain) {
+        console.log(`⚡ EODHD options chain failed for ${symbol}, trying Yahoo Finance fallback...`)
         try {
-          let rawChain: any = null
-
-          switch (source) {
-            case 'eodhd':
-              rawChain = await this.eodhdAPI.getOptionsChain(symbol, expiration)
-              break
-            case 'polygon':
-              rawChain = await this.polygonAPI.getOptionsChain(symbol, expiration)
-              break
-            case 'yahoo':
-              rawChain = await this.yahooFinanceAPI.getOptionsChain(symbol, expiration)
-              break
-          }
-
+          const { YahooFinanceAPI } = await import('./YahooFinanceAPI')
+          const yahooAPI = new YahooFinanceAPI()
+          rawChain = await yahooAPI.getOptionsChain(symbol, expiration)
           if (rawChain) {
-            // Apply memory optimization and field extraction
-            const optimizedChain = this.optimizeOptionsChain(rawChain)
-
-            // Cache optimized result
-            await this.cacheOptionsData(cacheKey, optimizedChain, ttl)
-
-            const processingTime = Date.now() - startTime
-            console.log(`🔗 Optimized options chain for ${symbol}: ${processingTime}ms`)
-
-            return optimizedChain
+            console.log(`✅ Yahoo Finance options chain successful for ${symbol}`)
           }
-        } catch (error) {
-          console.warn(`❌ ${source} failed for options chain:`, error instanceof Error ? error.message : error)
-          continue
+        } catch (yahooError) {
+          console.warn(`Yahoo Finance options chain failed for ${symbol}:`, yahooError instanceof Error ? yahooError.message : 'Unknown error')
         }
       }
 
+      // If Yahoo Finance also fails, try Polygon as final fallback
+      if (!rawChain) {
+        console.log(`⚡ Yahoo Finance options chain failed for ${symbol}, trying Polygon fallback...`)
+        try {
+          const { PolygonAPI } = await import('./PolygonAPI')
+          const polygonAPI = new PolygonAPI()
+          rawChain = await polygonAPI.getOptionsChain(symbol, expiration)
+          if (rawChain) {
+            console.log(`✅ Polygon options chain successful for ${symbol}`)
+          }
+        } catch (polygonError) {
+          console.warn(`Polygon options chain failed for ${symbol}:`, polygonError instanceof Error ? polygonError.message : 'Unknown error')
+        }
+      }
+
+      if (rawChain) {
+        // Apply memory optimization and field extraction
+        const optimizedChain = this.optimizeOptionsChain(rawChain)
+
+        // Cache optimized result
+        await this.cacheOptionsData(cacheKey, optimizedChain, ttl)
+
+        const processingTime = Date.now() - startTime
+        console.log(`🔗 EODHD Optimized options chain for ${symbol}: ${processingTime}ms`)
+
+        return optimizedChain
+      }
+
+      console.log(`⚠️ EODHD: No options chain data available for ${symbol}`)
       return null
 
     } catch (error) {
@@ -310,92 +288,39 @@ export class OptionsDataService {
     }
   }
 
-  /**
-   * TwelveData put/call ratio (ready for paid plan implementation)
-   */
-  private async getTwelveDataPutCallRatio(symbol: string): Promise<PutCallRatio | null> {
-    // This method is ready for implementation when TwelveData pro plan is available
-    // For now, return null to trigger fallback
-    console.log(`📊 TwelveData put/call ratio requires pro plan for ${symbol}`)
-    return null
-  }
-
-  /**
-   * TwelveData options analysis (ready for paid plan implementation)
-   */
-  private async getTwelveDataOptionsAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
-    // This method is ready for implementation when TwelveData pro plan is available
-    // For now, return null to trigger fallback
-    console.log(`📈 TwelveData options analysis requires pro plan for ${symbol}`)
-    return null
-  }
-
-  /**
-   * TwelveData options chain (ready for paid plan implementation)
-   */
-  private async getTwelveDataOptionsChain(symbol: string, expiration?: string): Promise<OptionsChain | null> {
-    // This method is ready for implementation when TwelveData pro plan is available
-    // For now, return null to trigger fallback
-    console.log(`🔗 TwelveData options chain requires pro plan for ${symbol}`)
-    return null
-  }
 
   /**
    * Check if any options data source is available
    */
   async checkOptionsAvailability(): Promise<{ [key: string]: boolean }> {
     const availability: { [key: string]: boolean } = {
-      polygon: false,
-      eodhd: false,
-      twelvedata: false,
-      alphavantage: false,
-      yahoo: false,
-      disabled: false
+      eodhd: false
     }
 
-    // Test Polygon
-    try {
-      const polygonTest = await this.polygonAPI.getPutCallRatio('SPY')
-      availability.polygon = polygonTest !== null
-    } catch (error) {
-      availability.polygon = false
-    }
-
-    // Test EODHD (requires options add-on subscription)
+    // Test EODHD ONLY (requires options add-on subscription)
     try {
       const eodhdAvailability = await this.eodhdAPI.checkOptionsAvailability()
       availability.eodhd = (typeof eodhdAvailability.putCallRatio === 'boolean') ? eodhdAvailability.putCallRatio : false
+      console.log(`📊 EODHD Options availability: ${availability.eodhd}`)
     } catch (error) {
       availability.eodhd = false
-    }
-
-    // Test TwelveData (will be false until paid plan)
-    availability.twelvedata = false
-
-    // Test Alpha Vantage (will be false - premium required)
-    try {
-      const alphaVantageAvailability = await this.alphaVantageAPI.checkOptionsAvailability()
-      availability.alphavantage = (typeof alphaVantageAvailability.putCallRatio === 'boolean') ? alphaVantageAvailability.putCallRatio : false
-    } catch (error) {
-      availability.alphavantage = false
-    }
-
-    // Test Yahoo Finance (unofficial API - may work)
-    try {
-      const yahooAvailability = await this.yahooFinanceAPI.checkOptionsAvailability()
-      availability.yahoo = (typeof yahooAvailability.putCallRatio === 'boolean') ? yahooAvailability.putCallRatio : false
-    } catch (error) {
-      availability.yahoo = false
+      console.log(`❌ EODHD Options check failed:`, error)
     }
 
     return availability
   }
 
   /**
-   * Get service status and recommendations
+   * Get EODHD service status
    */
   async getServiceStatus() {
-    return await this.dataSourceManager.getServiceStatus()
+    const availability = await this.checkOptionsAvailability()
+    return {
+      provider: 'EODHD',
+      available: availability.eodhd,
+      status: availability.eodhd ? 'active' : 'unavailable',
+      description: 'Exclusive options data provider with UnicornBay integration'
+    }
   }
 
   /**
@@ -407,7 +332,22 @@ export class OptionsDataService {
    */
   private async getOptimizedEODHDAnalysis(symbol: string): Promise<OptionsAnalysis | null> {
     try {
-      // Fetch raw EODHD data with 40+ fields
+      console.log(`🦄 EODHD: Fetching UnicornBay options analysis for ${symbol}`)
+
+      // First try UnicornBay enhanced options chain
+      const optionsChain = await this.eodhdAPI.getUnicornBayOptionsChain(symbol)
+      if (optionsChain && optionsChain.calls.length > 0 && optionsChain.puts.length > 0) {
+        console.log(`✅ EODHD UnicornBay: Retrieved ${optionsChain.calls.length} calls, ${optionsChain.puts.length} puts for ${symbol}`)
+
+        // Get enhanced put/call ratio from UnicornBay
+        const putCallRatio = await this.eodhdAPI.getUnicornBayPutCallRatio(symbol)
+
+        // Process UnicornBay data into OptionsAnalysis format
+        return this.processUnicornBayAnalysis(symbol, optionsChain, putCallRatio)
+      }
+
+      // Fallback to standard EODHD if UnicornBay not available
+      console.log(`⚠️ EODHD: UnicornBay data unavailable for ${symbol}, falling back to standard API`)
       const rawData = await this.eodhdAPI.getOptionsAnalysisFreeTier(symbol)
       if (!rawData) return null
 
@@ -416,6 +356,148 @@ export class OptionsDataService {
 
     } catch (error) {
       console.error(`Failed to get optimized EODHD analysis for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  /**
+   * Process UnicornBay enhanced options data into OptionsAnalysis format
+   */
+  private processUnicornBayAnalysis(symbol: string, optionsChain: OptionsChain, putCallRatio: PutCallRatio | null): OptionsAnalysis {
+    const startTime = Date.now()
+
+    try {
+      // Calculate comprehensive metrics from UnicornBay data
+      const { calls, puts } = optionsChain
+
+      // Calculate volume metrics
+      const totalCallVolume = calls.reduce((sum, contract) => sum + (contract.volume || 0), 0)
+      const totalPutVolume = puts.reduce((sum, contract) => sum + (contract.volume || 0), 0)
+      const totalCallOpenInterest = calls.reduce((sum, contract) => sum + (contract.openInterest || 0), 0)
+      const totalPutOpenInterest = puts.reduce((sum, contract) => sum + (contract.openInterest || 0), 0)
+
+      // Calculate volume ratio (put/call)
+      const volumeRatio = totalCallVolume > 0 ? totalPutVolume / totalCallVolume : 1
+
+      // Calculate average implied volatility
+      const callIVs = calls.filter(c => c.impliedVolatility && c.impliedVolatility > 0).map(c => c.impliedVolatility!)
+      const putIVs = puts.filter(p => p.impliedVolatility && p.impliedVolatility > 0).map(p => p.impliedVolatility!)
+      const avgCallIV = callIVs.length > 0 ? callIVs.reduce((sum, iv) => sum + iv, 0) / callIVs.length : 0
+      const avgPutIV = putIVs.length > 0 ? putIVs.reduce((sum, iv) => sum + iv, 0) / putIVs.length : 0
+
+      // Determine sentiment based on P/C ratio and volume
+      let sentiment: 'fear' | 'greed' | 'neutral' = 'neutral'
+      if (volumeRatio > 1.2) {
+        sentiment = 'fear' // High put volume suggests fear
+      } else if (volumeRatio < 0.8) {
+        sentiment = 'greed' // High call volume suggests greed
+      }
+
+      // Calculate confidence based on data quality
+      const dataQuality = Math.min(
+        (totalCallVolume + totalPutVolume) / 10000, // Volume factor
+        (calls.length + puts.length) / 100, // Chain depth factor
+        1
+      )
+      const confidence = Math.max(0.5, dataQuality)
+
+      const analysis: OptionsAnalysis = {
+        symbol: symbol.toUpperCase(),
+        currentRatio: {
+          symbol: symbol.toUpperCase(),
+          volumeRatio,
+          openInterestRatio: totalCallOpenInterest > 0 ? totalPutOpenInterest / totalCallOpenInterest : 1,
+          totalCallVolume,
+          totalPutVolume,
+          totalCallOpenInterest,
+          totalPutOpenInterest,
+          date: new Date().toISOString().split('T')[0],
+          timestamp: Date.now(),
+          source: 'eodhd-unicornbay'
+        },
+        historicalRatios: [],
+        trend: volumeRatio > 1.2 ? 'bearish' : volumeRatio < 0.8 ? 'bullish' : 'neutral',
+        sentiment: sentiment === 'neutral' ? 'balanced' : sentiment,
+        confidence,
+        analysis: `P/C Ratio: ${volumeRatio.toFixed(2)}, Avg Call IV: ${avgCallIV.toFixed(2)}%, Avg Put IV: ${avgPutIV.toFixed(2)}%, Max Pain: $${this.calculateMaxPain(optionsChain) || 'N/A'}`,
+        timestamp: Date.now(),
+        source: 'eodhd-unicornbay'
+      }
+
+      console.log(`🦄 UnicornBay analysis processed for ${symbol}: P/C ${volumeRatio.toFixed(2)}, Sentiment: ${sentiment}, Confidence: ${confidence.toFixed(2)}`)
+      return analysis
+
+    } catch (error) {
+      console.error(`Error processing UnicornBay analysis for ${symbol}:`, error)
+      // Return basic analysis with available data
+      return {
+        symbol: symbol.toUpperCase(),
+        currentRatio: putCallRatio || {
+          symbol: symbol.toUpperCase(),
+          volumeRatio: 1,
+          openInterestRatio: 1,
+          totalCallVolume: 0,
+          totalPutVolume: 0,
+          totalCallOpenInterest: 0,
+          totalPutOpenInterest: 0,
+          date: new Date().toISOString().split('T')[0],
+          timestamp: Date.now(),
+          source: 'eodhd-unicornbay-fallback'
+        },
+        historicalRatios: [],
+        trend: 'neutral',
+        sentiment: 'balanced',
+        confidence: 0.3,
+        analysis: 'Limited options data available - using fallback analysis',
+        timestamp: Date.now(),
+        source: 'eodhd-unicornbay-fallback'
+      }
+    }
+  }
+
+  /**
+   * Calculate max pain point from options chain
+   */
+  private calculateMaxPain(optionsChain: OptionsChain): number | null {
+    try {
+      const { calls, puts } = optionsChain
+      if (calls.length === 0 && puts.length === 0) return null
+
+      // Get all unique strikes
+      const strikes = new Set<number>()
+      calls.forEach(c => strikes.add(c.strike))
+      puts.forEach(p => strikes.add(p.strike))
+
+      let minPain = Infinity
+      let maxPainStrike = 0
+
+      // Calculate pain for each strike
+      for (const strike of strikes) {
+        let totalPain = 0
+
+        // Calculate call pain (calls expire worthless below strike)
+        calls.forEach(call => {
+          if (call.strike > strike) {
+            totalPain += (call.openInterest || 0) * (call.strike - strike)
+          }
+        })
+
+        // Calculate put pain (puts expire worthless above strike)
+        puts.forEach(put => {
+          if (put.strike < strike) {
+            totalPain += (put.openInterest || 0) * (strike - put.strike)
+          }
+        })
+
+        if (totalPain < minPain) {
+          minPain = totalPain
+          maxPainStrike = strike
+        }
+      }
+
+      return maxPainStrike
+    } catch (error) {
+      console.warn('Error calculating max pain:', error)
       return null
     }
   }
@@ -550,7 +632,7 @@ export class OptionsDataService {
       callVolume,
       putVolume,
       putCallRatio: callVolume > 0 ? putVolume / callVolume : 0,
-      maxPain: this.calculateMaxPain(contracts),
+      maxPain: this.calculateMaxPainFromContracts(contracts),
       impliedVolatilityAvg: this.calculateAvgIV(contracts),
       timestamp: Date.now(),
       contractsByExpiry,
@@ -606,9 +688,9 @@ export class OptionsDataService {
   }
 
   /**
-   * Calculate max pain point efficiently
+   * Calculate max pain point efficiently from optimized contracts
    */
-  private calculateMaxPain(contracts: OptimizedOptionsContract[]): number {
+  private calculateMaxPainFromContracts(contracts: OptimizedOptionsContract[]): number {
     const strikes = [...new Set(contracts.map(c => c.strike))].sort((a, b) => a - b)
     let maxPain = 0
     let minPain = Infinity
@@ -674,6 +756,340 @@ export class OptionsDataService {
     const totalRequests = this.performanceMetrics.totalRequests
     this.performanceMetrics.averageLatency =
       (this.performanceMetrics.averageLatency * (totalRequests - 1) + latency) / totalRequests
+  }
+
+  /**
+   * Generate comprehensive time-based options analysis
+   * Leverages expiration timing to detect institutional sentiment and positioning
+   */
+  private generateTimeBasedAnalysis(optionsChain: OptionsChain): TimeBasedOptionsAnalysis {
+    const now = new Date()
+    const contractsByTimeframe = this.categorizeContractsByTimeframe(optionsChain, now)
+
+    return {
+      shortTerm: this.analyzeShortTermOptions(contractsByTimeframe.shortTerm),
+      mediumTerm: this.analyzeMediumTermOptions(contractsByTimeframe.mediumTerm),
+      longTerm: this.analyzeLongTermOptions(contractsByTimeframe.longTerm),
+      strikePositioning: this.analyzeStrikePositioning(optionsChain)
+    }
+  }
+
+  /**
+   * Categorize options contracts by time to expiration
+   */
+  private categorizeContractsByTimeframe(optionsChain: OptionsChain, now: Date) {
+    const shortTerm: any[] = []
+    const mediumTerm: any[] = []
+    const longTerm: any[] = []
+
+    const allContracts = [...optionsChain.calls, ...optionsChain.puts]
+
+    allContracts.forEach(contract => {
+      const expiryDate = new Date(contract.expiration)
+      const daysToExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+      if (daysToExpiry <= 30) {
+        shortTerm.push({...contract, daysToExpiry})
+      } else if (daysToExpiry <= 90) {
+        mediumTerm.push({...contract, daysToExpiry})
+      } else {
+        longTerm.push({...contract, daysToExpiry})
+      }
+    })
+
+    return { shortTerm, mediumTerm, longTerm }
+  }
+
+  /**
+   * Analyze short-term options (1-30 days) for immediate sentiment and volatility
+   */
+  private analyzeShortTermOptions(contracts: any[]) {
+    if (contracts.length === 0) {
+      return {
+        daysToExpiry: 0,
+        sentiment: 'neutral' as const,
+        volumeRatio: 1,
+        impliedVolatility: 0,
+        confidence: 0,
+        description: 'No short-term options data available'
+      }
+    }
+
+    const calls = contracts.filter(c => c.type === 'call')
+    const puts = contracts.filter(c => c.type === 'put')
+
+    const callVolume = calls.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const putVolume = puts.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const volumeRatio = callVolume > 0 ? putVolume / callVolume : 1
+
+    const avgIV = this.calculateAvgIV(contracts)
+    const avgDaysToExpiry = contracts.reduce((sum, c) => sum + c.daysToExpiry, 0) / contracts.length
+
+    let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+    if (volumeRatio > 1.2) sentiment = 'bearish'
+    else if (volumeRatio < 0.8) sentiment = 'bullish'
+
+    const confidence = Math.min((callVolume + putVolume) / 1000, 1)
+
+    return {
+      daysToExpiry: Math.round(avgDaysToExpiry),
+      sentiment,
+      volumeRatio,
+      impliedVolatility: avgIV,
+      confidence,
+      description: `Short-term ${sentiment} sentiment with ${avgIV.toFixed(1)}% IV, P/C ratio: ${volumeRatio.toFixed(2)}`
+    }
+  }
+
+  /**
+   * Analyze medium-term options (1-3 months) for sustained sentiment and institutional positioning
+   */
+  private analyzeMediumTermOptions(contracts: any[]) {
+    if (contracts.length === 0) {
+      return {
+        daysToExpiry: 0,
+        sentiment: 'neutral' as const,
+        volumeRatio: 1,
+        impliedVolatility: 0,
+        confidence: 0,
+        institutionalSignals: [],
+        description: 'No medium-term options data available'
+      }
+    }
+
+    const calls = contracts.filter(c => c.type === 'call')
+    const puts = contracts.filter(c => c.type === 'put')
+
+    const callVolume = calls.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const putVolume = puts.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const volumeRatio = callVolume > 0 ? putVolume / callVolume : 1
+
+    const avgIV = this.calculateAvgIV(contracts)
+    const avgDaysToExpiry = contracts.reduce((sum, c) => sum + c.daysToExpiry, 0) / contracts.length
+
+    // Detect institutional signals
+    const institutionalSignals = this.detectInstitutionalSignals(contracts)
+
+    let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+    if (volumeRatio > 1.1) sentiment = 'bearish'
+    else if (volumeRatio < 0.9) sentiment = 'bullish'
+
+    const confidence = Math.min((callVolume + putVolume) / 5000, 1)
+
+    return {
+      daysToExpiry: Math.round(avgDaysToExpiry),
+      sentiment,
+      volumeRatio,
+      impliedVolatility: avgIV,
+      confidence,
+      institutionalSignals,
+      description: `Medium-term ${sentiment} outlook with institutional ${institutionalSignals.length} signals detected`
+    }
+  }
+
+  /**
+   * Analyze long-term options (6+ months) including LEAPS for strategic positioning
+   */
+  private analyzeLongTermOptions(contracts: any[]) {
+    if (contracts.length === 0) {
+      return {
+        daysToExpiry: 0,
+        sentiment: 'neutral' as const,
+        volumeRatio: 1,
+        impliedVolatility: 0,
+        confidence: 0,
+        leapsAnalysis: 'No LEAPS data available',
+        description: 'No long-term options data available'
+      }
+    }
+
+    const calls = contracts.filter(c => c.type === 'call')
+    const puts = contracts.filter(c => c.type === 'put')
+
+    const callVolume = calls.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const putVolume = puts.reduce((sum, c) => sum + (c.volume || 0), 0)
+    const volumeRatio = callVolume > 0 ? putVolume / callVolume : 1
+
+    const avgIV = this.calculateAvgIV(contracts)
+    const avgDaysToExpiry = contracts.reduce((sum, c) => sum + c.daysToExpiry, 0) / contracts.length
+
+    // LEAPS analysis (options with 1+ year to expiration)
+    const leaps = contracts.filter(c => c.daysToExpiry >= 365)
+    const leapsAnalysis = this.generateLeapsAnalysis(leaps)
+
+    let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral'
+    if (volumeRatio > 1.05) sentiment = 'bearish'
+    else if (volumeRatio < 0.95) sentiment = 'bullish'
+
+    const confidence = Math.min((callVolume + putVolume) / 10000, 1)
+
+    return {
+      daysToExpiry: Math.round(avgDaysToExpiry),
+      sentiment,
+      volumeRatio,
+      impliedVolatility: avgIV,
+      confidence,
+      leapsAnalysis,
+      description: `Long-term ${sentiment} confidence with ${leaps.length} LEAPS contracts indicating strategic positioning`
+    }
+  }
+
+  /**
+   * Generate LEAPS analysis for long-term investor confidence
+   */
+  private generateLeapsAnalysis(leaps: any[]): string {
+    if (leaps.length === 0) {
+      return 'No LEAPS available - limited long-term positioning data'
+    }
+
+    const calls = leaps.filter(c => c.type === 'call')
+    const puts = leaps.filter(c => c.type === 'put')
+
+    const callOI = calls.reduce((sum, c) => sum + (c.openInterest || 0), 0)
+    const putOI = puts.reduce((sum, c) => sum + (c.openInterest || 0), 0)
+
+    const totalOI = callOI + putOI
+    if (totalOI === 0) return 'LEAPS present but no significant open interest'
+
+    const sentiment = callOI > putOI ? 'bullish' : 'bearish'
+    const confidence = callOI > putOI ? (callOI / totalOI) : (putOI / totalOI)
+
+    return `${leaps.length} LEAPS with ${totalOI.toLocaleString()} total OI showing ${sentiment} long-term confidence (${(confidence * 100).toFixed(1)}%)`
+  }
+
+  /**
+   * Detect institutional signals based on volume and open interest patterns
+   */
+  private detectInstitutionalSignals(contracts: any[]): string[] {
+    const signals: string[] = []
+
+    // Large open interest concentrations
+    const highOIContracts = contracts.filter(c => (c.openInterest || 0) > 1000)
+    if (highOIContracts.length > 0) {
+      signals.push(`${highOIContracts.length} contracts with >1K open interest`)
+    }
+
+    // Unusual volume spikes
+    const highVolumeContracts = contracts.filter(c => (c.volume || 0) > 500)
+    if (highVolumeContracts.length > 0) {
+      signals.push(`${highVolumeContracts.length} contracts with unusual volume`)
+    }
+
+    // Strike clustering (potential support/resistance)
+    const strikeGroups = this.groupContractsByStrike(contracts)
+    const clusteredStrikes = Object.keys(strikeGroups).filter(strike => strikeGroups[strike].length >= 4)
+    if (clusteredStrikes.length > 0) {
+      signals.push(`Strike clustering at ${clusteredStrikes.length} levels suggests institutional positioning`)
+    }
+
+    return signals
+  }
+
+  /**
+   * Analyze strike price positioning for institutional hedging patterns
+   */
+  private analyzeStrikePositioning(optionsChain: OptionsChain) {
+    const allContracts = [...optionsChain.calls, ...optionsChain.puts]
+
+    // Find strikes with heavy call activity
+    const callsByStrike = this.groupContractsByStrike(optionsChain.calls)
+    const heavyCallActivity = Object.keys(callsByStrike)
+      .filter(strike => {
+        const contracts = callsByStrike[strike]
+        const totalOI = contracts.reduce((sum, c) => sum + (c.openInterest || 0), 0)
+        return totalOI > 2000
+      })
+      .map(Number)
+      .sort((a, b) => a - b)
+
+    // Find strikes with heavy put activity
+    const putsByStrike = this.groupContractsByStrike(optionsChain.puts)
+    const heavyPutActivity = Object.keys(putsByStrike)
+      .filter(strike => {
+        const contracts = putsByStrike[strike]
+        const totalOI = contracts.reduce((sum, c) => sum + (c.openInterest || 0), 0)
+        return totalOI > 2000
+      })
+      .map(Number)
+      .sort((a, b) => a - b)
+
+    // Detect potential institutional hedges (balanced call/put activity)
+    const institutionalHedges = this.detectInstitutionalHedges(callsByStrike, putsByStrike)
+
+    // Find unusual activity patterns
+    const unusualActivity = this.detectUnusualActivity(allContracts)
+
+    return {
+      heavyCallActivity,
+      heavyPutActivity,
+      institutionalHedges,
+      unusualActivity
+    }
+  }
+
+  /**
+   * Group contracts by strike price
+   */
+  private groupContractsByStrike(contracts: any[]): Record<string, any[]> {
+    const groups: Record<string, any[]> = {}
+
+    contracts.forEach(contract => {
+      const strike = contract.strike.toString()
+      if (!groups[strike]) {
+        groups[strike] = []
+      }
+      groups[strike].push(contract)
+    })
+
+    return groups
+  }
+
+  /**
+   * Detect institutional hedging patterns
+   */
+  private detectInstitutionalHedges(callsByStrike: Record<string, any[]>, putsByStrike: Record<string, any[]>): number[] {
+    const hedges: number[] = []
+
+    // Find strikes with both significant call and put open interest
+    Object.keys(callsByStrike).forEach(strike => {
+      if (putsByStrike[strike]) {
+        const callOI = callsByStrike[strike].reduce((sum, c) => sum + (c.openInterest || 0), 0)
+        const putOI = putsByStrike[strike].reduce((sum, c) => sum + (c.openInterest || 0), 0)
+
+        // Balanced activity suggests hedging
+        if (callOI > 1000 && putOI > 1000 && Math.abs(callOI - putOI) / Math.max(callOI, putOI) < 0.3) {
+          hedges.push(Number(strike))
+        }
+      }
+    })
+
+    return hedges.sort((a, b) => a - b)
+  }
+
+  /**
+   * Detect unusual activity patterns
+   */
+  private detectUnusualActivity(contracts: any[]): string[] {
+    const activity: string[] = []
+
+    // High volume-to-OI ratio suggests fresh positioning
+    const unusualVolumeContracts = contracts.filter(c => {
+      const volume = c.volume || 0
+      const oi = c.openInterest || 1
+      return volume > 100 && (volume / oi) > 0.5
+    })
+
+    if (unusualVolumeContracts.length > 0) {
+      activity.push(`${unusualVolumeContracts.length} contracts with unusual volume/OI ratios indicating fresh positioning`)
+    }
+
+    // Large single-contract positions
+    const largePositions = contracts.filter(c => (c.openInterest || 0) > 5000)
+    if (largePositions.length > 0) {
+      activity.push(`${largePositions.length} large institutional positions (>5K OI) detected`)
+    }
+
+    return activity
   }
 
   /**

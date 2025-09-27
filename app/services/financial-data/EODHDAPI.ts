@@ -421,41 +421,86 @@ export class EODHDAPI implements FinancialDataProvider {
       }
 
       const normalizedSymbol = symbol.toUpperCase()
-      let url = `${this.baseUrl}/marketplace/unicornbay/options/${normalizedSymbol}?api_token=${this.apiKey}&fmt=json`
+      // Use URL-encoded square brackets as required by UnicornBay API
+      let url = `${this.baseUrl}/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=${normalizedSymbol}`
 
-      // Add optional parameters
+      // Add optional parameters using URL-encoded square brackets for UnicornBay filter format
       if (options?.expiration) {
-        url += `&exp_date=${options.expiration}`
+        url += `&filter%5Bexp_date%5D=${options.expiration}`
+      } else {
+        // Filter for active contracts only - no expired options (use today's date)
+        const today = new Date().toISOString().split('T')[0] // Format: YYYY-MM-DD
+        url += `&filter%5Bexp_date_from%5D=${today}`
       }
       if (options?.strikeMin) {
-        url += `&strike_min=${options.strikeMin}`
+        url += `&filter%5Bstrike_gte%5D=${options.strikeMin}`
       }
       if (options?.strikeMax) {
-        url += `&strike_max=${options.strikeMax}`
+        url += `&filter%5Bstrike_lte%5D=${options.strikeMax}`
       }
       if (options?.type) {
-        url += `&type=${options.type}`
-      }
-      if (options?.compact) {
-        url += `&compact=true`
+        url += `&filter%5Btype%5D=${options.type.toUpperCase()}`
       }
 
+      // Set page limit with URL-encoded square brackets
+      if (options?.compact) {
+        url += `&page%5Blimit%5D=10`
+      } else {
+        url += `&page%5Blimit%5D=200`  // Limit to 200 options for connection testing
+      }
+
+      // Add sorting like in working example
+      url += `&sort=exp_date`
+
+      // Add API token at the end to match working example
+      url += `&api_token=${this.apiKey}`
+
+      console.log(`🦄 EODHD UnicornBay: Constructed URL for ${symbol}:`, url)
       const response = await this.makeRequest(url)
 
       if (!response.success || !response.data) {
         console.warn(`⚠️ EODHD UnicornBay: No enhanced options data received for ${symbol}`)
+        console.log(`🦄 EODHD UnicornBay: Response details:`, response)
         return null
       }
 
-      const data = response.data as UnicornBayOptionsResponse
+      const responseData = response.data as any
+      console.log(`🦄 EODHD UnicornBay: Response structure for ${symbol}:`, {
+        hasContracts: !!responseData.contracts,
+        contractCount: responseData.contracts?.length || 0,
+        hasData: !!responseData.data,
+        dataLength: Array.isArray(responseData.data) ? responseData.data.length : 0,
+        dataKeys: Object.keys(responseData || {})
+      })
 
-      if (!data.contracts || data.contracts.length === 0) {
+      // UnicornBay API returns data in a different structure - contracts are in the 'data' array
+      const contracts = responseData.data || responseData.contracts || []
+
+      console.log(`🦄 EODHD UnicornBay: Contracts debug for ${symbol}:`, {
+        contractsType: typeof contracts,
+        contractsLength: Array.isArray(contracts) ? contracts.length : 'not array',
+        firstContract: Array.isArray(contracts) && contracts.length > 0 ? Object.keys(contracts[0] || {}) : 'none'
+      })
+
+      if (!contracts || !Array.isArray(contracts) || contracts.length === 0) {
         console.warn(`⚠️ EODHD UnicornBay: No contracts in response for ${symbol}`)
+        console.log(`🦄 EODHD UnicornBay: Full response:`, JSON.stringify(responseData, null, 2))
         return null
+      }
+
+      // Construct the data object in the expected format
+      const data = {
+        symbol: symbol.toUpperCase(),
+        timestamp: responseData.meta?.timestamp || Date.now(),
+        contracts: contracts,
+        metadata: responseData.meta
       }
 
       // Transform UnicornBay contracts to our standard format
-      const transformUnicornBayContract = (contract: UnicornBayOptionsContract): OptionsContract => {
+      // UnicornBay uses JSON:API format with id, type, attributes structure
+      const transformUnicornBayContract = (contractData: any): OptionsContract => {
+        // Extract the actual contract data from the attributes field
+        const contract = contractData.attributes || contractData
         // Calculate liquidity score based on volume and spread
         const liquidityScore = this.calculateLiquidityScore(contract)
 
@@ -513,20 +558,43 @@ export class EODHDAPI implements FinancialDataProvider {
         }
       }
 
-      // Separate calls and puts
-      const calls = data.contracts
-        .filter(c => c.type === 'Call')
+      // Filter for current/future contracts only (exclude expired contracts)
+      const currentDate = new Date()
+      const validContracts = data.contracts.filter(c => {
+        const contract = c.attributes || c
+        if (!contract.exp_date) return false
+        const expDate = new Date(contract.exp_date)
+        return expDate > currentDate // Only include non-expired contracts
+      })
+
+      console.log(`🦄 EODHD UnicornBay: Filtered ${data.contracts.length} total to ${validContracts.length} current contracts for ${symbol}`)
+
+      // Separate calls and puts - handle JSON:API format with date filtering
+      const calls = validContracts
+        .filter(c => {
+          const contract = c.attributes || c
+          return contract.type?.toLowerCase() === 'call'
+        })
         .map(transformUnicornBayContract)
         .sort((a, b) => a.strike - b.strike)
 
-      const puts = data.contracts
-        .filter(c => c.type === 'Put')
+      const puts = validContracts
+        .filter(c => {
+          const contract = c.attributes || c
+          return contract.type?.toLowerCase() === 'put'
+        })
         .map(transformUnicornBayContract)
         .sort((a, b) => a.strike - b.strike)
 
-      // Extract unique expiration dates and strikes
-      const expirationDates = Array.from(new Set(data.contracts.map(c => c.exp_date))).sort()
-      const strikes = Array.from(new Set(data.contracts.map(c => c.strike))).sort((a, b) => a - b)
+      // Extract unique expiration dates and strikes - handle JSON:API format with date filtering
+      const expirationDates = Array.from(new Set(validContracts.map(c => {
+        const contract = c.attributes || c
+        return contract.exp_date
+      }))).sort()
+      const strikes = Array.from(new Set(validContracts.map(c => {
+        const contract = c.attributes || c
+        return contract.strike
+      }))).sort((a, b) => a - b)
 
       console.log(`✅ EODHD UnicornBay: Retrieved ${calls.length} calls, ${puts.length} puts for ${symbol}`)
 
@@ -550,7 +618,7 @@ export class EODHDAPI implements FinancialDataProvider {
    * Calculate liquidity score for UnicornBay options contract
    * Combines volume, open interest, and bid-ask spread metrics
    */
-  private calculateLiquidityScore(contract: UnicornBayOptionsContract): number {
+  private calculateLiquidityScore(contract: any): number {
     const volumeScore = Math.min(contract.volume / 1000, 1) // Normalize to 0-1
     const oiScore = Math.min(contract.open_interest / 5000, 1) // Normalize to 0-1
     const spreadScore = Math.max(0, 1 - (contract.spread_percent / 10)) // Inverse of spread %

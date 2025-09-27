@@ -22,6 +22,7 @@ import SentimentAnalysisService from '../financial-data/SentimentAnalysisService
 import { VWAPService } from '../financial-data/VWAPService'
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
+import { OptionsDataService } from '../financial-data/OptionsDataService'
 import { RedisCache } from '../cache/RedisCache'
 
 interface MarketDataPoint {
@@ -75,6 +76,7 @@ interface OptionsDataPoint {
     vega: number
   }
   volumeDivergence?: number // Ratio of options volume to stock volume
+  maxPain?: number // Max pain strike price
 }
 
 export class AlgorithmEngine {
@@ -85,6 +87,7 @@ export class AlgorithmEngine {
   private vwapService?: VWAPService
   private macroeconomicService?: MacroeconomicAnalysisService
   private institutionalService?: InstitutionalDataService
+  private optionsService?: OptionsDataService
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
@@ -94,7 +97,8 @@ export class AlgorithmEngine {
     sentimentService?: SentimentAnalysisService,
     vwapService?: VWAPService,
     macroeconomicService?: MacroeconomicAnalysisService,
-    institutionalService?: InstitutionalDataService
+    institutionalService?: InstitutionalDataService,
+    optionsService?: OptionsDataService
   ) {
     this.fallbackDataService = fallbackDataService
     this.factorLibrary = factorLibrary
@@ -103,6 +107,7 @@ export class AlgorithmEngine {
     this.vwapService = vwapService
     this.macroeconomicService = macroeconomicService
     this.institutionalService = institutionalService
+    this.optionsService = optionsService
   }
 
   /**
@@ -651,22 +656,78 @@ export class AlgorithmEngine {
           console.log(`📊 Pre-fetching options data for ${symbol}...`)
           const { OptionsDataService } = await import('../financial-data/OptionsDataService')
           const optionsService = new OptionsDataService()
-          const optionsAnalysis = await optionsService.getOptionsAnalysis(symbol)
 
-          if (optionsAnalysis && optionsAnalysis.currentRatio) {
-            // Map OptionsAnalysis to OptionsDataPoint structure
-            optionsData = {
-              putCallRatio: optionsAnalysis.currentRatio.volumeRatio,
-              impliedVolatilityPercentile: undefined, // Not available in current interface
-              optionsFlow: {
-                sentiment: optionsAnalysis.sentiment === 'greed' ? 0.7 : optionsAnalysis.sentiment === 'fear' ? -0.7 : 0,
-                volume: optionsAnalysis.currentRatio.totalCallVolume + optionsAnalysis.currentRatio.totalPutVolume,
-                openInterest: optionsAnalysis.currentRatio.totalCallOpenInterest + optionsAnalysis.currentRatio.totalPutOpenInterest
-              },
-              greeks: undefined, // Not available in current interface
-              volumeDivergence: undefined // Not available in current interface
+          // Fetch both analysis and chain data for comprehensive metrics
+          const [optionsAnalysis, optionsChain] = await Promise.allSettled([
+            optionsService.getOptionsAnalysis(symbol),
+            optionsService.getOptionsChain(symbol)
+          ])
+
+          const analysis = optionsAnalysis.status === 'fulfilled' ? optionsAnalysis.value : null
+          const chain = optionsChain.status === 'fulfilled' ? optionsChain.value : null
+
+          if (analysis && analysis.currentRatio) {
+            // Calculate enhanced options metrics from chain data
+            let impliedVolatilityPercentile: number | undefined
+            let volumeDivergence: number | undefined
+            let maxPainCalculation: number | undefined
+            let averageGreeks: { delta: number; gamma: number; theta: number; vega: number } | undefined
+
+            if (chain) {
+              // Calculate IV percentile from historical data (approximate)
+              const currentIV = chain.calls.concat(chain.puts)
+                .filter(c => c.impliedVolatility && c.impliedVolatility > 0)
+                .reduce((sum, c, _, arr) => sum + (c.impliedVolatility! / arr.length), 0)
+
+              // Estimate IV percentile (simplified calculation)
+              impliedVolatilityPercentile = Math.min(95, Math.max(5, currentIV * 200)) // Rough estimate
+
+              // Calculate volume divergence (options volume vs stock volume if available)
+              const totalOptionsVolume = chain.calls.concat(chain.puts)
+                .reduce((sum, c) => sum + (c.volume || 0), 0)
+              if (marketData.volume > 0) {
+                volumeDivergence = totalOptionsVolume / marketData.volume
+              }
+
+              // Extract max pain from chain summary if available
+              if ((chain as any).summary?.maxPain) {
+                maxPainCalculation = (chain as any).summary.maxPain
+              }
+
+              // Calculate average Greeks from active contracts
+              const activeContracts = chain.calls.concat(chain.puts)
+                .filter(c => (c.volume || 0) > 0 && c.delta !== undefined)
+
+              if (activeContracts.length > 0) {
+                averageGreeks = {
+                  delta: activeContracts.reduce((sum, c) => sum + (c.delta || 0), 0) / activeContracts.length,
+                  gamma: activeContracts.reduce((sum, c) => sum + (c.gamma || 0), 0) / activeContracts.length,
+                  theta: activeContracts.reduce((sum, c) => sum + (c.theta || 0), 0) / activeContracts.length,
+                  vega: activeContracts.reduce((sum, c) => sum + (c.vega || 0), 0) / activeContracts.length
+                }
+              }
             }
-            console.log(`📊 Options data pre-fetched for ${symbol}: P/C Ratio ${optionsData.putCallRatio?.toFixed(2) || 'N/A'}, Sentiment: ${optionsAnalysis.sentiment}`)
+
+            // Map OptionsAnalysis to enhanced OptionsDataPoint structure
+            optionsData = {
+              putCallRatio: analysis.currentRatio.volumeRatio,
+              impliedVolatilityPercentile,
+              optionsFlow: {
+                sentiment: analysis.sentiment === 'greed' ? 0.7 : analysis.sentiment === 'fear' ? -0.7 : 0,
+                volume: analysis.currentRatio.totalCallVolume + analysis.currentRatio.totalPutVolume,
+                openInterest: analysis.currentRatio.totalCallOpenInterest + analysis.currentRatio.totalPutOpenInterest
+              },
+              greeks: averageGreeks,
+              volumeDivergence,
+              maxPain: maxPainCalculation
+            }
+
+            console.log(`📊 Enhanced options data pre-fetched for ${symbol}:`)
+            console.log(`   P/C Ratio: ${optionsData.putCallRatio?.toFixed(2) || 'N/A'}`)
+            console.log(`   IV Percentile: ${optionsData.impliedVolatilityPercentile?.toFixed(1) || 'N/A'}%`)
+            console.log(`   Volume Divergence: ${optionsData.volumeDivergence?.toFixed(2) || 'N/A'}`)
+            console.log(`   Max Pain: $${optionsData.maxPain?.toFixed(2) || 'N/A'}`)
+            console.log(`   Sentiment: ${analysis.sentiment}`)
           } else {
             optionsData = undefined
             console.log(`📊 No options data available for ${symbol}`)
@@ -843,6 +904,24 @@ export class AlgorithmEngine {
               if (optionsFlowScore !== null && optionsFlowScore !== 0.5) {
                 componentFactors['options_flow_score'] = optionsFlowScore
                 console.log(`✅ Options flow score for ${symbol}: ${optionsFlowScore.toFixed(3)} - TRACKED`)
+              }
+
+              const maxPainScore = await this.factorLibrary.calculateFactor('max_pain_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (maxPainScore !== null && maxPainScore !== 0.5) {
+                componentFactors['max_pain_score'] = maxPainScore
+                console.log(`✅ Max pain score for ${symbol}: ${maxPainScore.toFixed(3)} - TRACKED`)
+              }
+
+              const ivPercentileScore = await this.factorLibrary.calculateFactor('iv_percentile_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (ivPercentileScore !== null && ivPercentileScore !== 0.5) {
+                componentFactors['iv_percentile_score'] = ivPercentileScore
+                console.log(`✅ IV percentile score for ${symbol}: ${ivPercentileScore.toFixed(3)} - TRACKED`)
+              }
+
+              const volumeDivergenceScore = await this.factorLibrary.calculateFactor('volume_divergence_score', symbol, marketData, fundamentalData, enhancedTechnicalData)
+              if (volumeDivergenceScore !== null && volumeDivergenceScore !== 0.5) {
+                componentFactors['volume_divergence_score'] = volumeDivergenceScore
+                console.log(`✅ Volume divergence score for ${symbol}: ${volumeDivergenceScore.toFixed(3)} - TRACKED`)
               }
             }
 

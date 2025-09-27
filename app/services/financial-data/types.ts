@@ -456,6 +456,47 @@ export interface OptionsAnalysis {
   timestamp: number
   source: string
   freeTierLimited?: boolean
+  timeBasedAnalysis?: TimeBasedOptionsAnalysis
+}
+
+/**
+ * Time-based options analysis for detecting institutional sentiment patterns
+ * Based on expiration timing strategy: short-term (sentiment/volatility),
+ * medium-term (institutional positioning), long-term (strategic confidence)
+ */
+export interface TimeBasedOptionsAnalysis {
+  shortTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    description: string
+  }
+  mediumTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    institutionalSignals: string[]
+    description: string
+  }
+  longTerm: {
+    daysToExpiry: number
+    sentiment: 'bullish' | 'bearish' | 'neutral'
+    volumeRatio: number
+    impliedVolatility: number
+    confidence: number
+    leapsAnalysis: string
+    description: string
+  }
+  strikePositioning: {
+    heavyCallActivity: number[]
+    heavyPutActivity: number[]
+    institutionalHedges: number[]
+    unusualActivity: string[]
+  }
 }
 
 /**

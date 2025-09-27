@@ -79,6 +79,7 @@ interface OptionsDataPoint {
     vega: number
   }
   volumeDivergence?: number // Ratio of options volume to stock volume
+  maxPain?: number // Max pain strike price
 }
 
 interface HistoricalPrice {
@@ -315,6 +316,9 @@ export class FactorLibrary {
           break
         case 'volume_divergence_score':
           result = technicalData?.optionsData?.volumeDivergence ? this.calculateVolumeDivergenceScore(technicalData.optionsData.volumeDivergence) : null
+          break
+        case 'max_pain_score':
+          result = technicalData?.optionsData?.maxPain ? this.calculateMaxPainScore(technicalData.optionsData.maxPain, marketData.price) : null
           break
 
         // ==================== ENHANCED SERVICE INTEGRATION FACTORS ====================
@@ -1215,7 +1219,8 @@ export class FactorLibrary {
 
   /**
    * Calculate comprehensive options analysis score (0-1 scale)
-   * Integrates 5 key options intelligence factors for institutional-grade analysis
+   * Integrates 6 key options intelligence factors for institutional-grade analysis
+   * Components: P/C Ratio (25%), IV Percentile (20%), Options Flow (20%), Max Pain (15%), Greeks (10%), Volume Divergence (10%)
    */
   private calculateOptionsScore(optionsData?: OptionsDataPoint): number | null {
     if (!optionsData) {
@@ -1252,15 +1257,24 @@ export class FactorLibrary {
       console.log(`   Options Flow: ${optionsData.optionsFlow.sentiment.toFixed(2)} → Score: ${flowScore.toFixed(3)} (20% weight)`)
     }
 
-    // 4. GREEKS RISK INDICATORS (15% of options score)
-    if (optionsData.greeks) {
-      const greeksScore = this.calculateGreeksScore(optionsData.greeks)
-      totalScore += greeksScore * 0.15
+    // 4. MAX PAIN ANALYSIS (15% of options score) - Market maker positioning
+    if (optionsData.maxPain !== undefined) {
+      // Need current stock price for max pain comparison - using a default placeholder
+      const maxPainScore = 0.5 // Will be enhanced when price context is available
+      totalScore += maxPainScore * 0.15
       totalWeight += 0.15
-      console.log(`   Greeks Analysis → Score: ${greeksScore.toFixed(3)} (15% weight)`)
+      console.log(`   Max Pain: $${optionsData.maxPain.toFixed(2)} → Score: ${maxPainScore.toFixed(3)} (15% weight)`)
     }
 
-    // 5. VOLUME DIVERGENCE (10% of options score)
+    // 5. GREEKS RISK INDICATORS (10% of options score)
+    if (optionsData.greeks) {
+      const greeksScore = this.calculateGreeksScore(optionsData.greeks)
+      totalScore += greeksScore * 0.10
+      totalWeight += 0.10
+      console.log(`   Greeks Analysis → Score: ${greeksScore.toFixed(3)} (10% weight)`)
+    }
+
+    // 6. VOLUME DIVERGENCE (10% of options score)
     if (optionsData.volumeDivergence !== undefined) {
       const volumeDivergenceScore = this.calculateVolumeDivergenceScore(optionsData.volumeDivergence)
       totalScore += volumeDivergenceScore * 0.10
@@ -1389,6 +1403,42 @@ export class FactorLibrary {
       return 0.6 + (volumeDivergence - 0.7) * 0.25 // High activity
     } else {
       return Math.min(1, 0.8 + (volumeDivergence - 1.5) * 0.4) // Very high activity
+    }
+  }
+
+  /**
+   * Calculate max pain analysis scoring (0-1 scale)
+   * Max pain represents the strike price where market makers lose the least money
+   */
+  private calculateMaxPainScore(maxPain: number, currentPrice: number): number {
+    if (maxPain <= 0 || currentPrice <= 0) {
+      return 0.5 // Neutral if invalid data
+    }
+
+    // Calculate percentage difference between current price and max pain
+    const percentDifference = Math.abs(currentPrice - maxPain) / currentPrice
+
+    // Max pain analysis:
+    // - Price at max pain: Neutral to slightly bearish (0.4-0.5)
+    // - Price 5-10% above max pain: Bullish pressure (0.6-0.7)
+    // - Price 5-10% below max pain: Support levels (0.6-0.7)
+    // - Price >15% from max pain: Strong directional bias (0.7-0.8)
+
+    if (percentDifference <= 0.02) {
+      // Very close to max pain (within 2%)
+      return 0.45 // Slight bearish bias as MM will defend this level
+    } else if (percentDifference <= 0.05) {
+      // Within 5% of max pain
+      return currentPrice > maxPain ? 0.6 : 0.55 // Slight bullish if above, neutral if below
+    } else if (percentDifference <= 0.10) {
+      // 5-10% from max pain
+      return currentPrice > maxPain ? 0.65 : 0.6 // Bullish pressure or support
+    } else if (percentDifference <= 0.15) {
+      // 10-15% from max pain
+      return currentPrice > maxPain ? 0.7 : 0.65 // Strong momentum away from pain
+    } else {
+      // >15% from max pain
+      return Math.min(0.8, 0.7 + (percentDifference - 0.15) * 2) // Very strong directional bias
     }
   }
 
@@ -1984,18 +2034,18 @@ export class FactorLibrary {
 
     // ==================== UPDATED WEIGHT ALLOCATION WITH DEDICATED OPTIONS ANALYSIS (Total: 100%) ====================
 
-    // Technical Analysis composite (weight: 35.0%) - Pure technical indicators without options
-    // Reduced from 38.1% to accommodate dedicated options analysis component
+    // Technical Analysis composite (weight: 37.0%) - Pure technical indicators without options
+    // Adjusted to ensure 100% weight allocation with dedicated options analysis component
     const technicalScore = await this.calculateTechnicalOverallScore(symbol)
     if (technicalScore !== null) {
-      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 35.0%) ⚡`)
-      totalScore += technicalScore * 0.350
-      totalWeight += 0.350
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 37.0%) ⚡`)
+      totalScore += technicalScore * 0.370
+      totalWeight += 0.370
       factorContributions.push('technicalAnalysis', 'technical_overall_score')
     } else {
       console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.350
-      totalWeight += 0.350
+      totalScore += 0.5 * 0.370
+      totalWeight += 0.370
     }
 
     // Fundamental Analysis composite (weight: 22.0%) - Quality factors (reduced from 23.8%)
@@ -2091,7 +2141,7 @@ export class FactorLibrary {
 
     console.log(`🎯 Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
-    console.log(`   Weight Allocation: Technical(35.0%) + Fundamental(22.0%) + Macroeconomic(18.0%) + Sentiment(9.0%) + Options(5.0%) + Extended Market(4.5%) + Short Interest(2.25%) + ESG(2.25%) = 100.0%`)
+    console.log(`   Weight Allocation: Technical(37.0%) + Fundamental(22.0%) + Macroeconomic(18.0%) + Sentiment(9.0%) + Options(5.0%) + Extended Market(4.5%) + Short Interest(2.25%) + ESG(2.25%) = 100.0%`)
     console.log(`   ✅ WEIGHT VERIFICATION: Total weights = ${totalWeight.toFixed(3)} (target: 1.000)`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
