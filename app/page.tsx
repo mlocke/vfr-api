@@ -319,14 +319,6 @@ export default function Home() {
                     <div className="source-status live"></div>
                   </div>
                   <div className="data-source-card premium">
-                    <div className="source-icon">🤖</div>
-                    <div className="source-info">
-                      <h4 className="source-name">Alpha Vantage</h4>
-                      <p className="source-desc">AI-optimized intelligence</p>
-                    </div>
-                    <div className="source-status live"></div>
-                  </div>
-                  <div className="data-source-card premium">
                     <div className="source-icon">📈</div>
                     <div className="source-info">
                       <h4 className="source-name">Financial Modeling Prep</h4>

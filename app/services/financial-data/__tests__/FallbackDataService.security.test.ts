@@ -8,7 +8,6 @@ import SecurityValidator, { SecurityValidator as SecurityValidatorClass } from '
 
 // Mock the providers to control test behavior
 jest.mock('../PolygonAPI')
-jest.mock('../AlphaVantageAPI')
 jest.mock('../YahooFinanceAPI')
 jest.mock('../TwelveDataAPI')
 jest.mock('../FinancialModelingPrepAPI')
@@ -25,7 +24,6 @@ describe('FallbackDataService Security Integration', () => {
 
     // Mock environment variables
     process.env.FMP_API_KEY = 'test_key'
-    process.env.ALPHA_VANTAGE_API_KEY = 'test_key'
     process.env.TWELVE_DATA_API_KEY = 'test_key'
     process.env.POLYGON_API_KEY = 'test_key'
   })

@@ -61,7 +61,6 @@ const DATA_TYPE_NAMES: { [key: string]: string } = {
 
 const PROVIDER_NAMES: { [key: string]: string } = {
   polygon: 'Polygon.io',
-  alphavantage: 'Alpha Vantage',
   fmp: 'Financial Modeling Prep',
   yahoo: 'Yahoo Finance',
   twelvedata: 'TwelveData',

@@ -7,7 +7,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { financialDataService } from '../../../services/financial-data/FinancialDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
-import { AlphaVantageAPI } from '../../../services/financial-data/AlphaVantageAPI'
 import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
@@ -51,7 +50,6 @@ interface TestResult {
 // Data source configuration mapping
 const DATA_SOURCE_CONFIGS = {
   polygon: { name: 'Polygon.io API', timeout: 5000 },
-  alphavantage: { name: 'Alpha Vantage API', timeout: 10000 },
   yahoo: { name: 'Yahoo Finance API', timeout: 3000 },
   fmp: { name: 'Financial Modeling Prep API', timeout: 8000 },
   sec_edgar: { name: 'SEC EDGAR API', timeout: 15000 },
@@ -276,7 +274,7 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
     // For implemented data sources, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
         case 'polygon':
@@ -284,9 +282,6 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           // Log rate limiting status during health check
           const rateLimitInfo = apiInstance.getRateLimitStatus()
           console.log('🔴 Polygon rate limit status:', rateLimitInfo)
-          break
-        case 'alphavantage':
-          apiInstance = new AlphaVantageAPI(undefined, timeout, true)
           break
         case 'yahoo':
           apiInstance = new YahooFinanceAPI()
@@ -425,11 +420,6 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         testData = await yahooAPI.getStockPrice('AAPL')
         break
 
-      case 'alphavantage':
-        console.log('🟢 Making real Alpha Vantage call...')
-        const alphaAPI = new AlphaVantageAPI(undefined, timeout, true)
-        testData = await alphaAPI.getStockPrice('AAPL')
-        break
 
       case 'fmp':
         console.log('🔵 Making real Financial Modeling Prep call...')
@@ -886,7 +876,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -932,19 +922,6 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
           sentiment: 'Options sentiment analysis',
           limitations: 'Reduced data limits, no historical data'
         }
-      },
-      alphavantage: {
-        baseUrl: 'https://www.alphavantage.co',
-        endpoints: [
-          { path: '/query?function=TIME_SERIES_DAILY', description: 'Daily time series', method: 'GET' },
-          { path: '/query?function=GLOBAL_QUOTE', description: 'Real-time quote', method: 'GET' },
-          { path: '/query?function=OVERVIEW', description: 'Company overview', method: 'GET' },
-          { path: '/query?function=INCOME_STATEMENT', description: 'Income statement', method: 'GET' },
-          { path: '/query?function=BALANCE_SHEET', description: 'Balance sheet', method: 'GET' }
-        ],
-        authentication: 'API Key required',
-        documentation: 'https://www.alphavantage.co/documentation/',
-        rateLimit: '5 requests per minute (free tier)'
       },
       yahoo: {
         baseUrl: 'https://query1.finance.yahoo.com',
@@ -1177,7 +1154,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
     const startTime = Date.now()
 
     // For implemented data sources, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    if (['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
@@ -1185,9 +1162,6 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
       switch (dataSourceId) {
         case 'polygon':
           apiInstance = new PolygonAPI()
-          break
-        case 'alphavantage':
-          apiInstance = new AlphaVantageAPI(undefined, timeout, true)
           break
         case 'yahoo':
           apiInstance = new YahooFinanceAPI()

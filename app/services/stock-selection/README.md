@@ -115,7 +115,7 @@ Environment-based configuration with production-ready defaults:
   // Execution metadata
   metadata: {
     algorithmUsed: "composite",
-    dataSourcesUsed: ["polygon", "alphavantage", "fmp", "yahoo"],
+    dataSourcesUsed: ["polygon", "fmp", "yahoo"],
     qualityScore: 0.85
   }
 }

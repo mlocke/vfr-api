@@ -95,10 +95,9 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
         minFreshness: 0.8,
         minCompleteness: 0.6
       },
-      enrichmentSources: ['polygon', 'alphavantage', 'yahoo', 'news_sentiment'],
+      enrichmentSources: ['polygon', 'yahoo', 'news_sentiment'],
       priorityWeights: {
         'polygon': 1.0,
-        'alphavantage': 0.8,
         'yahoo': 0.6,
         'news_sentiment': 0.4
       },
@@ -268,9 +267,6 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
       case 'polygon':
         data = await this.fetchPolygonData(symbol)
         break
-      case 'alphavantage':
-        data = await this.fetchAlphaVantageData(symbol)
-        break
       case 'yahoo':
         data = await this.fetchYahooData(symbol)
         break
@@ -317,17 +313,8 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
   }
 
   /**
-   * Fetch data from Alpha Vantage (placeholder)
+   * Future data source integrations can be added here
    */
-  private async fetchAlphaVantageData(symbol: string): Promise<any> {
-    // This would implement actual Alpha Vantage API calls
-    return {
-      price: 100 + Math.random() * 200,
-      volume: Math.floor(Math.random() * 1000000),
-      timestamp: Date.now(),
-      source: 'alphavantage'
-    }
-  }
 
   /**
    * Fetch data from Yahoo Finance (placeholder)

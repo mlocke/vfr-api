@@ -4,7 +4,6 @@
  */
 
 import { PolygonAPI } from './PolygonAPI'
-import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { SectorPerformanceRanking, SectorRankingResponse, SectorHistoricalData } from './types'
@@ -42,7 +41,6 @@ export interface SectorDataResponse {
 
 export class SectorDataService {
   private polygon: PolygonAPI
-  private alphaVantage: AlphaVantageAPI
   private yahooFinance: YahooFinanceAPI
   private fmp: FinancialModelingPrepAPI
   private readonly errorHandler: ReturnType<typeof createServiceErrorHandler>
@@ -62,7 +60,6 @@ export class SectorDataService {
 
   constructor() {
     this.polygon = new PolygonAPI()
-    this.alphaVantage = new AlphaVantageAPI()
     this.yahooFinance = new YahooFinanceAPI()
     this.fmp = new FinancialModelingPrepAPI()
     this.errorHandler = createServiceErrorHandler('SectorDataService')
@@ -126,10 +123,10 @@ export class SectorDataService {
       sectors: sectors.sort((a, b) => b.performance - a.performance), // Sort by performance
       timestamp: new Date().toISOString(),
       dataQuality: 'real',
-      source: 'Multiple APIs (Polygon.io, Alpha Vantage, Yahoo Finance, FMP)',
+      source: 'Multiple APIs (Polygon.io, TwelveData, Yahoo Finance, FMP)',
       apiStatus: {
         polygon: apiStatus['polygon'] ?? false,
-        alphaVantage: apiStatus['alphaVantage'] ?? false,
+        twelveData: apiStatus['twelveData'] ?? false,
         yahooFinance: apiStatus['yahooFinance'] ?? false,
         fmp: apiStatus['fmp'] ?? false
       },
@@ -199,10 +196,10 @@ export class SectorDataService {
       }
     }
 
-    // Try Alpha Vantage as fallback
+    // Try FMP as fallback
     try {
-      const stockData = await this.alphaVantage.getStockPrice(symbol)
-      const marketData = await this.alphaVantage.getMarketData(symbol)
+      const stockData = await this.fmp.getStockPrice(symbol)
+      const marketData = await this.fmp.getMarketData(symbol)
 
       if (stockData && marketData) {
         // Verify data quality - check for valid change calculations
@@ -223,7 +220,7 @@ export class SectorDataService {
             finalChangePercent = Number(((finalChange / yesterdaysPrice) * 100).toFixed(2))
           } else {
             // If we can't get yesterday's data, mark as rate limited
-            errors.push('Alpha Vantage: Missing historical data for change calculation')
+            errors.push('TwelveData: Missing historical data for change calculation')
             finalChange = 0
             finalChangePercent = 0
           }
@@ -240,16 +237,16 @@ export class SectorDataService {
           change: finalChange,
           changePercent: finalChangePercent,
           dataStatus: errors.length > 0 ? 'rate-limited' : 'live',
-          apiSource: 'Alpha Vantage',
+          apiSource: 'TwelveData',
           errors: errors.length > 0 ? errors : undefined
         }
       } else {
-        errors.push('Alpha Vantage: No data returned')
+        errors.push('TwelveData: No data returned')
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-      errors.push(`Alpha Vantage: ${errorMsg}`)
-      console.warn(`Alpha Vantage failed for ${symbol}:`, error)
+      errors.push(`TwelveData: ${errorMsg}`)
+      console.warn(`TwelveData failed for ${symbol}:`, error)
     }
 
     // Fallback to Yahoo Finance
@@ -353,16 +350,14 @@ export class SectorDataService {
   async healthCheck(): Promise<{ [key: string]: boolean }> {
     const checks = await Promise.allSettled([
       this.polygon.healthCheck(),
-      this.alphaVantage.healthCheck(),
       this.yahooFinance.healthCheck(),
       this.fmp.healthCheck()
     ])
 
     return {
       polygon: checks[0].status === 'fulfilled' ? checks[0].value : false,
-      alphaVantage: checks[1].status === 'fulfilled' ? checks[1].value : false,
-      yahooFinance: checks[2].status === 'fulfilled' ? checks[2].value : false,
-      fmp: checks[3].status === 'fulfilled' ? checks[3].value : false
+      yahooFinance: checks[1].status === 'fulfilled' ? checks[1].value : false,
+      fmp: checks[2].status === 'fulfilled' ? checks[2].value : false
     }
   }
 

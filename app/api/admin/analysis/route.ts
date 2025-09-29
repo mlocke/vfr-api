@@ -543,7 +543,7 @@ function buildAnalysisInputServicesMetadata(stocks: AdminAnalysisStockData[]): a
     coreFinancialData: {
       enabled: true,
       status: 'active' as const,
-      description: 'Primary financial data sources (Polygon, Alpha Vantage, FMP)',
+      description: 'Primary financial data sources (Polygon, FMP, TwelveData)',
       components: {
         stockPrices: { enabled: true, coverage: '100%', latency: '<1s' },
         companyInfo: { enabled: true, coverage: '95%', latency: '<2s' },

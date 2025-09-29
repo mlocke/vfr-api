@@ -31,7 +31,6 @@ interface TestResult {
 // Provider configuration mapping (direct API providers)
 const PROVIDER_CONFIGS = {
   polygon: { name: 'Polygon.io', timeout: 5000 },
-  alphavantage: { name: 'Alpha Vantage', timeout: 10000 },
   yahoo: { name: 'Yahoo Finance', timeout: 3000 },
   // Legacy configs for compatibility (will return not implemented)
   fmp: { name: 'Financial Modeling Prep', timeout: 8000 },
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
     console.log('📊 Data retrieval will use:', {
       polygon: 'REAL Polygon.io REST API for AAPL',
       yahoo: 'REAL Yahoo Finance API for AAPL',
-      alphavantage: 'REAL Alpha Vantage API for AAPL',
       others: 'Mock data with clear labeling'
     })
 
@@ -217,7 +215,7 @@ async function testProviderConnection(providerId: string, timeout: number): Prom
     console.log(`🔗 Testing connection to ${providerId}...`)
 
     // For implemented providers, use real health checks
-    if (['polygon', 'alphavantage', 'yahoo'].includes(providerId)) {
+    if (['polygon', 'yahoo'].includes(providerId)) {
       const health = await financialDataService.healthCheck()
       const providerHealth = health.find(h => h.name.toLowerCase().includes(providerId))
       return providerHealth?.healthy || false
@@ -289,28 +287,6 @@ async function testProviderData(providerId: string, timeout: number): Promise<an
         }
         break
 
-      case 'alphavantage':
-        // Test Alpha Vantage data - try real call
-        try {
-          console.log('🟢 Attempting real Alpha Vantage call...')
-          testData = await financialDataService.getStockPrice('AAPL', 'alphavantage')
-          if (testData) {
-            console.log('✅ REAL Alpha Vantage data retrieved:', testData)
-          } else {
-            throw new Error('No data returned from Alpha Vantage')
-          }
-        } catch (error) {
-          console.warn('⚠️ Alpha Vantage real call failed, using mock data:', error)
-          testData = {
-            symbol: 'AAPL',
-            price: 150.25 + Math.random() * 10,
-            change: (Math.random() - 0.5) * 5,
-            changePercent: (Math.random() - 0.5) * 3,
-            source: 'alphavantage-mock',
-            note: 'Mock data due to real API failure'
-          }
-        }
-        break
 
       case 'fred':
         // Test FRED economic data (not implemented)
@@ -352,7 +328,7 @@ async function testProviderData(providerId: string, timeout: number): Promise<an
     // Add timing metadata
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'alphavantage', 'yahoo'].includes(providerId) && !testData.error
+      testData.isRealData = ['polygon', 'yahoo'].includes(providerId) && !testData.error
     }
 
     return testData
@@ -375,7 +351,7 @@ async function testProviderPerformance(providerId: string, timeout: number): Pro
     const startTime = Date.now()
 
     // For implemented providers, do real performance testing
-    if (['polygon', 'alphavantage', 'yahoo'].includes(providerId)) {
+    if (['polygon', 'yahoo'].includes(providerId)) {
       const requests = []
 
       // Make 5 rapid requests to test performance

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       timeframes = ['1d'],
       batchSize = 50,
       delayBetweenBatches = 1000,
-      preferredSources = ['Polygon', 'Alpha Vantage', 'Yahoo Finance'],
+      preferredSources = ['Polygon', 'TwelveData', 'Yahoo Finance'],
       validateData = true,
       skipExisting = true
     } = body

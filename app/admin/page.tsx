@@ -57,16 +57,6 @@ export default function AdminDashboard() {
 			timeout: 5000,
 		},
 		{
-			id: "alphavantage",
-			name: "Alpha Vantage API",
-			category: "financial",
-			description: "Financial market intelligence",
-			status: "online",
-			enabled: true,
-			rateLimit: 500,
-			timeout: 10000,
-		},
-		{
 			id: "fmp",
 			name: "Financial Modeling Prep API (Starter Plan)",
 			category: "financial",

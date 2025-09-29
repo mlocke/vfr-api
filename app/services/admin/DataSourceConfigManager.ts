@@ -170,21 +170,6 @@ export class DataSourceConfigManager {
     })
 
     // Commercial Data Sources (when direct API integrations are implemented)
-    this.dataSources.set('alphavantage', {
-      id: 'alphavantage',
-      name: 'Alpha Vantage',
-      type: 'commercial',
-      status: 'offline', // Disabled until direct API integration
-      enabled: false,
-      endpoint: 'https://www.alphavantage.co/query',
-      hasApiKey: !!process.env.ALPHA_VANTAGE_API_KEY,
-      requiresAuth: true,
-      rateLimit: 500,
-      timeout: 10000,
-      retryAttempts: 2,
-      category: 'stock_data',
-      features: ['stock_quotes', 'forex', 'crypto', 'technical_indicators', 'earnings_data']
-    })
 
     this.dataSources.set('polygon', {
       id: 'polygon',

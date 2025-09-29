@@ -605,10 +605,9 @@ export class DatabaseMigrationService {
   private getSourcePriority(source: string): number {
     const priorities: Record<string, number> = {
       'Polygon': 1,
-      'Alpha Vantage': 2,
-      'Financial Modeling Prep': 3,
-      'Twelve Data': 4,
-      'Yahoo Finance': 5
+      'Financial Modeling Prep': 2,
+      'Twelve Data': 3,
+      'Yahoo Finance': 4
     }
     return priorities[source] || 5
   }

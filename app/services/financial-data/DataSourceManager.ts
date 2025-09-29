@@ -5,7 +5,6 @@
  */
 
 import { PolygonAPI } from './PolygonAPI'
-import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
@@ -19,7 +18,6 @@ import { StockData, CompanyInfo, FinancialDataProvider, OptionsContract, Options
 
 export type DataSourceProvider =
   | 'polygon'
-  | 'alphavantage'
   | 'yahoo'
   | 'fmp'
   | 'twelvedata'
@@ -74,16 +72,6 @@ export class DataSourceManager {
       rateLimit: '5 req/min (free), unlimited (paid)',
       description: 'Polygon.io - Premium real-time and historical market data',
       supportedDataTypes: ['stock_price', 'company_info', 'options_data', 'options_chain', 'put_call_ratio', 'options_analysis', 'fundamentals', 'market_data']
-    },
-    alphavantage: {
-      enabled: true,
-      priority: 2,
-      costTier: 'free',
-      reliability: 0.85,
-      dataQuality: 0.90,
-      rateLimit: '25 req/day (free)',
-      description: 'Alpha Vantage - Comprehensive free/premium financial data',
-      supportedDataTypes: ['stock_price', 'company_info', 'fundamentals', 'market_data', 'economic_data']
     },
     fmp: {
       enabled: true,
@@ -179,13 +167,13 @@ export class DataSourceManager {
 
   private dataTypePreferences: Record<DataType, DataTypePreferences> = {
     stock_price: {
-      primary: 'polygon',
-      fallbacks: ['alphavantage', 'fmp', 'yahoo', 'twelvedata'],
+      primary: 'fmp',
+      fallbacks: ['polygon', 'yahoo', 'twelvedata'],
       lastUpdated: Date.now()
     },
     company_info: {
-      primary: 'polygon',
-      fallbacks: ['alphavantage', 'fmp', 'sec_edgar', 'yahoo'],
+      primary: 'fmp',
+      fallbacks: ['polygon', 'sec_edgar', 'yahoo'],
       lastUpdated: Date.now()
     },
     options_data: {
@@ -210,17 +198,17 @@ export class DataSourceManager {
     },
     fundamentals: {
       primary: 'fmp',
-      fallbacks: ['alphavantage', 'polygon', 'sec_edgar'],
+      fallbacks: ['polygon', 'sec_edgar'],
       lastUpdated: Date.now()
     },
     market_data: {
-      primary: 'polygon',
-      fallbacks: ['alphavantage', 'fmp', 'twelvedata', 'yahoo'],
+      primary: 'fmp',
+      fallbacks: ['polygon', 'twelvedata', 'yahoo'],
       lastUpdated: Date.now()
     },
     economic_data: {
       primary: 'fred',
-      fallbacks: ['bls', 'eia', 'alphavantage'],
+      fallbacks: ['bls', 'eia'],
       lastUpdated: Date.now()
     },
     treasury_data: {
@@ -230,12 +218,12 @@ export class DataSourceManager {
     },
     earnings: {
       primary: 'fmp',
-      fallbacks: ['sec_edgar', 'alphavantage'],
+      fallbacks: ['sec_edgar'],
       lastUpdated: Date.now()
     },
     news: {
-      primary: 'alphavantage',
-      fallbacks: ['fmp'],
+      primary: 'fmp',
+      fallbacks: [],
       lastUpdated: Date.now()
     }
   }
@@ -249,11 +237,10 @@ export class DataSourceManager {
    */
   private initializeProviders(): void {
     this.providers.set('polygon', new PolygonAPI())
-    this.providers.set('alphavantage', new AlphaVantageAPI())
     this.providers.set('yahoo', new YahooFinanceAPI())
     this.providers.set('fmp', new FinancialModelingPrepAPI())
     this.providers.set('twelvedata', new TwelveDataAPI())
-    this.providers.set('eodhd', new EODHDAPI())
+    this.providers.set('eodhd', new EODHDAPI(undefined, 30000))  // 30 second timeout for options chains
     this.providers.set('sec_edgar', new SECEdgarAPI())
     this.providers.set('treasury', new TreasuryAPI())
     this.providers.set('fred', new FREDAPI())
@@ -429,9 +416,6 @@ export class DataSourceManager {
       recommendations.push('💡 Consider upgrading Polygon.io for better data quality and options support')
     }
 
-    if (!providerStatus.alphavantage?.available) {
-      recommendations.push('🔑 Check Alpha Vantage API key configuration')
-    }
 
     return {
       dataTypePreferences: this.getDataSourcePreferences(),
@@ -451,13 +435,13 @@ export class DataSourceManager {
   resetToDefaults(): void {
     this.dataTypePreferences = {
       stock_price: {
-        primary: 'polygon',
-        fallbacks: ['alphavantage', 'fmp', 'yahoo', 'twelvedata'],
+        primary: 'fmp',
+        fallbacks: ['polygon', 'yahoo', 'twelvedata'],
         lastUpdated: Date.now()
       },
       company_info: {
-        primary: 'polygon',
-        fallbacks: ['alphavantage', 'fmp', 'sec_edgar', 'yahoo'],
+        primary: 'fmp',
+        fallbacks: ['polygon', 'sec_edgar', 'yahoo'],
         lastUpdated: Date.now()
       },
       options_data: {
@@ -482,17 +466,17 @@ export class DataSourceManager {
       },
       fundamentals: {
         primary: 'fmp',
-        fallbacks: ['alphavantage', 'polygon', 'sec_edgar'],
+        fallbacks: ['polygon', 'sec_edgar'],
         lastUpdated: Date.now()
       },
       market_data: {
-        primary: 'polygon',
-        fallbacks: ['alphavantage', 'fmp', 'twelvedata', 'yahoo'],
+        primary: 'fmp',
+        fallbacks: ['polygon', 'twelvedata', 'yahoo'],
         lastUpdated: Date.now()
       },
       economic_data: {
         primary: 'fred',
-        fallbacks: ['bls', 'eia', 'alphavantage'],
+        fallbacks: ['bls', 'eia'],
         lastUpdated: Date.now()
       },
       treasury_data: {
@@ -502,12 +486,12 @@ export class DataSourceManager {
       },
       earnings: {
         primary: 'fmp',
-        fallbacks: ['sec_edgar', 'alphavantage'],
+        fallbacks: ['sec_edgar'],
         lastUpdated: Date.now()
       },
       news: {
-        primary: 'alphavantage',
-        fallbacks: ['fmp'],
+        primary: 'fmp',
+        fallbacks: [],
         lastUpdated: Date.now()
       }
     }

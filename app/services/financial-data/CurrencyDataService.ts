@@ -186,10 +186,10 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
 
   constructor(config?: Partial<ApiKeyConfig>) {
     super({
-      apiKey: config?.apiKey || process.env.ALPHA_VANTAGE_API_KEY || '',
+      apiKey: config?.apiKey || process.env.CURRENCY_API_KEY || '',
       timeout: config?.timeout || 10000,
       throwErrors: config?.throwErrors || false,
-      baseUrl: 'https://www.alphavantage.co/query'
+      baseUrl: 'https://query1.finance.yahoo.com'
     })
 
     this.cache = RedisCache.getInstance()
@@ -277,8 +277,8 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
         return cached
       }
 
-      // Try Alpha Vantage first, fallback to Yahoo Finance
-      let dxyData = await this.getDXYFromAlphaVantage()
+      // Fetch from Yahoo Finance
+      let dxyData = await this.getDXYFromYahoo()
       if (!dxyData) {
         dxyData = await this.getDXYFromYahoo()
       }
@@ -339,7 +339,7 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
    */
   async getCurrencyPair(pair: string): Promise<CurrencyPair | null> {
     try {
-      // Try Alpha Vantage first
+      // Fetch from Yahoo Finance
       const response = await this.makeHttpRequest(
         this.buildUrl('', {
           function: 'CURRENCY_EXCHANGE_RATE',
@@ -364,7 +364,7 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
             bid: this.parseNumeric(data['8. Bid Price']),
             ask: this.parseNumeric(data['9. Ask Price']),
             timestamp: new Date(data['6. Last Refreshed']).getTime(),
-            source: 'alphavantage'
+            source: 'yahoo'
           }
         }
       }
@@ -373,7 +373,7 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
       return await this.getCurrencyPairFromYahoo(pair)
 
     } catch (error) {
-      console.warn(`Failed to fetch ${pair} from Alpha Vantage, trying Yahoo Finance`)
+      console.warn(`Failed to fetch ${pair} from primary source, trying Yahoo Finance`)
       return await this.getCurrencyPairFromYahoo(pair)
     }
   }
@@ -468,23 +468,6 @@ export class CurrencyDataService extends BaseFinancialDataProvider {
 
   // Private helper methods
 
-  private async getDXYFromAlphaVantage(): Promise<DollarIndex | null> {
-    try {
-      if (!this.apiKey) {
-        console.warn('Alpha Vantage API key not configured for DXY data')
-        return null
-      }
-
-      // Note: Alpha Vantage doesn't directly provide DXY,
-      // we would need to calculate it from component currencies
-      // For now, return null to trigger Yahoo Finance fallback
-      return null
-
-    } catch (error) {
-      console.warn('Alpha Vantage DXY fetch failed:', error)
-      return null
-    }
-  }
 
   private async getDXYFromYahoo(): Promise<DollarIndex | null> {
     try {
