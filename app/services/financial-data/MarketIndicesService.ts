@@ -139,6 +139,12 @@ export class MarketIndicesService {
             source: providerName
           }
 
+          // Validate that we got real data
+          if (indexData.changePercent === 0 && indexData.change === 0 && indexData.value === 0) {
+            console.warn(`MarketIndicesService: ${symbol} from ${providerName} returned all zeros, trying next provider`)
+            continue
+          }
+
           // Cache successful result
           this.cache.set(symbol, { data: indexData, timestamp: Date.now() })
           return indexData
@@ -149,7 +155,7 @@ export class MarketIndicesService {
       }
     }
 
-    console.error(`Failed to get index data for ${symbol} from all providers`)
+    console.error(`MarketIndicesService: Failed to get index data for ${symbol} from all providers`)
     return null
   }
 

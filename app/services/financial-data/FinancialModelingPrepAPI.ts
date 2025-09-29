@@ -22,7 +22,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
       apiKey: apiKey || process.env.FMP_API_KEY || '',
       timeout,
       throwErrors,
-      baseUrl: 'https://financialmodelingprep.com/stable'
+      baseUrl: 'https://financialmodelingprep.com/api/v3'
     })
   }
 
@@ -38,7 +38,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
       this.validateApiKey()
       const normalizedSymbol = this.normalizeSymbol(symbol)
 
-      const response = await this.makeRequest(`/quote?symbol=${normalizedSymbol}`)
+      const response = await this.makeRequest(`/quote/${normalizedSymbol}`)
 
       if (!this.validateResponse(response, 'array')) {
         return null

@@ -241,6 +241,12 @@ export class MarketSentimentService {
         return this.createDefaultSectorSentiment(sector.symbol, sector.name)
       }
 
+      // Check for zero data (invalid response)
+      if (sectorData.changePercent === 0 && sectorData.change === 0 && sectorData.value === 0) {
+        console.warn(`MarketSentimentService: ${sector.symbol} has all zero values (invalid data), using default sentiment`)
+        return this.createDefaultSectorSentiment(sector.symbol, sector.name)
+      }
+
       const changePercent = sectorData.changePercent || 0
       const sentimentValue = this.performanceToSentiment(changePercent)
 
