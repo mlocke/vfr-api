@@ -1,46 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import SectorDropdown, { SectorOption } from '../components/SectorDropdown'
 import StockAutocomplete from '../components/StockAutocomplete'
-
-// Simple types based on working admin implementation
-interface AnalysisRequest {
-  mode: 'single' | 'sector' | 'multiple'
-  symbols?: string[]
-  sector?: string
-  limit?: number
-}
-
-interface AnalysisResponse {
-  success: boolean
-  data?: {
-    stocks: Array<{
-      symbol: string
-      price: number
-      compositeScore: number
-      recommendation: 'BUY' | 'SELL' | 'HOLD'
-      sector: string
-    }>
-    metadata: {
-      mode: string
-      count: number
-      timestamp: number
-      sources: string[]
-      technicalAnalysisEnabled?: boolean
-      fundamentalDataEnabled?: boolean
-      analystDataEnabled?: boolean
-      sentimentAnalysisEnabled?: boolean
-      macroeconomicAnalysisEnabled?: boolean
-      esgAnalysisEnabled?: boolean
-      shortInterestAnalysisEnabled?: boolean
-      extendedMarketDataEnabled?: boolean
-      analysisInputServices?: Record<string, any>
-    }
-  }
-  error?: string
-}
+import AnalysisResults from '../components/admin/AnalysisResults'
+import { AnalysisRequest, AnalysisResponse } from '../components/admin/AnalysisEngineTest'
 
 export default function StockIntelligencePage() {
   // Simple state management - following admin pattern
@@ -50,6 +15,7 @@ export default function StockIntelligencePage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [results, setResults] = useState<AnalysisResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+
 
   const handleSectorChange = (sector: SectorOption) => {
     setSelectedSector(sector)
@@ -61,12 +27,18 @@ export default function StockIntelligencePage() {
   }
 
   const handleSymbolSelectionChange = (symbols: string[]) => {
+    // Only clear results if the selection actually changed
+    const symbolsChanged = JSON.stringify(symbols.sort()) !== JSON.stringify(selectedSymbols.sort())
+
     setSelectedSymbols(symbols)
     setSelectedSector(undefined)
     setAnalysisType(symbols.length > 0 ? 'tickers' : null)
-    // Clear previous results
-    setResults(null)
-    setError(null)
+
+    // Only clear previous results if symbols actually changed
+    if (symbolsChanged) {
+      setResults(null)
+      setError(null)
+    }
   }
 
   const handleRunAnalysis = async () => {
@@ -121,7 +93,6 @@ export default function StockIntelligencePage() {
       }
 
       const data = await response.json()
-      console.log('✅ Analysis response:', data)
 
       if (data.success) {
         setResults(data)
@@ -446,285 +417,12 @@ export default function StockIntelligencePage() {
               )}
             </div>
 
-            {/* Error Display */}
-            {error && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                backdropFilter: 'blur(20px)',
-                border: '2px solid rgba(239, 68, 68, 0.5)',
-                borderRadius: '20px',
-                padding: '2rem',
-                textAlign: 'center',
-                marginBottom: '2rem'
-              }}>
-                <div style={{
-                  fontSize: '2rem',
-                  marginBottom: '1rem'
-                }}>
-                  ❌
-                </div>
-                <h3 style={{
-                  fontSize: '1.3rem',
-                  fontWeight: '600',
-                  color: 'rgba(239, 68, 68, 0.9)',
-                  marginBottom: '0.5rem'
-                }}>
-                  Analysis Failed
-                </h3>
-                <p style={{
-                  fontSize: '1rem',
-                  color: 'rgba(239, 68, 68, 0.8)',
-                  margin: 0
-                }}>
-                  {error}
-                </p>
-                <button
-                  onClick={() => setError(null)}
-                  style={{
-                    marginTop: '1rem',
-                    padding: '0.5rem 1rem',
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid rgba(239, 68, 68, 0.5)',
-                    borderRadius: '8px',
-                    color: 'rgba(239, 68, 68, 0.9)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'
-                  }}
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Results Display */}
-            {results && results.success && (
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                backdropFilter: 'blur(20px)',
-                border: '2px solid rgba(0, 200, 83, 0.3)',
-                borderRadius: '20px',
-                padding: '2rem',
-                marginBottom: '2rem'
-              }}>
-                {/* Results Header */}
-                <div style={{
-                  textAlign: 'center',
-                  marginBottom: '2rem',
-                  paddingBottom: '1.5rem',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                }}>
-                  <h2 style={{
-                    fontSize: '2rem',
-                    fontWeight: '700',
-                    color: 'white',
-                    marginBottom: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    📊 Analysis Complete
-                  </h2>
-                  <p style={{
-                    fontSize: '1rem',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Found {results.data?.stocks.length || 0} recommendations
-                  </p>
-                </div>
-
-                {/* Analysis Metadata */}
-                <div style={{
-                  background: 'rgba(0, 200, 83, 0.1)',
-                  border: '1px solid rgba(0, 200, 83, 0.3)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  marginBottom: '2rem'
-                }}>
-                  <h3 style={{
-                    fontSize: '1.2rem',
-                    fontWeight: '600',
-                    color: 'rgba(0, 200, 83, 0.9)',
-                    marginBottom: '1rem'
-                  }}>
-                    Analysis Details
-                  </h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    fontSize: '0.9rem',
-                    color: 'rgba(255, 255, 255, 0.8)'
-                  }}>
-                    <div>
-                      <strong>Mode:</strong> {results.data?.metadata.mode || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Data Sources:</strong> {results.data?.metadata.sources?.join(', ') || 'N/A'}
-                    </div>
-                    <div>
-                      <strong>Technical Analysis:</strong> {results.data?.metadata.technicalAnalysisEnabled ? '✅' : '❌'}
-                    </div>
-                    <div>
-                      <strong>Sentiment Analysis:</strong> {results.data?.metadata.sentimentAnalysisEnabled ? '✅' : '❌'}
-                    </div>
-                    <div>
-                      <strong>Fundamental Data:</strong> {results.data?.metadata.fundamentalDataEnabled ? '✅' : '❌'}
-                    </div>
-                    <div>
-                      <strong>ESG Analysis:</strong> {results.data?.metadata.esgAnalysisEnabled ? '✅' : '❌'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stock Results Grid */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                  gap: '1.5rem'
-                }}>
-                  {(results.data?.stocks || []).map((stock, index) => (
-                    <div
-                      key={stock.symbol}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '15px',
-                        padding: '1.5rem',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
-                        e.currentTarget.style.borderColor = 'rgba(0, 200, 83, 0.4)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 200, 83, 0.15)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                      }}
-                    >
-                      {/* Stock Header */}
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '1rem'
-                      }}>
-                        <div>
-                          <h4 style={{
-                            fontSize: '1.3rem',
-                            fontWeight: '700',
-                            color: 'white',
-                            margin: 0
-                          }}>
-                            {stock.symbol}
-                          </h4>
-                          <p style={{
-                            fontSize: '0.9rem',
-                            color: 'rgba(255, 255, 255, 0.6)',
-                            margin: 0
-                          }}>
-                            {stock.sector}
-                          </p>
-                        </div>
-                        <div style={{
-                          textAlign: 'right'
-                        }}>
-                          <div style={{
-                            fontSize: '1.1rem',
-                            fontWeight: '600',
-                            color: stock.recommendation === 'BUY' ? 'rgba(0, 200, 83, 0.9)' :
-                                   stock.recommendation === 'SELL' ? 'rgba(239, 68, 68, 0.9)' :
-                                   'rgba(255, 193, 7, 0.9)'
-                          }}>
-                            {stock.recommendation}
-                          </div>
-                          <div style={{
-                            fontSize: '0.9rem',
-                            color: 'rgba(255, 255, 255, 0.7)'
-                          }}>
-                            Score: {stock.compositeScore}%
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Stock Details */}
-                      <div style={{
-                        fontSize: '0.9rem',
-                        color: 'rgba(255, 255, 255, 0.8)',
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '0.5rem'
-                      }}>
-                        <div>
-                          <strong>Price:</strong> ${stock.price.toFixed(2)}
-                        </div>
-                        <div>
-                          <strong>Sector:</strong> {stock.sector}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* New Analysis Button */}
-                <div style={{
-                  textAlign: 'center',
-                  marginTop: '2rem',
-                  paddingTop: '1.5rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-                }}>
-                  <button
-                    onClick={() => {
-                      setResults(null)
-                      setError(null)
-                      setSelectedSector(undefined)
-                      setSelectedSymbols([])
-                      setAnalysisType(null)
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
-                      padding: '1rem 2rem',
-                      border: '2px solid rgba(255, 255, 255, 0.2)',
-                      borderRadius: '12px',
-                      fontSize: '1.1rem',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-                      e.currentTarget.style.borderColor = 'rgba(0, 200, 83, 0.5)'
-                      e.currentTarget.style.transform = 'translateY(-2px)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
-                      e.currentTarget.style.transform = 'translateY(0)'
-                    }}
-                  >
-                    <span>🔄</span>
-                    Start New Analysis
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Analysis Results - Using the working component from admin dashboard */}
+            <AnalysisResults
+              results={results}
+              error={error}
+              isRunning={isAnalyzing}
+            />
           </div>
         </section>
 

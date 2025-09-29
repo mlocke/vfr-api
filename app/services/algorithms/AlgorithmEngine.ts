@@ -58,6 +58,7 @@ interface TechnicalDataPoint {
   shortInterestData?: any // 🆕 SHORT INTEREST INTEGRATION
   extendedMarketData?: any // 🆕 EXTENDED MARKET DATA INTEGRATION
   optionsData?: OptionsDataPoint // 🆕 OPTIONS INTEGRATION
+  analystData?: any // 🆕 ANALYST DATA INTEGRATION
   [key: string]: any
 }
 
@@ -737,6 +738,31 @@ export class AlgorithmEngine {
           optionsData = undefined // Will use fallback in FactorLibrary
         }
 
+        // 🆕 PRE-FETCH ANALYST DATA for composite algorithm
+        let analystData: any | undefined
+        try {
+          console.log(`📊 Pre-fetching analyst data for ${symbol}...`)
+          const analystRatings = await this.fallbackDataService.getAnalystRatings(symbol)
+          if (analystRatings) {
+            analystData = {
+              consensus: analystRatings.consensus,
+              totalAnalysts: analystRatings.totalAnalysts,
+              sentimentScore: analystRatings.sentimentScore,
+              distribution: {
+                strongBuy: analystRatings.strongBuy,
+                buy: analystRatings.buy,
+                hold: analystRatings.hold,
+                sell: analystRatings.sell,
+                strongSell: analystRatings.strongSell
+              }
+            }
+            console.log(`📊 Analyst data pre-fetched for ${symbol}: ${analystRatings.consensus} (${analystRatings.totalAnalysts} analysts, sentiment ${analystRatings.sentimentScore}/5)`)
+          }
+        } catch (analystError) {
+          console.warn(`Failed to fetch analyst data for ${symbol}:`, analystError)
+          analystData = undefined
+        }
+
         // Create enhanced technical data with all pre-fetched services for FactorLibrary
         const enhancedTechnicalData: TechnicalDataPoint = {
           symbol,
@@ -747,7 +773,8 @@ export class AlgorithmEngine {
           institutionalData,
           shortInterestData,
           extendedMarketData,
-          optionsData
+          optionsData,
+          analystData
         }
 
         const compositeScore = await this.factorLibrary.calculateFactor(
@@ -770,12 +797,28 @@ export class AlgorithmEngine {
             const technicalOverallScore = await this.factorLibrary.calculateFactor('technical_overall_score', symbol, marketData, fundamentalData)
             if (technicalOverallScore !== null && technicalOverallScore !== 0.5) {
               componentFactors['technical_overall_score'] = technicalOverallScore
+              componentFactors['technicalScore'] = technicalOverallScore * 100 // Export as 0-100 scale
               console.log(`✅ Technical overall score for ${symbol}: ${technicalOverallScore.toFixed(3)} - TRACKED`)
             }
 
+            // 🆕 FUNDAMENTAL SCORE CALCULATION - Add fundamental score to factorScores
             const qualityScore = await this.factorLibrary.calculateFactor('quality_composite', symbol, marketData, fundamentalData)
             if (qualityScore !== null && qualityScore !== 0.5) {
               componentFactors['quality_composite'] = qualityScore
+            }
+
+            // Calculate fundamental score from fundamentalData
+            if (fundamentalData && Object.keys(fundamentalData).length > 0) {
+              const fundamentalScore = this.calculateFundamentalScore(fundamentalData)
+              componentFactors['fundamentalScore'] = fundamentalScore
+              console.log(`✅ Fundamental score for ${symbol}: ${fundamentalScore.toFixed(1)} - TRACKED`)
+            }
+
+            // 🆕 ANALYST SCORE CALCULATION - Add analyst score to factorScores
+            if (analystData) {
+              const analystScore = this.calculateAnalystScore(analystData)
+              componentFactors['analystScore'] = analystScore
+              console.log(`✅ Analyst score for ${symbol}: ${analystScore.toFixed(1)} - TRACKED`)
             }
 
             const momentumScore = await this.factorLibrary.calculateFactor('momentum_composite', symbol, marketData, fundamentalData)
@@ -1425,6 +1468,99 @@ export class AlgorithmEngine {
   private calculateSectorWeight(sector: string, scores: StockScore[]): number {
     const sectorStocks = scores.filter(s => s.marketData.sector === sector)
     return sectorStocks.length / scores.length
+  }
+
+  /**
+   * Calculate fundamental score from fundamental data (0-100 scale)
+   */
+  private calculateFundamentalScore(fundamentalData: FundamentalDataPoint): number {
+    let score = 50 // Start with neutral
+    let factors = 0
+
+    // PE Ratio scoring (lower is better, but not too low)
+    if (fundamentalData.peRatio !== undefined && fundamentalData.peRatio > 0) {
+      if (fundamentalData.peRatio < 15) score += 10
+      else if (fundamentalData.peRatio < 25) score += 5
+      else if (fundamentalData.peRatio > 40) score -= 5
+      factors++
+    }
+
+    // PB Ratio scoring (lower is better)
+    if (fundamentalData.pbRatio !== undefined && fundamentalData.pbRatio > 0) {
+      if (fundamentalData.pbRatio < 1) score += 10
+      else if (fundamentalData.pbRatio < 3) score += 5
+      else if (fundamentalData.pbRatio > 5) score -= 5
+      factors++
+    }
+
+    // ROE scoring (higher is better)
+    if (fundamentalData.roe !== undefined) {
+      if (fundamentalData.roe > 20) score += 10
+      else if (fundamentalData.roe > 15) score += 5
+      else if (fundamentalData.roe < 5) score -= 5
+      factors++
+    }
+
+    // Debt to Equity scoring (lower is better)
+    if (fundamentalData.debtToEquity !== undefined && fundamentalData.debtToEquity >= 0) {
+      if (fundamentalData.debtToEquity < 0.5) score += 10
+      else if (fundamentalData.debtToEquity < 1.0) score += 5
+      else if (fundamentalData.debtToEquity > 2.0) score -= 5
+      factors++
+    }
+
+    // Current Ratio scoring (around 1.5-2 is ideal)
+    if (fundamentalData.currentRatio !== undefined) {
+      if (fundamentalData.currentRatio >= 1.5 && fundamentalData.currentRatio <= 2.5) score += 5
+      else if (fundamentalData.currentRatio < 1.0) score -= 5
+      factors++
+    }
+
+    // Normalize score to 0-100 range
+    return Math.max(0, Math.min(100, score))
+  }
+
+  /**
+   * Calculate analyst score from analyst ratings data (0-100 scale)
+   */
+  private calculateAnalystScore(analystData: any): number {
+    if (!analystData || !analystData.distribution) {
+      return 50 // Neutral if no data
+    }
+
+    const { distribution, totalAnalysts, sentimentScore } = analystData
+
+    // Calculate weighted score based on distribution
+    let score = 0
+    const strongBuyWeight = 100
+    const buyWeight = 75
+    const holdWeight = 50
+    const sellWeight = 25
+    const strongSellWeight = 0
+
+    if (totalAnalysts > 0) {
+      const strongBuyCount = distribution.strongBuy || 0
+      const buyCount = distribution.buy || 0
+      const holdCount = distribution.hold || 0
+      const sellCount = distribution.sell || 0
+      const strongSellCount = distribution.strongSell || 0
+
+      score = (
+        (strongBuyCount * strongBuyWeight) +
+        (buyCount * buyWeight) +
+        (holdCount * holdWeight) +
+        (sellCount * sellWeight) +
+        (strongSellCount * strongSellWeight)
+      ) / totalAnalysts
+    }
+
+    // Blend with sentiment score if available (0-5 scale)
+    if (sentimentScore !== undefined && sentimentScore !== null) {
+      const sentimentScoreNormalized = (sentimentScore / 5) * 100
+      score = (score + sentimentScoreNormalized) / 2 // Average the two
+    }
+
+    return Math.max(0, Math.min(100, Math.round(score)))
   }
 
   /**

@@ -213,9 +213,8 @@ export class EIAAPI implements FinancialDataProvider {
       if (this.throwErrors) throw new Error('Invalid EIA API key format')
     }
 
-    if (!this.fallbackKey) {
-      console.warn('Fallback API key not configured. Currency data (DXY) will not be available.')
-    }
+    // ℹ️ Currency data (DXY) is now provided by FMP through CurrencyDataService
+    // Fallback key is optional for legacy Yahoo Finance integration
   }
 
   /**
