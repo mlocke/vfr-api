@@ -230,6 +230,37 @@ function convertToAdminResponse(response: any): any {
     // Extract factor scores from the factorScores object
     const factorScores = selection.score?.factorScores || {}
 
+    // Extract scores with proper fallback logic matching actual factor names in AlgorithmEngine
+    // Technical: technical_overall_score or technicalScore (0-100 scale)
+    const technicalScore = factorScores.technicalScore ||
+                          (factorScores.technical_overall_score ? factorScores.technical_overall_score * 100 : 0) ||
+                          factorScores.technical_composite ||
+                          factorScores.technical || 0
+
+    // Fundamental: fundamentalScore (0-100 scale) or quality_composite/value_composite
+    const fundamentalScore = factorScores.fundamentalScore ||
+                            factorScores.fundamental_composite ||
+                            factorScores.fundamental ||
+                            factorScores.fundamentalData || 0
+
+    // Macroeconomic: macroeconomic_composite (0-1 scale, convert to 0-100)
+    const macroeconomicScore = (factorScores.macroeconomic_composite ? factorScores.macroeconomic_composite * 100 : 0) ||
+                              factorScores.macroeconomic || 0
+
+    // Sentiment: sentiment_composite (0-1 scale, convert to 0-100)
+    const sentimentScore = (factorScores.sentiment_composite ? factorScores.sentiment_composite * 100 : 0) ||
+                          factorScores.sentiment || 0
+
+    // ESG: esg_composite (0-1 scale, convert to 0-100)
+    const esgScore = (factorScores.esg_composite ? factorScores.esg_composite * 100 : 0) ||
+                    factorScores.esg || 0
+
+    // Analyst: analystScore (0-100 scale)
+    const analystScore = factorScores.analystScore ||
+                        factorScores.analyst_composite ||
+                        factorScores.analyst ||
+                        factorScores.analysts || 0
+
     return {
       symbol: selection.symbol,
       price: selection.score?.marketData?.price || 0,
@@ -237,13 +268,13 @@ function convertToAdminResponse(response: any): any {
       recommendation: selection.action || 'HOLD',
       sector: selection.context?.sector || 'Unknown',
       confidence: selection.confidence ? Math.round(selection.confidence * 100) : undefined,
-      // Score breakdowns from factorScores object
-      technicalScore: factorScores.technical_composite || factorScores.technical || 0,
-      fundamentalScore: factorScores.fundamental_composite || factorScores.fundamental || factorScores.fundamentalData || 0,
-      macroeconomicScore: factorScores.macroeconomic_composite || factorScores.macroeconomic || 0,
-      sentimentScore: factorScores.sentiment_composite || factorScores.sentiment || 0,
-      esgScore: factorScores.esg_composite || factorScores.esg || 0,
-      analystScore: factorScores.analyst_composite || factorScores.analyst || factorScores.analysts || 0,
+      // Score breakdowns from factorScores object (0-100 scale)
+      technicalScore,
+      fundamentalScore,
+      macroeconomicScore,
+      sentimentScore,
+      esgScore,
+      analystScore,
       // Additional details
       marketCap: selection.context?.marketCap,
       priceChange: selection.score?.marketData?.priceChange,
