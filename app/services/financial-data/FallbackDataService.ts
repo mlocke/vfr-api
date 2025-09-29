@@ -27,6 +27,7 @@ export class FallbackDataService implements FinancialDataProvider {
   private dataSources: DataSourceConfig[] = []
   private requestCounts: Map<string, { count: number; resetTime: number }> = new Map()
   private dailyCounts: Map<string, { count: number; date: string }> = new Map()
+  private sourcesUsedInSession: Set<string> = new Set() // 🆕 Track actual sources used
   private fmpRequestQueue: Array<{ resolve: Function; reject: Function; timestamp: number }> = []
   private fmpProcessingQueue = false
   private errorHandler = createServiceErrorHandler('FallbackDataService')
@@ -390,6 +391,20 @@ export class FallbackDataService implements FinancialDataProvider {
   }
 
   /**
+   * Get list of data sources actually used in this session
+   */
+  getSourcesUsed(): string[] {
+    return Array.from(this.sourcesUsedInSession)
+  }
+
+  /**
+   * Reset sources used tracking (useful for new analysis sessions)
+   */
+  resetSourcesUsed(): void {
+    this.sourcesUsedInSession.clear()
+  }
+
+  /**
    * Get stock price with automatic fallback and security controls
    */
   async getStockPrice(symbol: string): Promise<StockData | null> {
@@ -499,9 +514,11 @@ export class FallbackDataService implements FinancialDataProvider {
 
           this.errorHandler.errorHandler.recordSuccess(`stock_price_${sanitizedSymbol}`)
           // Add metadata about which source was used
+          const sourceId = source.name.toLowerCase().replace(/\s+/g, '_')
+          this.sourcesUsedInSession.add(sourceId) // 🆕 Track source usage
           return {
             ...data,
-            source: source.name.toLowerCase().replace(/\s+/g, '_')
+            source: sourceId
           }
         } else {
           errors.push(`${source.name}: No data returned`)
@@ -566,7 +583,13 @@ export class FallbackDataService implements FinancialDataProvider {
         )
         if (data) {
           this.recordRequest(source)
-          return data
+          // 🔧 FIX: Override source field to track actual source used
+          const sourceId = source.name.toLowerCase().replace(/\s+/g, '_')
+          this.sourcesUsedInSession.add(sourceId)
+          return {
+            ...data,
+            source: sourceId
+          }
         }
       } catch (error) {
         this.errorHandler.logger.logApiError(
@@ -618,7 +641,13 @@ export class FallbackDataService implements FinancialDataProvider {
         )
         if (data) {
           this.recordRequest(source)
-          return data
+          // 🔧 FIX: Override source field to track actual source used
+          const sourceId = source.name.toLowerCase().replace(/\s+/g, '_')
+          this.sourcesUsedInSession.add(sourceId)
+          return {
+            ...data,
+            source: sourceId
+          }
         }
       } catch (error) {
         this.errorHandler.logger.logApiError(
@@ -1308,7 +1337,7 @@ export class FallbackDataService implements FinancialDataProvider {
                   allowZero: true,
                   min: field.includes('Ratio') ? 0 : undefined,
                   max: field.includes('Margin') || field === 'payoutRatio' ? 100 : undefined,
-                  decimalPlaces: 4
+                  decimalPlaces: 10 // 🔧 FIX: Increased from 4 to 10 to accept more precise fundamental ratios
                 })
 
                 if (!validation.isValid) {

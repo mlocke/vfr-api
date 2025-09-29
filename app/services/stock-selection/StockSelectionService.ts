@@ -698,7 +698,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       // Enhanced metadata with comprehensive input service tracking
       metadata: {
         algorithmUsed: request.options?.algorithmId || this.config.getConfig().defaultAlgorithmId,
-        dataSourcesUsed: Object.keys(this.config.getDataSourceConfig()),
+        dataSourcesUsed: this.fallbackDataService.getSourcesUsed(), // 🔧 FIX: Use actual runtime sources
         cacheHitRate: this.calculateCacheHitRate(),
         analysisMode: request.scope.mode,
         qualityScore: this.calculateOverallQualityScore(topSelections),
@@ -1931,7 +1931,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       allowZero: true,
       min: allowNegative ? undefined : 0,
       max: fieldName.includes('Margin') || fieldName === 'payoutRatio' ? 100 : undefined,
-      decimalPlaces: 6
+      decimalPlaces: 10 // 🔧 FIX: Increased from 6 to 10 to accept more precise fundamental ratios
     })
 
     if (!validation.isValid) {

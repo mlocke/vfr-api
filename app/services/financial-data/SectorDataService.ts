@@ -126,7 +126,7 @@ export class SectorDataService {
       source: 'Multiple APIs (Polygon.io, TwelveData, Yahoo Finance, FMP)',
       apiStatus: {
         polygon: apiStatus['polygon'] ?? false,
-        twelveData: apiStatus['twelveData'] ?? false,
+        alphaVantage: apiStatus['alphaVantage'] ?? false,
         yahooFinance: apiStatus['yahooFinance'] ?? false,
         fmp: apiStatus['fmp'] ?? false
       },

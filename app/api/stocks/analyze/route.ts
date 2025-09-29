@@ -226,13 +226,35 @@ function convertToSelectionRequest(body: any): SelectionRequest {
  * Convert SelectionResponse to admin dashboard format
  */
 function convertToAdminResponse(response: any): any {
-  const stocks = response.topSelections?.map((selection: any) => ({
-    symbol: selection.symbol,
-    price: selection.score?.marketData?.price || 0,
-    compositeScore: Math.round((selection.score?.overallScore || 0) * 100),
-    recommendation: selection.action || 'HOLD',
-    sector: selection.context?.sector || 'Unknown'
-  })) || []
+  const stocks = response.topSelections?.map((selection: any) => {
+    // Extract factor scores from the factorScores object
+    const factorScores = selection.score?.factorScores || {}
+
+    return {
+      symbol: selection.symbol,
+      price: selection.score?.marketData?.price || 0,
+      compositeScore: selection.score?.overallScore || 0,
+      recommendation: selection.action || 'HOLD',
+      sector: selection.context?.sector || 'Unknown',
+      confidence: selection.confidence ? Math.round(selection.confidence * 100) : undefined,
+      // Score breakdowns from factorScores object
+      technicalScore: factorScores.technical_composite || factorScores.technical || 0,
+      fundamentalScore: factorScores.fundamental_composite || factorScores.fundamental || factorScores.fundamentalData || 0,
+      macroeconomicScore: factorScores.macroeconomic_composite || factorScores.macroeconomic || 0,
+      sentimentScore: factorScores.sentiment_composite || factorScores.sentiment || 0,
+      esgScore: factorScores.esg_composite || factorScores.esg || 0,
+      analystScore: factorScores.analyst_composite || factorScores.analyst || factorScores.analysts || 0,
+      // Additional details
+      marketCap: selection.context?.marketCap,
+      priceChange: selection.score?.marketData?.priceChange,
+      priceChangePercent: selection.score?.marketData?.priceChangePercent,
+      reasoning: selection.reasoning,
+      rationale: selection.rationale,
+      strengths: selection.strengths,
+      risks: selection.risks,
+      insights: selection.insights
+    }
+  }) || []
 
   return {
     success: response.success,

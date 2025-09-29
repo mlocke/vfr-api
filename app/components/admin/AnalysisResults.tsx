@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AnalysisResponse } from './AnalysisEngineTest';
+import StockRecommendationCard from '../StockRecommendationCard';
 
 interface AnalysisResultsProps {
   results: AnalysisResponse | null;
@@ -249,42 +250,33 @@ Components: ${Object.keys(service.components).length} components`;
         ) : results ? (
           <>
             {activeTab === 'summary' && results.success && results.data && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
                 {results.data.stocks.map((stock: any, index: number) => (
-                  <div
+                  <StockRecommendationCard
                     key={stock.symbol}
-                    style={{
-                      background: "rgba(255, 255, 255, 0.05)",
-                      border: "1px solid rgba(255, 255, 255, 0.1)",
-                      borderRadius: "8px",
-                      padding: "1rem",
+                    stock={{
+                      symbol: stock.symbol,
+                      price: stock.price,
+                      priceChange: stock.priceChange,
+                      priceChangePercent: stock.priceChangePercent,
+                      recommendation: stock.recommendation,
+                      confidence: stock.confidence,
+                      compositeScore: stock.compositeScore,
+                      sector: stock.sector,
+                      marketCap: stock.marketCap,
+                      technicalScore: stock.technicalScore,
+                      fundamentalScore: stock.fundamentalScore,
+                      macroScore: stock.macroeconomicScore,
+                      sentimentScore: stock.sentimentScore,
+                      esgScore: stock.esgScore,
+                      analystScore: stock.analystScore,
+                      insights: {
+                        positive: stock.insights?.positive || stock.strengths,
+                        risks: stock.insights?.risks || stock.risks,
+                      },
+                      reasoning: stock.reasoning || stock.rationale,
                     }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                      <h4 style={{ color: "white", margin: 0, fontSize: "1.1rem" }}>{stock.symbol}</h4>
-                      <span
-                        style={{
-                          background: stock.recommendation === 'BUY' ? "rgba(34, 197, 94, 0.2)" :
-                                     stock.recommendation === 'SELL' ? "rgba(239, 68, 68, 0.2)" :
-                                     "rgba(251, 191, 36, 0.2)",
-                          color: stock.recommendation === 'BUY' ? "rgba(34, 197, 94, 0.9)" :
-                                 stock.recommendation === 'SELL' ? "rgba(239, 68, 68, 0.9)" :
-                                 "rgba(251, 191, 36, 0.9)",
-                          padding: "0.25rem 0.5rem",
-                          borderRadius: "4px",
-                          fontSize: "0.8rem",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {stock.recommendation || 'HOLD'}
-                      </span>
-                    </div>
-                    <div style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.9rem" }}>
-                      <p>Price: {stock.price ? `$${stock.price.toFixed(2)}` : 'N/A'}</p>
-                      <p>Composite Score: {stock.compositeScore ? `${Math.round(stock.compositeScore)}/100` : 'N/A'}</p>
-                      <p>Sector: {stock.sector || 'Unknown'}</p>
-                    </div>
-                  </div>
+                  />
                 ))}
               </div>
             )}
