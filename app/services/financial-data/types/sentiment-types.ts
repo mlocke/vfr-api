@@ -89,7 +89,7 @@ export interface SentimentConfig {
 }
 
 export interface SentimentDataSource {
-  source: 'yahoo_finance' | 'reddit' | 'alphavantage' | 'fmp' | 'composite'
+  source: 'yahoo_finance' | 'reddit' | 'fmp' | 'composite'
   indicators: string[]
   lastUpdated: number
   quality: number // 0-1 data quality score

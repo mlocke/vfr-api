@@ -2,9 +2,9 @@
  * Symbol Data Service for VFR Financial Analysis Platform
  *
  * Manages daily auto-refresh of stock symbols from multiple sources:
- * 1. Alpha Vantage LISTING_STATUS (Primary - works with demo key)
- * 2. NASDAQ FTP (Secondary - official source)
- * 3. SEC Company Tickers (Tertiary - government source)
+ * 1. NASDAQ FTP (Primary - official source)
+ * 2. SEC Company Tickers (Secondary - government source)
+ * 3. Static fallback file (Tertiary - local backup)
  *
  * Features:
  * - Daily auto-refresh triggered by first lookup
@@ -58,11 +58,11 @@ export class SymbolDataService {
 
   private dataSources: SymbolDataSource[] = [
     {
-      name: 'Alpha Vantage LISTING_STATUS',
-      url: `https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=${process.env.ALPHA_VANTAGE_API_KEY || 'demo'}`,
-      format: 'csv',
-      parser: this.parseAlphaVantageCSV.bind(this),
-      isAvailable: this.checkAlphaVantageAvailability.bind(this)
+      name: 'FMP Stock List',
+      url: 'https://financialmodelingprep.com/api/v3/stock/list?apikey=' + process.env.FMP_API_KEY,
+      format: 'json',
+      parser: this.parseFMPJSON.bind(this),
+      isAvailable: this.checkFMPAvailability.bind(this)
     },
     {
       name: 'NASDAQ FTP',
@@ -268,46 +268,6 @@ export class SymbolDataService {
     throw new Error(`All symbol data sources failed: ${errors.join(', ')}`)
   }
 
-  /**
-   * Parse Alpha Vantage LISTING_STATUS CSV
-   */
-  private parseAlphaVantageCSV(csvData: string): StockSymbol[] {
-    try {
-      const lines = csvData.split('\n').filter(line => line.trim())
-      const headers = lines[0].split(',')
-      const symbols: StockSymbol[] = []
-
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',')
-        if (values.length < headers.length) continue
-
-        const symbol = values[0]?.trim()
-        const name = values[1]?.trim()
-        const exchange = values[2]?.trim()
-        const assetType = values[3]?.trim()
-        const ipoDate = values[4]?.trim()
-        const delistingDate = values[5]?.trim()
-        const status = values[6]?.trim()
-
-        if (symbol && name) {
-          symbols.push({
-            symbol: symbol.toUpperCase(),
-            name: name.replace(/['"]/g, ''),
-            exchange: exchange || 'UNKNOWN',
-            type: assetType === 'Stock' ? 'Stock' : assetType === 'ETF' ? 'ETF' : 'Stock',
-            status: status === 'Active' ? 'Active' : 'Delisted',
-            ipoDate: ipoDate || undefined,
-            delistingDate: delistingDate || undefined
-          })
-        }
-      }
-
-      return symbols.filter(s => s.status === 'Active') // Only return active symbols
-    } catch (error) {
-      console.error('❌ Error parsing Alpha Vantage CSV:', error)
-      return []
-    }
-  }
 
   /**
    * Parse NASDAQ CSV
@@ -489,12 +449,44 @@ export class SymbolDataService {
   }
 
   /**
+   * Parse FMP Stock List JSON
+   */
+  private parseFMPJSON(jsonData: string): StockSymbol[] {
+    try {
+      const data = JSON.parse(jsonData)
+      const symbols: StockSymbol[] = []
+
+      if (Array.isArray(data)) {
+        data.forEach((stock: any) => {
+          if (stock.symbol && stock.name && stock.exchangeShortName) {
+            symbols.push({
+              symbol: stock.symbol.toUpperCase(),
+              name: stock.name.replace(/['\"]/g, ''),
+              exchange: stock.exchangeShortName,
+              type: stock.type === 'etf' ? 'ETF' : 'Stock',
+              status: 'Active'
+            })
+          }
+        })
+      }
+
+      return symbols
+    } catch (error) {
+      console.error('❌ Error parsing FMP JSON:', error)
+      return []
+    }
+  }
+
+  /**
    * Availability checkers for each source
    */
-  private async checkAlphaVantageAvailability(): Promise<boolean> {
+
+  private async checkFMPAvailability(): Promise<boolean> {
     try {
-      // Alpha Vantage LISTING_STATUS works with demo key
-      return true
+      const response = await fetch('https://financialmodelingprep.com/', {
+        method: 'HEAD'
+      })
+      return response.ok
     } catch {
       return false
     }

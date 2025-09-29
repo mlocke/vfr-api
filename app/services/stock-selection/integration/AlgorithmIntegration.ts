@@ -313,8 +313,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
     if (!dataSources || typeof dataSources !== 'object') {
       console.warn('No data sources available in service config, using default')
       dataSources = {
-        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
-        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 }
       }
     }
 
@@ -453,8 +452,7 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
       },
       getCacheTTL: (mode: any) => 300000, // 5 minutes default
       getDataSourceConfig: () => ({
-        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
-        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 }
       })
     }
   }

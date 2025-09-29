@@ -453,7 +453,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       analysisResult.errors.forEach((error: string) => {
         // Extract service and symbol information from error message if possible
         const symbolMatch = error.match(/for ([A-Z]{1,5})/i)
-        const serviceMatch = error.match(/(AlphaVantage|Polygon|FMP|TwelveData|News|Reddit|FRED|BLS|EIA)/i)
+        const serviceMatch = error.match(/(Polygon|FMP|TwelveData|News|Reddit|FRED|BLS|EIA)/i)
 
         const symbol = symbolMatch ? symbolMatch[1] : undefined
         const service = serviceMatch ? serviceMatch[1] : undefined
@@ -588,3 +588,6 @@ export async function GET(): Promise<NextResponse> {
     }, { status: 503 })
   }
 }
+
+// Configure Next.js route to allow longer execution time for deep analysis
+export const maxDuration = 60 // 60 seconds for complex financial analysis

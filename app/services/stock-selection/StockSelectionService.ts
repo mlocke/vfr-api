@@ -726,7 +726,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       coreFinancialData: {
         enabled: true,
         status: 'active',
-        description: 'Primary financial data sources (Polygon, Alpha Vantage, FMP)',
+        description: 'Primary financial data sources (Polygon, FMP, TwelveData)',
         components: {
           stockPrices: { enabled: true, coverage: '100%', latency: '<1s' },
           companyInfo: { enabled: true, coverage: '95%', latency: '<2s' },
@@ -2552,8 +2552,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         }
       },
       getDataSourceConfig: () => ({
-        'polygon': { priority: 1, weight: 1.0, timeout: 5000 },
-        'alphavantage': { priority: 2, weight: 0.8, timeout: 5000 }
+        'polygon': { priority: 1, weight: 1.0, timeout: 5000 }
       })
     }
   }

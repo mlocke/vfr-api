@@ -34,7 +34,6 @@ export function useAdminDashboard() {
   useEffect(() => {
     const initialDataSources: DataSourceStatus[] = [
       { id: 'polygon', name: 'Polygon.io API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.8 },
-      { id: 'alphavantage', name: 'Alpha Vantage API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.5 },
       { id: 'fmp', name: 'Financial Modeling Prep API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.2 },
       { id: 'yahoo', name: 'Yahoo Finance API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 99.9 },
       { id: 'sec_edgar', name: 'SEC EDGAR API', status: 'online', lastCheck: Date.now(), errorCount: 0, uptime: 98.5 },

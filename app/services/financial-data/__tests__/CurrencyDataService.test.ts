@@ -36,11 +36,11 @@ describe('CurrencyDataService', () => {
       const isHealthy = await service.healthCheck()
       expect(typeof isHealthy).toBe('boolean')
 
-      if (process.env.ALPHA_VANTAGE_API_KEY) {
+      if (process.env.CURRENCY_API_KEY) {
         // With API key, health check should pass
-        console.log('🔑 Alpha Vantage API key detected - expecting successful health check')
+        console.log('🔑 Currency API key detected - expecting successful health check')
       } else {
-        console.log('⚠️ No Alpha Vantage API key - health check may fail but test passes')
+        console.log('⚠️ No Currency API key - health check may fail but test passes')
       }
     }, 15000)
   })

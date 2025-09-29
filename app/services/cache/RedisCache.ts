@@ -581,7 +581,7 @@ export class RedisCache {
   /**
    * Get cached stock price with fallback to multiple sources
    */
-  async getCachedStockPrice(symbol: string, sources: string[] = ['polygon', 'alphavantage', 'yahoo']): Promise<any> {
+  async getCachedStockPrice(symbol: string, sources: string[] = ['polygon', 'yahoo']): Promise<any> {
     const keys = sources.map(source => `stock:price:${symbol}:${source}`)
     const results = await this.mget(keys)
 
@@ -827,7 +827,7 @@ export class RedisCache {
    */
   async warmCache(
     symbols: string[],
-    sources: string[] = ['polygon', 'alphavantage'],
+    sources: string[] = ['polygon'],
     includeOptions: boolean = false,
     includeMLPredictions: boolean = false
   ): Promise<void> {

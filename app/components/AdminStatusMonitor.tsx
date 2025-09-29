@@ -29,7 +29,6 @@ export default function AdminStatusMonitor({ dataSources, updateInterval = 5000 
   // Data source name mapping
   const dataSourceNames: Record<string, string> = {
     polygon: 'Polygon.io API',
-    alphavantage: 'Alpha Vantage API',
     fmp: 'FMP API',
     yahoo: 'Yahoo Finance API',
     sec_edgar: 'SEC EDGAR API',

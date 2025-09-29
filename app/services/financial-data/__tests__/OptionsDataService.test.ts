@@ -88,7 +88,6 @@ describe('OptionsDataService', () => {
       expect(availability).toHaveProperty('eodhd')
       expect(availability).toHaveProperty('yahoo')
       expect(availability).toHaveProperty('twelvedata')
-      expect(availability).toHaveProperty('alphavantage')
 
       // At least one provider should be available
       const hasAvailableProvider = Object.values(availability).some(isAvailable => isAvailable === true)

@@ -1,46 +1,181 @@
 # VFR Financial Analysis Platform - AI Agent Context Guide
 
-**Context-First Documentation for Maximum AI Comprehension and Actionability**
+**Created**: 2025-09-28
+**AI-Optimized Documentation for Maximum Comprehension and Immediate Actionability**
 
-## Decision Framework for AI Agents
+## 🎯 IMMEDIATE ACTION CONTEXT
 
-### Primary Context
-**System Purpose**: Enterprise-grade financial analysis platform democratizing institutional-level stock intelligence through AI-powered multi-source data aggregation.
+### System State Assessment Protocol
+**BEFORE ANY TASK** → Execute this validation sequence:
+1. **Health Check**: `curl localhost:3000/api/health` → Must return `200 OK`
+2. **Type Safety**: `npm run type-check` → Must show `0 errors`
+3. **Service Status**: Check `/admin` dashboard → All APIs green/yellow status acceptable
 
-**Business Context**: Individual investors lack access to sophisticated analysis tools available to institutions. This platform levels the playing field through real-time analysis of 15+ data sources across 11 active analysis components including options trading intelligence.
-
-**Technical Context**: Next.js 15 production platform with TypeScript, serving financial analysis via service-layer architecture with enterprise security and performance optimization.
-
-### Critical Success Criteria
-- **Data Integrity**: NO MOCK DATA - Production reliability depends on real API integration
-- **Performance**: Sub-3-second analysis completion with 83.8% parallel processing improvement
-- **Security**: 80% risk reduction through OWASP Top 10 compliance
-- **Reliability**: 99.5% uptime via multi-tier fallback strategies
-
-### AI Agent Decision Tree
+### Emergency Decision Matrix
 ```
-Task Type → Decision Path → Required Actions
-├── Development Task
-│   ├── Code Changes → `npm run type-check` BEFORE implementation
-│   ├── New Features → TDD approach with real API testing
-│   └── Bug Fixes → Check `/api/health` + admin dashboard first
-├── Testing Task
-│   ├── Integration → Use real APIs with 5-minute timeout
-│   ├── Performance → Memory optimization (4096MB heap, maxWorkers: 1)
-│   └── Security → OWASP validation + input sanitization
-└── Deployment Task
-    ├── Environment → Verify 15+ API keys configured
-    ├── Database → PostgreSQL + Redis + optional InfluxDB
-    └── Monitoring → Health endpoints + admin dashboard
+CONDITION                  → IMMEDIATE ACTION              → SUCCESS CRITERIA
+Port Conflict (EADDRINUSE) → `npm run dev:clean`          → Server starts port 3000
+API Rate Limit (429)       → Check admin dashboard        → Fallback sources active
+Memory Issues (heap)       → `export NODE_OPTIONS="--max-old-space-size=8192"` → Tests complete
+Redis Down                 → Automatic in-memory fallback → Cache still functions
+TypeScript Errors         → `npm run type-check`          → Zero errors reported
 ```
 
-### Essential Knowledge Context
-- **Rule #1**: NO MOCK DATA - Always use real APIs for development and testing
-- **Platform**: Next.js 15 + TypeScript (App Router) with React 19
-- **Data Sources**: 15+ financial APIs with intelligent fallback patterns
-- **Architecture**: Service layer + Redis caching + enterprise security
-- **Commands**: `npm run dev:clean` (port conflicts), `npm test` (TDD), `npm run type-check`
-- **Key Paths**: `app/services/` (business logic), `app/api/` (endpoints), `docs/` (comprehensive docs)
+## 🧠 AI AGENT DECISION FRAMEWORK
+
+### Multi-Dimensional Task Classification
+```
+INPUT: Task Request
+  ↓
+CLASSIFY: [Development | Testing | Analysis | Debugging | Documentation]
+  ↓
+ASSESS: [Complexity: Simple | Complex | Multi-Service | System-Level]
+  ↓
+DETERMINE: [Risk: Low | Medium | High | Critical]
+  ↓
+EXECUTE: Conditional Action Path with Success Validation
+```
+
+#### Decision Tree: Development Tasks
+```
+Development Task Request
+├── IF: Code Changes Required
+│   ├── CONDITION: TypeScript errors exist
+│   │   └── ACTION: `npm run type-check` → Fix errors → Proceed
+│   ├── CONDITION: New service creation
+│   │   └── ACTION: Follow BaseService pattern → Write tests first → Implement
+│   └── CONDITION: Existing service modification
+│       └── ACTION: Read existing tests → Understand integration → Modify
+├── IF: New Feature Implementation
+│   ├── CONDITION: Involves API integration
+│   │   └── ACTION: Use real APIs → No mocking → Test with 5-min timeout
+│   ├── CONDITION: UI/Frontend changes
+│   │   └── ACTION: Check `/stock-intelligence` → Maintain responsive design
+│   └── CONDITION: Backend service logic
+│       └── ACTION: Follow service layer pattern → Redis caching → Error handling
+└── IF: Bug Fixes Required
+    ├── CONDITION: System-level issue
+    │   └── ACTION: Check `/api/health` → Admin dashboard → Service logs
+    ├── CONDITION: Service-specific issue
+    │   └── ACTION: Read service tests → Reproduce → Fix → Validate
+    └── CONDITION: Performance issue
+        └── ACTION: Run performance tests → Identify bottleneck → Optimize
+```
+
+### State-Aware Context Switching
+**System States & Required Actions**:
+
+| System State | Indicators | Required Actions | Success Criteria |
+|--------------|------------|------------------|------------------|
+| **HEALTHY** | `/api/health` = 200, Admin dashboard green | Normal development workflow | All operations < 3s response |
+| **DEGRADED** | Some APIs yellow/red, Cache misses | Enable fallbacks, investigate issues | Core functionality maintained |
+| **UNSTABLE** | Memory warnings, timeout errors | Memory optimization, service restart | System recovers to HEALTHY |
+| **CRITICAL** | Multiple service failures, 500 errors | Emergency procedures, escalate | Minimum viable functionality |
+
+### Context Hierarchy (Immediate → Reference)
+
+#### 🚨 IMMEDIATE CONTEXT (Always Consider First)
+- **Rule #1**: NO MOCK DATA - Production reliability depends on real API integration
+- **Rule #2**: TypeScript Strict Mode - Zero errors before any commit
+- **Rule #3**: TDD Approach - Tests before implementation with real APIs
+- **Rule #4**: Performance Target - Sub-3-second analysis completion
+- **Rule #5**: Security First - OWASP Top 10 compliance in all code
+
+#### 📋 OPERATIONAL CONTEXT (Task-Specific)
+- **Platform**: Next.js 15 + TypeScript (App Router) + React 19
+- **Architecture**: Service layer + Redis caching + multi-tier fallbacks
+- **Data Sources**: 15+ financial APIs with intelligent fallback chains
+- **Core Paths**: `app/services/` (business logic), `app/api/` (endpoints)
+- **Commands**: `npm run dev:clean`, `npm test`, `npm run type-check`
+
+#### 📚 REFERENCE CONTEXT (Deep Implementation Details)
+- Business context, detailed architecture, comprehensive service mapping
+- Located in sections below for comprehensive system understanding
+
+## 🤖 AI AGENT ASSUMPTION REGISTRY
+
+### Critical Assumptions (Always True)
+```typescript
+interface SystemAssumptions {
+  dataPolicy: 'NO_MOCK_DATA_EVER';           // Never use fake data
+  apiTesting: 'REAL_APIS_ONLY';              // All tests use live APIs
+  typeChecking: 'STRICT_MODE_REQUIRED';      // Zero TypeScript errors policy
+  performance: 'SUB_3_SECOND_TARGET';        // Analysis response time limit
+  security: 'OWASP_TOP_10_COMPLIANCE';       // Security validation required
+  caching: 'REDIS_WITH_MEMORY_FALLBACK';     // Cache strategy assumption
+  errorHandling: 'GRACEFUL_DEGRADATION';     // Never crash, always degrade
+  testing: 'TDD_WITH_REAL_DATA';             // Tests before code, real APIs
+}
+```
+
+### Environmental Assumptions
+```typescript
+interface EnvironmentAssumptions {
+  platform: 'Next.js 15 + TypeScript + React 19';
+  architecture: 'Service Layer + API Routes + UI Components';
+  databases: 'PostgreSQL (primary) + Redis (cache) + InfluxDB (optional)';
+  apis: '15+ financial data sources with fallback chains';
+  memory: '4096MB heap minimum for tests, 8192MB for heavy operations';
+  ports: '3000 (dev), 3002 (api-only), check for conflicts always';
+  commands: 'npm-based workflow, dev:clean for conflicts';
+}
+```
+
+### Behavioral Assumptions
+```typescript
+interface BehaviorAssumptions {
+  commandExecution: 'Always validate before running';
+  errorRecovery: 'Automatic fallback to secondary sources';
+  performanceMonitoring: 'Continuous validation via /api/health';
+  securityValidation: 'Input sanitization on all endpoints';
+  cacheInvalidation: 'TTL-based with manual override capability';
+  testing: 'Memory-optimized Jest with real API integration';
+}
+```
+
+## 🔄 SYSTEM STATE MANAGEMENT
+
+### State Transition Matrix
+```
+CURRENT_STATE × TRIGGER_EVENT → NEW_STATE + REQUIRED_ACTIONS
+
+HEALTHY × API_RATE_LIMIT → DEGRADED + Enable_Fallback_Sources
+HEALTHY × MEMORY_WARNING → UNSTABLE + Increase_Heap_Size + GC
+HEALTHY × REDIS_DOWN → DEGRADED + Activate_Memory_Cache
+DEGRADED × ALL_APIS_DOWN → CRITICAL + Emergency_Procedures
+DEGRADED × SERVICES_RECOVER → HEALTHY + Resume_Normal_Operations
+UNSTABLE × PERFORMANCE_RESTORE → HEALTHY + Continue_Monitoring
+CRITICAL × MANUAL_INTERVENTION → UNSTABLE + Restart_Services
+```
+
+### State Detection Protocols
+```typescript
+interface StateDetection {
+  HEALTHY: {
+    indicators: ['/api/health returns 200', 'All services < 3s response', 'Admin dashboard green'];
+    actions: ['Continue normal operations', 'Monitor performance'];
+    validation: 'curl localhost:3000/api/health';
+  },
+
+  DEGRADED: {
+    indicators: ['Some APIs rate limited', 'Cache miss rate > 30%', 'Response times 3-10s'];
+    actions: ['Activate fallback APIs', 'Increase cache TTL', 'Monitor closely'];
+    validation: 'Check admin dashboard for API status';
+  },
+
+  UNSTABLE: {
+    indicators: ['Memory warnings', 'Frequent timeouts', 'Response times > 10s'];
+    actions: ['Increase heap size', 'Restart services', 'Reduce concurrent requests'];
+    validation: 'npm run test:performance:memory';
+  },
+
+  CRITICAL: {
+    indicators: ['Multiple service failures', '500 errors', 'System unresponsive'];
+    actions: ['Emergency restart', 'Fallback to cache only', 'Escalate to manual intervention'];
+    validation: 'Manual system assessment required';
+  }
+}
+```
 
 ## System Identity and Mental Model
 
@@ -490,53 +625,145 @@ ERROR: If cache stale → Graceful degradation with user notification
   - `todos/` - Detailed task tracking and implementation status
   - `CLAUDE.md` - Analysis engine specific AI agent instructions
 
-## Troubleshooting Matrix with Context-Aware Solutions
+## 🚨 AI-OPTIMIZED TROUBLESHOOTING FRAMEWORK
 
-### Primary Issue Classification and Resolution
-
-#### System-Level Issues
-| Issue | Symptoms | Root Cause | Immediate Action | Verification | Prevention |
-|-------|----------|------------|------------------|--------------|------------|
-| **Port Conflicts** | "EADDRINUSE: address already in use" | Multiple dev servers | `npm run dev:clean` | Server starts on port 3000 | Use dev:clean consistently |
-| **Memory Issues** | Slow tests, heap errors | Jest memory pressure | `export NODE_OPTIONS="--max-old-space-size=8192"` | Tests complete without errors | Monitor with `npm run test:performance:memory` |
-| **Server Issues** | HTTP 502/503 errors | httpd process conflicts | Kill httpd + `npm run dev:clean` | `/api/health` returns 200 | Regular process cleanup |
-
-#### Data Source Issues
-| Issue | Symptoms | Detection Method | Auto-Resolution | Manual Override |
-|-------|----------|------------------|-----------------|----------------|
-| **API Rate Limits** | 429 errors, missing data | Admin dashboard warnings | FallbackDataService switches sources | Enable caching, wait for reset |
-| **Redis Connectivity** | Cache misses, slow responses | Connection timeouts | In-memory fallback activates | Restart Redis, verify REDIS_URL |
-| **Market Sentiment 0.00%** | Placeholder values displayed | Rate limit reached | Enhanced fallback with "Limited Data" UI | Wait for API reset, check admin panel |
-
-#### Development Issues
-| Issue | Context | Diagnostic Command | Solution Path | Success Indicator |
-|-------|---------|-------------------|---------------|-------------------|
-| **TypeScript Errors** | Compilation failures | `npm run type-check` | Fix type definitions | Zero TS errors |
-| **Test Failures** | CI/CD pipeline breaks | `npm test -- --verbose` | Debug specific test | All tests pass |
-| **Database Connectivity** | Service startup fails | Check Docker services | Verify connection strings | `/api/health` shows DB connected |
-
-### Diagnostic Decision Tree
-```
-Issue Reported → Categorize → Gather Context → Apply Solution → Verify Resolution
-       ↓              ↓            ↓             ↓               ↓
-  User Report    System/Data    Run Diagnostics  Execute Fix    Confirm Success
-     │          ├─ System     ├─ /api/health   ├─ Automated    ├─ Health check
-     │          ├─ Data       ├─ Admin dash    ├─ Manual       ├─ User feedback
-     │          └─ Dev        └─ Log analysis └─ Config       └─ Metrics normal
-     └─ If unresolved → Escalate with full context
+### Error Boundary Classification System
+```typescript
+interface ErrorBoundary {
+  level: 'SYSTEM' | 'SERVICE' | 'DATA' | 'USER';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  autoRecovery: boolean;
+  escalationRequired: boolean;
+  maxRecoveryTime: number; // minutes
+}
 ```
 
-### Diagnostic Endpoints with Expected Responses
-| Endpoint | Purpose | Expected Response | Error Indicators |
-|----------|---------|-------------------|------------------|
-| `/api/health` | System status | `{"status": "healthy", "database": "connected"}` | 500 errors, missing components |
-| `/admin` | Data source monitoring | Real-time API health grid | Red status indicators |
-| `npm run dev:monitor` | Development logs | Stream of request/response logs | Error stack traces |
+### Intelligent Issue Resolution Matrix
 
-### Emergency Procedures
-1. **System Down**: Check `/api/health` → Restart services → Verify in admin dashboard
-2. **Data Quality Issues**: Admin panel → Check fallback status → Enable manual overrides
-3. **Performance Degradation**: Monitor memory → Check cache hit rates → Restart if needed
-4. **Security Incidents**: Review audit logs → Disable affected endpoints → Apply patches
+#### 🔴 CRITICAL SYSTEM ISSUES (Immediate Action Required)
+```
+ERROR_PATTERN                    → DETECTION_METHOD           → IMMEDIATE_ACTION              → SUCCESS_CRITERIA                → AUTO_RECOVERY
+"EADDRINUSE: address already"    → Port conflict scanner      → `npm run dev:clean`          → Server starts port 3000        → YES
+"heap out of memory"             → Memory monitoring         → Export NODE_OPTIONS=8192     → Tests complete without crash   → NO
+"ECONNREFUSED Redis"            → Redis connectivity test    → Activate memory fallback     → Cache operations continue       → YES
+"429 Too Many Requests"         → API rate limit detector    → Switch to fallback APIs      → Data still flows                → YES
+"Multiple service failures"      → Health endpoint cascade    → Emergency restart sequence   → Core services operational       → NO
+```
+
+#### 🟡 SERVICE DEGRADATION (Automated Resolution)
+```
+CONDITION                        → AUTO_DETECTION            → AUTO_ACTION                   → VERIFICATION                    → FALLBACK
+Cache miss rate > 30%           → Cache monitoring service   → Increase TTL, warm cache     → Hit rate > 70%                 → Manual cache refresh
+API response time > 5s          → Response time tracker      → Enable aggressive caching    → Response < 3s                  → Use cached data only
+Sentiment analysis 0.00%        → Admin dashboard monitor    → Activate baseline defaults   → "Limited Data" UI displayed     → Static sentiment scores
+Database connection drops       → Connection health checker  → Retry with exponential back  → Connection restored             → Read-only mode
+Test suite memory pressure      → Jest memory monitor        → Force garbage collection     → Tests complete successfully     → Reduce test concurrency
+```
+
+#### 🔵 DEVELOPMENT WORKFLOW ISSUES (Guided Resolution)
+```
+ISSUE_TYPE              → DIAGNOSTIC_SEQUENCE                                    → GUIDED_RESOLUTION                → VALIDATION_COMMAND
+TypeScript Errors      → `npm run type-check` → Identify error locations       → Fix type definitions → No imports missing    → `npm run type-check` returns 0 errors
+Test Failures          → `npm test -- --verbose` → Isolate failing test        → Debug specific test → Fix implementation    → All tests pass with real data
+Performance Problems   → `npm run test:performance` → Identify bottleneck      → Optimize service logic → Memory within limits → Performance tests pass
+Security Violations    → Security scanner active → OWASP compliance check      → Fix input validation → No injection vectors  → Security tests pass
+Build Failures         → `npm run build` → Analyze build errors               → Resolve dependencies → Clean build output    → Production build succeeds
+```
+
+### AI Agent Error Recovery Protocols
+
+#### Automated Recovery Decision Tree
+```
+ERROR_DETECTED
+├── IF: Error.severity === 'CRITICAL'
+│   ├── EXECUTE: Emergency restart procedures
+│   ├── NOTIFY: Escalate to manual intervention
+│   └── FALLBACK: Minimum viable functionality mode
+├── IF: Error.severity === 'HIGH'
+│   ├── EXECUTE: Service-specific recovery actions
+│   ├── MONITOR: Recovery progress with 5-minute timeout
+│   └── FALLBACK: Secondary service activation
+├── IF: Error.severity === 'MEDIUM'
+│   ├── EXECUTE: Automated mitigation strategies
+│   ├── CONTINUE: Normal operations with monitoring
+│   └── FALLBACK: Graceful degradation mode
+└── IF: Error.severity === 'LOW'
+    ├── LOG: Error details for analysis
+    ├── CONTINUE: Normal operations
+    └── SCHEDULE: Non-urgent resolution
+```
+
+#### Context-Aware Diagnostic Sequence
+```typescript
+interface DiagnosticProtocol {
+  step1_SystemHealth: {
+    command: 'curl localhost:3000/api/health';
+    successCriteria: 'HTTP 200 + JSON response with status: healthy';
+    onFailure: 'ESCALATE to step2_ServiceCheck';
+  },
+
+  step2_ServiceCheck: {
+    command: 'Check /admin dashboard for service status';
+    successCriteria: 'All APIs green/yellow (red = investigation needed)';
+    onFailure: 'EXECUTE fallback activation + CONTINUE to step3';
+  },
+
+  step3_TypeSafety: {
+    command: 'npm run type-check';
+    successCriteria: 'Found 0 errors';
+    onFailure: 'FIX TypeScript errors BEFORE proceeding';
+  },
+
+  step4_PerformanceValidation: {
+    command: 'npm run test:performance:memory';
+    successCriteria: 'Memory usage < 4GB, no leaks detected';
+    onFailure: 'APPLY memory optimization settings';
+  }
+}
+```
+
+### Emergency Escalation Procedures
+```
+ESCALATION_LEVEL_1: System Unresponsive (< 5 minutes)
+├── ACTION: Execute `npm run dev:clean`
+├── VERIFY: Port 3000 accessible
+└── IF_FAILED: Proceed to ESCALATION_LEVEL_2
+
+ESCALATION_LEVEL_2: Service Cascade Failure (< 10 minutes)
+├── ACTION: Kill all Node processes + Restart Redis
+├── VERIFY: `/api/health` returns 200
+└── IF_FAILED: Proceed to ESCALATION_LEVEL_3
+
+ESCALATION_LEVEL_3: System Recovery Required (< 30 minutes)
+├── ACTION: Full environment reset + Dependency reinstall
+├── VERIFY: All tests pass with `npm test`
+└── IF_FAILED: Manual intervention required
+```
+
+### Diagnostic Endpoints (Enhanced Monitoring)
+```typescript
+interface DiagnosticEndpoints {
+  '/api/health': {
+    purpose: 'System health validation';
+    expectedResponse: { status: 'healthy', database: 'connected', cache: 'active' };
+    errorIndicators: ['500 errors', 'missing components', 'timeout'];
+    automatedAction: 'Log error + Activate fallbacks';
+  },
+
+  '/admin': {
+    purpose: 'Real-time API monitoring dashboard';
+    expectedResponse: 'Grid of API statuses with response times';
+    errorIndicators: ['Red status indicators', 'Response times > 10s'];
+    automatedAction: 'Switch to fallback APIs + Alert monitoring';
+  },
+
+  'npm run dev:monitor': {
+    purpose: 'Development server log streaming';
+    expectedResponse: 'Request/response logs with performance metrics';
+    errorIndicators: ['Error stack traces', 'Memory warnings'];
+    automatedAction: 'Memory optimization + Service restart if needed';
+  }
+}
+```
 
 **📚 Reference Integration**: Always use Context7 MCP for real-time API documentation lookup

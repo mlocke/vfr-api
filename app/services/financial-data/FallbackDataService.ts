@@ -5,7 +5,6 @@
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios, InstitutionalIntelligence, InstitutionalHolding, InsiderTransaction } from './types'
 import { PolygonAPI } from './PolygonAPI'
-import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
@@ -54,22 +53,10 @@ export class FallbackDataService implements FinancialDataProvider {
       rateLimit: 60 // Unofficial, be conservative
     })
 
-    // 3. Alpha Vantage - Free tier: 25 requests/day, 5/minute (demoted from priority 2)
-    if (process.env.ALPHA_VANTAGE_API_KEY) {
-      const alphaPriority = process.env.ALPHAVANTAGE_PRIORITY ? parseInt(process.env.ALPHAVANTAGE_PRIORITY) : 3
-      this.dataSources.push({
-        name: 'Alpha Vantage',
-        provider: new AlphaVantageAPI(),
-        priority: alphaPriority,
-        isFree: true,
-        rateLimit: 5,
-        dailyLimit: 25
-      })
-    }
 
-    // 4. Twelve Data - Free tier: 800 requests/day, 8/minute (demoted from priority 3)
+    // 3. Twelve Data - Free tier: 800 requests/day, 8/minute
     if (process.env.TWELVE_DATA_API_KEY) {
-      const twelveDataPriority = process.env.TWELVEDATA_PRIORITY ? parseInt(process.env.TWELVEDATA_PRIORITY) : 4
+      const twelveDataPriority = process.env.TWELVEDATA_PRIORITY ? parseInt(process.env.TWELVEDATA_PRIORITY) : 3
       this.dataSources.push({
         name: 'Twelve Data',
         provider: new TwelveDataAPI(),
@@ -125,9 +112,9 @@ export class FallbackDataService implements FinancialDataProvider {
       })
     }
 
-    // 5. Polygon - Free tier: 5 requests/minute (limited but reliable) (demoted from priority 5)
+    // 4. Polygon - Free tier: 5 requests/minute (limited but reliable)
     if (process.env.POLYGON_API_KEY) {
-      const polygonPriority = process.env.POLYGON_PRIORITY ? parseInt(process.env.POLYGON_PRIORITY) : 5
+      const polygonPriority = process.env.POLYGON_PRIORITY ? parseInt(process.env.POLYGON_PRIORITY) : 4
       this.dataSources.push({
         name: 'Polygon',
         provider: new PolygonAPI(),
@@ -819,7 +806,8 @@ export class FallbackDataService implements FinancialDataProvider {
 
     // Score sources based on capacity, reliability, and current usage
     const scoredSources = candidateSources.map(source => {
-      let score = source.priority * 10 // Base priority score
+      // INVERTED: Lower priority numbers get higher base scores (priority 1 = highest priority)
+      let score = (10 - source.priority) * 10 // Base priority score (priority 1 = 90 points, priority 5 = 50 points)
 
       // Capacity scoring - higher capacity gets better score
       const rateInfo = this.requestCounts.get(source.name) || { count: 0, resetTime: now }
@@ -836,7 +824,7 @@ export class FallbackDataService implements FinancialDataProvider {
 
       // FMP Starter Plan bonus scoring
       const isFMPStarter = source.name === 'Financial Modeling Prep' && source.rateLimit >= 300
-      const starterBonus = isFMPStarter ? 15 : 0 // Extra points for starter plan
+      const starterBonus = isFMPStarter ? 25 : 0 // Extra points for starter plan (increased to ensure FMP priority)
 
       score += capacityScore + dailyScore + starterBonus
 
@@ -869,7 +857,6 @@ export class FallbackDataService implements FinancialDataProvider {
     const supportMap: Record<string, string[]> = {
       'Financial Modeling Prep': ['stock_price', 'company_info', 'fundamental_ratios', 'market_data', 'analyst_ratings', 'price_targets'],
       'Yahoo Finance': ['stock_price', 'company_info', 'market_data'],
-      'Alpha Vantage': ['stock_price', 'company_info', 'fundamental_ratios', 'market_data'],
       'Twelve Data': ['stock_price', 'company_info', 'market_data'],
       'Polygon': ['stock_price', 'company_info', 'market_data', 'fundamental_ratios']
     }
@@ -917,8 +904,6 @@ export class FallbackDataService implements FinancialDataProvider {
         recommendedFor.push('High-volume fundamental data', 'Batch processing', 'Analyst ratings')
       } else if (source.name === 'Yahoo Finance') {
         recommendedFor.push('Backup data source', 'Basic market data')
-      } else if (source.name === 'Alpha Vantage') {
-        recommendedFor.push('Historical data', 'Free tier usage')
       } else if (source.name === 'Twelve Data') {
         recommendedFor.push('Technical indicators', 'Market data')
       } else if (source.name === 'Polygon') {

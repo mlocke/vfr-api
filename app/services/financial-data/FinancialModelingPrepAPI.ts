@@ -1,6 +1,6 @@
 /**
  * Direct Financial Modeling Prep API implementation
- * Follows the same patterns as AlphaVantageAPI for consistency
+ * Provides comprehensive financial data with high reliability
  */
 
 import {

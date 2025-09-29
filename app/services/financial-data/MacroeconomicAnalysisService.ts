@@ -660,7 +660,7 @@ export class MacroeconomicAnalysisService {
 
   private async analyzeCurrencyImpact(): Promise<CurrencyAnalysis | null> {
     try {
-      // Get DXY data from EIA service (which uses Alpha Vantage)
+      // Get DXY data from EIA service (which uses fallback APIs)
       const dxyData = await this.eiaAPI.getDollarIndex()
 
       if (!dxyData) return null

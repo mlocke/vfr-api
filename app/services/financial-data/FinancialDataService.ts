@@ -6,7 +6,6 @@
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
 import { PolygonAPI } from './PolygonAPI'
-import { AlphaVantageAPI } from './AlphaVantageAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { BLSAPI } from './BLSAPI'
@@ -33,7 +32,6 @@ export class FinancialDataService {
     // Original providers for other data types
     this.providers = [
       new PolygonAPI(),
-      new AlphaVantageAPI(),
       new YahooFinanceAPI(),
       new FinancialModelingPrepAPI(),
       new BLSAPI(),

@@ -62,7 +62,7 @@ export class OptionsAnalysisService {
   }
 
   constructor(cache: RedisCache) {
-    this.eodhdAPI = new EODHDAPI()
+    this.eodhdAPI = new EODHDAPI(undefined, 30000)  // 30 second timeout for options chains
     this.cache = cache
     this.errorHandler = ErrorHandler
   }

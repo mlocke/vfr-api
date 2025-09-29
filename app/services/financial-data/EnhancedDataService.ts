@@ -161,9 +161,9 @@ export class EnhancedDataService implements FinancialDataProvider {
    * Configure for free-tier usage (prioritize free APIs)
    */
   configureForFreeTier(): void {
-    this.setStockPriceProvider('alphavantage', ['fmp', 'yahoo', 'twelvedata'])
-    this.setCompanyInfoProvider('fmp', ['alphavantage', 'sec_edgar', 'yahoo'])
-    this.setFundamentalsProvider('fmp', ['alphavantage', 'sec_edgar'])
+    this.setStockPriceProvider('fmp', ['yahoo', 'twelvedata'])
+    this.setCompanyInfoProvider('fmp', ['sec_edgar', 'yahoo'])
+    this.setFundamentalsProvider('fmp', ['sec_edgar'])
     this.setEconomicDataProvider('fred', ['bls', 'eia'])
 
     // Disable paid-only providers
@@ -176,11 +176,11 @@ export class EnhancedDataService implements FinancialDataProvider {
    * Configure for premium usage (prioritize best quality APIs)
    */
   configureForPremium(): void {
-    this.setStockPriceProvider('polygon', ['alphavantage', 'fmp'])
-    this.setCompanyInfoProvider('polygon', ['fmp', 'alphavantage'])
+    this.setStockPriceProvider('polygon', ['fmp'])
+    this.setCompanyInfoProvider('polygon', ['fmp'])
     // Options provider is EODHD only - no configuration needed
-    this.setFundamentalsProvider('polygon', ['fmp', 'alphavantage'])
-    this.setEconomicDataProvider('fred', ['alphavantage'])
+    this.setFundamentalsProvider('polygon', ['fmp'])
+    this.setEconomicDataProvider('fred', [])
 
     // Enable all providers
     Object.keys(this.getProviderConfigs()).forEach(provider => {
@@ -194,9 +194,9 @@ export class EnhancedDataService implements FinancialDataProvider {
    * Configure for development (balanced approach)
    */
   configureForDevelopment(): void {
-    this.setStockPriceProvider('fmp', ['alphavantage', 'yahoo', 'twelvedata'])
-    this.setCompanyInfoProvider('fmp', ['alphavantage', 'yahoo'])
-    this.setFundamentalsProvider('fmp', ['alphavantage'])
+    this.setStockPriceProvider('fmp', ['yahoo', 'twelvedata'])
+    this.setCompanyInfoProvider('fmp', ['yahoo'])
+    this.setFundamentalsProvider('fmp', [])
     this.setEconomicDataProvider('fred', ['bls'])
 
     console.log('🔧 Configured for development usage')

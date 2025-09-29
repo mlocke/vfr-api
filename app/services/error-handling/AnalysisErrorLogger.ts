@@ -267,7 +267,6 @@ export class AnalysisErrorLogger {
    */
   private getRateLimitReason(originalError: string, service?: string): string {
     const serviceNames = {
-      'AlphaVantageAPI': 'Alpha Vantage (500 requests/day)',
       'PolygonAPI': 'Polygon.io (5000 requests/day)',
       'FMPAPI': 'Financial Modeling Prep (250 requests/day)',
       'TwelveDataAPI': 'TwelveData (800 requests/day)',

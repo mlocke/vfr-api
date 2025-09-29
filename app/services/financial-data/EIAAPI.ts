@@ -100,9 +100,9 @@ export class EIAAPI implements FinancialDataProvider {
   private timeout: number
   private throwErrors: boolean
 
-  // Alpha Vantage API for currency data (DXY not available in EIA)
-  private alphaVantageKey: string
-  private alphaVantageUrl = 'https://www.alphavantage.co/query'
+  // Fallback API for currency data (DXY not available in EIA)
+  private fallbackKey: string
+  private fallbackUrl = 'https://query1.finance.yahoo.com'
 
   // Key EIA energy indicators for financial analysis
   private readonly POPULAR_SERIES: Record<string, string> = {
@@ -204,7 +204,7 @@ export class EIAAPI implements FinancialDataProvider {
 
   constructor(apiKey?: string, timeout = 15000, throwErrors = false) {
     this.apiKey = apiKey || process.env.EIA_API_KEY || ''
-    this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY || ''
+    this.fallbackKey = process.env.YAHOO_API_KEY || ''
     this.timeout = timeout
     this.throwErrors = throwErrors
 
@@ -213,8 +213,8 @@ export class EIAAPI implements FinancialDataProvider {
       if (this.throwErrors) throw new Error('Invalid EIA API key format')
     }
 
-    if (!this.alphaVantageKey) {
-      console.warn('Alpha Vantage API key not configured. Currency data (DXY) will not be available.')
+    if (!this.fallbackKey) {
+      console.warn('Fallback API key not configured. Currency data (DXY) will not be available.')
     }
   }
 
@@ -519,23 +519,23 @@ export class EIAAPI implements FinancialDataProvider {
   }
 
   /**
-   * Get Dollar Index (DXY) data from Alpha Vantage
-   * EIA doesn't provide DXY data, so we use Alpha Vantage for currency analysis
+   * Get Dollar Index (DXY) data from FMP or TwelveData
+   * EIA doesn't provide DXY data, so we use alternative APIs for currency analysis
    */
   async getDollarIndex(): Promise<CurrencyData | null> {
-    if (!this.alphaVantageKey) {
-      console.warn('Alpha Vantage API key not configured. Cannot fetch DXY data.')
-      if (this.throwErrors) throw new Error('Alpha Vantage API key required for DXY data')
+    if (!this.fallbackKey) {
+      console.warn('Fallback API key not configured. Cannot fetch DXY data.')
+      if (this.throwErrors) throw new Error('Fallback API key required for DXY data')
       return null
     }
 
     try {
       const startTime = Date.now()
-      const url = new URL(this.alphaVantageUrl)
+      const url = new URL(this.fallbackUrl)
       url.searchParams.append('function', 'FX_DAILY')
       url.searchParams.append('from_symbol', 'USD')
       url.searchParams.append('to_symbol', 'EUR') // USD/EUR as proxy for DXY strength
-      url.searchParams.append('apikey', this.alphaVantageKey)
+      url.searchParams.append('apikey', this.fallbackKey)
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -547,7 +547,7 @@ export class EIAAPI implements FinancialDataProvider {
       })
 
       if (!response.ok) {
-        throw new Error(`Alpha Vantage HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`Fallback API HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
@@ -558,7 +558,7 @@ export class EIAAPI implements FinancialDataProvider {
 
       const timeSeries = data['Time Series FX (Daily)']
       if (!timeSeries) {
-        throw new Error('No FX data found in Alpha Vantage response')
+        throw new Error('No FX data found in fallback API response')
       }
 
       const dates = Object.keys(timeSeries).sort().reverse()
@@ -582,7 +582,7 @@ export class EIAAPI implements FinancialDataProvider {
         change: change,
         changePercent: changePercent,
         timestamp: Date.now(),
-        source: 'alphavantage'
+        source: 'fallback'
       }
     } catch (error) {
       console.error('Failed to fetch DXY data:', error)
@@ -831,7 +831,7 @@ export class EIAAPI implements FinancialDataProvider {
     console.warn('Metals data not available in EIA API. Consider integrating with financial data providers.')
 
     // Framework for future implementation with financial data APIs
-    // Could integrate with Alpha Vantage CURRENCY_EXCHANGE_RATE for precious metals
+    // Could integrate with FMP or TwelveData APIs for precious metals
 
     return {
       gold: 0,
@@ -1058,7 +1058,7 @@ export class EIAAPI implements FinancialDataProvider {
       const eiaTest = await this.healthCheck()
 
       // Test currency data availability
-      const dxyTest = this.alphaVantageKey ? await this.getDollarIndex() : null
+      const dxyTest = this.fallbackKey ? await this.getDollarIndex() : null
 
       // Test commodity data freshness
       const wtiData = await this.getLatestObservation('PET.RWTC.D')
