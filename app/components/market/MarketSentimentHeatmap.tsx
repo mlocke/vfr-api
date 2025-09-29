@@ -62,7 +62,7 @@ export default function MarketSentimentHeatmap({ className = '' }: MarketSentime
 
   const formatPercentage = (value: number | undefined): string => {
     if (value === undefined) return '--'
-    if (value === 0) return 'Limited Data'
+    // Only show "Limited Data" for truly missing data, not 0% performance
     const sign = value > 0 ? '+' : ''
     return `${sign}${value.toFixed(2)}%`
   }
