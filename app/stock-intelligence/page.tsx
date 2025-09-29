@@ -111,6 +111,8 @@ export default function StockIntelligencePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        // Remove frontend timeout to match admin dashboard behavior
+        // Backend handles timeouts via config.timeout parameter
       })
 
       if (!response.ok) {
