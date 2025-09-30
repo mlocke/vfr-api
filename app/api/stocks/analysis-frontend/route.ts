@@ -19,7 +19,7 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
-import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SecurityValidator } from '../../../services/security/SecurityValidator'
 import { promises as fs } from 'fs'
 import path from 'path'
@@ -132,9 +132,9 @@ async function initializeStockSelectionService(): Promise<StockSelectionService>
 
     let vwapService: VWAPService | undefined
     try {
-      if (process.env.POLYGON_API_KEY) {
-        const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
-        vwapService = new VWAPService(polygonAPI, cache)
+      if (process.env.FMP_API_KEY) {
+        const fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
+        vwapService = new VWAPService(fmpAPI, cache)
       }
     } catch (error) {
       console.warn('VWAP service not available:', error)
@@ -153,7 +153,7 @@ async function initializeStockSelectionService(): Promise<StockSelectionService>
     try {
       shortInterestService = new ShortInterestService({
         finraApiKey: process.env.FINRA_API_KEY,
-        polygonApiKey: process.env.POLYGON_API_KEY
+        polygonApiKey: process.env.FMP_API_KEY
       })
     } catch (error) {
       console.warn('Short interest service not available:', error)
@@ -161,9 +161,9 @@ async function initializeStockSelectionService(): Promise<StockSelectionService>
 
     let extendedMarketService: ExtendedMarketDataService | undefined
     try {
-      if (process.env.POLYGON_API_KEY) {
-        const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
-        extendedMarketService = new ExtendedMarketDataService(polygonAPI, cache)
+      if (process.env.FMP_API_KEY) {
+        const fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
+        extendedMarketService = new ExtendedMarketDataService(fmpAPI, cache)
       }
     } catch (error) {
       console.warn('Extended market service not available:', error)

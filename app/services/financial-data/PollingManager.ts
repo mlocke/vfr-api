@@ -3,7 +3,7 @@
  * Handles market hours detection and smart polling schedules
  */
 
-import { PolygonAPI } from './PolygonAPI'
+import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { StockData } from './types'
 
 export interface PollingConfig {
@@ -14,12 +14,12 @@ export interface PollingConfig {
 }
 
 export class PollingManager {
-  private polygonAPI: PolygonAPI
+  private polygonAPI: FinancialModelingPrepAPI
   private config: PollingConfig
   private activePolls: Map<string, NodeJS.Timeout> = new Map()
   private callbacks: Map<string, (data: StockData | null) => void> = new Map()
 
-  constructor(polygonAPI: PolygonAPI, config?: Partial<PollingConfig>) {
+  constructor(polygonAPI: FinancialModelingPrepAPI, config?: Partial<PollingConfig>) {
     this.polygonAPI = polygonAPI
     this.config = {
       marketHoursInterval: config?.marketHoursInterval || 30000,      // 30 seconds
@@ -98,11 +98,8 @@ export class PollingManager {
     // Start polling
     const poll = async () => {
       try {
-        // Use latest trade during market hours, snapshot otherwise
-        const marketPeriod = this.getMarketPeriod()
-        const data = marketPeriod === 'market'
-          ? await this.polygonAPI.getLatestTrade(symbol)
-          : await this.polygonAPI.getStockPrice(symbol)
+        // Use stock price data for all periods (FMP doesn't have separate latest trade endpoint)
+        const data = await this.polygonAPI.getStockPrice(symbol)
 
         // Call the callback with the data
         const cb = this.callbacks.get(symbol)

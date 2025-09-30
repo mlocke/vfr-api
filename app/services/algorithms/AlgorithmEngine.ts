@@ -25,6 +25,7 @@ import { InstitutionalDataService } from '../financial-data/InstitutionalDataSer
 import { OptionsDataService } from '../financial-data/OptionsDataService'
 import { RedisCache } from '../cache/RedisCache'
 import { getRecommendation } from '../utils/RecommendationUtils'
+import { TimeoutHandler } from '../error-handling/TimeoutHandler'
 
 interface MarketDataPoint {
   symbol: string
@@ -550,11 +551,15 @@ export class AlgorithmEngine {
       console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Using enhanced composite factor calculation`)
 
       try {
-        // 🆕 PRE-FETCH SENTIMENT DATA for composite algorithm
+        // 🆕 PRE-FETCH SENTIMENT DATA for composite algorithm (with 15s timeout)
         let sentimentScore: number | undefined
         try {
           console.log(`📰 Pre-fetching sentiment data for ${symbol}...`)
-          const sentimentResult = await this.sentimentService.getSentimentIndicators(symbol)
+          const timeoutHandler = TimeoutHandler.getInstance()
+          const sentimentResult = await timeoutHandler.withTimeout(
+            this.sentimentService.getSentimentIndicators(symbol),
+            15000 // 15s timeout for Reddit parallel processing
+          )
           sentimentScore = sentimentResult ? sentimentResult.aggregatedScore : undefined
           console.log(`📰 Sentiment pre-fetched for ${symbol}: ${sentimentScore}`)
         } catch (sentimentError) {
@@ -575,15 +580,19 @@ export class AlgorithmEngine {
           }
         }
 
-        // 🆕 PRE-FETCH MACROECONOMIC CONTEXT for composite algorithm
+        // 🆕 PRE-FETCH MACROECONOMIC CONTEXT for composite algorithm (with 10s timeout)
         let macroeconomicContext: any | undefined
         if (this.macroeconomicService && marketData.sector) {
           try {
             console.log(`🌍 Pre-fetching macroeconomic context for ${symbol} (${marketData.sector})...`)
-            const macroImpact = await this.macroeconomicService.analyzeStockMacroImpact(
-              symbol,
-              marketData.sector,
-              marketData.price
+            const timeoutHandler = TimeoutHandler.getInstance()
+            const macroImpact = await timeoutHandler.withTimeout(
+              this.macroeconomicService.analyzeStockMacroImpact(
+                symbol,
+                marketData.sector,
+                marketData.price
+              ),
+              10000 // 10s timeout for government APIs
             )
             macroeconomicContext = macroImpact
             console.log(`🌍 Macro context pre-fetched for ${symbol}: ${macroImpact ? 'success' : 'no data'}`)
@@ -593,13 +602,17 @@ export class AlgorithmEngine {
           }
         }
 
-        // 🆕 PRE-FETCH ESG DATA for composite algorithm
+        // 🆕 PRE-FETCH ESG DATA for composite algorithm (with 8s timeout)
         let esgScore: number | undefined
         try {
           console.log(`🌱 Pre-fetching ESG data for ${symbol} (${marketData.sector})...`)
+          const timeoutHandler = TimeoutHandler.getInstance()
           const { ESGDataService } = await import('../financial-data/ESGDataService')
           const esgService = new ESGDataService()
-          const esgImpact = await esgService.getESGImpactForStock(symbol, marketData.sector || 'unknown', 0.5)
+          const esgImpact = await timeoutHandler.withTimeout(
+            esgService.getESGImpactForStock(symbol, marketData.sector || 'unknown', 0.5),
+            8000 // 8s timeout for ESG provider APIs
+          )
           esgScore = esgImpact ? esgImpact.esgScore / 100 : undefined // Convert to 0-1 scale
           console.log(`🌱 ESG pre-fetched for ${symbol}: ${esgScore ? esgScore.toFixed(3) : 'no data'}`)
         } catch (esgError) {
@@ -607,12 +620,16 @@ export class AlgorithmEngine {
           esgScore = undefined // Will use fallback in FactorLibrary
         }
 
-        // 🆕 PRE-FETCH INSTITUTIONAL DATA for composite algorithm
+        // 🆕 PRE-FETCH INSTITUTIONAL DATA for composite algorithm (with 10s timeout)
         let institutionalData: any | undefined
         if (this.institutionalService) {
           try {
             console.log(`🏢 Pre-fetching institutional data for ${symbol}...`)
-            const institutionalIntelligence = await this.institutionalService.getInstitutionalIntelligence(symbol)
+            const timeoutHandler = TimeoutHandler.getInstance()
+            const institutionalIntelligence = await timeoutHandler.withTimeout(
+              this.institutionalService.getInstitutionalIntelligence(symbol),
+              10000 // 10s timeout for institutional APIs
+            )
             institutionalData = institutionalIntelligence
             console.log(`🏢 Institutional data pre-fetched for ${symbol}: ${institutionalIntelligence ? `sentiment ${institutionalIntelligence.weightedSentiment}, score ${institutionalIntelligence.compositeScore.toFixed(2)}` : 'no data'}`)
           } catch (institutionalError) {
@@ -640,10 +657,10 @@ export class AlgorithmEngine {
         try {
           console.log(`🕒 Pre-fetching extended market data for ${symbol}...`)
           const { ExtendedMarketDataService } = await import('../financial-data/ExtendedMarketDataService')
-          const { PolygonAPI } = await import('../financial-data/PolygonAPI')
-          const polygonAPI = new PolygonAPI()
+          const { FinancialModelingPrepAPI } = await import('../financial-data/FinancialModelingPrepAPI')
+          const fmpAPI = new FinancialModelingPrepAPI()
           const redisCache = new RedisCache()
-          const extendedMarketService = new ExtendedMarketDataService(polygonAPI, redisCache)
+          const extendedMarketService = new ExtendedMarketDataService(fmpAPI, redisCache)
           const extendedData = await extendedMarketService.getExtendedMarketData(symbol)
           extendedMarketData = extendedData
           console.log(`🕒 Extended market data pre-fetched for ${symbol}: ${extendedData ? `extended hours data ${extendedData.extendedHours?.marketStatus || 'N/A'}, liquidity ${extendedData.liquidityMetrics?.liquidityScore || 'N/A'}` : 'no data'}`)
@@ -801,18 +818,23 @@ export class AlgorithmEngine {
 
           // ✅ PERFORMANCE FIX: Calculate individual composite components for proper tracking
           try {
-            // Technical Analysis Score (35% weight) - CRITICAL for utilization tracking
+            // Technical Analysis Score (28% weight) - CRITICAL for utilization tracking
             const technicalOverallScore = await this.factorLibrary.calculateFactor('technical_overall_score', symbol, marketData, fundamentalData)
-            if (technicalOverallScore !== null && technicalOverallScore !== 0.5) {
+            if (technicalOverallScore !== null) {
               componentFactors['technical_overall_score'] = technicalOverallScore
               componentFactors['technicalScore'] = technicalOverallScore * 100 // Export as 0-100 scale
-              console.log(`✅ Technical overall score for ${symbol}: ${technicalOverallScore.toFixed(3)} - TRACKED`)
+              console.log(`✅ Technical overall score for ${symbol}: ${technicalOverallScore.toFixed(3)} (${(technicalOverallScore * 100).toFixed(1)}) - TRACKED`)
+            } else {
+              console.warn(`⚠️ Technical score null for ${symbol} - will show as 0 in UI`)
             }
 
             // 🆕 FUNDAMENTAL SCORE CALCULATION - Add fundamental score to factorScores
             const qualityScore = await this.factorLibrary.calculateFactor('quality_composite', symbol, marketData, fundamentalData)
-            if (qualityScore !== null && qualityScore !== 0.5) {
+            if (qualityScore !== null) {
               componentFactors['quality_composite'] = qualityScore
+              console.log(`✅ Quality composite score for ${symbol}: ${qualityScore.toFixed(3)} (${(qualityScore * 100).toFixed(1)})`)
+            } else {
+              console.warn(`⚠️ Quality composite null for ${symbol}`)
             }
 
             // Calculate fundamental score from fundamentalData

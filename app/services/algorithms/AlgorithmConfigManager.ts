@@ -601,12 +601,10 @@ export class AlgorithmConfigManager {
             marketCapMin: 500000000 // $500M minimum
           },
           weights: [
-            { factor: 'composite', weight: 0.6, enabled: true },
-            { factor: 'technical_overall_score', weight: 0.4, enabled: true },
-            { factor: 'sentiment_composite', weight: 0.1, enabled: true },
-            { factor: 'quality_composite', weight: 0.25, enabled: true },
-            { factor: 'value_composite', weight: 0.2, enabled: true },
-            { factor: 'momentum_composite', weight: 0.15, enabled: true }
+            // ✅ FIXED: Use ONLY composite factor - it already includes technical, fundamental, sentiment, etc.
+            // Previous config had double-counting: composite (60%) + its components (110%) = 170% total
+            // Composite factor internally weights: Technical 28%, Fundamental 28%, Macro 20%, Sentiment 18%, Alternative 6%
+            { factor: 'composite', weight: 1.0, enabled: true }
           ],
           selection: {
             topN: 35,
@@ -757,25 +755,10 @@ export class AlgorithmConfigManager {
         marketCapMin: 500000000
       },
       weights: [
-        // Technical Analysis factors (40% total weight)
-        { factor: 'technical_overall_score', weight: 0.25, enabled: true },
-        { factor: 'rsi_14d', weight: 0.08, enabled: true },
-        { factor: 'macd_signal', weight: 0.07, enabled: true },
-
-        // Fundamental Analysis factors (25% total weight)
-        { factor: 'quality_composite', weight: 0.15, enabled: true },
-        { factor: 'pe_ratio', weight: 0.05, enabled: true },
-        { factor: 'roe', weight: 0.05, enabled: true },
-
-        // Value factors (20% total weight)
-        { factor: 'value_composite', weight: 0.12, enabled: true },
-        { factor: 'pb_ratio', weight: 0.08, enabled: true },
-
-        // Risk/Volatility factors (10% total weight)
-        { factor: 'volatility_30d', weight: 0.10, enabled: true },
-
-        // Fallback composite factor (5% total weight)
-        { factor: 'composite', weight: 0.05, enabled: true }
+        // ✅ FIXED: Removed individual factors to prevent double-counting with composite
+        // This is a "detailed breakdown" config that should use individual factors OR composite, not both
+        // Using composite factor which internally calculates all sub-components
+        { factor: 'composite', weight: 1.0, enabled: true }
       ],
       selection: {
         topN: 35,

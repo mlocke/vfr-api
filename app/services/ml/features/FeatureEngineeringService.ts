@@ -2,7 +2,7 @@ import { VWAPService } from '../../financial-data/VWAPService'
 import { SentimentAnalysisService } from '../../financial-data/SentimentAnalysisService'
 import { MacroeconomicAnalysisService } from '../../financial-data/MacroeconomicAnalysisService'
 import { OptionsDataService } from '../../financial-data/OptionsDataService'
-import { PolygonAPI } from '../../financial-data/PolygonAPI'
+import { FinancialModelingPrepAPI } from '../../financial-data/FinancialModelingPrepAPI'
 import { RedisCache } from '../../cache/RedisCache'
 import ErrorHandler from '../../error-handling/ErrorHandler'
 
@@ -46,7 +46,7 @@ export class FeatureEngineeringService {
     this.sentimentService = new SentimentAnalysisService(this.cache)
     this.macroService = new MacroeconomicAnalysisService()
     this.optionsService = new OptionsDataService()
-    this.vwapService = new VWAPService(new PolygonAPI(), this.cache)
+    this.vwapService = new VWAPService(new FinancialModelingPrepAPI(), this.cache)
     this.errorHandler = ErrorHandler.getInstance()
   }
 

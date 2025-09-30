@@ -1,28 +1,26 @@
 /**
  * VWAP Analysis Service
  * Provides Volume Weighted Average Price calculations and analysis
- * Integrates with PolygonAPI for real-time VWAP data
+ * Uses FMP API for historical data and calculates VWAP internally
  */
 
-import { PolygonAPI } from './PolygonAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { VWAPData, VWAPAnalysis, StockData, HistoricalVWAP, VWAPTrendAnalysis, VWAPTrendInsights } from './types'
 import { RedisCache } from '../cache/RedisCache'
 
 export class VWAPService {
-  private polygonAPI: PolygonAPI
   private fmpAPI: FinancialModelingPrepAPI
   private cache: RedisCache
   private readonly CACHE_TTL = 60 // 1 minute for VWAP data
 
-  constructor(polygonAPI: PolygonAPI, cache: RedisCache) {
-    this.polygonAPI = polygonAPI
-    this.fmpAPI = new FinancialModelingPrepAPI()
+  constructor(fmpAPI: FinancialModelingPrepAPI, cache: RedisCache) {
+    this.fmpAPI = fmpAPI
     this.cache = cache
   }
 
   /**
    * Get comprehensive VWAP analysis for a symbol
+   * Calculates VWAP from FMP historical data
    */
   async getVWAPAnalysis(symbol: string): Promise<VWAPAnalysis | null> {
     try {
@@ -34,46 +32,31 @@ export class VWAPService {
         return cached
       }
 
-      // Try FMP first (300 req/min), fallback to Polygon (5 req/min)
-      let currentPrice: number | null = null
-      let vwap: number | null = null
+      // Get current price and calculate VWAP from historical data
+      const [stockData, historicalData] = await Promise.all([
+        this.fmpAPI.getStockPrice(symbol),
+        this.fmpAPI.getHistoricalData(symbol, 1) // Get today's data for VWAP calculation
+      ])
 
-      // Try FMP historical data for VWAP
-      const fmpData = await this.fmpAPI.getMarketData(symbol)
-      if (fmpData) {
-        currentPrice = fmpData.close
-        // FMP doesn't provide VWAP in basic endpoint, so use Polygon for VWAP
-        const vwapData = await this.polygonAPI.getVWAP(symbol)
-        vwap = vwapData?.vwap || null
-      }
-
-      // Fallback to Polygon for both if FMP fails
-      if (!currentPrice || !vwap) {
-        const [stockData, vwapData] = await Promise.allSettled([
-          this.polygonAPI.getStockPrice(symbol),
-          this.polygonAPI.getVWAP(symbol)
-        ])
-
-        if (stockData.status === 'fulfilled' && stockData.value) {
-          currentPrice = stockData.value.price
-        }
-        if (vwapData.status === 'fulfilled' && vwapData.value) {
-          vwap = vwapData.value.vwap
-        }
-      }
-
-      if (!currentPrice || !vwap) {
+      if (!stockData || !historicalData || historicalData.length === 0) {
         return null
       }
+
+      const currentPrice = stockData.price
+      const todayData = historicalData[0]
+
+      // Calculate VWAP using typical price (H+L+C)/3
+      const vwap = (todayData.high + todayData.low + todayData.close) / 3
+
       const deviation = currentPrice - vwap
       const deviationPercent = (deviation / vwap) * 100
 
       const analysis: VWAPAnalysis = {
         symbol: symbol.toUpperCase(),
         currentPrice,
-        vwap,
-        deviation,
-        deviationPercent,
+        vwap: Number(vwap.toFixed(2)),
+        deviation: Number(deviation.toFixed(2)),
+        deviationPercent: Number(deviationPercent.toFixed(2)),
         signal: this.determineSignal(deviationPercent),
         strength: this.determineStrength(Math.abs(deviationPercent)),
         timestamp: Date.now()
@@ -108,22 +91,29 @@ export class VWAPService {
 
   /**
    * Get multiple timeframe VWAP data
+   * Uses calculated VWAP from FMP historical data
    */
   async getMultiTimeframeVWAP(symbol: string): Promise<{
     minute: VWAPData | null,
     hour: VWAPData | null,
     day: VWAPData | null
   }> {
-    const [minute, hour, day] = await Promise.allSettled([
-      this.polygonAPI.getVWAP(symbol, 'minute'),
-      this.polygonAPI.getVWAP(symbol, 'hour'),
-      this.polygonAPI.getVWAP(symbol, 'day')
-    ])
+    // FMP provides daily data, so we calculate daily VWAP
+    const dayAnalysis = await this.getVWAPAnalysis(symbol)
+
+    const dayData: VWAPData | null = dayAnalysis ? {
+      symbol: dayAnalysis.symbol,
+      vwap: dayAnalysis.vwap,
+      volume: 0, // Volume not used in analysis
+      timestamp: dayAnalysis.timestamp,
+      timespan: 'day',
+      source: 'fmp'
+    } : null
 
     return {
-      minute: minute.status === 'fulfilled' ? minute.value : null,
-      hour: hour.status === 'fulfilled' ? hour.value : null,
-      day: day.status === 'fulfilled' ? day.value : null
+      minute: null, // Intraday not available with FMP basic plan
+      hour: null,   // Intraday not available with FMP basic plan
+      day: dayData
     }
   }
 

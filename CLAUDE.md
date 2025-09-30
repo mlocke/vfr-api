@@ -54,6 +54,7 @@ The platform integrates 15+ financial APIs with intelligent fallback strategies:
 - Alternative: ESG providers, FINRA short interest
 
 ## Development Guidelines
+- **SINGLE LOCATION FOR METRIC CALCULATIONS**
 
 ### Testing Philosophy
 - **NO MOCK DATA** policy - all tests use real APIs

@@ -5,7 +5,7 @@
  */
 
 import { ExtendedMarketDataService, BidAskSpread, LiquidityMetrics, ExtendedMarketData } from '../ExtendedMarketDataService'
-import { PolygonAPI } from '../PolygonAPI'
+import { FinancialModelingPrepAPI } from '../FinancialModelingPrepAPI'
 import { RedisCache } from '../../cache/RedisCache'
 
 // Test configuration
@@ -15,7 +15,7 @@ const TEST_TIMEOUT = 15000 // 15 seconds
 
 describe('ExtendedMarketDataService Integration Tests', () => {
   let service: ExtendedMarketDataService
-  let polygonAPI: PolygonAPI
+  let fmpAPI: FinancialModelingPrepAPI
   let cache: RedisCache
 
   beforeAll(async () => {
@@ -25,9 +25,10 @@ describe('ExtendedMarketDataService Integration Tests', () => {
     }
 
     // Initialize services
-    polygonAPI = new PolygonAPI()
+    fmpAPI = new FinancialModelingPrepAPI()
     cache = new RedisCache()
-    service = new ExtendedMarketDataService(polygonAPI, cache)
+    // Note: ExtendedMarketDataService now uses FinancialModelingPrepAPI instead of PolygonAPI
+    service = new ExtendedMarketDataService(fmpAPI, cache)
 
     // Clear any existing cache data
     await cache.clear()
@@ -57,7 +58,7 @@ describe('ExtendedMarketDataService Integration Tests', () => {
       expect(result?.symbol).toBe(symbol.toUpperCase())
       expect(result?.regularData).toBeDefined()
       expect(result?.extendedHours).toBeDefined()
-      expect(result?.source).toBe('polygon')
+      expect(result?.source).toBe('fmp')
       expect(result?.timestamp).toBeGreaterThan(0)
 
       // Regular data should have basic stock information
@@ -103,7 +104,7 @@ describe('ExtendedMarketDataService Integration Tests', () => {
         expect(spread.spread).toBeGreaterThan(0)
         expect(spread.spreadPercent).toBeGreaterThanOrEqual(0)
         expect(spread.midpoint).toBe((spread.bid + spread.ask) / 2)
-        expect(spread.source).toBe('polygon')
+        expect(spread.source).toBe('fmp')
       } else {
         // Acceptable if bid/ask not available outside market hours
         console.log(`Bid/ask data not available for ${symbol} - may be outside market hours`)
@@ -157,7 +158,7 @@ describe('ExtendedMarketDataService Integration Tests', () => {
         expect(metrics.spreadVolatility).toBeGreaterThanOrEqual(0)
         expect(metrics.marketMakingActivity).toBeGreaterThanOrEqual(0)
         expect(metrics.marketMakingActivity).toBeLessThanOrEqual(10)
-        expect(metrics.source).toBe('polygon')
+        expect(metrics.source).toBe('fmp')
       } else {
         console.log(`Liquidity metrics not available for ${symbol} - may be outside market hours`)
       }
@@ -188,7 +189,7 @@ describe('ExtendedMarketDataService Integration Tests', () => {
       expect(extendedHours).toBeDefined()
       expect(extendedHours?.symbol).toBe(symbol.toUpperCase())
       expect(['pre-market', 'market-hours', 'after-hours', 'closed']).toContain(extendedHours?.marketStatus)
-      expect(extendedHours?.source).toBe('polygon')
+      expect(extendedHours?.source).toBe('fmp')
     }, TEST_TIMEOUT)
 
     test('should get current market status', async () => {

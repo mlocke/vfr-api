@@ -3,12 +3,11 @@
  * Provides real sector performance data using sector ETFs
  */
 
-import { PolygonAPI } from './PolygonAPI'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { SectorPerformanceRanking, SectorRankingResponse, SectorHistoricalData } from './types'
-import { redisCache } from '../cache/RedisCache'
 import { createServiceErrorHandler } from '../error-handling'
+import { RedisCache } from '../cache/RedisCache'
 
 export interface SectorData {
   symbol: string
@@ -40,11 +39,12 @@ export interface SectorDataResponse {
 }
 
 export class SectorDataService {
-  private polygon: PolygonAPI
+  private polygon: FinancialModelingPrepAPI
   private yahooFinance: YahooFinanceAPI
   private fmp: FinancialModelingPrepAPI
   private readonly errorHandler: ReturnType<typeof createServiceErrorHandler>
   private readonly cacheTTL = 900000 // 15 minutes cache for sector rankings
+  private redisCache: RedisCache
 
   // Map sector ETF symbols to human-readable names
   private sectorETFs = [
@@ -59,10 +59,11 @@ export class SectorDataService {
   ]
 
   constructor() {
-    this.polygon = new PolygonAPI()
+    this.polygon = new FinancialModelingPrepAPI()
     this.yahooFinance = new YahooFinanceAPI()
     this.fmp = new FinancialModelingPrepAPI()
     this.errorHandler = createServiceErrorHandler('SectorDataService')
+    this.redisCache = RedisCache.getInstance()
   }
 
   /**
@@ -368,7 +369,7 @@ export class SectorDataService {
   async getSectorPerformanceRankings(): Promise<SectorRankingResponse> {
     try {
       const cacheKey = 'sector-performance-rankings'
-      const cachedData = await redisCache.get<SectorRankingResponse>(cacheKey)
+      const cachedData = await this.redisCache.get<SectorRankingResponse>(cacheKey)
 
       if (cachedData) {
         return cachedData
@@ -421,7 +422,7 @@ export class SectorDataService {
         errors: sectorData.errors
       }
 
-      await redisCache.set(cacheKey, response, this.cacheTTL)
+      await this.redisCache.set(cacheKey, response, this.cacheTTL)
       return response
 
     } catch (error) {
@@ -435,7 +436,7 @@ export class SectorDataService {
   private async getHistoricalSectorData(symbol: string, sectorName: string): Promise<SectorHistoricalData | null> {
     try {
       const cacheKey = `historical-sector-data:${symbol}`
-      const cachedData = await redisCache.get<SectorHistoricalData>(cacheKey)
+      const cachedData = await this.redisCache.get<SectorHistoricalData>(cacheKey)
 
       if (cachedData) {
         return cachedData
@@ -488,7 +489,7 @@ export class SectorDataService {
       }
 
       // Cache for 1 hour
-      await redisCache.set(cacheKey, historicalData, 3600000)
+      await this.redisCache.set(cacheKey, historicalData, 3600000)
       return historicalData
 
     } catch (error) {

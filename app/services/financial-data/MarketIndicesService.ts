@@ -5,10 +5,9 @@
  */
 
 import { FinancialDataProvider } from './types'
-import { PolygonAPI } from './PolygonAPI'
+import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
 import { YahooFinanceAPI } from './YahooFinanceAPI'
-import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
 
 export interface MarketIndex {
   symbol: string
@@ -96,7 +95,7 @@ export class MarketIndicesService {
       this.providers.set('twelvedata', new TwelveDataAPI())
     }
     if (process.env.POLYGON_API_KEY) {
-      this.providers.set('polygon', new PolygonAPI())
+      this.providers.set('polygon', new FinancialModelingPrepAPI())
     }
     // Yahoo as fallback (no key required)
     this.providers.set('yahoo', new YahooFinanceAPI())

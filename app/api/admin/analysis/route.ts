@@ -16,7 +16,7 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { VWAPService } from '../../../services/financial-data/VWAPService'
-import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 
 // Request validation schema - compatible with admin dashboard format
@@ -194,31 +194,31 @@ class AdminAnalysisServiceManager {
           break
 
         case 'shortInterest':
-          if (!process.env.FINRA_API_KEY && !process.env.POLYGON_API_KEY) {
+          if (!process.env.FINRA_API_KEY && !process.env.FMP_API_KEY) {
             console.warn('No API keys available for short interest service')
             return null
           }
           service = new ShortInterestService({
             finraApiKey: process.env.FINRA_API_KEY,
-            polygonApiKey: process.env.POLYGON_API_KEY
+            polygonApiKey: process.env.FMP_API_KEY
           })
           break
 
         case 'extendedMarket':
-          if (!process.env.POLYGON_API_KEY) {
+          if (!process.env.FMP_API_KEY) {
             console.warn('Polygon API key not available for extended market service')
             return null
           }
-          const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
-          service = new ExtendedMarketDataService(polygonAPI, cache)
+          const fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
+          service = new ExtendedMarketDataService(fmpAPI, cache)
           break
 
         case 'vwap':
-          if (!process.env.POLYGON_API_KEY) {
+          if (!process.env.FMP_API_KEY) {
             console.warn('Polygon API key not available for VWAP service')
             return null
           }
-          const vwapPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
+          const vwapPolygonAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
           service = new VWAPService(vwapPolygonAPI, cache)
           break
 
@@ -258,10 +258,10 @@ class AdminAnalysisServiceManager {
       case 'esg':
         return !!(process.env.ESG_API_KEY || process.env.FINANCIAL_MODELING_PREP_API_KEY)
       case 'shortInterest':
-        return !!(process.env.FINRA_API_KEY || process.env.POLYGON_API_KEY)
+        return !!(process.env.FINRA_API_KEY || process.env.FMP_API_KEY)
       case 'extendedMarket':
       case 'vwap':
-        return !!process.env.POLYGON_API_KEY
+        return !!process.env.FMP_API_KEY
       default:
         return false
     }
@@ -282,55 +282,10 @@ function convertToOHLCData(historicalData: import('../../../services/financial-d
   }))
 }
 
-/**
- * Calculate composite score with comprehensive service integration
- */
-function calculateCompositeScore(stock: AdminAnalysisStockData): number {
-  let score = 50 // Neutral baseline
-  let totalWeight = 0
-
-  // Technical analysis (40% weight)
-  if (stock.technicalAnalysis?.score !== undefined) {
-    score += (stock.technicalAnalysis.score - 50) * 0.4
-    totalWeight += 0.4
-  }
-
-  // Fundamental analysis (25% weight)
-  if (stock.fundamentals) {
-    let fundamentalScore = 50
-    if (stock.fundamentals.peRatio && stock.fundamentals.peRatio < 20) fundamentalScore += 15
-    if (stock.fundamentals.roe && stock.fundamentals.roe > 0.15) fundamentalScore += 10
-    if (stock.fundamentals.debtToEquity && stock.fundamentals.debtToEquity < 0.5) fundamentalScore += 10
-    score += (fundamentalScore - 50) * 0.25
-    totalWeight += 0.25
-  }
-
-  // Macroeconomic analysis (20% weight)
-  if (stock.macroeconomicAnalysis?.score !== undefined) {
-    score += (stock.macroeconomicAnalysis.score - 50) * 0.2
-    totalWeight += 0.2
-  }
-
-  // Sentiment analysis (10% weight)
-  if (stock.sentimentAnalysis?.score !== undefined) {
-    score += (stock.sentimentAnalysis.score - 50) * 0.1
-    totalWeight += 0.1
-  }
-
-  // ESG analysis (3% weight)
-  if (stock.esgAnalysis?.score !== undefined) {
-    score += (stock.esgAnalysis.score - 50) * 0.03
-    totalWeight += 0.03
-  }
-
-  // Short interest analysis (2% weight)
-  if (stock.shortInterestAnalysis?.score !== undefined) {
-    score += (stock.shortInterestAnalysis.score - 50) * 0.02
-    totalWeight += 0.02
-  }
-
-  return Math.max(0, Math.min(100, score))
-}
+// ❌ REMOVED: Duplicate calculation logic - use FactorLibrary instead
+// This function was calculating scores in a second location, violating single source of truth
+// All score calculations MUST happen in FactorLibrary.calculateMainComposite()
+// Scores come from AlgorithmEngine which uses FactorLibrary
 
 // REMOVED: getRecommendation() - now using centralized RecommendationUtils
 
@@ -499,8 +454,30 @@ async function enhanceStockWithComprehensiveAnalysis(stock: StockData): Promise<
     }
   }
 
-  // Calculate composite score and recommendation
-  enhancedStock.compositeScore = calculateCompositeScore(enhancedStock)
+  // ✅ Calculate simple composite for admin dashboard (legacy mode)
+  // NOTE: Production should use AlgorithmEngine with FactorLibrary
+  let compositeScore = 50 // Neutral default
+  let totalWeight = 0
+  let weightedSum = 0
+
+  if (enhancedStock.technicalAnalysis?.score !== undefined) {
+    weightedSum += enhancedStock.technicalAnalysis.score * 0.40
+    totalWeight += 0.40
+  }
+  if (enhancedStock.macroeconomicAnalysis?.score !== undefined) {
+    weightedSum += enhancedStock.macroeconomicAnalysis.score * 0.20
+    totalWeight += 0.20
+  }
+  if (enhancedStock.sentimentAnalysis?.score !== undefined) {
+    weightedSum += enhancedStock.sentimentAnalysis.score * 0.10
+    totalWeight += 0.10
+  }
+
+  if (totalWeight > 0) {
+    compositeScore = (weightedSum / totalWeight)
+  }
+
+  enhancedStock.compositeScore = compositeScore
 
   // Pass analyst data for recommendation upgrades
   const analystData = enhancedStock.analystRating ? {
