@@ -41,7 +41,7 @@ The proposed ML enhancements (options features, sentiment embeddings, technical 
 - **Data Coverage**: 62.5% (5/8 required data points)
 - **Annual Cost**: $0
 - **Capability**: Sufficient for research platform
-- **Sources**: FMP (primary), EODHD (fallback), Government APIs (FRED, BLS, EIA)
+- **Sources**: FMP (primary stock/fundamental data), EODHD (options data), Government APIs (FRED, BLS, EIA)
 
 ### **Phase 1: Basic ML Enhancement (Current FMP Implementation)**
 

@@ -439,7 +439,7 @@ class HighPerformanceFeatureEngine {
   private async extractFundamentalFeaturesOptimized(
     symbols: string[]
   ): Promise<Map<string, Record<string, number>>> {
-    // Batch API calls to FMP/EODHD
+    // Batch API calls to FMP (EODHD is only for options data)
     const batchSize = 25 // Optimized for FMP batch endpoints
     const batches = this.createBatches(symbols, batchSize)
 

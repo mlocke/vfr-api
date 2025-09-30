@@ -358,7 +358,8 @@ class FeatureEngineeringService {
   }
 
   /**
-   * Fundamental features using existing FMP/EODHD integration
+   * Fundamental features using existing FMP integration
+   * (EODHD is used exclusively for options data, not fundamentals)
    */
   private async getFundamentalFeatures(symbols: string[]): Promise<Map<string, Record<string, number>>> {
     // Leverage existing FundamentalAnalysisService patterns
