@@ -27,14 +27,22 @@ Troubleshooting → This Index + CLAUDE.md → Error Standards → Admin dashboa
 
 ## AI Agent Quick Reference and Context
 
+### When to Use This Documentation Index
+- **Starting a new task**: Begin here to understand documentation structure
+- **Looking for specific docs**: Use decision trees to route to correct documentation
+- **Understanding system context**: Review quick reference tables
+- **Debugging or troubleshooting**: Jump to troubleshooting matrix
+- **Performance optimization**: Check service performance table and targets
+
 ### Essential System Knowledge
-| Context Category | Key Information | AI Decision Impact |
-|------------------|-----------------|--------------------|
-| **Platform Stack** | Next.js 15 + TypeScript (App Router) + React 19 | Use TypeScript-first approach, leverage App Router patterns |
-| **Data Architecture** | 15+ financial APIs with intelligent fallback | Always implement fallback logic, respect rate limits |
-| **Service Pattern** | Service layer + Redis caching + enterprise security | Business logic in services/, implement caching, validate security |
-| **Quality Gates** | 26 test files, 85%+ coverage, real API testing | Write tests first, use real data, maintain coverage |
-| **Critical Commands** | `dev:clean` (conflicts), `test` (TDD), `type-check` (mandatory) | Always type-check before commits, clean for port issues |
+| Context Category | Key Information | AI Decision Impact | Reference Doc |
+|------------------|-----------------|--------------------|---------------|
+| **Platform Stack** | Next.js 15 + TypeScript (App Router) + React 19 | Use TypeScript-first approach, leverage App Router patterns | SYSTEM_ARCHITECTURE.md |
+| **Data Architecture** | 15+ financial APIs with intelligent fallback | Always implement fallback logic, respect rate limits | SERVICE_DOCUMENTATION.md |
+| **Service Pattern** | Service layer + Redis caching + enterprise security | Business logic in services/, implement caching, validate security | DEVELOPMENT_GUIDELINES.md |
+| **Quality Gates** | 26 test files, 85%+ coverage, real API testing | Write tests first, use real data, maintain coverage | analysis-engine/CLAUDE.md |
+| **Critical Commands** | `dev:clean` (conflicts), `test` (TDD), `type-check` (mandatory) | Always type-check before commits, clean for port issues | CLAUDE.md (root) |
+| **Performance Targets** | Sub-3s analysis, 85%+ cache hit ratio, <200ms VWAP | Optimize for speed, leverage caching, parallel processing | Performance table below |
 
 ### Context-Aware Documentation Selection
 ```
@@ -255,19 +263,29 @@ User Need → Context Analysis → Document Selection → Action Path
 
 ---
 
-## Performance Benchmarks
+## AI Agent Performance Quick Reference
 
 ### Service Response Times (Production Targets)
-| Service | Target | Cache Hit | Current |
-|---------|--------|-----------|---------|
-| VWAPService | <200ms | <50ms | ✅ Achieved |
-| SentimentAnalysisService | <1.5s | <300ms | ✅ Achieved |
-| InstitutionalDataService | <3s | <500ms | ✅ Achieved |
-| StockSelectionService | <2s | <800ms | ✅ Achieved |
-| TechnicalIndicatorService | <500ms | <100ms | ✅ Achieved |
-| ESGDataService | <1s | <200ms | ✅ Achieved |
-| ShortInterestService | <1s | <200ms | ✅ Achieved |
-| ExtendedMarketDataService | <800ms | <150ms | ✅ Achieved |
+| Service | Target | Cache Hit | Current | Critical Path | Fallback Strategy |
+|---------|--------|-----------|---------|---------------|-------------------|
+| VWAPService | <200ms | <50ms | ✅ Achieved | Real-time trading | Polygon → Alpha Vantage → Cache |
+| SentimentAnalysisService | <1.5s | <300ms | ✅ Achieved | Market intelligence | News API → Reddit → Default neutral |
+| InstitutionalDataService | <3s | <500ms | ✅ Achieved | 13F analysis | SEC EDGAR → FMP → Cache |
+| StockSelectionService | <2s | <800ms | ✅ Achieved | Primary analysis | Multi-source → Cached → Partial |
+| TechnicalIndicatorService | <500ms | <100ms | ✅ Achieved | Chart analysis | Alpha Vantage → Polygon → Cache |
+| ESGDataService | <1s | <200ms | ✅ Achieved | Sustainability | ESG Provider → FMP → Skip |
+| ShortInterestService | <1s | <200ms | ✅ Achieved | Short squeeze | FINRA → FMP → Skip |
+| ExtendedMarketDataService | <800ms | <150ms | ✅ Achieved | Pre/post market | Polygon → Alpha Vantage → Skip |
+
+### Performance Decision Matrix
+```
+Response Time Analysis → Diagnosis → Action → Verification
+        ↓                   ↓         ↓         ↓
+    Measure             Identify   Optimize   Validate
+    ├─ <target          ├─ Code    ├─ Cache   ├─ Re-test
+    ├─ >target <2x      ├─ API     ├─ Async   ├─ Monitor
+    └─ >2x target       └─ Network └─ Scale   └─ Alert
+```
 
 ### System Performance Metrics
 - **API Integration**: 83.8% performance improvement via Promise.allSettled

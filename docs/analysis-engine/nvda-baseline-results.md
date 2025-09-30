@@ -1,6 +1,36 @@
 # NVDA Baseline Test Results
-**Date**: September 30, 2025
+**Created**: 2025-09-30
 **Test Duration**: ~31 seconds
+**Purpose**: Establish baseline VFR analysis results for NVDA to guide weight tuning and validate recommendation logic
+
+## When to Use This Document
+
+**Primary Use Cases**:
+- Tuning analysis engine weights (use comparison section)
+- Validating recommendation logic changes (compare to baseline)
+- Understanding factor scoring methodology (review detailed scores)
+- Debugging NVDA-specific analysis issues (check expected vs actual)
+- Training on weight adjustment principles (review recommendations section)
+
+**Related Documents**:
+- `weight-tuning-plan.md` - Weight adjustment strategy
+- `tuning-log.md` - Historical tuning changes and results
+- `CLAUDE.md` - Analysis engine architecture and operational context
+
+---
+
+## Analysis Decision Framework for NVDA
+
+```
+Market Sentiment Analysis → VFR Score → Recommendation → Validation
+         ↓                      ↓            ↓             ↓
+    Overwhelmingly          Score 0.78     BUY          Expected: STRONG BUY
+    Positive                               (Too conservative)
+    ├─ 80-90% AI market     ├─ Technical 50%  ├─ Confidence   ├─ Gap: -0.07 to -0.17
+    ├─ Strong financials    ├─ Fundamental 98% └─ Supporting   └─ Root cause analysis
+    ├─ Analyst upgrades     ├─ Sentiment 58%                       below
+    └─ Near ATH             └─ Options 74%
+```
 
 ---
 
@@ -152,25 +182,67 @@
 
 ---
 
-## Recommendations for Weight Adjustment
+## Recommendation Logic Flowchart (Text-Based)
 
-### Option 1: Boost Sentiment Weight (Conservative)
-- Increase sentiment from 18.0% to 22.0% (+4pp)
-- Decrease fundamental from 28.0% to 24.0% (-4pp)
-- **Rationale**: For stocks with overwhelming analyst consensus, sentiment should carry more weight
+```
+Weight Adjustment Decision Process
+    ↓
+Step 1: Identify Misalignment
+    ├─ Compare VFR score to market consensus
+    ├─ Analyze component score gaps
+    └─ Identify underweight/overweight factors
+    ↓
+Step 2: Determine Root Cause
+    ├─ Are weights incorrect for stock type?
+    ├─ Are scoring calculations too conservative?
+    └─ Is data quality affecting results?
+    ↓
+Step 3: Choose Adjustment Strategy
+    ├─ Option A: Adjust weights (affects all stocks)
+    ├─ Option B: Adjust scoring logic (targeted fix)
+    └─ Option C: Improve data sources (data quality)
+    ↓
+Step 4: Implement Minimal Change
+    ├─ Single location for metric calculations
+    ├─ Change ±0.01-0.05 per adjustment
+    └─ Maintain weight total = 1.000
+    ↓
+Step 5: Validate Change
+    ├─ Re-run analysis on test stock
+    ├─ Compare to market consensus
+    ├─ Validate doesn't break similar stocks
+    └─ Document in tuning-log.md
+```
 
-### Option 2: Rebalance Tech/Sentiment (Moderate)
-- Increase sentiment from 18.0% to 21.0% (+3pp)
-- Increase technical from 28.0% to 30.0% (+2pp)
-- Decrease fundamental from 28.0% to 25.0% (-3pp)
-- Decrease macro from 20.0% to 18.0% (-2pp)
-- **Rationale**: Growth/momentum stocks need higher technical + sentiment weight
+## Weight Adjustment Options with Decision Matrix
 
-### Option 3: Adjust Scoring Logic (Alternative)
-- Keep weights same
-- Adjust how technical score is calculated for momentum stocks
-- Adjust how analyst sentiment maps to 0-1 scale
-- **Rationale**: Weights may be fine, but score calculations are too conservative
+| Option | Weight Changes | Impact Scope | Risk Level | Best For | Expected Score Change |
+|--------|---------------|--------------|------------|----------|----------------------|
+| **Option 1: Boost Sentiment** | Sentiment +4pp, Fundamental -4pp | All stocks with high analyst consensus | Low | Conservative approach, high-confidence stocks | +0.03 to +0.05 |
+| **Option 2: Rebalance Tech/Sentiment** | Sentiment +3pp, Technical +2pp, Fundamental -3pp, Macro -2pp | Growth/momentum stocks | Medium | Stocks near ATH with positive momentum | +0.05 to +0.08 |
+| **Option 3: Adjust Scoring Logic** | No weight changes, modify scoring calculations | Targeted to specific factor types | High | When weights are correct but scores are miscalibrated | +0.04 to +0.10 |
+
+### Recommended Path Forward: Option 1 (Conservative)
+**Rationale**:
+- Minimal change with clear financial logic
+- Targets specific weakness (sentiment too low)
+- Low risk to other stock analyses
+- Easy to validate and revert if needed
+
+**Implementation**:
+```typescript
+// In AlgorithmEngine.ts - SINGLE LOCATION
+const baseWeights = {
+  technical: 0.28,
+  fundamental: 0.24,  // Changed from 0.28
+  macroeconomic: 0.20,
+  sentiment: 0.22,    // Changed from 0.18
+  options: 0.03,
+  esg: 0.02,
+  shortInterest: 0.02,
+  extendedMarket: 0.01
+};
+```
 
 ---
 

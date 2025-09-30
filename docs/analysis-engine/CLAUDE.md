@@ -55,11 +55,22 @@ analysis-engine/
 #### Weighted Factor Analysis (Total: 100%)
 | Factor | Weight | Implementation Status | Data Sources | Performance Target | Error Boundary |
 |--------|--------|----------------------|--------------|-------------------|---------------|
-| **Technical Analysis** | 40% | ✅ IMPLEMENTED | VWAP + indicators | <500ms | Fallback to basic TA if VWAP fails |
-| **Fundamental Health** | 25% | ✅ IMPLEMENTED | FMP + EODHD ratios | <1s | Dual-source redundancy |
-| **Macroeconomic Context** | 20% | ✅ IMPLEMENTED | FRED + BLS + EIA | <2s | Cache recent data if APIs slow |
-| **Sentiment Analysis** | 10% | ✅ IMPLEMENTED | News + Reddit WSB | <1.5s | Graceful degradation with defaults |
-| **Alternative Data** | 5% | ✅ IMPLEMENTED | ESG + short interest | <1s | Skip if unavailable |
+| **Technical Analysis** | 40% | ✅ PRODUCTION | FMP + indicators | <500ms | Fallback to basic TA if needed |
+| **Fundamental Health** | 25% | ✅ PRODUCTION | FMP primary + EODHD fallback | <1s | Dual-source redundancy |
+| **Macroeconomic Context** | 20% | ✅ PRODUCTION | FRED + BLS + EIA | <2s | Cache recent data if APIs slow |
+| **Sentiment Analysis** | 10% | ✅ PRODUCTION | FMP analyst consensus + News + Reddit | <1.5s | Multi-source sentiment integration |
+| **Alternative Data** | 5% | ✅ PRODUCTION | ESG + short interest + options | <1s | Skip if unavailable |
+
+#### 7-Tier Recommendation System (PRODUCTION)
+| Tier | Score Range | Classification | Analyst Integration |
+|------|-------------|----------------|-------------------|
+| **Strong Buy** | 0.85-1.00 | Highest conviction | Analyst upgrades weighted |
+| **Buy** | 0.70-0.85 | High conviction | Consensus buy signals |
+| **Moderate Buy** | 0.60-0.70 | Moderate positive | Mixed positive sentiment |
+| **Hold** | 0.40-0.60 | Neutral | Neutral analyst views |
+| **Moderate Sell** | 0.30-0.40 | Moderate negative | Mixed negative sentiment |
+| **Sell** | 0.15-0.30 | High negative | Consensus sell signals |
+| **Strong Sell** | 0.00-0.15 | Highest negative | Analyst downgrades weighted |
 
 #### Factor Scoring Logic
 ```
@@ -76,14 +87,17 @@ Factor Analysis → Weighted Scoring → Confidence Calculation → Final Recomm
 #### Implementation State Matrix
 | Component | Status | File Location | Test Coverage | Performance |
 |-----------|--------|---------------|---------------|-------------|
-| VWAP Analysis | Production | `VWAPService.ts` | ✅ Comprehensive | <200ms |
-| Reddit WSB Sentiment | Production | `RedditAPI.ts` | ✅ Multi-subreddit | <1.5s |
-| Macroeconomic Data | Production | `MacroeconomicAnalysisService.ts` | ✅ All APIs | <2s |
-| Institutional Intelligence | Production | `InstitutionalDataService.ts` | ✅ 608-line test | <3s |
-| ESG Integration | Production | `ESGDataService.ts` | ✅ Comprehensive | <1s |
-| Short Interest Analysis | Production | `ShortInterestService.ts` | ✅ FINRA integration | <1s |
-| Extended Market Data | Production | `ExtendedMarketDataService.ts` | ✅ Polygon integration | <800ms |
-| Options Analysis | Production | `OptionsDataService.ts` | ✅ Comprehensive | <1s |
+| FMP API Integration | ✅ PRODUCTION | `FinancialModelingPrepAPI.ts` | ✅ Comprehensive | <500ms |
+| Analyst Consensus | ✅ PRODUCTION | `SentimentAnalysisService.ts` | ✅ FMP integration | <800ms |
+| 7-Tier Recommendations | ✅ PRODUCTION | `RecommendationUtils.ts` | ✅ Validated | Instant |
+| VWAP Analysis | ✅ PRODUCTION | `VWAPService.ts` | ✅ Comprehensive | <200ms |
+| Reddit WSB Sentiment | ✅ PRODUCTION | `RedditAPI.ts` | ✅ Multi-subreddit | <1.5s |
+| Macroeconomic Data | ✅ PRODUCTION | `MacroeconomicAnalysisService.ts` | ✅ All APIs | <2s |
+| Institutional Intelligence | ✅ PRODUCTION | `InstitutionalDataService.ts` | ✅ 608-line test | <3s |
+| ESG Integration | ✅ PRODUCTION | `ESGDataService.ts` | ✅ Comprehensive | <1s |
+| Short Interest Analysis | ✅ PRODUCTION | `ShortInterestService.ts` | ✅ FINRA integration | <1s |
+| Extended Market Data | ✅ PRODUCTION | `ExtendedMarketDataService.ts` | ✅ FMP primary | <800ms |
+| Options Analysis | ✅ PRODUCTION | `OptionsDataService.ts` | ✅ Comprehensive | <1s |
 
 ## Development Commands (From Root Directory)
 
@@ -139,9 +153,10 @@ npm test -- app/services/stock-selection/  # Test stock selection service
 6. **Response**: BUY/SELL/HOLD recommendation with confidence scores
 
 ### Data Collection Strategy
-- **Primary APIs**: Polygon, Alpha Vantage, Financial Modeling Prep
-- **Secondary APIs**: Yahoo Finance, TwelveData
+- **Primary API**: Financial Modeling Prep (FMP) - PRODUCTION
+- **Fallback APIs**: Yahoo Finance, Alpha Vantage, TwelveData
 - **Government APIs**: FRED, Treasury, BLS, EIA
+- **Migration Status**: Polygon API fully removed (September 2025)
 - **Fallback Logic**: Automatic source switching on failures
 
 ## Testing Philosophy
@@ -208,23 +223,29 @@ Issue Detected → Categorize → Gather Context → Apply Recovery → Monitor
      └─ Log incident for pattern analysis
 ```
 
-### Analysis Engine Diagnostic Commands
-```bash
-# System Health (Run from project root)
-curl http://localhost:3000/api/health              # Overall system status
-curl http://localhost:3000/api/admin/data-sources  # Individual API health
+### Analysis Engine Diagnostic Command Quick Reference
 
-# Performance Monitoring
-npm run dev:monitor                               # Real-time request logs
-npm run test:performance                          # Memory and timing analysis
+| Issue Type | Diagnostic Command | Expected Output | Next Action |
+|------------|-------------------|-----------------|-------------|
+| **System Health** | `curl http://localhost:3000/api/health` | `{"status":"healthy"}` | Check individual services if unhealthy |
+| **API Status** | `curl http://localhost:3000/api/admin/data-sources` | Service availability JSON | Enable fallbacks if failures |
+| **Analysis Test** | `npm test -- --testNamePattern="StockSelectionService"` | All tests passing | Fix failures before deployment |
+| **Data Services** | `npm test -- app/services/financial-data/` | Full service validation | Check rate limits if failures |
+| **Performance** | `npm run test:performance` | Memory and timing stats | Optimize services >target times |
+| **Cache Status** | `redis-cli PING` | `PONG` | Restart Redis if no response |
+| **FMP API** | Check admin dashboard | API status and rate limits | Check API key if 401/403 |
+| **Fallback Logic** | `node test-fallback-service.mjs` | Multi-tier fallback success | Review fallback chain if failures |
 
-# Data Source Testing
-node test-polygon-updates.ts                      # Polygon API connectivity
-node test-fallback-service.mjs                    # Fallback logic validation
-
-# Analysis Engine Specific
-npm test -- --testNamePattern="StockSelectionService"  # Core analysis tests
-npm test -- app/services/financial-data/              # Data service validation
+### Quick Diagnostic Decision Tree
+```
+Analysis Issue Detected
+    ↓
+Categorize Issue Type
+    ├─ Recommendation Wrong → Check factor weights → Review data sources → Validate scoring logic
+    ├─ Slow Response (>3s) → Check cache hit ratio → Review API timeouts → Optimize parallel calls
+    ├─ Data Missing → Check data sources status → Enable fallbacks → Review error logs
+    ├─ Crash/Error → Check error logs → Validate input → Review error boundaries
+    └─ Unexpected Score → Run baseline comparison → Check weight calculations → Validate data quality
 ```
 
 ### Emergency Recovery Procedures

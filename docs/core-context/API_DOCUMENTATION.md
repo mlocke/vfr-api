@@ -124,15 +124,21 @@ interface EnhancedStockData {
     summary: string;
   };
 
-  // Sentiment Analysis (10% weight) - ✅ ACTIVELY INTEGRATED IN COMPOSITE SCORING
+  // Sentiment Analysis (10% weight) - ✅ PRODUCTION with FMP Analyst Consensus
   sentimentAnalysis?: {
-    score: number;              // 0-100 overall sentiment score (e.g., 0.52 for GME)
+    score: number;              // 0-100 overall sentiment score
     impact: 'positive' | 'negative' | 'neutral';
     confidence: number;         // 0-1.0 confidence level
     newsVolume: number;         // News article count
-    adjustedScore: number;      // Sentiment score contributing 10% to composite (FIXED: no longer 0% utilization)
+    adjustedScore: number;      // Sentiment score contributing 10% to composite
     summary: string;
-    utilization: number;        // 0.10 (10% weight in composite) - Architecture fix implemented
+    utilization: number;        // 0.10 (10% weight in composite)
+    analystData?: {             // ✅ FMP analyst consensus integrated (September 2025)
+      consensus: 'buy' | 'sell' | 'hold';
+      rating: number;           // 1-5 scale (e.g., 3.7 for NVDA)
+      totalAnalysts: number;    // Number of analysts covering (e.g., 79 for NVDA)
+      priceTarget?: number;     // Consensus price target
+    };
   };
 
   // Macroeconomic Analysis (20% weight)
@@ -150,9 +156,14 @@ interface EnhancedStockData {
   analystRating?: AnalystRatings;
   priceTarget?: PriceTarget;
 
-  // Composite Analysis
+  // Composite Analysis with 7-Tier Recommendation System
   compositeScore?: number;      // 0-100 overall investment score
-  recommendation?: 'BUY' | 'SELL' | 'HOLD';
+  recommendation?: 'STRONG BUY' | 'BUY' | 'MODERATE BUY' | 'HOLD' | 'MODERATE SELL' | 'SELL' | 'STRONG SELL';
+  recommendationTier?: {
+    tier: string;               // 7-tier classification
+    scoreRange: string;         // Score range for tier (e.g., "0.70-0.85")
+    confidence: number;         // Recommendation confidence (0-1.0)
+  };
   sector?: string;
 }
 ```
@@ -162,8 +173,10 @@ interface EnhancedStockData {
 - **Cache TTL**: 2 minutes (development), 10 minutes (production)
 - **Rate Limit**: 100 requests/hour per API key
 - **Concurrent Processing**: Up to 5 parallel API calls per request
+- **Data Provider**: FMP (Financial Modeling Prep) primary, Polygon removed (September 2025)
 - **Sentiment Integration**: Pre-fetch architecture ensures sentiment data contributes 10% weight to composite scoring
-- **Architecture Fix**: Resolved 0% sentiment utilization bug through AlgorithmEngine pre-processing (September 2024)
+- **Analyst Consensus**: FMP analyst data integrated into sentiment component (79 analysts for NVDA example)
+- **7-Tier Recommendations**: Strong Buy (0.85+), Buy (0.70-0.85), Moderate Buy (0.60-0.70), Hold (0.40-0.60), Moderate Sell (0.30-0.40), Sell (0.15-0.30), Strong Sell (0.00-0.15)
 
 ---
 
