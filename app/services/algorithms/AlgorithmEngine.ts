@@ -24,7 +24,7 @@ import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAna
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
 import { OptionsDataService } from '../financial-data/OptionsDataService'
 import { RedisCache } from '../cache/RedisCache'
-import { getRecommendation, toSimpleRecommendation } from '../utils/RecommendationUtils'
+import { getRecommendation } from '../utils/RecommendationUtils'
 
 interface MarketDataPoint {
   symbol: string
@@ -1009,7 +1009,8 @@ export class AlgorithmEngine {
               [config.type]: {
                 score: compositeScore
               }
-            }
+            },
+            analystData // ✅ Store analyst data for recommendation upgrades
           }
         }
       } catch (error) {
@@ -1163,7 +1164,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
+      action: getRecommendation(score.overallScore, score.analystData),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1184,7 +1185,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: equalWeight,
-      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
+      action: getRecommendation(score.overallScore, score.analystData),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1205,7 +1206,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
+      action: getRecommendation(score.overallScore, score.analystData),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1230,7 +1231,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
+      action: getRecommendation(score.overallScore, score.analystData),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }

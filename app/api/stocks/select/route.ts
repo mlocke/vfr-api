@@ -20,7 +20,7 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
-import { toSimpleRecommendation, getRecommendation } from '../../../services/utils/RecommendationUtils'
+import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -87,7 +87,7 @@ interface EnhancedStockData extends StockData {
   analystRating?: AnalystRatings
   priceTarget?: PriceTarget
   compositeScore?: number
-  recommendation?: 'BUY' | 'SELL' | 'HOLD'
+  recommendation?: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL' // 7-tier only
   sector?: string
 }
 
@@ -655,7 +655,21 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
       // Calculate composite score and recommendation
       const compositeScore = calculateSimpleScore(enhancedStock)
       enhancedStock.compositeScore = compositeScore
-      enhancedStock.recommendation = toSimpleRecommendation(getRecommendation(compositeScore))
+
+      // Pass analyst data for recommendation upgrades
+      const analystData = enhancedStock.analystRating ? {
+        totalAnalysts: enhancedStock.analystRating.totalAnalysts,
+        sentimentScore: enhancedStock.analystRating.sentimentScore,
+        distribution: {
+          strongBuy: enhancedStock.analystRating.strongBuy,
+          buy: enhancedStock.analystRating.buy,
+          hold: enhancedStock.analystRating.hold,
+          sell: enhancedStock.analystRating.sell,
+          strongSell: enhancedStock.analystRating.strongSell
+        }
+      } : undefined
+
+      enhancedStock.recommendation = getRecommendation(compositeScore, analystData)
 
       return enhancedStock
     } catch (error) {
