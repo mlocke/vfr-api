@@ -19,8 +19,9 @@ import { StockMacroeconomicImpact } from '../../../services/financial-data/types
 import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
-import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { getRecommendation } from '../../../services/utils/RecommendationUtils'
+import { TimeoutHandler } from '../../../services/error-handling/TimeoutHandler'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -224,8 +225,8 @@ class OptimizedServiceFactory {
           break
 
         case 'extendedMarket':
-          const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY!)
-          instance = new ExtendedMarketDataService(polygonAPI, cache)
+          const fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY!)
+          instance = new ExtendedMarketDataService(fmpAPI, cache)
           break
 
         default:
@@ -337,104 +338,10 @@ function convertToOHLCData(historicalData: import('../../../services/financial-d
   }))
 }
 
-/**
- * Calculate composite score with rebalanced weights:
- * Technical 35%, Fundamental 25%, Macro 20%, Sentiment 10%, Extended Market 5%, Alternative Data 5% (ESG 3% + Short Interest 2%)
- */
-function calculateSimpleScore(stock: EnhancedStockData): number {
-  let score = 0 // Start from 0 for proper weighted calculation
-  let totalWeight = 0
-
-  // Technical analysis (35% weight - reduced from 40%)
-  if (stock.technicalAnalysis?.score) {
-    score += stock.technicalAnalysis.score * 0.35
-    totalWeight += 0.35
-  }
-
-  // Fundamental analysis (25% weight) - convert fundamentals to score
-  if (stock.fundamentals) {
-    let fundamentalScore = 50 // neutral baseline
-
-    // P/E ratio scoring (0-100 scale)
-    if (stock.fundamentals.peRatio) {
-      if (stock.fundamentals.peRatio < 15) fundamentalScore += 20
-      else if (stock.fundamentals.peRatio < 25) fundamentalScore += 10
-      else if (stock.fundamentals.peRatio > 40) fundamentalScore -= 15
-    }
-
-    // ROE scoring
-    if (stock.fundamentals.roe) {
-      if (stock.fundamentals.roe > 0.20) fundamentalScore += 15
-      else if (stock.fundamentals.roe > 0.15) fundamentalScore += 10
-      else if (stock.fundamentals.roe < 0.05) fundamentalScore -= 10
-    }
-
-    // Debt-to-equity scoring
-    if (stock.fundamentals.debtToEquity) {
-      if (stock.fundamentals.debtToEquity < 0.3) fundamentalScore += 10
-      else if (stock.fundamentals.debtToEquity > 2) fundamentalScore -= 15
-    }
-
-    fundamentalScore = Math.max(0, Math.min(100, fundamentalScore))
-    score += fundamentalScore * 0.25
-    totalWeight += 0.25
-  }
-
-  // Macroeconomic analysis (20% weight)
-  if (stock.macroeconomicAnalysis?.score) {
-    score += stock.macroeconomicAnalysis.score * 0.20
-    totalWeight += 0.20
-  }
-
-  // Sentiment analysis (10% weight)
-  if (stock.sentimentAnalysis?.adjustedScore) {
-    score += stock.sentimentAnalysis.adjustedScore * 0.10
-    totalWeight += 0.10
-  }
-
-  // Extended Market Data (5% weight) - liquidity and extended hours activity
-  let extendedMarketScore = 50 // neutral default
-  if (stock.preMarketChangePercent !== undefined || stock.afterHoursChangePercent !== undefined) {
-    // Calculate score based on extended hours movement
-    if (stock.preMarketChangePercent !== undefined) {
-      extendedMarketScore += stock.preMarketChangePercent > 0 ? 10 : -10
-    }
-    if (stock.afterHoursChangePercent !== undefined) {
-      extendedMarketScore += stock.afterHoursChangePercent > 0 ? 10 : -10
-    }
-    // Factor in bid/ask spread for liquidity
-    if (stock.bid && stock.ask) {
-      const spread = ((stock.ask - stock.bid) / stock.ask) * 100
-      if (spread < 0.1) extendedMarketScore += 10 // Very liquid
-      else if (spread < 0.5) extendedMarketScore += 5 // Liquid
-      else if (spread > 1) extendedMarketScore -= 5 // Less liquid
-    }
-    extendedMarketScore = Math.max(0, Math.min(100, extendedMarketScore))
-    score += extendedMarketScore * 0.05
-    totalWeight += 0.05
-  }
-
-  // Alternative Data: ESG analysis (3% weight - reduced from 5%)
-  if (stock.esgAnalysis?.score) {
-    score += stock.esgAnalysis.score * 0.03
-    totalWeight += 0.03
-  }
-
-  // Alternative Data: Short Interest analysis (2% weight - reduced from 2.5%)
-  if (stock.shortInterestAnalysis?.score) {
-    score += stock.shortInterestAnalysis.score * 0.02
-    totalWeight += 0.02
-  }
-
-  // Normalize by actual weights used (in case some components are missing)
-  if (totalWeight > 0) {
-    score = score / totalWeight * 100
-  } else {
-    score = 50 // Default neutral score if no components available
-  }
-
-  return Math.max(0, Math.min(100, score))
-}
+// ❌ REMOVED: Duplicate calculation logic - use FactorLibrary instead
+// This function was calculating scores in a second location, violating single source of truth
+// All score calculations MUST happen in FactorLibrary.calculateMainComposite()
+// Scores come from AlgorithmEngine which uses FactorLibrary
 
 // REMOVED: getRecommendation() - now using centralized RecommendationUtils
 
@@ -485,16 +392,20 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
         enhancedStock.priceTarget = priceTargetResult.value
       }
 
-      // Add sentiment analysis if service is available
+      // Add sentiment analysis if service is available (with 15s timeout)
       if (sentiment && enhancedStock.sector) {
         try {
-          const sentimentImpact = await sentiment.analyzeStockSentimentImpact(
-            stock.symbol,
-            enhancedStock.sector,
-            enhancedStock.price || 50 // base score for sentiment analysis
+          const timeoutHandler = TimeoutHandler.getInstance()
+          const sentimentImpact = await timeoutHandler.withTimeout(
+            sentiment.analyzeStockSentimentImpact(
+              stock.symbol,
+              enhancedStock.sector,
+              enhancedStock.price || 50 // base score for sentiment analysis
+            ),
+            15000 // 15s timeout for Reddit parallel processing
           )
 
-          if (sentimentImpact) {
+          if (sentimentImpact?.sentimentScore?.overall !== undefined) {
             enhancedStock.sentimentAnalysis = {
               score: sentimentImpact.sentimentScore.overall,
               impact: sentimentImpact.sentimentScore.overall >= 60 ? 'positive' :
@@ -511,13 +422,17 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
         }
       }
 
-      // Add macroeconomic analysis if service is available and sector is known
+      // Add macroeconomic analysis if service is available and sector is known (with 10s timeout)
       if (macro && enhancedStock.sector) {
         try {
-          const macroImpact = await macro.analyzeStockMacroImpact(
-            stock.symbol,
-            enhancedStock.sector,
-            enhancedStock.price || 50 // base score for macro analysis
+          const timeoutHandler = TimeoutHandler.getInstance()
+          const macroImpact = await timeoutHandler.withTimeout(
+            macro.analyzeStockMacroImpact(
+              stock.symbol,
+              enhancedStock.sector,
+              enhancedStock.price || 50 // base score for macro analysis
+            ),
+            10000 // 10s timeout for government APIs
           )
 
           if (macroImpact) {
@@ -652,8 +567,20 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
         console.warn(`Insufficient historical data for ${stock.symbol}. Technical analysis disabled.`)
       }
 
-      // Calculate composite score and recommendation
-      const compositeScore = calculateSimpleScore(enhancedStock)
+      // 🎯 DISPLAY FORMATTING ONLY: Convert 0-1 scale to 0-100 for frontend display
+      // All calculations happen in FactorLibrary.calculateMainComposite (SINGLE SOURCE OF TRUTH)
+      let compositeScore: number
+
+      if ((enhancedStock as any).score !== undefined && (enhancedStock as any).score !== null) {
+        // AlgorithmEngine provides 0-1 scale from FactorLibrary - convert to 0-100 for display
+        compositeScore = (enhancedStock as any).score * 100
+        console.log(`✅ Using AlgorithmEngine score for ${stock.symbol}: ${(enhancedStock as any).score.toFixed(4)} → ${compositeScore.toFixed(2)}`)
+      } else {
+        // Fallback only if AlgorithmEngine completely failed (should be rare)
+        compositeScore = 50 // Neutral default
+        console.warn(`⚠️ AlgorithmEngine score missing for ${stock.symbol}, using neutral fallback`)
+      }
+
       enhancedStock.compositeScore = compositeScore
 
       // Pass analyst data for recommendation upgrades
@@ -788,8 +715,94 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }, { status: 400 })
     }
 
+    // ✅ CRITICAL FIX: Calculate AlgorithmEngine scores BEFORE enhanceStockData
+    // This ensures stock.score is available for composite score calculation
+    console.log(`🔬 Step 1: Calculating AlgorithmEngine scores for ${stocks.length} stocks...`)
+    const scoreStartTime = Date.now()
+
+    // Import AlgorithmEngine dependencies
+    const { AlgorithmEngine } = await import('../../../services/algorithms/AlgorithmEngine')
+    const { FactorLibrary } = await import('../../../services/algorithms/FactorLibrary')
+    const { AlgorithmCache } = await import('../../../services/algorithms/AlgorithmCache')
+    const { FallbackDataService } = await import('../../../services/financial-data/FallbackDataService')
+    const { AlgorithmConfigManager } = await import('../../../services/algorithms/AlgorithmConfigManager')
+
+    // Initialize services for AlgorithmEngine
+    const factorLibrary = new FactorLibrary()
+    const algorithmCache = new AlgorithmCache({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: 0,
+        keyPrefix: 'algo:',
+        maxRetries: 3,
+        retryDelayOnFailover: 100
+      },
+      ttl: {
+        configuration: 3600,
+        stockScores: 300,
+        marketData: 60,
+        fundamentalData: 3600,
+        selectionResults: 1800,
+        universe: 14400,
+        factors: 300
+      },
+      performance: {
+        pipelineSize: 100,
+        compressionThreshold: 1024,
+        enableCompression: true
+      }
+    })
+    const fallbackDataService = new FallbackDataService()
+    const algorithmEngine = new AlgorithmEngine(fallbackDataService, factorLibrary, algorithmCache, getSentimentService() || undefined)
+    const configManager = new AlgorithmConfigManager(factorLibrary, algorithmCache)
+
+    // Get composite algorithm configuration
+    const compositeConfig = await configManager.getConfiguration('composite')
+    if (!compositeConfig) {
+      console.warn('⚠️  Composite algorithm config not found, scores will use legacy calculation')
+    } else {
+      // Build context with symbols for single-stock analysis
+      const context = {
+        algorithmId: 'composite',
+        runId: `run_${Date.now()}`,
+        startTime: Date.now(),
+        symbols: symbols || [],
+        scope: {
+          mode: mode as any,
+          symbols: symbols || [],
+          maxResults: limit
+        },
+        marketData: {
+          timestamp: Date.now(),
+          marketOpen: true,
+          volatilityIndex: 0.15,
+          sectorRotation: {}
+        },
+        dataStatus: {}
+      }
+
+      try {
+        // Execute algorithm to get scores
+        const result = await algorithmEngine.executeAlgorithm(compositeConfig, context)
+        console.log(`✅ AlgorithmEngine calculated scores for ${result.selections.length} stocks in ${Date.now() - scoreStartTime}ms`)
+
+        // Attach scores to stock objects (0-1 scale from AlgorithmEngine)
+        result.selections.forEach(selection => {
+          const stock = stocks.find(s => s.symbol === selection.symbol)
+          if (stock) {
+            (stock as any).score = selection.score.overallScore
+            console.log(`✅ Attached score ${selection.score.overallScore.toFixed(4)} to ${stock.symbol}`)
+          }
+        })
+      } catch (error) {
+        console.warn('⚠️  AlgorithmEngine execution failed, falling back to legacy scoring:', error)
+      }
+    }
+
     // Enhance stocks with comprehensive analysis
-    console.log(`🔬 Performing comprehensive analysis on ${stocks.length} stocks...`)
+    console.log(`🔬 Step 2: Performing comprehensive analysis on ${stocks.length} stocks...`)
     const startTime = Date.now()
 
     const enhancedStocks = await enhanceStockData(stocks)

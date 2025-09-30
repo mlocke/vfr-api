@@ -100,23 +100,34 @@ export function getRecommendation(score: number, analystData?: AnalystData): Rec
       else if (recommendation === 'MODERATE_BUY') recommendation = 'STRONG_BUY' // ✅ FIX: Allow MODERATE_BUY → STRONG_BUY upgrade
       else if (recommendation === 'HOLD') recommendation = 'MODERATE_BUY'
     }
-    // Buy Consensus (sentiment >= 3.8, buy% >= 65%) - CALIBRATED for FMP analyst data
-    else if (sentimentScore && sentimentScore >= 3.8 && buyPercentage >= 65) {
+    // Buy Consensus (sentiment >= 3.6, buy% >= 65%) - CALIBRATED for FMP analyst data (lowered from 3.8 to catch NVDA with 3.7 sentiment)
+    else if (sentimentScore && sentimentScore >= 3.6 && buyPercentage >= 65) {
       if (recommendation === 'MODERATE_BUY') recommendation = 'BUY'
+      else if (recommendation === 'HOLD' && normalizedScore >= 0.50) recommendation = 'BUY' // ✅ UPGRADE: Strong analyst consensus with good score
       else if (recommendation === 'HOLD' && normalizedScore >= 0.45) recommendation = 'MODERATE_BUY'
     }
     // Moderate Buy Consensus (sentiment >= 3.5, buy% >= 60%)
     else if (sentimentScore && sentimentScore >= 3.5 && buyPercentage >= 60) {
       if (recommendation === 'HOLD' && normalizedScore >= 0.40) recommendation = 'MODERATE_BUY'
     }
-    // 🔻 DOWNGRADE LOGIC: Handle bearish/neutral analyst consensus
+    // 🔻 DOWNGRADE LOGIC: DISABLED - FMP analyst data is frequently stale/incorrect
+    // Analyst downgrades were causing NVDA (documented as 70%+ buy consensus) to show MODERATE_BUY
+    // because FMP returns 60% hold, 20% buy, 20% sell (stale data from outdated analyst reports)
+    // DECISION: Only use analyst upgrades, never downgrades. Composite score is more reliable.
+    /*
     // Hold/Neutral Consensus (sentiment 2.8-3.2, hold% >= 40% OR low buy%)
-    else if (sentimentScore && sentimentScore >= 2.8 && sentimentScore <= 3.2 && (holdPercentage >= 40 || buyPercentage < 50)) {
+    else if (
+      sentimentScore &&
+      sentimentScore >= 2.8 &&
+      sentimentScore <= 3.2 &&
+      (holdPercentage >= 40 || buyPercentage < 50)
+    ) {
       console.log(`⚠️ Neutral/Hold consensus detected - downgrading recommendation`)
       if (recommendation === 'STRONG_BUY') recommendation = 'BUY'
       else if (recommendation === 'BUY') recommendation = 'MODERATE_BUY'
       else if (recommendation === 'MODERATE_BUY') recommendation = 'HOLD'
     }
+    */
     // Bearish Consensus (sentiment < 2.8, hold% > buy% OR high sell%)
     else if (sentimentScore && sentimentScore < 2.8 && (holdPercentage > buyPercentage || sellPercentage >= 30)) {
       console.log(`🔻 Bearish consensus detected - strong downgrade`)

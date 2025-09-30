@@ -18,7 +18,7 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
-import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { MLPredictionService } from '../../../services/ml/prediction/MLPredictionService'
 import { FeatureEngineeringService } from '../../../services/ml/features/FeatureEngineeringService'
 
@@ -81,9 +81,9 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 
     let vwapService: VWAPService | undefined
     try {
-      if (process.env.POLYGON_API_KEY) {
-        const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
-        vwapService = new VWAPService(polygonAPI, cache)
+      if (process.env.FMP_API_KEY) {
+        const fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
+        vwapService = new VWAPService(fmpAPI, cache)
       }
     } catch (error) {
       console.warn('VWAP service not available:', error)
@@ -110,9 +110,9 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 
     let extendedMarketService: ExtendedMarketDataService | undefined
     try {
-      if (process.env.POLYGON_API_KEY) {
-        const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY)
-        extendedMarketService = new ExtendedMarketDataService(polygonAPI, cache)
+      if (process.env.FMP_API_KEY) {
+        const fmpAPI2 = new FinancialModelingPrepAPI(process.env.FMP_API_KEY)
+        extendedMarketService = new ExtendedMarketDataService(fmpAPI2, cache)
       }
     } catch (error) {
       console.warn('Extended market service not available:', error)
@@ -216,7 +216,7 @@ function convertToSelectionRequest(body: any): SelectionRequest {
       includeSentiment: true,
       includeNews: true,
       riskTolerance: 'moderate',
-      timeout: config?.timeout || 30000
+      timeout: config?.timeout || 60000 // Increased to 60s for comprehensive analysis with timeout protection
     },
     requestId: `admin_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
@@ -232,36 +232,22 @@ function convertToAdminResponse(response: any): any {
     console.log(`🔍 DEBUG factorScores for ${selection.symbol}:`, JSON.stringify(factorScores, null, 2))
     console.log(`🔍 DEBUG overallScore:`, selection.score?.overallScore)
 
-    // Extract scores with proper fallback logic matching actual factor names in AlgorithmEngine
-    // Technical: technical_overall_score or technicalScore (0-100 scale)
-    const technicalScore = factorScores.technicalScore ||
-                          (factorScores.technical_overall_score ? factorScores.technical_overall_score * 100 : 0) ||
-                          factorScores.technical_composite ||
-                          factorScores.technical || 0
+    // 🎯 SCORE EXTRACTION: All scores come from AlgorithmEngine via FactorLibrary
+    // Expected scales: 0-1 from FactorLibrary composites, 0-100 from pre-calculated exports
 
-    // Fundamental: fundamentalScore (0-100 scale) or quality_composite/value_composite
-    const fundamentalScore = factorScores.fundamentalScore ||
-                            factorScores.fundamental_composite ||
-                            factorScores.fundamental ||
-                            factorScores.fundamentalData || 0
+    // Technical Score: Pre-exported as 0-100 by AlgorithmEngine (line 825)
+    const technicalScore = factorScores.technicalScore || 0
 
-    // Macroeconomic: macroeconomic_composite (0-1 scale, convert to 0-100)
-    const macroeconomicScore = (factorScores.macroeconomic_composite ? factorScores.macroeconomic_composite * 100 : 0) ||
-                              factorScores.macroeconomic || 0
+    // Fundamental Score: Pre-exported as 0-100 by AlgorithmEngine (line 842)
+    const fundamentalScore = factorScores.fundamentalScore || 0
 
-    // Sentiment: sentiment_composite (0-1 scale, convert to 0-100)
-    const sentimentScore = (factorScores.sentiment_composite ? factorScores.sentiment_composite * 100 : 0) ||
-                          factorScores.sentiment || 0
+    // Analyst Score: Pre-exported as 0-100 by AlgorithmEngine (line 845)
+    const analystScore = factorScores.analystScore || 0
 
-    // ESG: esg_composite (0-1 scale, convert to 0-100)
-    const esgScore = (factorScores.esg_composite ? factorScores.esg_composite * 100 : 0) ||
-                    factorScores.esg || 0
-
-    // Analyst: analystScore (0-100 scale)
-    const analystScore = factorScores.analystScore ||
-                        factorScores.analyst_composite ||
-                        factorScores.analyst ||
-                        factorScores.analysts || 0
+    // Composite Scores: 0-1 scale, convert to 0-100 for display
+    const macroeconomicScore = (factorScores.macroeconomic_composite || 0) * 100
+    const sentimentScore = (factorScores.sentiment_composite || 0) * 100
+    const esgScore = (factorScores.esg_composite || 0) * 100
 
     // 🎯 DISPLAY FORMATTING ONLY: Convert 0-1 scale to 0-100 for frontend display
     const overallScoreRaw = selection.score?.overallScore || 0

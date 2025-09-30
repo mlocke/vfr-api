@@ -500,14 +500,33 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
 
   /**
    * Try individual ratings endpoint (Starter plan compatible)
+   * Uses v4 API with symbol parameter for Starter plan access
    */
   private async tryIndividualRatingsEndpoint(symbol: string): Promise<AnalystRatings | null> {
     try {
-      // Try the rating endpoint for individual symbols
-      const response = await this.makeRequest(`/rating/${symbol}`)
+      // Try v4 consensus endpoint first (works on Starter plan)
+      const v4Response = await this.makeRequest(`/upgrades-downgrades-consensus?symbol=${symbol}`, 'v4')
 
-      if (response.success && Array.isArray(response.data) && response.data.length > 0) {
-        const ratingData = response.data[0]
+      if (v4Response.success && Array.isArray(v4Response.data) && v4Response.data.length > 0) {
+        const ratingsData = v4Response.data[0]
+        if (ratingsData && ratingsData.consensus) {
+          this.errorHandler.logger.info(`Got analyst consensus from FMP v4 API for ${symbol}`, {
+            consensus: ratingsData.consensus,
+            strongBuy: ratingsData.strongBuy,
+            buy: ratingsData.buy,
+            hold: ratingsData.hold,
+            sell: ratingsData.sell,
+            strongSell: ratingsData.strongSell
+          })
+          return this.convertBulkRatingsToAnalystRatings(ratingsData, symbol)
+        }
+      }
+
+      // Fallback to v3 rating endpoint
+      const v3Response = await this.makeRequest(`/rating/${symbol}`)
+
+      if (v3Response.success && Array.isArray(v3Response.data) && v3Response.data.length > 0) {
+        const ratingData = v3Response.data[0]
 
         // Convert rating data to analyst ratings format
         if (ratingData.rating && ratingData.ratingScore) {
@@ -521,11 +540,11 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
   }
 
   /**
-   * Try bulk ratings endpoint (Professional plan)
+   * Try bulk ratings endpoint (Professional plan only)
    */
   private async tryBulkRatingsEndpoint(symbol: string): Promise<AnalystRatings | null> {
     try {
-      const response = await this.makeRequest(`/upgrades-downgrades-consensus-bulk`)
+      const response = await this.makeRequest(`/upgrades-downgrades-consensus-bulk`, 'v4')
 
       if (response.success && Array.isArray(response.data) && response.data.length > 0) {
         const ratings = response.data.find((item: any) => item.symbol === symbol)
@@ -1800,13 +1819,18 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
 
   /**
    * Make HTTP request to Financial Modeling Prep API with enhanced error handling
+   * @param endpoint - API endpoint path
+   * @param apiVersion - API version ('v3' or 'v4'), defaults to 'v3'
    */
-  private async makeRequest(endpoint: string): Promise<ApiResponse<any>> {
+  private async makeRequest(endpoint: string, apiVersion: 'v3' | 'v4' = 'v3'): Promise<ApiResponse<any>> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
     try {
-      const url = new URL(`${this.baseUrl}${endpoint}`)
+      const baseUrl = apiVersion === 'v4'
+        ? 'https://financialmodelingprep.com/api/v4'
+        : this.baseUrl
+      const url = new URL(`${baseUrl}${endpoint}`)
       url.searchParams.append('apikey', this.apiKey)
 
       const response = await fetch(url.toString(), {

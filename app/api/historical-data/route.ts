@@ -184,34 +184,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/historical-data/cache/metrics
- * Get cache performance metrics
- */
-export async function GET_METRICS(request: NextRequest) {
-  try {
-    await ensureInitialized()
-
-    const metrics = await financialDataCacheService.getCacheMetrics()
-
-    return NextResponse.json({
-      success: true,
-      metrics
-    })
-
-  } catch (error) {
-    console.error('Cache metrics API error:', error)
-    const normalizedError = ErrorHandler.normalizeError(error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to retrieve cache metrics',
-        message: normalizedError.message
-      },
-      { status: 500 }
-    )
-  }
-}
+// Note: Cache metrics endpoint moved to /api/historical-data/metrics/route.ts
 
 /**
  * DELETE /api/historical-data/cache

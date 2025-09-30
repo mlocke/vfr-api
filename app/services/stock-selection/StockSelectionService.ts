@@ -2515,21 +2515,21 @@ class StockSelectionServiceFactory {
       }
     }
 
-    // Initialize shared PolygonAPI instance for memory efficiency
-    let sharedPolygonAPI: any = null
-    if (availableApiKeys.has('polygon')) {
+    // Initialize shared FMP API instance for memory efficiency (replaces PolygonAPI)
+    let sharedFmpAPI: any = null
+    if (availableApiKeys.has('fmp')) {
       try {
-        const { PolygonAPI } = await import('../financial-data/PolygonAPI')
-        sharedPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY!)
+        const { FinancialModelingPrepAPI } = await import('../financial-data/FinancialModelingPrepAPI')
+        sharedFmpAPI = new FinancialModelingPrepAPI()
       } catch (error) {
-        console.warn('Failed to initialize Polygon API:', error)
+        console.warn('Failed to initialize FMP API:', error)
       }
     }
 
-    // Initialize VWAP service with shared Polygon API
-    if (sharedPolygonAPI) {
+    // Initialize VWAP service with shared FMP API
+    if (sharedFmpAPI) {
       try {
-        vwapService = new (await import('../financial-data/VWAPService')).VWAPService(sharedPolygonAPI, cache)
+        vwapService = new (await import('../financial-data/VWAPService')).VWAPService(sharedFmpAPI, cache)
         enabledServices.push('vwap')
       } catch (error) {
         console.warn('Failed to initialize VWAP service:', error)
@@ -2563,10 +2563,10 @@ class StockSelectionServiceFactory {
       }
     }
 
-    // Initialize Extended Market service with shared Polygon API
-    if (sharedPolygonAPI) {
+    // Initialize Extended Market service with shared FMP API
+    if (sharedFmpAPI) {
       try {
-        extendedMarketService = new (await import('../financial-data/ExtendedMarketDataService')).ExtendedMarketDataService(sharedPolygonAPI, cache)
+        extendedMarketService = new (await import('../financial-data/ExtendedMarketDataService')).ExtendedMarketDataService(sharedFmpAPI, cache)
         enabledServices.push('extendedMarket')
       } catch (error) {
         console.warn('Failed to initialize extended market service:', error)

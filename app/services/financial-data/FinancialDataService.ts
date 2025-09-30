@@ -5,9 +5,8 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios } from './types'
-import { PolygonAPI } from './PolygonAPI'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { BLSAPI } from './BLSAPI'
 import { EIAAPI } from './EIAAPI'
 import { TwelveDataAPI } from './TwelveDataAPI'
@@ -31,7 +30,7 @@ export class FinancialDataService {
 
     // Original providers for other data types
     this.providers = [
-      new PolygonAPI(),
+      new FinancialModelingPrepAPI(),
       new YahooFinanceAPI(),
       new FinancialModelingPrepAPI(),
       new BLSAPI(),
@@ -414,19 +413,9 @@ export class FinancialDataService {
     }
 
     try {
-      // Use Polygon API for extended hours data (most reliable source)
-      const polygonProvider = this.providers.find(p => p.name === 'Polygon.io') as PolygonAPI
-      if (polygonProvider && polygonProvider.getExtendedHoursSnapshot) {
-        const result = await polygonProvider.getExtendedHoursSnapshot(symbol)
-        if (result) {
-          // Cache with shorter TTL (1 minute for extended hours)
-          this.cache.set(cacheKey, {
-            data: result,
-            timestamp: Date.now()
-          })
-          return result
-        }
-      }
+      // Note: PolygonAPI has been removed. Extended hours data is now handled by ExtendedMarketDataService
+      // This method returns null to indicate extended hours data should be fetched via ExtendedMarketDataService
+      console.log(`Extended hours data for ${symbol} should be fetched via ExtendedMarketDataService`)
     } catch (error) {
       console.error(`Extended hours data error for ${symbol}:`, error)
     }
@@ -439,9 +428,30 @@ export class FinancialDataService {
    */
   async getMarketStatus(): Promise<'pre-market' | 'market-hours' | 'after-hours' | 'closed'> {
     try {
-      const polygonProvider = this.providers.find(p => p.name === 'Polygon.io') as PolygonAPI
-      if (polygonProvider && polygonProvider.getMarketStatus) {
-        return await polygonProvider.getMarketStatus()
+      // Note: PolygonAPI has been removed. Market status is now handled by ExtendedMarketDataService
+      // Simple time-based market status check (US Eastern Time)
+      const now = new Date()
+      const utcHours = now.getUTCHours()
+      const utcMinutes = now.getUTCMinutes()
+      const totalMinutes = utcHours * 60 + utcMinutes
+
+      // Convert to EST (UTC-5) or EDT (UTC-4) - simplified version
+      const estMinutes = totalMinutes - (5 * 60)
+      const estHours = Math.floor(estMinutes / 60) % 24
+
+      // Pre-market: 4:00 AM - 9:30 AM EST
+      if (estHours >= 4 && (estHours < 9 || (estHours === 9 && estMinutes % 60 < 30))) {
+        return 'pre-market'
+      }
+
+      // Market hours: 9:30 AM - 4:00 PM EST
+      if ((estHours === 9 && estMinutes % 60 >= 30) || (estHours > 9 && estHours < 16)) {
+        return 'market-hours'
+      }
+
+      // After hours: 4:00 PM - 8:00 PM EST
+      if (estHours >= 16 && estHours < 20) {
+        return 'after-hours'
       }
     } catch (error) {
       console.error('Market status error:', error)

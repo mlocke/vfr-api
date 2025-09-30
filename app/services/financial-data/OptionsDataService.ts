@@ -251,19 +251,9 @@ export class OptionsDataService {
         }
       }
 
-      // If Yahoo Finance also fails, try Polygon as final fallback
+      // If Yahoo Finance also fails, no additional fallback (Polygon removed)
       if (!rawChain) {
-        console.log(`⚡ Yahoo Finance options chain failed for ${symbol}, trying Polygon fallback...`)
-        try {
-          const { PolygonAPI } = await import('./PolygonAPI')
-          const polygonAPI = new PolygonAPI()
-          rawChain = await polygonAPI.getOptionsChain(symbol, expiration)
-          if (rawChain) {
-            console.log(`✅ Polygon options chain successful for ${symbol}`)
-          }
-        } catch (polygonError) {
-          console.warn(`Polygon options chain failed for ${symbol}:`, polygonError instanceof Error ? polygonError.message : 'Unknown error')
-        }
+        console.warn(`All options data sources exhausted for ${symbol}`)
       }
 
       if (rawChain) {

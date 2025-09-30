@@ -2165,10 +2165,11 @@ export class FactorLibrary {
     let totalWeight = 0
     const factorContributions: string[] = []
 
-    // ==================== PHASE 1 CALIBRATION: REBALANCED WEIGHT ALLOCATION (Total: 100%) ====================
-    // Rebalanced weights to reduce technical momentum emphasis and increase fundamental quality focus
-    // Technical: 37.0% → 30.0% (-7.0pp) | Fundamental: 22.0% → 35.0% (+13.0pp)
-    // Maintains: Macroeconomic 20.0%, Sentiment 10.0%, Alternative 5.0%
+    // ==================== PHASE 2 CALIBRATION: ANALYST-ALIGNED WEIGHT ALLOCATION (Total: 100%) ====================
+    // Rebalanced weights to align with analyst consensus for growth stocks with elevated valuations
+    // Technical: 30.0% → 28.0% (-2.0pp) | Fundamental: 35.0% → 28.0% (-7.0pp)
+    // Sentiment: 10.0% → 18.0% (+8.0pp) | Macroeconomic: 20.0% → 20.0% (unchanged)
+    // Alternative: 5.0% → 6.0% (+1.0pp) - Increased options weight for tech stocks
 
     // Market-cap-aware weight adjustments
     // Validate: reject 0 or invalid market caps, use mid-cap as default
@@ -2177,24 +2178,24 @@ export class FactorLibrary {
       : 5_000_000_000 // Default to $5B mid-cap if missing
     const { fundamentalMultiplier, technicalMultiplier } = this.adjustWeightsForMarketCap(marketCap)
 
-    // Calculate adjusted weights
-    const baseTechnicalWeight = 0.300
-    const baseFundamentalWeight = 0.350
+    // Calculate adjusted weights with new base allocations
+    const baseTechnicalWeight = 0.280
+    const baseFundamentalWeight = 0.280
     const technicalWeight = baseTechnicalWeight * technicalMultiplier
     const fundamentalWeight = baseFundamentalWeight * fundamentalMultiplier
 
     // Normalize to maintain 100% total (adjust remaining weights proportionally)
-    const baseWeightsSum = technicalWeight + fundamentalWeight + 0.200 + 0.100 + 0.050 // Include macro, sentiment, alternative
+    const baseWeightsSum = technicalWeight + fundamentalWeight + 0.200 + 0.180 + 0.060 // Include macro, sentiment, alternative
     const normalizationFactor = 1.000 / baseWeightsSum
     const adjustedTechnicalWeight = technicalWeight * normalizationFactor
     const adjustedFundamentalWeight = fundamentalWeight * normalizationFactor
     const adjustedMacroWeight = 0.200 * normalizationFactor
-    const adjustedSentimentWeight = 0.100 * normalizationFactor
-    const adjustedAlternativeWeight = 0.050 * normalizationFactor
+    const adjustedSentimentWeight = 0.180 * normalizationFactor
+    const adjustedAlternativeWeight = 0.060 * normalizationFactor
 
-    console.log(`📊 PHASE 1 CALIBRATION: Adjusted weights for ${symbol} ($${(marketCap / 1e9).toFixed(1)}B market cap):`)
-    console.log(`   Technical: ${(adjustedTechnicalWeight * 100).toFixed(1)}% (base 30.0%, multiplier ${technicalMultiplier.toFixed(2)})`)
-    console.log(`   Fundamental: ${(adjustedFundamentalWeight * 100).toFixed(1)}% (base 35.0%, multiplier ${fundamentalMultiplier.toFixed(2)})`)
+    console.log(`📊 PHASE 2 CALIBRATION: Adjusted weights for ${symbol} ($${(marketCap / 1e9).toFixed(1)}B market cap):`)
+    console.log(`   Technical: ${(adjustedTechnicalWeight * 100).toFixed(1)}% (base 28.0%, multiplier ${technicalMultiplier.toFixed(2)})`)
+    console.log(`   Fundamental: ${(adjustedFundamentalWeight * 100).toFixed(1)}% (base 28.0%, multiplier ${fundamentalMultiplier.toFixed(2)})`)
 
     // Technical Analysis composite - Apply adjusted weight
     const technicalScore = await this.calculateTechnicalOverallScore(symbol)
@@ -2247,21 +2248,21 @@ export class FactorLibrary {
       totalWeight += adjustedSentimentWeight
     }
 
-    // Alternative Data composite (weight: 5.0%) - Combined ESG, options, short interest, extended market
-    // Options Analysis (2.0% of 5% alternative)
+    // Alternative Data composite (weight: 6.0%) - Combined ESG, options, short interest, extended market
+    // Options Analysis (2.5% of 6% alternative - increased for tech stocks)
     const optionsScore = this.calculateOptionsScore(technicalData?.optionsData)
     if (optionsScore !== null && technicalData?.optionsData) {
-      console.log(`📊 Options Analysis: ${optionsScore.toFixed(3)} (weight: 2.0%)`)
-      totalScore += optionsScore * 0.020
-      totalWeight += 0.020
+      console.log(`📊 Options Analysis: ${optionsScore.toFixed(3)} (weight: 2.5%)`)
+      totalScore += optionsScore * 0.025
+      totalWeight += 0.025
       factorContributions.push('optionsAnalysis', 'options_composite')
     } else {
       console.log('📊 Options Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.020
-      totalWeight += 0.020
+      totalScore += 0.5 * 0.025
+      totalWeight += 0.025
     }
 
-    // ESG Analysis (1.5% of 5% alternative)
+    // ESG Analysis (1.5% of 6% alternative - unchanged)
     if (esgScore !== undefined && esgScore !== null) {
       console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 1.5%)`)
       totalScore += esgScore * 0.015
@@ -2273,20 +2274,20 @@ export class FactorLibrary {
       totalWeight += 0.015
     }
 
-    // Short Interest Analysis (1.0% of 5% alternative)
+    // Short Interest Analysis (1.5% of 6% alternative - increased)
     const shortInterestScore = await this.calculateShortInterestComposite(symbol)
     if (shortInterestScore !== null) {
-      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 1.0%)`)
-      totalScore += shortInterestScore * 0.010
-      totalWeight += 0.010
+      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 1.5%)`)
+      totalScore += shortInterestScore * 0.015
+      totalWeight += 0.015
       factorContributions.push('shortInterestAnalysis', 'short_interest_composite')
     } else {
       console.log('📊 Short Interest Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.010
-      totalWeight += 0.010
+      totalScore += 0.5 * 0.015
+      totalWeight += 0.015
     }
 
-    // Extended Market Data Analysis (0.5% of 5% alternative)
+    // Extended Market Data Analysis (0.5% of 6% alternative - unchanged)
     const extendedMarketScore = await this.calculateExtendedMarketComposite(symbol)
     if (extendedMarketScore !== null) {
       console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 0.5%)`)
@@ -2301,10 +2302,10 @@ export class FactorLibrary {
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
-    console.log(`🎯 PHASE 1 CALIBRATION - Main composite calculation for ${symbol}:`)
+    console.log(`🎯 PHASE 2 CALIBRATION - Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
     console.log(`   🔍 DEBUG totalScore: ${totalScore.toFixed(4)}, totalWeight: ${totalWeight.toFixed(4)}`)
-    console.log(`   Weight Allocation: Technical(30.0%) + Fundamental(35.0%) + Macroeconomic(20.0%) + Sentiment(10.0%) + Alternative(5.0% = Options 2.0% + ESG 1.5% + Short Interest 1.0% + Extended Market 0.5%) = 100.0%`)
+    console.log(`   Weight Allocation: Technical(28.0%) + Fundamental(28.0%) + Macroeconomic(20.0%) + Sentiment(18.0%) + Alternative(6.0% = Options 2.5% + ESG 1.5% + Short Interest 1.5% + Extended Market 0.5%) = 100.0%`)
     console.log(`   ✅ WEIGHT VERIFICATION: Total weights = ${totalWeight.toFixed(3)} (target: 1.000)`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
