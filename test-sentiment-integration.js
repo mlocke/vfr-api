@@ -7,7 +7,7 @@
 const { AlgorithmEngine } = require('./app/services/algorithms/AlgorithmEngine.ts')
 const { FactorLibrary } = require('./app/services/algorithms/FactorLibrary.ts')
 const { AlgorithmCache } = require('./app/services/algorithms/AlgorithmCache.ts')
-const { FallbackDataService } = require('./app/services/financial-data/FallbackDataService.ts')
+const { FinancialDataService } = require('./app/services/financial-data/FinancialDataService.ts')
 const SentimentAnalysisService = require('./app/services/financial-data/SentimentAnalysisService.ts').default
 const { RedisCache } = require('./app/services/cache/RedisCache.ts')
 
@@ -22,7 +22,7 @@ async function testSentimentIntegration() {
       compression: { threshold: 1000, enabled: true }
     })
     const factorLibrary = new FactorLibrary(cache)
-    const fallbackService = new FallbackDataService()
+    const fallbackService = new FinancialDataService()
     const sentimentService = new SentimentAnalysisService(cache)
 
     // Create AlgorithmEngine with sentiment integration

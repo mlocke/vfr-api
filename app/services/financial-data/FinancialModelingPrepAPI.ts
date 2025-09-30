@@ -292,9 +292,10 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
     }
 
       // Get both ratios and key metrics for comprehensive data
+      // Note: Using quarterly endpoints instead of TTM as TTM returns empty for many stocks
       const [ratiosResponse, metricsResponse] = await Promise.all([
-        this.makeRequest(`/ratios-ttm?symbol=${sanitizedSymbol}`),
-        this.makeRequest(`/key-metrics-ttm?symbol=${sanitizedSymbol}`)
+        this.makeRequest(`/ratios/${sanitizedSymbol}?limit=1`),
+        this.makeRequest(`/key-metrics/${sanitizedSymbol}?limit=1`)
       ])
 
       if (!ratiosResponse.success && !metricsResponse.success) {
@@ -378,21 +379,21 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
 
       const result: FundamentalRatios = {
         symbol: sanitizedSymbol,
-        peRatio: parseSecureNumeric(metricsData.peRatioTTM, 'peRatio') ?? parseSecureNumeric(ratiosData.priceEarningsRatioTTM, 'peRatio'),
-        pegRatio: parseSecureNumeric(metricsData.pegRatioTTM, 'pegRatio'),
-        pbRatio: parseSecureNumeric(metricsData.priceToBookRatioTTM, 'pbRatio') ?? parseSecureNumeric(ratiosData.priceToBookRatioTTM, 'pbRatio'),
-        priceToSales: parseSecureNumeric(metricsData.priceToSalesRatioTTM, 'priceToSales') ?? parseSecureNumeric(ratiosData.priceToSalesRatioTTM, 'priceToSales'),
-        priceToFreeCashFlow: parseSecureNumeric(metricsData.priceToFreeCashFlowsRatioTTM, 'priceToFreeCashFlow') ?? parseSecureNumeric(ratiosData.priceToFreeCashFlowsRatioTTM, 'priceToFreeCashFlow'),
-        debtToEquity: parseSecureNumeric(ratiosData.debtEquityRatioTTM, 'debtToEquity'),
-        currentRatio: parseSecureNumeric(ratiosData.currentRatioTTM, 'currentRatio'),
-        quickRatio: parseSecureNumeric(ratiosData.quickRatioTTM, 'quickRatio'),
-        roe: parseSecureNumeric(ratiosData.returnOnEquityTTM, 'roe', true),
-        roa: parseSecureNumeric(ratiosData.returnOnAssetsTTM, 'roa', true),
-        grossProfitMargin: parseSecureNumeric(ratiosData.grossProfitMarginTTM, 'grossProfitMargin', true),
-        operatingMargin: parseSecureNumeric(ratiosData.operatingProfitMarginTTM, 'operatingMargin', true),
-        netProfitMargin: parseSecureNumeric(ratiosData.netProfitMarginTTM, 'netProfitMargin', true),
-        dividendYield: parseSecureNumeric(metricsData.dividendYieldTTM, 'dividendYield') ?? parseSecureNumeric(ratiosData.dividendYieldTTM, 'dividendYield'),
-        payoutRatio: parseSecureNumeric(ratiosData.payoutRatioTTM, 'payoutRatio'),
+        peRatio: parseSecureNumeric(metricsData.peRatio, 'peRatio') ?? parseSecureNumeric(ratiosData.priceEarningsRatio, 'peRatio'),
+        pegRatio: parseSecureNumeric(metricsData.pegRatio, 'pegRatio') ?? parseSecureNumeric(ratiosData.priceEarningsToGrowthRatio, 'pegRatio'),
+        pbRatio: parseSecureNumeric(metricsData.pbRatio, 'pbRatio') ?? parseSecureNumeric(ratiosData.priceToBookRatio, 'pbRatio'),
+        priceToSales: parseSecureNumeric(metricsData.priceToSalesRatio, 'priceToSales') ?? parseSecureNumeric(ratiosData.priceToSalesRatio, 'priceToSales'),
+        priceToFreeCashFlow: parseSecureNumeric(metricsData.priceToFreeCashFlowsRatio, 'priceToFreeCashFlow') ?? parseSecureNumeric(ratiosData.priceToFreeCashFlowsRatio, 'priceToFreeCashFlow'),
+        debtToEquity: parseSecureNumeric(ratiosData.debtEquityRatio, 'debtToEquity'),
+        currentRatio: parseSecureNumeric(ratiosData.currentRatio, 'currentRatio'),
+        quickRatio: parseSecureNumeric(ratiosData.quickRatio, 'quickRatio'),
+        roe: parseSecureNumeric(ratiosData.returnOnEquity, 'roe', true),
+        roa: parseSecureNumeric(ratiosData.returnOnAssets, 'roa', true),
+        grossProfitMargin: parseSecureNumeric(ratiosData.grossProfitMargin, 'grossProfitMargin', true),
+        operatingMargin: parseSecureNumeric(ratiosData.operatingProfitMargin, 'operatingMargin', true),
+        netProfitMargin: parseSecureNumeric(ratiosData.netProfitMargin, 'netProfitMargin', true),
+        dividendYield: parseSecureNumeric(metricsData.dividendYield, 'dividendYield') ?? parseSecureNumeric(ratiosData.dividendYield, 'dividendYield'),
+        payoutRatio: parseSecureNumeric(ratiosData.payoutRatio, 'payoutRatio'),
         timestamp: Date.now(),
         source: 'fmp',
         period: 'ttm'

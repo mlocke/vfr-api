@@ -15,7 +15,7 @@ import {
 } from './types'
 
 import { QualityScore, ConflictResolutionStrategy } from '../types/core-types'
-import { FallbackDataService } from '../financial-data/FallbackDataService'
+import { FinancialDataService } from '../financial-data/FinancialDataService'
 import { FactorLibrary } from './FactorLibrary'
 import { AlgorithmCache } from './AlgorithmCache'
 import SentimentAnalysisService from '../financial-data/SentimentAnalysisService'
@@ -83,7 +83,7 @@ interface OptionsDataPoint {
 }
 
 export class AlgorithmEngine {
-  private fallbackDataService: FallbackDataService
+  private financialDataService: FinancialDataService
   private factorLibrary: FactorLibrary
   private cache: AlgorithmCache
   private sentimentService: SentimentAnalysisService
@@ -94,7 +94,7 @@ export class AlgorithmEngine {
   private activeExecutions: Map<string, AlgorithmExecution> = new Map()
 
   constructor(
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     factorLibrary: FactorLibrary,
     cache: AlgorithmCache,
     sentimentService?: SentimentAnalysisService,
@@ -103,7 +103,7 @@ export class AlgorithmEngine {
     institutionalService?: InstitutionalDataService,
     optionsService?: OptionsDataService
   ) {
-    this.fallbackDataService = fallbackDataService
+    this.financialDataService = financialDataService
     this.factorLibrary = factorLibrary
     this.cache = cache
     this.sentimentService = sentimentService || new SentimentAnalysisService(new RedisCache())
@@ -266,7 +266,7 @@ export class AlgorithmEngine {
 
     // Dynamic batch sizing based on FMP Starter capacity (300/min = 5/second)
     // Allow 80% utilization to prevent rate limiting: 4 calls/second
-    const fmpCapacity = this.fallbackDataService.getFmpCapacity()
+    const fmpCapacity = this.financialDataService.getFmpCapacity()
     const optimalBatchSize = Math.min(
       fmpCapacity.isStarterPlan ? 60 : 25, // 60 for FMP Starter, 25 for others
       Math.max(10, Math.floor(symbols.length / 4)) // Adaptive based on symbol count
@@ -352,12 +352,12 @@ export class AlgorithmEngine {
         return cached
       }
 
-      // Fetch data using FallbackDataService with parallel execution (83.8% performance improvement)
+      // Fetch data using FinancialDataService with parallel execution (83.8% performance improvement)
       console.log(`Fetching fresh market data for ${symbol}...`)
       const [stockData, marketData, companyInfo] = await Promise.allSettled([
-        this.fallbackDataService.getStockPrice(symbol),
-        this.fallbackDataService.getMarketData(symbol),
-        this.fallbackDataService.getCompanyInfo(symbol)
+        this.financialDataService.getStockPrice(symbol),
+        this.financialDataService.getMarketData(symbol),
+        this.financialDataService.getCompanyInfo(symbol)
       ]).then(results => [
         results[0].status === 'fulfilled' ? results[0].value : null,
         results[1].status === 'fulfilled' ? results[1].value : null,
@@ -446,9 +446,9 @@ export class AlgorithmEngine {
         return cached.data
       }
 
-      // Fetch fundamental ratios using FallbackDataService
-      const fundamentalRatios = await this.fallbackDataService.getFundamentalRatios(symbol)
-      const companyInfo = await this.fallbackDataService.getCompanyInfo(symbol)
+      // Fetch fundamental ratios using FinancialDataService
+      const fundamentalRatios = await this.financialDataService.getFundamentalRatios(symbol)
+      const companyInfo = await this.financialDataService.getCompanyInfo(symbol)
 
       if (!fundamentalRatios) {
         return null
@@ -760,7 +760,7 @@ export class AlgorithmEngine {
         let analystData: any | undefined
         try {
           console.log(`📊 Pre-fetching analyst data for ${symbol}...`)
-          const analystRatings = await this.fallbackDataService.getAnalystRatings(symbol)
+          const analystRatings = await this.financialDataService.getAnalystRatings(symbol)
           if (analystRatings) {
             analystData = {
               consensus: analystRatings.consensus,
@@ -1600,8 +1600,8 @@ export class AlgorithmEngine {
       activeExecutions: this.activeExecutions.size,
       cacheStats: this.cache.getStatistics(),
       dataServiceStats: {
-        healthy: true, // FallbackDataService has its own health check
-        name: this.fallbackDataService.name
+        healthy: true, // FinancialDataService has its own health check
+        name: this.financialDataService.name
       }
     }
   }

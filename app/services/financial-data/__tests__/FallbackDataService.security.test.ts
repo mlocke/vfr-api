@@ -1,9 +1,9 @@
 /**
- * Security Integration Tests for FallbackDataService
+ * Security Integration Tests for FinancialDataService
  * Tests security controls in the context of financial data operations
  */
 
-import { FallbackDataService } from '../FallbackDataService'
+import { FinancialDataService } from '../FinancialDataService'
 import SecurityValidator, { SecurityValidator as SecurityValidatorClass } from '../../security/SecurityValidator'
 
 // Mock the providers to control test behavior
@@ -12,13 +12,13 @@ jest.mock('../YahooFinanceAPI')
 jest.mock('../TwelveDataAPI')
 jest.mock('../FinancialModelingPrepAPI')
 
-describe('FallbackDataService Security Integration', () => {
-  let service: FallbackDataService
+describe('FinancialDataService Security Integration', () => {
+  let service: FinancialDataService
   let validator: SecurityValidatorClass
 
   beforeEach(() => {
     // Create fresh instances for each test
-    service = new FallbackDataService()
+    service = new FinancialDataService()
     validator = SecurityValidator
     validator.resetSecurityState()
 

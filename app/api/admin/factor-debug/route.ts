@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { FactorLibrary } from '../../../services/algorithms/FactorLibrary'
 import { TechnicalIndicatorService } from '../../../services/technical-analysis/TechnicalIndicatorService'
-import { FallbackDataService } from '../../../services/financial-data/FallbackDataService'
+import { FinancialDataService } from '../../../services/financial-data/FinancialDataService'
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { financialDataService } from '../../../services/financial-data'
 
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<FactorDeb
 
     // Initialize services
     const cache = new RedisCache()
-    const fallbackDataService = new FallbackDataService()
+    const financialDataService = new FinancialDataService()
     let technicalService: TechnicalIndicatorService | undefined
 
     try {

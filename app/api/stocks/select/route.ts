@@ -676,7 +676,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           }
         }
 
-        const stockData = await financialDataService.getStockPrice(symbolToUse, preferredProvider)
+        const stockData = await financialDataService.getStockPrice(symbolToUse)
         if (stockData) {
           stocks = [stockData]
           sources.add(stockData.source)
@@ -704,7 +704,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         // Get multiple stocks in parallel
-        stocks = await financialDataService.getMultipleStocks(symbols.slice(0, limit), preferredProvider)
+        stocks = await financialDataService.getMultipleStocks(symbols.slice(0))
         stocks.forEach(stock => sources.add(stock.source))
         break
 
@@ -724,7 +724,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { AlgorithmEngine } = await import('../../../services/algorithms/AlgorithmEngine')
     const { FactorLibrary } = await import('../../../services/algorithms/FactorLibrary')
     const { AlgorithmCache } = await import('../../../services/algorithms/AlgorithmCache')
-    const { FallbackDataService } = await import('../../../services/financial-data/FallbackDataService')
+    const { FinancialDataService } = await import('../../../services/financial-data/FinancialDataService')
     const { AlgorithmConfigManager } = await import('../../../services/algorithms/AlgorithmConfigManager')
 
     // Initialize services for AlgorithmEngine
@@ -754,8 +754,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         enableCompression: true
       }
     })
-    const fallbackDataService = new FallbackDataService()
-    const algorithmEngine = new AlgorithmEngine(fallbackDataService, factorLibrary, algorithmCache, getSentimentService() || undefined)
+    const financialDataService = new FinancialDataService()
+    const algorithmEngine = new AlgorithmEngine(financialDataService, factorLibrary, algorithmCache, getSentimentService() || undefined)
     const configManager = new AlgorithmConfigManager(factorLibrary, algorithmCache)
 
     // Get composite algorithm configuration
@@ -857,7 +857,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 export async function GET(): Promise<NextResponse> {
   try {
-    const health = await financialDataService.healthCheck()
+    const health = await financialDataService.getProviderHealth()
 
     // Convert provider health to simple format
     const services: { [key: string]: boolean } = {}

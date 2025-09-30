@@ -1,5 +1,5 @@
 /**
- * Enhanced Data Service - Replaces FallbackDataService with centralized source management
+ * Enhanced Data Service - Replaces FinancialDataService with centralized source management
  * Provides complete control over data source selection for all data types
  */
 

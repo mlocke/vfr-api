@@ -199,7 +199,7 @@ export class FinancialDataCacheService {
       }
 
       // Cache miss or stale - fetch from API
-      const apiData = await this.financialService.getStockPrice(symbol, preferredSource)
+      const apiData = await this.financialService.getStockPrice(symbol)
 
       if (apiData) {
         // Store in cache for future use
@@ -388,7 +388,7 @@ export class FinancialDataCacheService {
   ): Promise<DataResponse<HistoricalMarketData>> {
     try {
       // For simplicity, get latest market data from existing service
-      const marketData = await this.financialService.getMarketData(request.symbol, request.preferredSource)
+      const marketData = await this.financialService.getMarketData(request.symbol)
 
       if (marketData) {
         // Convert and cache the data
@@ -557,7 +557,7 @@ export class FinancialDataCacheService {
 
   private async checkApiHealth(): Promise<boolean> {
     try {
-      const health = await this.financialService.healthCheck()
+      const health = await this.financialService.getProviderHealth()
       return health.every(provider => provider.healthy)
     } catch (error) {
       return false

@@ -5,7 +5,7 @@
 
 import { AlgorithmEngine } from './AlgorithmEngine'
 import { AlgorithmCache } from './AlgorithmCache'
-import { FallbackDataService } from '../financial-data/FallbackDataService'
+import { FinancialDataService } from '../financial-data/FinancialDataService'
 import {
   AlgorithmConfiguration,
   AlgorithmContext,
@@ -52,7 +52,7 @@ interface SchedulerConfig {
 export class AlgorithmScheduler extends EventEmitter {
   private engine: AlgorithmEngine
   private cache: AlgorithmCache
-  private fallbackDataService: FallbackDataService
+  private financialDataService: FinancialDataService
   private config: SchedulerConfig
 
   private scheduledAlgorithms = new Map<string, ScheduledExecution>()
@@ -74,14 +74,14 @@ export class AlgorithmScheduler extends EventEmitter {
   constructor(
     engine: AlgorithmEngine,
     cache: AlgorithmCache,
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     config: SchedulerConfig
   ) {
     super()
 
     this.engine = engine
     this.cache = cache
-    this.fallbackDataService = fallbackDataService
+    this.financialDataService = financialDataService
     this.config = config
 
     this.marketContext = {
@@ -561,11 +561,11 @@ export class AlgorithmScheduler extends EventEmitter {
   }
 
   private async getDataSourceStatus(): Promise<any> {
-    // Get status of data sources from FallbackDataService
-    const healthy = await this.fallbackDataService.healthCheck()
+    // Get status of data sources from FinancialDataService
+    const healthy = await this.financialDataService.healthCheck()
     return {
       healthy,
-      serviceName: this.fallbackDataService.name,
+      serviceName: this.financialDataService.name,
       lastCheck: Date.now()
     }
   }

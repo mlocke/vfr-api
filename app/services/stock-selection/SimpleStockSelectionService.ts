@@ -47,7 +47,7 @@ export class SimpleStockSelectionService {
             return this.errorResponse('Symbol required for single mode')
           }
 
-          const stockData = await financialDataService.getStockPrice(symbols[0], preferredProvider)
+          const stockData = await financialDataService.getStockPrice(symbols[0])
           if (stockData) {
             stocks = [stockData]
             sources.add(stockData.source)
@@ -68,7 +68,7 @@ export class SimpleStockSelectionService {
             return this.errorResponse('Symbols required for multiple mode')
           }
 
-          stocks = await financialDataService.getMultipleStocks(symbols.slice(0, limit), preferredProvider)
+          stocks = await financialDataService.getMultipleStocks(symbols.slice(0))
           stocks.forEach(stock => sources.add(stock.source))
           break
 
@@ -103,7 +103,7 @@ export class SimpleStockSelectionService {
    */
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; providers: any[] }> {
     try {
-      const providerHealth = await financialDataService.healthCheck()
+      const providerHealth = await financialDataService.getProviderHealth()
       const allHealthy = providerHealth.every(provider => provider.healthy)
 
       return {

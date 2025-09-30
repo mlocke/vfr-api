@@ -216,7 +216,7 @@ async function testProviderConnection(providerId: string, timeout: number): Prom
 
     // For implemented providers, use real health checks
     if (['polygon', 'yahoo'].includes(providerId)) {
-      const health = await financialDataService.healthCheck()
+      const health = await financialDataService.getProviderHealth()
       const providerHealth = health.find(h => h.name.toLowerCase().includes(providerId))
       return providerHealth?.healthy || false
     }
@@ -247,7 +247,7 @@ async function testProviderData(providerId: string, timeout: number): Promise<an
       case 'polygon':
         // Test REAL Polygon.io API data
         console.log('🔴 Making REAL Polygon API call...')
-        testData = await financialDataService.getStockPrice('AAPL', 'polygon')
+        testData = await financialDataService.getStockPrice('AAPL')
 
         if (testData) {
           console.log('✅ REAL Polygon data retrieved successfully:', {
@@ -268,7 +268,7 @@ async function testProviderData(providerId: string, timeout: number): Promise<an
         // Test Yahoo Finance data - try real call
         try {
           console.log('🟡 Attempting real Yahoo Finance call...')
-          testData = await financialDataService.getStockPrice('AAPL', 'yahoo')
+          testData = await financialDataService.getStockPrice('AAPL')
           if (testData) {
             console.log('✅ REAL Yahoo data retrieved:', testData)
           } else {
@@ -357,7 +357,7 @@ async function testProviderPerformance(providerId: string, timeout: number): Pro
       // Make 5 rapid requests to test performance
       for (let i = 0; i < 5; i++) {
         requests.push(
-          financialDataService.getStockPrice('AAPL', providerId)
+          financialDataService.getStockPrice('AAPL')
             .then(result => ({
               request: i + 1,
               responseTime: Date.now() - startTime,
