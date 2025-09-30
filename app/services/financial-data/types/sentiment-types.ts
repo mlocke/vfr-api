@@ -74,6 +74,7 @@ export interface SentimentConfig {
     fallback: SentimentDataSource[]
   }
   weights: {
+    analyst?: number // Weight for analyst consensus (FMP)
     news: number // Weight for news sentiment
     reddit: number // Weight for Reddit sentiment
     options: number // Weight for options sentiment

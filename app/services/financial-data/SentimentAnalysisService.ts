@@ -169,7 +169,7 @@ export class SentimentAnalysisService {
   /**
    * Get comprehensive sentiment indicators for a stock
    */
-  async getSentimentIndicators(symbol: string): Promise<SentimentIndicators | null> {
+  async getSentimentIndicators(symbol: string, analystData?: any): Promise<SentimentIndicators | null> {
     try {
       // Validate symbol first to prevent injection attacks
       const validation = this.securityValidator.validateSymbol(symbol)
@@ -181,8 +181,8 @@ export class SentimentAnalysisService {
       // Use sanitized symbol
       const sanitizedSymbol = validation.sanitized || symbol
 
-      // Check cache first
-      const cacheKey = `sentiment:indicators:${sanitizedSymbol}`
+      // Check cache first (include analyst data in cache key if provided)
+      const cacheKey = `sentiment:indicators:${sanitizedSymbol}:${analystData ? 'with-analyst' : 'no-analyst'}`
       const cached = await this.getCachedData(cacheKey)
       if (cached) {
         return cached
@@ -252,6 +252,7 @@ export class SentimentAnalysisService {
       }
 
       // Calculate aggregated score with dynamic weighting
+      const analystWeight = this.config.weights.analyst || 0
       const newsWeight = this.config.weights.news
       const redditWeight = this.config.weights.reddit
       const optionsWeight = this.config.weights.options
@@ -260,11 +261,23 @@ export class SentimentAnalysisService {
       let totalWeight = 0
       let baseConfidence = 0
 
+      // Add analyst sentiment if available (highest priority)
+      if (analystData && analystData.sentimentScore !== undefined) {
+        // Normalize analyst score from 1-5 scale to 0-1 scale
+        const normalizedAnalystScore = (analystData.sentimentScore - 1) / 4
+        aggregatedScore += normalizedAnalystScore * analystWeight
+        totalWeight += analystWeight
+        baseConfidence = analystData.totalAnalysts > 0 ? Math.min(0.9, 0.5 + (analystData.totalAnalysts / 100)) : 0.7
+        console.log(`📊 Analyst sentiment: ${normalizedAnalystScore.toFixed(3)} (${analystData.sentimentScore}/5 from ${analystData.totalAnalysts} analysts, weight: ${(analystWeight * 100).toFixed(0)}%)`)
+      }
+
       // Add news sentiment if available
       if (newsData) {
         aggregatedScore += this.normalizeToZeroOne(newsData.sentiment) * newsWeight
         totalWeight += newsWeight
-        baseConfidence = newsData.confidence
+        if (!analystData) {
+          baseConfidence = newsData.confidence
+        }
       }
 
       // Add Reddit sentiment if available
@@ -272,8 +285,8 @@ export class SentimentAnalysisService {
         aggregatedScore += redditData.sentiment * redditWeight
         totalWeight += redditWeight
 
-        // If no news data, use Reddit confidence as base
-        if (!newsData) {
+        // If no analyst or news data, use Reddit confidence as base
+        if (!analystData && !newsData) {
           baseConfidence = redditData.confidence
         }
       }
@@ -283,8 +296,8 @@ export class SentimentAnalysisService {
         aggregatedScore += optionsData.sentiment * optionsWeight
         totalWeight += optionsWeight
 
-        // If no news or Reddit data, use options confidence as base
-        if (!newsData && !redditData) {
+        // If no analyst, news, or Reddit data, use options confidence as base
+        if (!analystData && !newsData && !redditData) {
           baseConfidence = optionsData.confidence
         }
       }
@@ -615,9 +628,10 @@ export class SentimentAnalysisService {
         fallback: []
       },
       weights: {
-        news: 0.55, // 55% weight for company sentiment (Yahoo Finance)
-        reddit: 0.30, // 30% weight for Reddit WSB sentiment
-        options: 0.15 // 15% weight for options sentiment (P/C ratio analysis)
+        analyst: 0.40, // 40% weight for analyst consensus (FMP) - highest priority professional opinion
+        news: 0.30, // 30% weight for company sentiment (Yahoo Finance) - reduced from 55%
+        reddit: 0.20, // 20% weight for Reddit WSB sentiment - reduced from 30%
+        options: 0.10 // 10% weight for options sentiment (P/C ratio analysis) - reduced from 15%
       },
       thresholds: {
         confidenceThreshold: 0.3,

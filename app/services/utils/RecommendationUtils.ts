@@ -102,7 +102,12 @@ export function getRecommendation(score: number, analystData?: AnalystData): Rec
     }
     // Buy Consensus (sentiment >= 3.6, buy% >= 65%) - CALIBRATED for FMP analyst data (lowered from 3.8 to catch NVDA with 3.7 sentiment)
     else if (sentimentScore && sentimentScore >= 3.6 && buyPercentage >= 65) {
-      if (recommendation === 'MODERATE_BUY') recommendation = 'BUY'
+      // ✅ FIX: Allow BUY → STRONG_BUY upgrade when buy consensus is very strong (≥70%)
+      if (recommendation === 'BUY' && buyPercentage >= 70) {
+        console.log(`🚀 UPGRADE: ${recommendation} → STRONG_BUY (sentiment: ${sentimentScore}, buy%: ${buyPercentage.toFixed(1)})`)
+        recommendation = 'STRONG_BUY'
+      }
+      else if (recommendation === 'MODERATE_BUY') recommendation = 'BUY'
       else if (recommendation === 'HOLD' && normalizedScore >= 0.50) recommendation = 'BUY' // ✅ UPGRADE: Strong analyst consensus with good score
       else if (recommendation === 'HOLD' && normalizedScore >= 0.45) recommendation = 'MODERATE_BUY'
     }

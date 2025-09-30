@@ -551,13 +551,37 @@ export class AlgorithmEngine {
       console.log(`🎯 COMPOSITE ALGORITHM DETECTED - Using enhanced composite factor calculation`)
 
       try {
+        // 🆕 PRE-FETCH ANALYST DATA for sentiment calculation (before sentiment fetch)
+        let analystData: any | undefined
+        try {
+          const analystRatings = await this.financialDataService.getAnalystRatings(symbol)
+          if (analystRatings) {
+            analystData = {
+              consensus: analystRatings.consensus,
+              totalAnalysts: analystRatings.totalAnalysts,
+              sentimentScore: analystRatings.sentimentScore,
+              distribution: {
+                strongBuy: analystRatings.strongBuy,
+                buy: analystRatings.buy,
+                hold: analystRatings.hold,
+                sell: analystRatings.sell,
+                strongSell: analystRatings.strongSell
+              }
+            }
+            console.log(`📊 Analyst data pre-fetched for sentiment: ${analystRatings.consensus} (${analystRatings.totalAnalysts} analysts, ${analystRatings.sentimentScore}/5)`)
+          }
+        } catch (analystError) {
+          console.warn(`Failed to fetch analyst data for ${symbol}:`, analystError)
+          analystData = undefined
+        }
+
         // 🆕 PRE-FETCH SENTIMENT DATA for composite algorithm (with 15s timeout)
         let sentimentScore: number | undefined
         try {
           console.log(`📰 Pre-fetching sentiment data for ${symbol}...`)
           const timeoutHandler = TimeoutHandler.getInstance()
           const sentimentResult = await timeoutHandler.withTimeout(
-            this.sentimentService.getSentimentIndicators(symbol),
+            this.sentimentService.getSentimentIndicators(symbol, analystData),
             15000 // 15s timeout for Reddit parallel processing
           )
           sentimentScore = sentimentResult ? sentimentResult.aggregatedScore : undefined
@@ -756,30 +780,7 @@ export class AlgorithmEngine {
           optionsData = undefined // Will use fallback in FactorLibrary
         }
 
-        // 🆕 PRE-FETCH ANALYST DATA for composite algorithm
-        let analystData: any | undefined
-        try {
-          console.log(`📊 Pre-fetching analyst data for ${symbol}...`)
-          const analystRatings = await this.financialDataService.getAnalystRatings(symbol)
-          if (analystRatings) {
-            analystData = {
-              consensus: analystRatings.consensus,
-              totalAnalysts: analystRatings.totalAnalysts,
-              sentimentScore: analystRatings.sentimentScore,
-              distribution: {
-                strongBuy: analystRatings.strongBuy,
-                buy: analystRatings.buy,
-                hold: analystRatings.hold,
-                sell: analystRatings.sell,
-                strongSell: analystRatings.strongSell
-              }
-            }
-            console.log(`📊 Analyst data pre-fetched for ${symbol}: ${analystRatings.consensus} (${analystRatings.totalAnalysts} analysts, sentiment ${analystRatings.sentimentScore}/5)`)
-          }
-        } catch (analystError) {
-          console.warn(`Failed to fetch analyst data for ${symbol}:`, analystError)
-          analystData = undefined
-        }
+        // Analyst data already fetched earlier for sentiment calculation (line 554-576)
 
         // Create enhanced technical data with all pre-fetched services for FactorLibrary
         const enhancedTechnicalData: TechnicalDataPoint = {
