@@ -754,8 +754,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         enableCompression: true
       }
     })
-    const financialDataService = new FinancialDataService()
-    const algorithmEngine = new AlgorithmEngine(financialDataService, factorLibrary, algorithmCache, getSentimentService() || undefined)
+    const financialDataServiceLocal = new FinancialDataService()
+    const algorithmEngine = new AlgorithmEngine(financialDataServiceLocal, factorLibrary, algorithmCache, getSentimentService() || undefined)
     const configManager = new AlgorithmConfigManager(factorLibrary, algorithmCache)
 
     // Get composite algorithm configuration
