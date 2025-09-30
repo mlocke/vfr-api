@@ -63,3 +63,4 @@ logs/
 
 # Analysis results - generated data files
 public/analysis-results/
+*.tsbuildinfo

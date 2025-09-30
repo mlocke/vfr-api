@@ -1640,10 +1640,10 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     try {
       // Try cache first
-      const cached = await RedisCache.get(cacheKey)
+      const cached = await this.cache.get(cacheKey)
       if (cached) {
         console.log(`📦 Using cached company info for ${sanitizedSymbol} (24h cache)`)
-        return JSON.parse(cached)
+        return typeof cached === 'string' ? JSON.parse(cached) : cached
       }
 
       // Cache miss - fetch fresh data
@@ -1651,7 +1651,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       // Cache for 24 hours (86400 seconds)
       if (companyInfo) {
-        await RedisCache.set(cacheKey, JSON.stringify(companyInfo), 86400)
+        await this.cache.set(cacheKey, companyInfo, 86400)
         console.log(`💾 Cached company info for ${sanitizedSymbol} (24h TTL)`)
       }
 
