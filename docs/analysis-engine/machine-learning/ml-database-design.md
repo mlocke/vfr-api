@@ -51,7 +51,7 @@ CREATE TABLE ml_feature_definitions (
     )),
     description TEXT,
     calculation_method TEXT,
-    source_apis TEXT[], -- Array of API sources (Polygon, FMP, etc.)
+    source_apis TEXT[], -- Array of API sources (FMP, EODHD, etc.)
     calculation_frequency VARCHAR(20) NOT NULL CHECK (calculation_frequency IN (
         '1m', '5m', '15m', '1h', '4h', '1d', 'weekly', 'monthly'
     )),

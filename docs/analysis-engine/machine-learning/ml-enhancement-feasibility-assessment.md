@@ -29,7 +29,7 @@ The proposed ML enhancements (options features, sentiment embeddings, technical 
 
 | Feature Category | Complexity | Timeline | API Cost Impact | Infrastructure Required |
 |------------------|------------|----------|-----------------|------------------------|
-| **Options Features (IV surface, skew)** | Medium | 2-4 weeks | $99/month (Polygon) | Extend existing technical analysis |
+| **Options Features (IV surface, skew)** | Medium | 2-4 weeks | Available via FMP | Extend existing technical analysis |
 | **Sentiment Embeddings** | Low | 1-2 weeks | $0 (use existing) | Text processing on current sentiment data |
 | **Technical Multi-horizon Features** | Low | 1-3 weeks | $0 (use existing) | Extend current technical indicators |
 | **Ensemble/Stacking Models** | High | 3-6 months | $2,000-5,000/year | Full ML infrastructure build |
@@ -41,19 +41,18 @@ The proposed ML enhancements (options features, sentiment embeddings, technical 
 - **Data Coverage**: 62.5% (5/8 required data points)
 - **Annual Cost**: $0
 - **Capability**: Sufficient for research platform
-- **Sources**: Yahoo Finance, Alpha Vantage (free), FMP (free), Polygon (limited)
+- **Sources**: FMP (primary), EODHD (fallback), Government APIs (FRED, BLS, EIA)
 
-### **Phase 1: Basic ML Enhancement ($108-1,188/year)**
+### **Phase 1: Basic ML Enhancement (Current FMP Implementation)**
 
-#### Target: Options features + enhanced quotes
-**Recommended Upgrade: Polygon Developer Plan ($99/month)**
+#### Target: Options features + enhanced quotes via FMP API
 
-**Capabilities Added:**
-- Real-time options chain data
-- IV surface calculations
-- Bid/ask spreads for all quotes
-- 1-minute intraday bars
-- WebSocket real-time feeds
+**Capabilities Available:**
+- Options chain data via FMP
+- IV calculations via FMP
+- Real-time market data
+- Extended hours trading data
+- Comprehensive fundamentals
 
 **Implementation Impact:**
 - Add `OptionsAnalysisService.ts` to existing service layer
@@ -390,7 +389,7 @@ interface MetaLearningConfig {
 
 ### **Immediate Action Items**
 1. **Start with Phase 1**: Low-risk, high-value options features and sentiment embeddings
-2. **Upgrade to Polygon Developer**: $99/month provides options data foundation
+2. **Leverage FMP API**: Use existing FMP subscription for options data foundation
 3. **Prototype sentiment embeddings**: Use existing infrastructure for quick validation
 4. **Measure and iterate**: Establish baseline metrics before ML implementation
 
