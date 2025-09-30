@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { formatMarketCap } from './stock-analysis/utils/formatters';
 
 interface StockRecommendationCardProps {
   stock: {
@@ -138,7 +139,7 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
               color: 'rgba(255, 255, 255, 0.6)',
               marginTop: '0.25rem',
             }}>
-              {stock.sector} {stock.marketCap && `| Market Cap: ${stock.marketCap}`}
+              {stock.sector} {stock.marketCap && `| Market Cap: ${formatMarketCap(stock.marketCap)}`}
             </div>
           )}
         </div>

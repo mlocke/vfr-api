@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { EnhancedStockResult } from '../../../services/stock-selection/types'
+import { formatMarketCap } from '../utils/formatters'
 
 interface StockHeaderProps {
   stockData: EnhancedStockResult
@@ -286,7 +287,7 @@ const StockHeader: React.FC<StockHeaderProps> = ({ stockData, onClose }) => {
           {/* Context Information */}
           <div className="context-info">
             <div style={{ marginBottom: '0.25rem' }}>
-              <strong>{context.sector}</strong> • ${(context.marketCap / 1e9).toFixed(1)}B Market Cap
+              <strong>{context.sector}</strong> • {formatMarketCap(context.marketCap)} Market Cap
             </div>
             {context.beta && (
               <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>

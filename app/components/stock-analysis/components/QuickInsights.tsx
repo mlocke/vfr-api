@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { DialogStockData } from '../types/dialog-types'
+import { formatMarketCap } from '../utils/formatters'
 
 interface Insight {
   id: string

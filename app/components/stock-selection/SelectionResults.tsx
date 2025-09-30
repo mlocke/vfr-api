@@ -10,6 +10,7 @@ import {
 } from '../../services/stock-selection/types'
 import ExtendedHoursIndicator from '../market/ExtendedHoursIndicator'
 import PreMarketAfterHoursDisplay from '../market/PreMarketAfterHoursDisplay'
+import { formatMarketCap } from '../stock-analysis/utils/formatters'
 
 /**
  * Component props
@@ -41,13 +42,6 @@ function StockCard({ stock, index, showDetails = false, onToggleDetails }: Stock
       case 'HOLD': return 'text-yellow-400 bg-yellow-900'
       default: return 'text-gray-400 bg-gray-700'
     }
-  }
-
-  const formatCurrency = (value: number) => {
-    if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`
-    return `$${value.toFixed(2)}`
   }
 
   const formatPercentage = (value: number) => {
@@ -120,7 +114,7 @@ function StockCard({ stock, index, showDetails = false, onToggleDetails }: Stock
           </div>
           <div>
             <span className="text-gray-400">Market Cap:</span>
-            <span className="text-white ml-1">{formatCurrency(stock.context.marketCap)}</span>
+            <span className="text-white ml-1">{formatMarketCap(stock.context.marketCap)}</span>
           </div>
         </div>
 
