@@ -28,6 +28,7 @@ import { RedisCache } from '../cache/RedisCache'
 import { FactorLibrary } from '../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../algorithms/AlgorithmCache'
 import { SelectionResult, StockScore } from '../algorithms/types'
+import { getRecommendation, AnalystData } from '../utils/RecommendationUtils'
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
 import SecurityValidator from '../security/SecurityValidator'
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService'
@@ -438,90 +439,15 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     const primaryFactors = this.extractPrimaryFactors(stockScore)
     console.log(`Primary factors extracted for ${symbol}:`, primaryFactors)
 
-    // Get macroeconomic analysis if service is available
+    // DO NOT adjust scores here - FactorLibrary already calculated the final composite score
+    // These services are only used to gather metadata for insights/reasoning
     let macroImpact = null
-    let adjustedScore = stockScore
-    if (this.macroeconomicService) {
-      try {
-        macroImpact = await this.macroeconomicService.analyzeStockMacroImpact(
-          symbol,
-          stockScore.marketData.sector,
-          stockScore.overallScore
-        )
-        if (macroImpact) {
-          // Update the stock score with macro-adjusted score
-          adjustedScore = {
-            ...stockScore,
-            overallScore: macroImpact.adjustedScore
-          }
-        }
-      } catch (error) {
-        console.warn(`Macroeconomic analysis failed for ${symbol}:`, error)
-      }
-    }
-
-    // Get sentiment analysis if service is available
     let sentimentImpact = null
-    if (this.sentimentService) {
-      try {
-        sentimentImpact = await this.sentimentService.analyzeStockSentimentImpact(
-          symbol,
-          stockScore.marketData.sector,
-          adjustedScore.overallScore // Use macro-adjusted score as base
-        )
-        if (sentimentImpact) {
-          // Update the stock score with sentiment-adjusted score
-          adjustedScore = {
-            ...adjustedScore,
-            overallScore: sentimentImpact.adjustedScore
-          }
-        }
-      } catch (error) {
-        console.warn(`Sentiment analysis failed for ${symbol}:`, error)
-      }
-    }
-
-    // Get ESG analysis if service is available
     let esgImpact = null
-    if (this.esgService) {
-      try {
-        esgImpact = await this.esgService.getESGImpactForStock(
-          symbol,
-          stockScore.marketData.sector,
-          adjustedScore.overallScore // Use sentiment-adjusted score as base
-        )
-        if (esgImpact) {
-          // Update the stock score with ESG-adjusted score
-          adjustedScore = {
-            ...adjustedScore,
-            overallScore: esgImpact.adjustedScore
-          }
-        }
-      } catch (error) {
-        console.warn(`ESG analysis failed for ${symbol}:`, error)
-      }
-    }
-
-    // Get Short Interest analysis if service is available
     let shortInterestImpact = null
-    if (this.shortInterestService) {
-      try {
-        shortInterestImpact = await this.shortInterestService.getShortInterestImpactForStock(
-          symbol,
-          stockScore.marketData.sector,
-          adjustedScore.overallScore // Use ESG-adjusted score as base
-        )
-        if (shortInterestImpact) {
-          // Update the stock score with short interest adjusted score
-          adjustedScore = {
-            ...adjustedScore,
-            overallScore: shortInterestImpact.adjustedScore
-          }
-        }
-      } catch (error) {
-        console.warn(`Short interest analysis failed for ${symbol}:`, error)
-      }
-    }
+
+    // The overallScore from AlgorithmEngine/FactorLibrary is already final - DO NOT MODIFY IT
+    let adjustedScore = stockScore
 
     // Options Analysis Service
     let optionsAnalysis = null
@@ -536,26 +462,13 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       }
     }
 
-    // ML Prediction Enhancement (Optional 6th Factor)
+    // ML Prediction Enhancement - DISABLED (not yet integrated, was corrupting scores)
     let mlPrediction = null
-    if (this.mlPredictionService) {
-      try {
-        const mlEnhancements = await this.mlPredictionService.getMLEnhancement([symbol], 'premium', new Map([[symbol, adjustedScore.overallScore]]))
-        const mlScore = mlEnhancements.get(symbol)
-        if (mlScore !== undefined) {
-          mlPrediction = { score: mlScore, adjustedScore: mlScore }
-          adjustedScore = {
-            ...adjustedScore,
-            overallScore: mlScore
-          }
-        }
-      } catch (error) {
-        console.warn(`ML prediction failed for ${symbol}:`, error)
-      }
-    }
+    // ❌ BUG FIX: ML service was overwriting correct FactorLibrary score (0.61 → 2.11)
+    // ML predictions are NOT yet integrated and should not modify the composite score
 
-    // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct
-    const scoreBasedAction = this.determineActionFromScore(adjustedScore.overallScore)
+    // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration
+    const scoreBasedAction = getRecommendation(adjustedScore.overallScore, additionalData.analystData as AnalystData)
 
     return {
       symbol,
@@ -2481,27 +2394,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     })
   }
 
-  /**
-   * Determine BUY/SELL/HOLD action based on composite score using standard thresholds
-   * This ensures consistent score-to-recommendation mapping across all algorithm types
-   */
-  private determineActionFromScore(score: number): 'BUY' | 'SELL' | 'HOLD' {
-    // Normalize score to 0-1 scale if it appears to be on 0-100 scale
-    const normalizedScore = score > 1 ? score / 100 : score
-
-    // Logical thresholds for investment decisions:
-    // BUY: >= 70% (0.70) - Strong positive signal
-    // HOLD: 30%-70% (0.30-0.70) - Neutral range
-    // SELL: <= 30% (0.30) - Weak/negative signal
-
-    if (normalizedScore >= 0.70) {
-      return 'BUY'
-    } else if (normalizedScore <= 0.30) {
-      return 'SELL'
-    } else {
-      return 'HOLD'
-    }
-  }
+  // REMOVED: determineActionFromScore() - now using centralized RecommendationUtils
 
   private createDefaultConfig(): any {
     return {

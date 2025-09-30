@@ -19,7 +19,7 @@ export interface DialogStockData {
     alternative: number
   }
   weight: number
-  action: 'BUY' | 'SELL' | 'HOLD'
+  action: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
   confidence: number
   context: {
     sector: string
@@ -79,7 +79,7 @@ export interface StockAnalysisDialogProps {
   symbol: string | null
   isOpen: boolean
   onClose: () => void
-  onActionTaken?: (action: 'BUY' | 'SELL' | 'HOLD', symbol: string) => void
+  onActionTaken?: (action: 'STRONG_BUY' | 'BUY' | 'HOLD' | 'SELL' | 'STRONG_SELL', symbol: string) => void
   className?: string
 }
 
@@ -123,9 +123,10 @@ export interface DialogHeaderProps {
 
 /**
  * Recommendation badge props
+ * PHASE 1 CALIBRATION: Updated to support STRONG_BUY and STRONG_SELL
  */
 export interface RecommendationBadgeProps {
-  action: 'BUY' | 'SELL' | 'HOLD'
+  action: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
   confidence: number
   size?: 'small' | 'medium' | 'large'
   showConfidence?: boolean

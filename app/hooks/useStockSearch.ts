@@ -68,51 +68,11 @@ export function useStockSearch(options: UseStockSearchOptions = {}): UseStockSea
   const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load symbols on mount
+  // Load symbols on mount - now using dynamic FMP search
   useEffect(() => {
-    let mounted = true
-
-    const loadSymbols = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        console.log('📊 Loading stock symbols...')
-
-        // Fetch symbols from API endpoint instead of direct service import
-        const response = await fetch('/api/symbols?limit=10000')
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        const data = await response.json()
-        if (!data.success) {
-          throw new Error(data.message || 'Failed to fetch symbols')
-        }
-
-        const symbols = data.data.symbols
-
-        if (mounted) {
-          setAllSymbols(symbols)
-          console.log(`✅ Loaded ${symbols.length} symbols for search`)
-        }
-      } catch (error) {
-        console.error('❌ Failed to load symbols:', error)
-        if (mounted) {
-          setError('Failed to load stock symbols. Please try again.')
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    loadSymbols()
-
-    return () => {
-      mounted = false
-    }
+    // Set loading to false immediately since we're using dynamic search
+    setIsLoading(false)
+    console.log('📊 Using FMP dynamic search - no need to preload symbols')
   }, [])
 
   // Debounce query
@@ -255,7 +215,7 @@ export function useStockSearch(options: UseStockSearchOptions = {}): UseStockSea
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }, [])
 
-  // Perform search when debounced query changes
+  // Perform search when debounced query changes - using FMP API directly
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < minQueryLength) {
       setResults([])
@@ -263,28 +223,48 @@ export function useStockSearch(options: UseStockSearchOptions = {}): UseStockSea
       return
     }
 
+    let mounted = true
     setIsSearching(true)
 
-    // Use requestAnimationFrame to avoid blocking UI
-    const searchFrame = requestAnimationFrame(() => {
+    const performSearch = async () => {
       try {
-        const searchResults = searchSymbols(debouncedQuery, allSymbols)
-        setResults(searchResults)
-        setError(null)
+        // Use FMP search API directly for real-time results
+        const response = await fetch(`/api/stocks/search?query=${encodeURIComponent(debouncedQuery)}`)
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+
+        if (!data.success) {
+          throw new Error(data.message || 'Search failed')
+        }
+
+        if (mounted) {
+          setResults(data.data.results || [])
+          setError(null)
+        }
       } catch (error) {
         console.error('❌ Search error:', error)
-        setError('Search failed. Please try again.')
-        setResults([])
+        if (mounted) {
+          setError('Search failed. Please try again.')
+          setResults([])
+        }
       } finally {
-        setIsSearching(false)
+        if (mounted) {
+          setIsSearching(false)
+        }
       }
-    })
+    }
+
+    performSearch()
 
     return () => {
-      cancelAnimationFrame(searchFrame)
+      mounted = false
       setIsSearching(false)
     }
-  }, [debouncedQuery, allSymbols, minQueryLength, searchSymbols])
+  }, [debouncedQuery, minQueryLength])
 
   // Symbol selection management
   const addSymbol = useCallback((symbol: string) => {

@@ -1352,7 +1352,63 @@ export class FREDAPI implements FinancialDataProvider {
   /**
    * Make HTTP request to FRED API
    */
+  /**
+   * Get cache TTL based on data update frequency
+   * FRED data updates at different frequencies - cache aggressively to prevent rate limits
+   */
+  private getCacheTTL(endpoint: string, seriesId?: string): number {
+    // Daily economic indicators (GDP, CPI, PPI, Employment) - cache for 12 hours
+    const dailyIndicators = ['GDP', 'GDPC1', 'CPIAUCSL', 'CPILFESL', 'PPIACO', 'PPIFIS', 'PCEPI',
+                             'UNRATE', 'PAYEMS', 'UNEMPLOY', 'CIVPART']
+
+    // Weekly/intraday indicators (Federal Funds, Treasury Rates) - cache for 30 minutes
+    const frequentIndicators = ['FEDFUNDS', 'DFEDTARU', 'DFEDTARL', 'DGS3MO', 'DGS6MO', 'DGS1',
+                                'DGS2', 'DGS5', 'DGS10', 'DGS20', 'DGS30', 'T10Y2Y', 'T10Y3M']
+
+    // Monthly indicators (M1, M2) - cache for 24 hours
+    const monthlyIndicators = ['M1SL', 'M2SL', 'M2V', 'HOUST', 'CSUSHPISA', 'INDPRO', 'CAPACITY']
+
+    if (seriesId) {
+      if (frequentIndicators.includes(seriesId)) {
+        return 1800 // 30 minutes for frequently updated data
+      }
+      if (monthlyIndicators.includes(seriesId)) {
+        return 86400 // 24 hours for monthly data
+      }
+      if (dailyIndicators.includes(seriesId)) {
+        return 43200 // 12 hours for daily data
+      }
+    }
+
+    // Default: cache for 1 hour (respects rate limits while staying reasonably fresh)
+    return 3600
+  }
+
   private async makeRequest(endpoint: string, params: Record<string, string>): Promise<ApiResponse<any>> {
+    // Generate cache key from endpoint and params
+    const cacheKey = `fred:${endpoint}:${JSON.stringify(params)}`
+    const seriesId = params.series_id
+    const cacheTTL = this.getCacheTTL(endpoint, seriesId)
+
+    // Check cache first
+    try {
+      const cached = await this.cache.get<any>(cacheKey)
+      if (cached) {
+        console.log(`📦 FRED cache HIT for ${seriesId || endpoint} (TTL: ${cacheTTL}s)`)
+        return {
+          success: true,
+          data: cached,
+          source: 'fred',
+          timestamp: Date.now(),
+          cached: true
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Redis cache read error (continuing with API call):', cacheError)
+    }
+
+    console.log(`🔄 FRED cache MISS for ${seriesId || endpoint} - fetching from API`)
+
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
@@ -1406,6 +1462,17 @@ export class FREDAPI implements FinancialDataProvider {
         }
 
         throw new Error(errorMessage)
+      }
+
+      // Cache the successful response
+      try {
+        await this.cache.set(cacheKey, data, cacheTTL, {
+          source: 'fred',
+          version: '1.0.0'
+        })
+        console.log(`💾 Cached FRED data for ${seriesId || endpoint} (TTL: ${cacheTTL}s)`)
+      } catch (cacheError) {
+        console.warn('Failed to cache FRED response:', cacheError)
       }
 
       return {

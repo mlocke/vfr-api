@@ -158,48 +158,41 @@ export class EnhancedDataService implements FinancialDataProvider {
    */
 
   /**
-   * Configure for free-tier usage (prioritize free APIs)
+   * Configure for free-tier usage (prioritize FMP with EODHD fallback)
    */
   configureForFreeTier(): void {
-    this.setStockPriceProvider('fmp', ['yahoo', 'twelvedata'])
-    this.setCompanyInfoProvider('fmp', ['sec_edgar', 'yahoo'])
-    this.setFundamentalsProvider('fmp', ['sec_edgar'])
-    this.setEconomicDataProvider('fred', ['bls', 'eia'])
+    this.setStockPriceProvider('fmp', ['eodhd'])
+    this.setCompanyInfoProvider('fmp', ['eodhd'])
+    this.setFundamentalsProvider('fmp', ['eodhd'])
 
-    // Disable paid-only providers
-    this.setProviderEnabled('polygon', false)
-
-    console.log('🆓 Configured for free-tier usage')
+    console.log('🆓 Configured for FMP primary, EODHD fallback')
   }
 
   /**
-   * Configure for premium usage (prioritize best quality APIs)
+   * Configure for premium usage (FMP primary, EODHD fallback)
    */
   configureForPremium(): void {
-    this.setStockPriceProvider('polygon', ['fmp'])
-    this.setCompanyInfoProvider('polygon', ['fmp'])
-    // Options provider is EODHD only - no configuration needed
-    this.setFundamentalsProvider('polygon', ['fmp'])
-    this.setEconomicDataProvider('fred', [])
+    this.setStockPriceProvider('fmp', ['eodhd'])
+    this.setCompanyInfoProvider('fmp', ['eodhd'])
+    this.setFundamentalsProvider('fmp', ['eodhd'])
 
     // Enable all providers
     Object.keys(this.getProviderConfigs()).forEach(provider => {
       this.setProviderEnabled(provider as DataSourceProvider, true)
     })
 
-    console.log('💎 Configured for premium usage')
+    console.log('💎 Configured for FMP primary, EODHD fallback')
   }
 
   /**
-   * Configure for development (balanced approach)
+   * Configure for development (FMP primary, EODHD fallback)
    */
   configureForDevelopment(): void {
-    this.setStockPriceProvider('fmp', ['yahoo', 'twelvedata'])
-    this.setCompanyInfoProvider('fmp', ['yahoo'])
-    this.setFundamentalsProvider('fmp', [])
-    this.setEconomicDataProvider('fred', ['bls'])
+    this.setStockPriceProvider('fmp', ['eodhd'])
+    this.setCompanyInfoProvider('fmp', ['eodhd'])
+    this.setFundamentalsProvider('fmp', ['eodhd'])
 
-    console.log('🔧 Configured for development usage')
+    console.log('🔧 Configured for FMP primary, EODHD fallback (development)')
   }
 
   /**

@@ -138,7 +138,7 @@ export interface SelectionResult {
     symbol: string
     score: StockScore
     weight: number
-    action: 'BUY' | 'SELL' | 'HOLD'
+    action: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
     confidence: number
   }[]
 

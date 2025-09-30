@@ -4,6 +4,7 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types.js'
+import { RedisCache } from '../cache/RedisCache'
 
 // New interfaces for enhanced EIA functionality
 interface CommodityPrice {
@@ -99,6 +100,7 @@ export class EIAAPI implements FinancialDataProvider {
   private apiKey: string
   private timeout: number
   private throwErrors: boolean
+  private cache: RedisCache
 
   // Fallback API for currency data (DXY not available in EIA)
   private fallbackKey: string
@@ -207,6 +209,7 @@ export class EIAAPI implements FinancialDataProvider {
     this.fallbackKey = process.env.YAHOO_API_KEY || ''
     this.timeout = timeout
     this.throwErrors = throwErrors
+    this.cache = RedisCache.getInstance()
 
     if (this.apiKey && !this.isValidApiKeyFormat(this.apiKey)) {
       console.warn('EIA API key format appears invalid. Expected a 40-character alphanumeric string.')
@@ -1160,6 +1163,29 @@ export class EIAAPI implements FinancialDataProvider {
    * Make HTTP request to EIA API
    */
   private async makeRequest(endpoint: string, params: Record<string, string>): Promise<ApiResponse<EIAResponse>> {
+    // Generate cache key from endpoint and params
+    const cacheKey = `eia:${endpoint}:${JSON.stringify(params)}`
+    const cacheTTL = 3600 // 1 hour - EIA energy data updates frequently but not sub-hourly
+
+    // Check cache first
+    try {
+      const cached = await this.cache.get<any>(cacheKey)
+      if (cached) {
+        console.log(`📦 EIA cache HIT for ${endpoint} (TTL: ${cacheTTL}s)`)
+        return {
+          success: true,
+          data: cached,
+          source: 'eia',
+          timestamp: Date.now(),
+          cached: true
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Redis cache read error (continuing with API call):', cacheError)
+    }
+
+    console.log(`🔄 EIA cache MISS for ${endpoint} - fetching from API`)
+
     try {
       // Construct URL more explicitly to avoid issues
       const fullUrl = `${this.baseUrl}/${endpoint}`
@@ -1203,6 +1229,17 @@ export class EIAAPI implements FinancialDataProvider {
         }
 
         throw new Error(errorMessage)
+      }
+
+      // Cache the successful response
+      try {
+        await this.cache.set(cacheKey, data, cacheTTL, {
+          source: 'eia',
+          version: '1.0.0'
+        })
+        console.log(`💾 Cached EIA data for ${endpoint} (TTL: ${cacheTTL}s)`)
+      } catch (cacheError) {
+        console.warn('Failed to cache EIA response:', cacheError)
       }
 
       return {

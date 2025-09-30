@@ -1,19 +1,14 @@
 /**
  * Financial Data Services - Export Module
- * Central export point for all direct API financial data services
+ * Central export point for authorized financial data services
+ * AUTHORIZED APIs ONLY: FMP and EODHD
  */
 
 export * from './types'
-export * from './PolygonAPI'
-export * from './YahooFinanceAPI'
 export * from './FinancialModelingPrepAPI'
-export * from './SECEdgarAPI'
-export * from './BLSAPI'
-export * from './EIAAPI'
-export * from './TwelveDataAPI'
+export * from './EODHDAPI'
 export * from './MarketIndicesService'
 export * from './FinancialDataService'
-export { default as RedditAPIEnhanced } from './providers/RedditAPIEnhanced'
 
 // Default export for convenience
 export { financialDataService as default } from './FinancialDataService'

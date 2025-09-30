@@ -153,39 +153,8 @@ export class DataSourceConfigManager {
       features: ['energy_prices', 'oil_data', 'natural_gas', 'electricity_data']
     })
 
-    this.dataSources.set('twelvedata', {
-      id: 'twelvedata',
-      name: 'TwelveData',
-      type: 'commercial',
-      status: 'online',
-      enabled: true,
-      endpoint: 'https://api.twelvedata.com',
-      hasApiKey: !!process.env.TWELVE_DATA_API_KEY,
-      requiresAuth: true,
-      rateLimit: 800, // Free tier limit
-      timeout: 8000,
-      retryAttempts: 3,
-      category: 'stock_data',
-      features: ['real_time_prices', 'historical_data', 'company_profiles', 'market_data']
-    })
 
-    // Commercial Data Sources (when direct API integrations are implemented)
-
-    this.dataSources.set('polygon', {
-      id: 'polygon',
-      name: 'Polygon.io',
-      type: 'commercial',
-      status: 'offline', // Disabled until direct API integration
-      enabled: false,
-      endpoint: 'https://api.polygon.io',
-      hasApiKey: !!process.env.POLYGON_API_KEY,
-      requiresAuth: true,
-      rateLimit: 1000,
-      timeout: 5000,
-      retryAttempts: 3,
-      category: 'stock_data',
-      features: ['real_time_quotes', 'historical_data', 'technical_indicators', 'company_details', 'market_holidays']
-    })
+    // Commercial Data Sources - FMP and EODHD (Authorized APIs)
 
     // Free Stock Data Sources
     this.dataSources.set('yahoo', {
@@ -526,36 +495,6 @@ export class DataSourceConfigManager {
       }
     }
 
-    // Test TwelveData API specifically with AAPL stock price
-    if (dataSourceId === 'twelvedata') {
-      try {
-        const { TwelveDataAPI } = await import('../financial-data/TwelveDataAPI')
-        const twelveDataApi = new TwelveDataAPI()
-        const healthCheck = await twelveDataApi.healthCheck()
-
-        if (healthCheck) {
-          // Test fetching actual data with Apple stock price
-          const testData = await twelveDataApi.getStockPrice('AAPL')
-          return {
-            success: true,
-            hasData: !!testData,
-            testSymbol: 'AAPL',
-            latestPrice: testData?.price || null,
-            timestamp: testData?.timestamp || null
-          }
-        } else {
-          return {
-            success: false,
-            error: 'TwelveData API health check failed'
-          }
-        }
-      } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'TwelveData API test failed'
-        }
-      }
-    }
 
     // For other data sources, fall back to health check
     return this.performHealthCheck(dataSourceId)
