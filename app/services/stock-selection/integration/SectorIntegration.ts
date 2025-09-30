@@ -5,7 +5,7 @@
 
 import { SectorOption } from '../../../components/SectorDropdown'
 import { SectorIntegrationInterface } from '../types'
-import { FallbackDataService } from '../../financial-data/FallbackDataService'
+import { FinancialDataService } from '../../financial-data/FinancialDataService'
 // Note: SelectionConfigManager replaced with inline config
 
 /**
@@ -115,15 +115,15 @@ const INDEX_CONSTITUENTS = {
  * Sector integration and analysis
  */
 export class SectorIntegration implements SectorIntegrationInterface {
-  private fallbackDataService: FallbackDataService
+  private financialDataService: FinancialDataService
   private selectionConfig: any
   private cache: Map<string, { data: any; timestamp: number }> = new Map()
 
   constructor(
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     selectionConfig?: any
   ) {
-    this.fallbackDataService = fallbackDataService
+    this.financialDataService = financialDataService
     this.selectionConfig = selectionConfig || { getConfig: () => ({}) }
   }
 
@@ -211,8 +211,8 @@ export class SectorIntegration implements SectorIntegrationInterface {
         limit: 1000
       }
 
-      // Use FallbackDataService to get stocks by sector
-      const stocksData = await this.fallbackDataService.getStocksBySector(sector.id, 100)
+      // Use FinancialDataService to get stocks by sector
+      const stocksData = await this.financialDataService.getStocksBySector(sector.id, 100)
 
       if (stocksData && stocksData.length > 0) {
         return stocksData.map(stock => stock.symbol)
@@ -230,8 +230,8 @@ export class SectorIntegration implements SectorIntegrationInterface {
    */
   private async getWebSearchSectorStocks(sector: SectorOption, classification: any): Promise<string[]> {
     try {
-      // Use FallbackDataService to get stocks by sector (simplified implementation)
-      const stocksData = await this.fallbackDataService.getStocksBySector(sector.id, 50)
+      // Use FinancialDataService to get stocks by sector (simplified implementation)
+      const stocksData = await this.financialDataService.getStocksBySector(sector.id, 50)
 
       if (stocksData && stocksData.length > 0) {
         return stocksData.map(stock => stock.symbol)

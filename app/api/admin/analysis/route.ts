@@ -679,7 +679,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AdminAnal
           })
         }
 
-        const stockData = await financialDataService.getStockPrice(symbolToUse, preferredProvider)
+        const stockData = await financialDataService.getStockPrice(symbolToUse)
         if (stockData) {
           stocks = [stockData]
           sources.add(stockData.source)
@@ -706,7 +706,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<AdminAnal
           })
         }
 
-        stocks = await financialDataService.getMultipleStocks(adminRequest.symbols.slice(0, adminRequest.limit), preferredProvider)
+        stocks = await financialDataService.getMultipleStocks(adminRequest.symbols.slice(0))
         stocks.forEach(stock => sources.add(stock.source))
         break
 

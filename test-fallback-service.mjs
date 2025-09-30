@@ -4,12 +4,12 @@
  * Tests free data source failover functionality
  */
 
-import { FallbackDataService } from './app/services/financial-data/FallbackDataService.js'
+import { FinancialDataService } from './app/services/financial-data/FinancialDataService.js'
 
 async function testFallbackService() {
   console.log('🧪 Testing Fallback Data Service with FREE sources only\n')
 
-  const fallbackService = new FallbackDataService()
+  const fallbackService = new FinancialDataService()
 
   // Test 1: Single stock price with fallback
   console.log('1️⃣ Testing single stock price (AAPL):')

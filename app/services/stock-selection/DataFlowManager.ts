@@ -12,7 +12,7 @@ import {
   DataIntegrationInterface
 } from './types'
 import { QualityScore, FusionResult } from '../types/core-types'
-import { FallbackDataService } from '../financial-data/FallbackDataService'
+import { FinancialDataService } from '../financial-data/FinancialDataService'
 import { RedisCache } from '../cache/RedisCache'
 import { StockScore } from '../algorithms/types'
 import ErrorHandler from '../error-handling/ErrorHandler'
@@ -70,20 +70,20 @@ interface ProcessingPipeline {
  */
 export class DataFlowManager extends EventEmitter implements DataIntegrationInterface {
   private config: DataFlowConfig
-  private fallbackDataService: FallbackDataService
+  private financialDataService: FinancialDataService
   private cache: RedisCache
   private metrics: DataFlowMetrics
   private activePipelines: Map<string, ProcessingPipeline> = new Map()
   private enrichmentCache: Map<string, DataEnrichmentResult> = new Map()
 
   constructor(
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     cache: RedisCache,
     config?: Partial<DataFlowConfig>
   ) {
     super()
 
-    this.fallbackDataService = fallbackDataService
+    this.financialDataService = financialDataService
     this.cache = cache
 
     this.config = {
@@ -292,11 +292,11 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
    */
   private async fetchPolygonData(symbol: string): Promise<any> {
     try {
-      // Use FallbackDataService to get stock data (simplified implementation)
+      // Use FinancialDataService to get stock data (simplified implementation)
       const [stockPrice, companyInfo, marketData] = await Promise.allSettled([
-        this.fallbackDataService.getStockPrice(symbol),
-        this.fallbackDataService.getCompanyInfo(symbol),
-        this.fallbackDataService.getMarketData(symbol)
+        this.financialDataService.getStockPrice(symbol),
+        this.financialDataService.getCompanyInfo(symbol),
+        this.financialDataService.getMarketData(symbol)
       ])
 
       return {
@@ -361,7 +361,7 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
       if (signal.aborted) throw new Error('Normalization aborted')
 
       try {
-        // Simplified normalization - use data as-is from FallbackDataService
+        // Simplified normalization - use data as-is from FinancialDataService
         normalizedData[symbol] = sourceData
       } catch (error) {
         console.error(`Normalization error for ${symbol}:`, error)
@@ -382,7 +382,7 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
 
     for (const [symbol, data] of Object.entries(normalizedData)) {
       if (data) {
-        // Simplified quality scoring - assume good quality from FallbackDataService
+        // Simplified quality scoring - assume good quality from FinancialDataService
         qualityScores[symbol] = {
           overall: 0.8,
           metrics: {
@@ -429,7 +429,7 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
 
       if (data && qualityScores[symbol]) {
         try {
-          // Simplified fusion - use data as-is since it comes from FallbackDataService
+          // Simplified fusion - use data as-is since it comes from FinancialDataService
           fusedData[symbol] = {
             success: true,
             data: data,
@@ -541,7 +541,7 @@ export class DataFlowManager extends EventEmitter implements DataIntegrationInte
   }
 
   async validateDataQuality(data: any): Promise<QualityScore> {
-    // Simplified quality validation - assume good quality from FallbackDataService
+    // Simplified quality validation - assume good quality from FinancialDataService
     return {
       overall: 0.8,
       metrics: {

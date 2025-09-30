@@ -226,7 +226,7 @@ export class DatabaseMigrationService {
         // Try each preferred source
         for (const source of options.preferredSources) {
           try {
-            const marketData = await financialDataService.getMarketData(symbol, source)
+            const marketData = await financialDataService.getMarketData(symbol)
 
             if (marketData) {
               // Convert to historical format and store

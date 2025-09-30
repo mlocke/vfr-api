@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { StockSelectionService } from '../../../services/stock-selection/StockSelectionService'
 import { SelectionRequest, SelectionMode, AnalysisScope } from '../../../services/stock-selection/types'
-import { FallbackDataService } from '../../../services/financial-data/FallbackDataService'
+import { FinancialDataService } from '../../../services/financial-data/FinancialDataService'
 import { FactorLibrary } from '../../../services/algorithms/FactorLibrary'
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { TechnicalIndicatorService } from '../../../services/technical-analysis/TechnicalIndicatorService'
@@ -100,7 +100,7 @@ async function initializeStockSelectionService(): Promise<StockSelectionService>
   try {
     // Initialize core dependencies with shared connection pooling
     const cache = new RedisCache() // Instantiate with default config
-    const fallbackDataService = new FallbackDataService()
+    const financialDataService = new FinancialDataService()
     const factorLibrary = new FactorLibrary()
 
     // Initialize optional services
@@ -178,7 +178,7 @@ async function initializeStockSelectionService(): Promise<StockSelectionService>
 
     // Create the comprehensive service
     stockSelectionService = new StockSelectionService(
-      fallbackDataService,
+      financialDataService,
       factorLibrary,
       cache,
       technicalService,

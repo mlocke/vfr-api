@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { FallbackDataService } from '../../../services/financial-data/FallbackDataService'
+import { FinancialDataService } from '../../../services/financial-data/FinancialDataService'
 
 interface FallbackTestRequest {
   symbols?: string[]
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       timeout = 10000
     } = body
 
-    const fallbackService = new FallbackDataService()
+    const fallbackService = new FinancialDataService()
     const startTime = Date.now()
     const results: any = {}
 

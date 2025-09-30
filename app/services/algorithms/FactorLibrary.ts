@@ -2469,7 +2469,7 @@ export class FactorLibrary {
       'roe', 'debt_equity', 'current_ratio', 'interest_coverage',
       'revenue_growth', 'earnings_growth', 'revenue_acceleration',
       'dividend_yield', 'dividend_growth', 'payout_ratio',
-      'quality_composite', 'value_composite'
+      'quality_composite', 'value_composite', 'composite'
     ]
 
     return fundamentalFactors.includes(factorName)

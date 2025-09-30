@@ -10,17 +10,17 @@
  */
 
 import { FinancialModelingPrepAPI } from '../FinancialModelingPrepAPI'
-import { FallbackDataService } from '../FallbackDataService'
+import { FinancialDataService } from '../FinancialDataService'
 import { FundamentalRatios } from '../types'
 
 describe('Fundamental Ratios Integration', () => {
   let fmpAPI: FinancialModelingPrepAPI
-  let fallbackService: FallbackDataService
+  let fallbackService: FinancialDataService
 
   beforeEach(() => {
     // Initialize with real API key from environment and extended timeout for real API calls
     fmpAPI = new FinancialModelingPrepAPI(process.env.FMP_API_KEY, 15000, false)
-    fallbackService = new FallbackDataService()
+    fallbackService = new FinancialDataService()
   })
 
   afterEach(async () => {
@@ -141,7 +141,7 @@ describe('Fundamental Ratios Integration', () => {
     }, 5000)
   })
 
-  describe('FallbackDataService.getFundamentalRatios()', () => {
+  describe('FinancialDataService.getFundamentalRatios()', () => {
     test('should fetch fundamental ratios through fallback service', async () => {
       const symbol = 'TSLA'
       const ratios = await fallbackService.getFundamentalRatios(symbol)

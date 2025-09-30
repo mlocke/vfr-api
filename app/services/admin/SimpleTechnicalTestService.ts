@@ -5,7 +5,7 @@
  */
 
 import { TechnicalIndicatorService } from '../technical-analysis/TechnicalIndicatorService'
-import { FallbackDataService } from '../financial-data/FallbackDataService'
+import { FinancialDataService } from '../financial-data/FinancialDataService'
 import { RedisCache } from '../cache/RedisCache'
 import { TechnicalAnalysisInput } from '../technical-analysis/types'
 
@@ -24,11 +24,11 @@ export interface SimpleTestResult {
 
 export class SimpleTechnicalTestService {
   private technicalService: TechnicalIndicatorService
-  private dataService: FallbackDataService
+  private dataService: FinancialDataService
 
   constructor(cache: RedisCache) {
     this.technicalService = new TechnicalIndicatorService(cache)
-    this.dataService = new FallbackDataService()
+    this.dataService = new FinancialDataService()
   }
 
   /**

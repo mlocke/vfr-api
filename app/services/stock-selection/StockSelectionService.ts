@@ -23,7 +23,7 @@ import { SectorOption } from '../../components/SectorDropdown'
 import { AlgorithmIntegration } from './integration/AlgorithmIntegration'
 import { SectorIntegration } from './integration/SectorIntegration'
 import { QualityScore } from '../types/core-types'
-import { FallbackDataService } from '../financial-data/FallbackDataService'
+import { FinancialDataService } from '../financial-data/FinancialDataService'
 import { RedisCache } from '../cache/RedisCache'
 import { FactorLibrary } from '../algorithms/FactorLibrary'
 import { AlgorithmCache } from '../algorithms/AlgorithmCache'
@@ -49,7 +49,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private algorithmIntegration: AlgorithmIntegration
   private sectorIntegration: SectorIntegration
   private config: any
-  private fallbackDataService: FallbackDataService
+  private financialDataService: FinancialDataService
   private cache: RedisCache
   private stats: SelectionServiceStats
   private activeRequests: Map<string, AbortController> = new Map()
@@ -66,7 +66,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   private errorHandler: ErrorHandler
 
   constructor(
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     factorLibrary: FactorLibrary,
     cache: RedisCache,
     technicalService?: TechnicalIndicatorService,
@@ -82,7 +82,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   ) {
     super()
 
-    this.fallbackDataService = fallbackDataService
+    this.financialDataService = financialDataService
     this.cache = cache
     this.config = this.createDefaultConfig()
 
@@ -133,7 +133,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       // Initialize integration layers with enhanced FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(
-        this.fallbackDataService,
+        this.financialDataService,
         enhancedFactorLibrary,
         algorithmCache,
         this.config,
@@ -149,7 +149,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
       // Initialize integration layers with standard FactorLibrary
       this.algorithmIntegration = new AlgorithmIntegration(
-        this.fallbackDataService,
+        this.financialDataService,
         standardFactorLibrary,
         algorithmCache,
         this.config,
@@ -162,7 +162,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     }
 
     this.sectorIntegration = new SectorIntegration(
-      this.fallbackDataService,
+      this.financialDataService,
       this.config
     )
 
@@ -611,7 +611,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       // Enhanced metadata with comprehensive input service tracking
       metadata: {
         algorithmUsed: request.options?.algorithmId || this.config.getConfig().defaultAlgorithmId,
-        dataSourcesUsed: this.fallbackDataService.getSourcesUsed(), // 🔧 FIX: Use actual runtime sources
+        dataSourcesUsed: this.financialDataService.getSourcesUsed(), // 🔧 FIX: Use actual runtime sources
         cacheHitRate: this.calculateCacheHitRate(),
         analysisMode: request.scope.mode,
         qualityScore: this.calculateOverallQualityScore(topSelections),
@@ -1449,7 +1449,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
   async healthCheck(): Promise<{ status: 'healthy' | 'unhealthy'; details: any }> {
     try {
       // Check critical dependencies
-      const dataServiceHealthy = await this.fallbackDataService.healthCheck().catch(() => false)
+      const dataServiceHealthy = await this.financialDataService.healthCheck().catch(() => false)
       const cacheHealthy = await this.cache.ping() === 'PONG'
 
       const details = {
@@ -1613,9 +1613,12 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    * Fetch all raw stock data in parallel
    */
   private async fetchRawStockData(sanitizedSymbol: string): Promise<any> {
+    // CompanyInfo (market cap, sector) is cached for 24 hours - it rarely changes
+    const companyInfoPromise = this.getCachedCompanyInfo(sanitizedSymbol)
+
     const dataPromises = [
       financialDataService.getStockPrice(sanitizedSymbol),
-      financialDataService.getCompanyInfo(sanitizedSymbol),
+      companyInfoPromise,
       financialDataService.getMarketData(sanitizedSymbol),
       financialDataService.getFundamentalRatios?.(sanitizedSymbol) ?? Promise.resolve(null),
       financialDataService.getAnalystRatings?.(sanitizedSymbol) ?? Promise.resolve(null),
@@ -1626,6 +1629,37 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     const results = await Promise.allSettled(dataPromises)
     return this.extractDataFromResults(results, sanitizedSymbol)
+  }
+
+  /**
+   * Get company info with 24-hour cache
+   * Market cap and sector data rarely changes, so cache aggressively
+   */
+  private async getCachedCompanyInfo(sanitizedSymbol: string): Promise<any> {
+    const cacheKey = `company_info_daily:${sanitizedSymbol}`
+
+    try {
+      // Try cache first
+      const cached = await RedisCache.get(cacheKey)
+      if (cached) {
+        console.log(`📦 Using cached company info for ${sanitizedSymbol} (24h cache)`)
+        return JSON.parse(cached)
+      }
+
+      // Cache miss - fetch fresh data
+      const companyInfo = await financialDataService.getCompanyInfo(sanitizedSymbol)
+
+      // Cache for 24 hours (86400 seconds)
+      if (companyInfo) {
+        await RedisCache.set(cacheKey, JSON.stringify(companyInfo), 86400)
+        console.log(`💾 Cached company info for ${sanitizedSymbol} (24h TTL)`)
+      }
+
+      return companyInfo
+    } catch (error) {
+      console.warn(`Failed to get cached company info for ${sanitizedSymbol}, fetching directly`)
+      return financialDataService.getCompanyInfo(sanitizedSymbol)
+    }
   }
 
   /**
@@ -1648,13 +1682,23 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
   /**
    * Validate that core data requirements are met
+   * RELAXED VALIDATION: Only stockPrice is strictly required
    */
   private validateCoreData(rawData: any[], serviceId: string, sanitizedSymbol: string): void {
     const [stockPrice, companyInfo, marketData] = rawData
 
-    if (!stockPrice || !companyInfo || !marketData) {
+    // Only stockPrice is absolutely required - the rest are nice-to-have
+    if (!stockPrice) {
       SecurityValidator.recordFailure(serviceId)
-      throw new Error(`Incomplete data for ${sanitizedSymbol}: missing core financial data`)
+      throw new Error(`Incomplete data for ${sanitizedSymbol}: missing stock price data`)
+    }
+
+    // Log warnings for missing optional data but don't fail
+    if (!companyInfo) {
+      console.warn(`Missing company info for ${sanitizedSymbol} - continuing with available data`)
+    }
+    if (!marketData) {
+      console.warn(`Missing market data for ${sanitizedSymbol} - continuing with available data`)
     }
   }
 
@@ -1667,9 +1711,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     return {
       symbol: stockPrice.symbol,
       price: stockPrice.price,
-      volume: marketData.volume,
-      marketCap: companyInfo.marketCap,
-      sector: companyInfo.sector,
+      volume: marketData?.volume ?? 0,
+      marketCap: companyInfo?.marketCap ?? null,
+      sector: companyInfo?.sector ?? 'Unknown',
       ...this.calculatePriceChanges(stockPrice, marketData, companyInfo),
       beta: 1.0,
       analystData: this.formatAnalystData(analystRatings),
@@ -1691,10 +1735,11 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
   /**
    * Calculate price and volume changes
+   * Handles missing marketData and companyInfo gracefully
    */
   private calculatePriceChanges(stockPrice: any, marketData: any, companyInfo: any): { priceChange24h: number; volumeChange24h: number } {
-    const priceChange24h = stockPrice.change || 0
-    const volumeChange24h = marketData.volume && companyInfo.marketCap
+    const priceChange24h = stockPrice?.change || 0
+    const volumeChange24h = (marketData?.volume && companyInfo?.marketCap)
       ? (marketData.volume / (companyInfo.marketCap / stockPrice.price * 0.02)) - 1
       : 0
 
@@ -1741,9 +1786,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    */
   private createSourceBreakdown(stockPrice: any, companyInfo: any, marketData: any, fundamentalRatios: any, analystRatings: any, priceTargets: any, vwapAnalysis?: any, extendedHoursData?: any): any {
     return {
-      stockPrice: stockPrice.source,
+      stockPrice: stockPrice?.source || 'unavailable',
       companyInfo: companyInfo ? 'available' : 'missing',
-      marketData: marketData.source,
+      marketData: marketData?.source || 'unavailable',
       fundamentalRatios: fundamentalRatios?.source || 'unavailable',
       analystRatings: analystRatings?.source || 'unavailable',
       priceTargets: priceTargets?.source || 'unavailable',
@@ -2469,7 +2514,7 @@ class StockSelectionServiceFactory {
    * Optimized factory function with fast initialization and proper error handling
    */
   static async createOptimized(
-    fallbackDataService: FallbackDataService,
+    financialDataService: FinancialDataService,
     factorLibrary: FactorLibrary,
     cache: RedisCache
   ): Promise<{ service: StockSelectionService; config: ServiceInitializationConfig }> {
@@ -2595,7 +2640,7 @@ class StockSelectionServiceFactory {
 
     // Create optimized service instance
     const service = new StockSelectionService(
-      fallbackDataService,
+      financialDataService,
       factorLibrary,
       cache,
       technicalService,
@@ -2656,12 +2701,12 @@ class StockSelectionServiceFactory {
    * Get singleton instance with lazy initialization
    */
   static async getInstance(
-    fallbackDataService?: FallbackDataService,
+    financialDataService?: FinancialDataService,
     factorLibrary?: FactorLibrary,
     cache?: RedisCache
   ): Promise<StockSelectionService> {
-    if (!this.instance && fallbackDataService && factorLibrary && cache) {
-      const result = await this.createOptimized(fallbackDataService, factorLibrary, cache)
+    if (!this.instance && financialDataService && factorLibrary && cache) {
+      const result = await this.createOptimized(financialDataService, factorLibrary, cache)
       this.instance = result.service
       this.initConfig = result.config
     }
@@ -2693,14 +2738,14 @@ class StockSelectionServiceFactory {
  * Legacy factory function for backward compatibility
  */
 export async function createStockSelectionService(
-  fallbackDataService: FallbackDataService,
+  financialDataService: FinancialDataService,
   factorLibrary: FactorLibrary,
   cache: RedisCache,
   technicalService?: TechnicalIndicatorService,
   macroeconomicService?: MacroeconomicAnalysisService,
   sentimentService?: SentimentAnalysisService
 ): Promise<StockSelectionService> {
-  const result = await StockSelectionServiceFactory.createOptimized(fallbackDataService, factorLibrary, cache)
+  const result = await StockSelectionServiceFactory.createOptimized(financialDataService, factorLibrary, cache)
   return result.service
 }
 
