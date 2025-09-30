@@ -8,6 +8,7 @@
 import React from 'react'
 import { DialogHeaderProps } from '../types'
 import { RecommendationBadge } from './RecommendationBadge'
+import { formatMarketCap } from '../utils/formatters'
 
 /**
  * Get current price from stock data with fallback logic
@@ -34,18 +35,6 @@ export const DialogHeader: React.FC<DialogHeaderProps> = ({
   const priceChange = stockData.context.priceChange24h || 0
   const isPositive = priceChange >= 0
   const currentPrice = getCurrentPrice(stockData)
-
-  // Format market cap
-  const formatMarketCap = (marketCap: number): string => {
-    if (marketCap >= 1e12) {
-      return `$${(marketCap / 1e12).toFixed(1)}T`
-    } else if (marketCap >= 1e9) {
-      return `$${(marketCap / 1e9).toFixed(1)}B`
-    } else if (marketCap >= 1e6) {
-      return `$${(marketCap / 1e6).toFixed(1)}M`
-    }
-    return `$${marketCap.toLocaleString()}`
-  }
 
   // Get market status indicator
   const getMarketStatusColor = (status?: string) => {

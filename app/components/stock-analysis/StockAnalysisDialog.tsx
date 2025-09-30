@@ -20,6 +20,7 @@ import {
   validateStockData,
   createFallbackStockData
 } from './utils/dataTransformers'
+import { formatMarketCap } from './utils/formatters'
 
 interface DetailedStockResult {
   symbol: string
@@ -211,15 +212,14 @@ export const StockAnalysisDialog: React.FC<StockAnalysisDialogProps> = React.mem
 
   // Helper functions for data formatting
   const formatScore = (score: number) => Math.round(score * 100)
-  const formatCurrency = (value: number) => {
-    if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`
+  const formatPercent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(2)}%`
+  const formatNumber = (value: number) => value.toLocaleString()
+
+  // Format price with proper handling
+  const formatPrice = (value: number) => {
     if (value <= 0) return '$0.00'
     return `$${value.toFixed(2)}`
   }
-  const formatPercent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(2)}%`
-  const formatNumber = (value: number) => value.toLocaleString()
 
   // Prevent body scroll when dialog is open
   useEffect(() => {
@@ -369,7 +369,7 @@ export const StockAnalysisDialog: React.FC<StockAnalysisDialogProps> = React.mem
               }}>
                 <span>{validatedStockData.score.marketData.sector}</span>
                 <span>•</span>
-                <span>${formatCurrency(validatedStockData.score.marketData.price)} Current Price</span>
+                <span>{formatPrice(validatedStockData.score.marketData.price)} Current Price</span>
                 <span>•</span>
                 <span>{formatNumber(validatedStockData.score.marketData.volume)} Volume</span>
                 {validatedStockData.context.priceChange24h !== undefined && (
@@ -569,11 +569,11 @@ export const StockAnalysisDialog: React.FC<StockAnalysisDialogProps> = React.mem
                     fontSize: '0.9rem',
                     color: 'rgba(255, 255, 255, 0.8)'
                   }}>
-                    <div><strong>Price:</strong> {formatCurrency(validatedStockData.score.marketData.price)}</div>
+                    <div><strong>Price:</strong> {formatPrice(validatedStockData.score.marketData.price)}</div>
                     <div><strong>Volume:</strong> {formatNumber(validatedStockData.score.marketData.volume)}</div>
                     <div><strong>Sector:</strong> {validatedStockData.score.marketData.sector}</div>
                     <div><strong>Exchange:</strong> {validatedStockData.score.marketData.exchange}</div>
-                    <div><strong>Market Cap:</strong> {formatCurrency(validatedStockData.context.marketCap)}</div>
+                    <div><strong>Market Cap:</strong> {formatMarketCap(validatedStockData.context.marketCap)}</div>
                     <div><strong>Overall Score:</strong> {formatScore(validatedStockData.score.overallScore)}/100</div>
                   </div>
                 </div>
