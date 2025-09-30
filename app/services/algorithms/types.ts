@@ -126,6 +126,9 @@ export interface StockScore {
       zScore?: number
     }
   }
+
+  // Analyst data for recommendation upgrades
+  analystData?: any
 }
 
 export interface SelectionResult {

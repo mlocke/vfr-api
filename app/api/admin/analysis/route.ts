@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { financialDataService, StockData, FundamentalRatios, HistoricalOHLC } from '../../../services/financial-data'
+import { financialDataService, StockData, FundamentalRatios, HistoricalOHLC, AnalystRatings } from '../../../services/financial-data'
 import { TechnicalIndicatorService } from '../../../services/technical-analysis/TechnicalIndicatorService'
 import { RedisCache } from '../../../services/cache/RedisCache'
 import { OHLCData } from '../../../services/technical-analysis/types'
@@ -17,7 +17,7 @@ import ShortInterestService from '../../../services/financial-data/ShortInterest
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { VWAPService } from '../../../services/financial-data/VWAPService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
-import { toSimpleRecommendation, getRecommendation } from '../../../services/utils/RecommendationUtils'
+import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 
 // Request validation schema - compatible with admin dashboard format
 const AdminAnalysisRequestSchema = z.object({
@@ -88,8 +88,9 @@ interface AdminAnalysisStockData extends StockData {
     strength: 'weak' | 'moderate' | 'strong'
     summary: string
   }
+  analystRating?: AnalystRatings
   compositeScore?: number
-  recommendation?: 'BUY' | 'SELL' | 'HOLD'
+  recommendation?: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
   warnings?: string[]
   opportunities?: string[]
   primaryFactors?: string[]
@@ -500,7 +501,21 @@ async function enhanceStockWithComprehensiveAnalysis(stock: StockData): Promise<
 
   // Calculate composite score and recommendation
   enhancedStock.compositeScore = calculateCompositeScore(enhancedStock)
-  enhancedStock.recommendation = toSimpleRecommendation(getRecommendation(enhancedStock.compositeScore))
+
+  // Pass analyst data for recommendation upgrades
+  const analystData = enhancedStock.analystRating ? {
+    totalAnalysts: enhancedStock.analystRating.totalAnalysts,
+    sentimentScore: enhancedStock.analystRating.sentimentScore,
+    distribution: {
+      strongBuy: enhancedStock.analystRating.strongBuy,
+      buy: enhancedStock.analystRating.buy,
+      hold: enhancedStock.analystRating.hold,
+      sell: enhancedStock.analystRating.sell,
+      strongSell: enhancedStock.analystRating.strongSell
+    }
+  } : undefined
+
+  enhancedStock.recommendation = getRecommendation(enhancedStock.compositeScore, analystData)
 
   // Generate insights
   enhancedStock.primaryFactors = ['Technical Analysis', 'Fundamental Data']

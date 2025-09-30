@@ -21,11 +21,7 @@ This is Veritak Financial Platform - a Next.js 15 financial analysis and stock p
 - `npm run test:watch` - Watch mode for development
 - `npm run test:performance` - Performance-specific tests
 
-### Code Quality
-- `npm run type-check` - TypeScript validation (must pass before commits)
-- `npm run lint` - ESLint validation
-- `npm run format` - Prettier code formatting
-- `npm run format:check` - Check formatting without changes
+
 
 ### Build & Production
 - `npm run build` - Production build
@@ -65,10 +61,6 @@ The platform integrates 15+ financial APIs with intelligent fallback strategies:
 - Memory optimization with `maxWorkers: 1`
 - Test files must be in `__tests__/` directories
 
-### TypeScript Configuration
-- Strict mode enabled with `strict: true`
-- Path aliases configured: `@/*`, `@/app/*`, `@/components/*`, `@/services/*`
-- Target ES2017 for compatibility
 
 ### Performance Requirements
 - Sub-3-second analysis completion target
@@ -190,16 +182,3 @@ Centralized error management through:
 4. Write comprehensive tests
 5. Update type definitions
 
-### Debugging API Issues
--- IMPORTANT -- Use api-architect to fix API issues.
-1. Check `/api/health` endpoint status
-2. Review admin dashboard at `/admin`
-3. Check Redis cache connectivity
-4. Validate API key configurations
-5. Review error logs in structured format
-6. NEVER assume the fix works. Test thoroughly and validate.
-7. If the issues persist, iterate through the above steps again.
-
-### IMPORTANT
-- Always employ all relevant agents in parallel when possible.
-- Always follow KISS principles.
