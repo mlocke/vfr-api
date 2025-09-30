@@ -24,6 +24,7 @@ import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAna
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
 import { OptionsDataService } from '../financial-data/OptionsDataService'
 import { RedisCache } from '../cache/RedisCache'
+import { getRecommendation, toSimpleRecommendation } from '../utils/RecommendationUtils'
 
 interface MarketDataPoint {
   symbol: string
@@ -376,8 +377,8 @@ export class AlgorithmEngine {
         symbol,
         price,
         volume,
-        marketCap: (companyInfo as any)?.marketCap || 0,
-        sector: (companyInfo as any)?.sector || '',
+        marketCap: (companyInfo as any)?.marketCap ?? 0,
+        sector: (companyInfo as any)?.sector ?? 'Unknown',
         exchange: (companyInfo as any)?.symbol || symbol,
         timestamp: Date.now()
       }
@@ -787,6 +788,13 @@ export class AlgorithmEngine {
 
         if (compositeScore !== null && !isNaN(compositeScore)) {
           console.log(`🎯 Enhanced composite score for ${symbol}: ${compositeScore}`)
+          console.log(`🔍 DEBUG: compositeScore type: ${typeof compositeScore}, value: ${compositeScore}, clamped: ${Math.max(0, Math.min(1, compositeScore))}`)
+          console.log(`✅ AlgorithmEngine: Passing through score = ${compositeScore.toFixed(4)} (0-1 scale, NO manipulation)`)
+
+          // 🚨 VALIDATION: Verify score is in 0-1 range (KISS architecture enforcement)
+          if (compositeScore < 0 || compositeScore > 1) {
+            console.error(`❌ VALIDATION WARNING: Score ${compositeScore} from FactorLibrary is outside 0-1 range for ${symbol}!`)
+          }
 
           // Calculate sub-component scores for proper utilization tracking
           const componentFactors: { [factor: string]: number } = { 'composite': compositeScore }
@@ -972,9 +980,10 @@ export class AlgorithmEngine {
             console.warn('Error calculating composite components:', componentError)
           }
 
+          // 🎯 PASS THROUGH ONLY: No score manipulation, maintaining 0-1 scale
           return {
             symbol,
-            overallScore: compositeScore,
+            overallScore: compositeScore, // ✅ Direct pass-through from FactorLibrary (0-1 scale)
             factorScores: componentFactors,
             dataQuality: {
               overall: 0.9,
@@ -1154,7 +1163,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: this.determineActionFromScore(score.overallScore),
+      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1175,7 +1184,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: equalWeight,
-      action: this.determineActionFromScore(score.overallScore),
+      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1196,7 +1205,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: this.determineActionFromScore(score.overallScore),
+      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1221,7 +1230,7 @@ export class AlgorithmEngine {
       symbol: score.symbol,
       score,
       weight: this.calculatePositionWeight(score, selectedScores, config),
-      action: this.determineActionFromScore(score.overallScore),
+      action: toSimpleRecommendation(getRecommendation(score.overallScore)),
       confidence: this.calculateConfidence(score, index, selectedScores.length)
     }))
   }
@@ -1252,29 +1261,7 @@ export class AlgorithmEngine {
     return Math.max(0, Math.min(1, weight))
   }
 
-  /**
-   * Determine action based on score using standard thresholds
-   */
-  private determineActionFromScore(score: number): 'BUY' | 'SELL' | 'HOLD' {
-    // FIX: Robust scoring thresholds that handle both 0-1 and 0-100 scales
-    // Auto-detect scale and normalize to consistent thresholds
-
-    // Normalize score to 0-1 scale if it appears to be on 0-100 scale
-    const normalizedScore = score > 1 ? score / 100 : score
-
-    // Logical thresholds for investment decisions:
-    // BUY: >= 70% (0.70) - Strong positive signal
-    // HOLD: 30%-70% (0.30-0.70) - Neutral range
-    // SELL: <= 30% (0.30) - Weak/negative signal
-
-    if (normalizedScore >= 0.70) {
-      return 'BUY'
-    } else if (normalizedScore <= 0.30) {
-      return 'SELL'
-    } else {
-      return 'HOLD'
-    }
-  }
+  // REMOVED: determineActionFromScore() - now using centralized RecommendationUtils
 
   /**
    * Determine action (BUY/SELL/HOLD) based on current positions
@@ -1521,21 +1508,21 @@ export class AlgorithmEngine {
   }
 
   /**
-   * Calculate analyst score from analyst ratings data (0-100 scale)
+   * Calculate analyst score from analyst ratings data (0-1 scale)
    */
   private calculateAnalystScore(analystData: any): number {
     if (!analystData || !analystData.distribution) {
-      return 50 // Neutral if no data
+      return 0.5 // Neutral if no data
     }
 
     const { distribution, totalAnalysts, sentimentScore } = analystData
 
     // Calculate weighted score based on distribution
     let score = 0
-    const strongBuyWeight = 100
-    const buyWeight = 75
-    const holdWeight = 50
-    const sellWeight = 25
+    const strongBuyWeight = 1.0
+    const buyWeight = 0.75
+    const holdWeight = 0.5
+    const sellWeight = 0.25
     const strongSellWeight = 0
 
     if (totalAnalysts > 0) {
@@ -1556,11 +1543,11 @@ export class AlgorithmEngine {
 
     // Blend with sentiment score if available (0-5 scale)
     if (sentimentScore !== undefined && sentimentScore !== null) {
-      const sentimentScoreNormalized = (sentimentScore / 5) * 100
+      const sentimentScoreNormalized = sentimentScore / 5
       score = (score + sentimentScoreNormalized) / 2 // Average the two
     }
 
-    return Math.max(0, Math.min(100, Math.round(score)))
+    return Math.max(0, Math.min(1, score))
   }
 
   /**

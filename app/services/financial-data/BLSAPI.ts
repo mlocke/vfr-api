@@ -5,6 +5,7 @@
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse } from './types.js'
 import ErrorHandler from '../error-handling/ErrorHandler'
+import { RedisCache } from '../cache/RedisCache'
 
 interface BLSDataPoint {
   year: string
@@ -150,6 +151,7 @@ export class BLSAPI implements FinancialDataProvider {
   private timeout: number
   private throwErrors: boolean
   private userAgent: string
+  private cache: RedisCache
 
   // Key BLS economic indicators for financial analysis
   private readonly POPULAR_SERIES: Record<string, string> = {
@@ -205,6 +207,7 @@ export class BLSAPI implements FinancialDataProvider {
     this.timeout = timeout
     this.throwErrors = throwErrors
     this.userAgent = process.env.BLS_USER_AGENT || 'VFR-API/1.0 BLS Collector'
+    this.cache = RedisCache.getInstance()
 
     if (this.apiKey && !this.isValidApiKeyFormat(this.apiKey)) {
       console.warn('BLS API key format appears invalid. Expected a UUID-like string.')
@@ -493,6 +496,31 @@ export class BLSAPI implements FinancialDataProvider {
   }
 
   private async makeRequest(endpoint: string, params: Record<string, any>): Promise<ApiResponse<BLSResponse>> {
+    // Generate cache key from endpoint and params
+    const cacheKey = `bls:${endpoint}:${JSON.stringify(params)}`
+    const cacheTTL = 43200 // 12 hours - BLS data typically updates daily
+
+    // Check cache first
+    try {
+      const cached = await this.cache.get<any>(cacheKey)
+      if (cached) {
+        const seriesIds = Array.isArray(params.seriesid) ? params.seriesid.join(',') : 'unknown'
+        console.log(`📦 BLS cache HIT for ${seriesIds} (TTL: ${cacheTTL}s)`)
+        return {
+          success: true,
+          data: cached,
+          source: 'bls',
+          timestamp: Date.now(),
+          cached: true
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Redis cache read error (continuing with API call):', cacheError)
+    }
+
+    const seriesIds = Array.isArray(params.seriesid) ? params.seriesid.join(',') : 'unknown'
+    console.log(`🔄 BLS cache MISS for ${seriesIds} - fetching from API`)
+
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
@@ -520,6 +548,17 @@ export class BLSAPI implements FinancialDataProvider {
 
       if (data.status === 'REQUEST_NOT_PROCESSED') {
         throw new Error(`BLS API Error: ${data.message?.join(', ') || 'Request not processed'}`)
+      }
+
+      // Cache the successful response
+      try {
+        await this.cache.set(cacheKey, data, cacheTTL, {
+          source: 'bls',
+          version: '1.0.0'
+        })
+        console.log(`💾 Cached BLS data for ${seriesIds} (TTL: ${cacheTTL}s)`)
+      } catch (cacheError) {
+        console.warn('Failed to cache BLS response:', cacheError)
       }
 
       return {

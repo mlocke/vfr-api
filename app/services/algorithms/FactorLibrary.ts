@@ -13,6 +13,7 @@ import { VWAPService } from '../financial-data/VWAPService'
 import { ESGDataService } from '../financial-data/ESGDataService'
 import { ShortInterestService } from '../financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataService'
+import { getSectorBenchmarks, calculatePercentileScore } from './SectorBenchmarks'
 
 interface MarketDataPoint {
   symbol: string
@@ -177,16 +178,19 @@ export class FactorLibrary {
 
         // ==================== VALUE FACTORS ====================
         case 'pe_ratio':
-          result = this.calculatePEScore(fundamentalData?.peRatio)
+          result = this.calculatePEScore(fundamentalData?.peRatio, marketData?.sector)
           break
         case 'pb_ratio':
-          result = this.calculatePBScore(fundamentalData?.pbRatio)
+          result = this.calculatePBScore(fundamentalData?.pbRatio, marketData?.sector)
           break
         case 'ev_ebitda':
-          result = this.calculateEVEBITDAScore(fundamentalData)
+          result = this.calculateEVEBITDAScore(fundamentalData, marketData?.sector)
           break
         case 'price_to_sales':
           result = this.calculatePriceToSalesScore(fundamentalData, marketData)
+          break
+        case 'peg_ratio':
+          result = this.calculatePEGScore(fundamentalData, marketData?.sector)
           break
 
         // ==================== QUALITY FACTORS ====================
@@ -1499,34 +1503,59 @@ export class FactorLibrary {
 
   // ==================== VALUE CALCULATIONS ====================
 
-  private calculatePEScore(peRatio?: number): number | null {
+  /**
+   * Calculate P/E ratio score with sector-relative benchmarking
+   * Uses sector-specific quartiles instead of generic normalization
+   *
+   * @param peRatio - P/E ratio value
+   * @param sector - Company sector for benchmark selection
+   * @returns Score from 0 to 1 (higher = more attractive valuation)
+   */
+  private calculatePEScore(peRatio?: number, sector?: string): number | null {
     if (!peRatio || peRatio <= 0) return null
 
-    // Lower P/E ratios get higher scores
-    // Normalize around typical P/E ranges (5-30)
-    const normalizedPE = Math.max(0, Math.min(30, peRatio))
-    return 1 - (normalizedPE / 30)
+    // Get sector-specific benchmarks
+    const benchmarks = getSectorBenchmarks(sector)
+
+    // Calculate percentile-based score using sector benchmarks
+    return calculatePercentileScore(peRatio, benchmarks.peRatio)
   }
 
-  private calculatePBScore(pbRatio?: number): number | null {
+  /**
+   * Calculate P/B ratio score with sector-relative benchmarking
+   *
+   * @param pbRatio - P/B ratio value
+   * @param sector - Company sector for benchmark selection
+   * @returns Score from 0 to 1 (higher = more attractive valuation)
+   */
+  private calculatePBScore(pbRatio?: number, sector?: string): number | null {
     if (!pbRatio || pbRatio <= 0) return null
 
-    // Lower P/B ratios get higher scores
-    // Normalize around typical P/B ranges (0.5-5)
-    const normalizedPB = Math.max(0, Math.min(5, pbRatio))
-    return 1 - (normalizedPB / 5)
+    // Get sector-specific benchmarks
+    const benchmarks = getSectorBenchmarks(sector)
+
+    // Calculate percentile-based score using sector benchmarks
+    return calculatePercentileScore(pbRatio, benchmarks.pbRatio)
   }
 
-  private calculateEVEBITDAScore(fundamentalData?: FundamentalDataPoint): number | null {
+  /**
+   * Calculate EV/EBITDA score with sector-relative benchmarking
+   *
+   * @param fundamentalData - Fundamental data containing EV/EBITDA
+   * @param sector - Company sector for benchmark selection
+   * @returns Score from 0 to 1 (higher = more attractive valuation)
+   */
+  private calculateEVEBITDAScore(fundamentalData?: FundamentalDataPoint, sector?: string): number | null {
     // Check multiple possible property names for EV/EBITDA
     const evEbitda = fundamentalData?.evEbitda || fundamentalData?.evToEbitda
 
     if (!evEbitda || evEbitda <= 0) return null
 
-    // Lower EV/EBITDA ratios get higher scores
-    // Typical range is 5-25, with 8-15 being reasonable
-    const normalizedRatio = Math.max(0, Math.min(25, evEbitda))
-    return Math.max(0, Math.min(1, 1 - (normalizedRatio / 25)))
+    // Get sector-specific benchmarks
+    const benchmarks = getSectorBenchmarks(sector)
+
+    // Calculate percentile-based score using sector benchmarks
+    return calculatePercentileScore(evEbitda, benchmarks.evEbitda)
   }
 
   private calculatePriceToSalesScore(
@@ -1541,6 +1570,64 @@ export class FactorLibrary {
     // Lower P/S ratios get higher scores
     const normalizedPS = Math.max(0, Math.min(10, priceToSales))
     return 1 - (normalizedPS / 10)
+  }
+
+  /**
+   * Calculate PEG ratio score - growth-adjusted valuation
+   * PEG = P/E / EPS Growth Rate (%)
+   * Lower PEG = better value relative to growth
+   *
+   * @param fundamentalData - Fundamental data containing P/E and growth metrics
+   * @param sector - Company sector for benchmark selection
+   * @returns Score from 0 to 1 (higher = better value relative to growth)
+   */
+  private calculatePEGScore(fundamentalData?: FundamentalDataPoint, sector?: string): number | null {
+    const peRatio = fundamentalData?.peRatio
+    const earningsGrowth = fundamentalData?.earningsGrowth ||
+                          fundamentalData?.revenueGrowth // Fallback to revenue growth
+
+    if (!peRatio || peRatio <= 0 || !earningsGrowth || earningsGrowth <= 0) {
+      return null // Cannot calculate PEG without positive P/E and growth
+    }
+
+    // Calculate PEG ratio
+    // Note: earningsGrowth should already be in decimal form (e.g., 0.25 for 25%)
+    // If it's a percentage (e.g., 25), convert to decimal
+    const growthRate = earningsGrowth > 1 ? earningsGrowth / 100 : earningsGrowth
+    const pegRatio = peRatio / (growthRate * 100) // Convert to percentage for standard PEG calculation
+
+    // Get sector-specific PEG benchmarks
+    const benchmarks = getSectorBenchmarks(sector)
+    const pegBenchmarks = benchmarks.pegRatio
+
+    // Scoring logic:
+    // PEG < 1.0 = Undervalued relative to growth (score 0.90-1.0)
+    // PEG 1.0-2.0 = Fairly valued (score 0.60-0.90)
+    // PEG > 2.0 = Overvalued relative to growth (score 0.0-0.60)
+
+    if (pegRatio < 0.5) {
+      return 1.0 // Exceptional value
+    } else if (pegRatio < 1.0) {
+      // Linear interpolation 0.5-1.0 PEG → 1.0-0.90 score
+      return 1.0 - ((pegRatio - 0.5) * 0.20)
+    } else if (pegRatio <= pegBenchmarks.p25) {
+      // p25 is "good" PEG for sector
+      const range = pegBenchmarks.p25 - 1.0
+      const position = (pegRatio - 1.0) / range
+      return 0.90 - (position * 0.15) // 0.90 → 0.75
+    } else if (pegRatio <= pegBenchmarks.median) {
+      const range = pegBenchmarks.median - pegBenchmarks.p25
+      const position = (pegRatio - pegBenchmarks.p25) / range
+      return 0.75 - (position * 0.15) // 0.75 → 0.60
+    } else if (pegRatio <= pegBenchmarks.p75) {
+      const range = pegBenchmarks.p75 - pegBenchmarks.median
+      const position = (pegRatio - pegBenchmarks.median) / range
+      return 0.60 - (position * 0.30) // 0.60 → 0.30
+    } else {
+      // Beyond p75 - steep penalty
+      const excessRatio = Math.min(2.0, (pegRatio - pegBenchmarks.p75) / pegBenchmarks.p75)
+      return Math.max(0, 0.30 - (excessRatio * 0.30))
+    }
   }
 
   // ==================== QUALITY CALCULATIONS ====================
@@ -2011,6 +2098,52 @@ export class FactorLibrary {
   }
 
   /**
+   * PHASE 1 CALIBRATION: Adjust factor weights based on market capitalization
+   * Large caps benefit from fundamental analysis, small caps from technical momentum
+   *
+   * @param marketCap - Market capitalization in USD
+   * @returns Adjustment multipliers for fundamental and technical weights
+   */
+  private adjustWeightsForMarketCap(marketCap: number): {
+    fundamentalMultiplier: number
+    technicalMultiplier: number
+  } {
+    // Market cap thresholds
+    const MEGA_CAP = 200_000_000_000    // $200B+
+    const LARGE_CAP = 10_000_000_000    // $10B+
+    const MID_CAP = 2_000_000_000       // $2B+
+
+    if (marketCap >= MEGA_CAP) {
+      // Mega caps (AAPL, MSFT, GOOGL): Fundamentals matter more, technical less important
+      // Fundamental: 35% → 42% (+20%) | Technical: 30% → 25.5% (-15%)
+      return {
+        fundamentalMultiplier: 1.20, // +20%
+        technicalMultiplier: 0.85    // -15%
+      }
+    } else if (marketCap >= LARGE_CAP) {
+      // Large caps: Moderate fundamental preference
+      // Fundamental: 35% → 38.5% (+10%) | Technical: 30% → 27.6% (-8%)
+      return {
+        fundamentalMultiplier: 1.10, // +10%
+        technicalMultiplier: 0.92    // -8%
+      }
+    } else if (marketCap >= MID_CAP) {
+      // Mid caps: Balanced - no adjustments
+      return {
+        fundamentalMultiplier: 1.00,
+        technicalMultiplier: 1.00
+      }
+    } else {
+      // Small caps: Technical momentum matters more
+      // Fundamental: 35% → 31.5% (-10%) | Technical: 30% → 33.0% (+10%)
+      return {
+        fundamentalMultiplier: 0.90, // -10%
+        technicalMultiplier: 1.10    // +10%
+      }
+    }
+  }
+
+  /**
    * Main composite algorithm with real factor calculations and proper utilization tracking
    * Returns calculated score based on actual data analysis
    * INCLUDES ALL REQUIRED COMPONENTS with mathematically sound weight allocation totaling 100%
@@ -2032,116 +2165,146 @@ export class FactorLibrary {
     let totalWeight = 0
     const factorContributions: string[] = []
 
-    // ==================== UPDATED WEIGHT ALLOCATION WITH DEDICATED OPTIONS ANALYSIS (Total: 100%) ====================
+    // ==================== PHASE 1 CALIBRATION: REBALANCED WEIGHT ALLOCATION (Total: 100%) ====================
+    // Rebalanced weights to reduce technical momentum emphasis and increase fundamental quality focus
+    // Technical: 37.0% → 30.0% (-7.0pp) | Fundamental: 22.0% → 35.0% (+13.0pp)
+    // Maintains: Macroeconomic 20.0%, Sentiment 10.0%, Alternative 5.0%
 
-    // Technical Analysis composite (weight: 37.0%) - Pure technical indicators without options
-    // Adjusted to ensure 100% weight allocation with dedicated options analysis component
+    // Market-cap-aware weight adjustments
+    // Validate: reject 0 or invalid market caps, use mid-cap as default
+    const marketCap = marketData?.marketCap && marketData.marketCap > 1_000_000
+      ? marketData.marketCap
+      : 5_000_000_000 // Default to $5B mid-cap if missing
+    const { fundamentalMultiplier, technicalMultiplier } = this.adjustWeightsForMarketCap(marketCap)
+
+    // Calculate adjusted weights
+    const baseTechnicalWeight = 0.300
+    const baseFundamentalWeight = 0.350
+    const technicalWeight = baseTechnicalWeight * technicalMultiplier
+    const fundamentalWeight = baseFundamentalWeight * fundamentalMultiplier
+
+    // Normalize to maintain 100% total (adjust remaining weights proportionally)
+    const baseWeightsSum = technicalWeight + fundamentalWeight + 0.200 + 0.100 + 0.050 // Include macro, sentiment, alternative
+    const normalizationFactor = 1.000 / baseWeightsSum
+    const adjustedTechnicalWeight = technicalWeight * normalizationFactor
+    const adjustedFundamentalWeight = fundamentalWeight * normalizationFactor
+    const adjustedMacroWeight = 0.200 * normalizationFactor
+    const adjustedSentimentWeight = 0.100 * normalizationFactor
+    const adjustedAlternativeWeight = 0.050 * normalizationFactor
+
+    console.log(`📊 PHASE 1 CALIBRATION: Adjusted weights for ${symbol} ($${(marketCap / 1e9).toFixed(1)}B market cap):`)
+    console.log(`   Technical: ${(adjustedTechnicalWeight * 100).toFixed(1)}% (base 30.0%, multiplier ${technicalMultiplier.toFixed(2)})`)
+    console.log(`   Fundamental: ${(adjustedFundamentalWeight * 100).toFixed(1)}% (base 35.0%, multiplier ${fundamentalMultiplier.toFixed(2)})`)
+
+    // Technical Analysis composite - Apply adjusted weight
     const technicalScore = await this.calculateTechnicalOverallScore(symbol)
     if (technicalScore !== null) {
-      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: 37.0%) ⚡`)
-      totalScore += technicalScore * 0.370
-      totalWeight += 0.370
+      console.log(`Technical Analysis: ${technicalScore.toFixed(3)} (weight: ${(adjustedTechnicalWeight * 100).toFixed(1)}%) ⚡`)
+      totalScore += technicalScore * adjustedTechnicalWeight
+      totalWeight += adjustedTechnicalWeight
       factorContributions.push('technicalAnalysis', 'technical_overall_score')
     } else {
       console.log('Technical Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.370
-      totalWeight += 0.370
+      totalScore += 0.5 * adjustedTechnicalWeight
+      totalWeight += adjustedTechnicalWeight
     }
 
-    // Fundamental Analysis composite (weight: 22.0%) - Quality factors (reduced from 23.8%)
+    // Fundamental Analysis composite - Apply adjusted weight
     const fundamentalScore = this.calculateQualityComposite(fundamentalData)
     if (fundamentalScore !== null) {
-      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: 22.0%)`)
-      totalScore += fundamentalScore * 0.220
-      totalWeight += 0.220
+      console.log(`Fundamental Analysis: ${fundamentalScore.toFixed(3)} (weight: ${(adjustedFundamentalWeight * 100).toFixed(1)}%) 💎`)
+      totalScore += fundamentalScore * adjustedFundamentalWeight
+      totalWeight += adjustedFundamentalWeight
       factorContributions.push('fundamentalData', 'quality_composite')
     } else {
       console.log('Fundamental Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.220
-      totalWeight += 0.220
+      totalScore += 0.5 * adjustedFundamentalWeight
+      totalWeight += adjustedFundamentalWeight
     }
 
-    // 🆕 MACROECONOMIC ANALYSIS (weight: 18.0%) - Economic environment impact (reduced from 19.0%)
+    // 🆕 MACROECONOMIC ANALYSIS (weight: 20.0%) - Apply normalized weight
     const macroScore = this.calculateMacroeconomicComposite(macroeconomicContext)
     if (macroScore !== null) {
-      console.log(`🌍 Macroeconomic Analysis: ${macroScore.toFixed(3)} (weight: 18.0%) - INTEGRATED!`)
-      totalScore += macroScore * 0.180
-      totalWeight += 0.180
+      console.log(`🌍 Macroeconomic Analysis: ${macroScore.toFixed(3)} (weight: ${(adjustedMacroWeight * 100).toFixed(1)}%)`)
+      totalScore += macroScore * adjustedMacroWeight
+      totalWeight += adjustedMacroWeight
       factorContributions.push('macroeconomicAnalysis', 'macroeconomic_composite')
     } else {
       console.log('🌍 Macroeconomic Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.180
-      totalWeight += 0.180
+      totalScore += 0.5 * adjustedMacroWeight
+      totalWeight += adjustedMacroWeight
     }
 
-    // 🆕 SENTIMENT ANALYSIS (weight: 9.0%) - Market sentiment integration (reduced from 9.5%)
+    // 🆕 SENTIMENT ANALYSIS (weight: 10.0%) - Apply normalized weight
     if (sentimentScore !== undefined && sentimentScore !== null) {
-      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: 9.0%) - INTEGRATED!`)
-      totalScore += sentimentScore * 0.090
-      totalWeight += 0.090
+      console.log(`📰 Sentiment Analysis: ${sentimentScore.toFixed(3)} (weight: ${(adjustedSentimentWeight * 100).toFixed(1)}%)`)
+      totalScore += sentimentScore * adjustedSentimentWeight
+      totalWeight += adjustedSentimentWeight
       factorContributions.push('sentimentAnalysis', 'sentiment_composite')
     } else {
       console.log('📰 Sentiment Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.090
-      totalWeight += 0.090
+      totalScore += 0.5 * adjustedSentimentWeight
+      totalWeight += adjustedSentimentWeight
     }
 
-    // 🆕 OPTIONS ANALYSIS (weight: 5.0%) - Dedicated options intelligence component
+    // Alternative Data composite (weight: 5.0%) - Combined ESG, options, short interest, extended market
+    // Options Analysis (2.0% of 5% alternative)
     const optionsScore = this.calculateOptionsScore(technicalData?.optionsData)
     if (optionsScore !== null && technicalData?.optionsData) {
-      console.log(`📊 Options Analysis: ${optionsScore.toFixed(3)} (weight: 5.0%) - DEDICATED COMPONENT! 🎯`)
-      totalScore += optionsScore * 0.050
-      totalWeight += 0.050
+      console.log(`📊 Options Analysis: ${optionsScore.toFixed(3)} (weight: 2.0%)`)
+      totalScore += optionsScore * 0.020
+      totalWeight += 0.020
       factorContributions.push('optionsAnalysis', 'options_composite')
     } else {
       console.log('📊 Options Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.050
-      totalWeight += 0.050
+      totalScore += 0.5 * 0.020
+      totalWeight += 0.020
     }
 
-    // 🆕 EXTENDED MARKET DATA ANALYSIS (weight: 4.5%) - Liquidity and bid/ask analysis (reduced from 4.8%)
-    const extendedMarketScore = await this.calculateExtendedMarketComposite(symbol)
-    if (extendedMarketScore !== null) {
-      console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 4.5%) - INTEGRATED!`)
-      totalScore += extendedMarketScore * 0.045
-      totalWeight += 0.045
-      factorContributions.push('extendedMarketData', 'extended_market_composite')
-    } else {
-      console.log('💹 Extended Market Data: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.045
-      totalWeight += 0.045
-    }
-
-    // 🆕 SHORT INTEREST ANALYSIS (weight: 2.25%) - Short squeeze potential (reduced from 2.4%)
-    const shortInterestScore = await this.calculateShortInterestComposite(symbol)
-    if (shortInterestScore !== null) {
-      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 2.25%) - INTEGRATED!`)
-      totalScore += shortInterestScore * 0.0225
-      totalWeight += 0.0225
-      factorContributions.push('shortInterestAnalysis', 'short_interest_composite')
-    } else {
-      console.log('📊 Short Interest Analysis: No data (fallback to neutral 0.5)')
-      totalScore += 0.5 * 0.0225
-      totalWeight += 0.0225
-    }
-
-    // 🆕 ESG ANALYSIS (weight: 2.25%) - Environmental, Social, Governance factors (reduced from 2.4%)
+    // ESG Analysis (1.5% of 5% alternative)
     if (esgScore !== undefined && esgScore !== null) {
-      console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 2.25%) - INTEGRATED!`)
-      totalScore += esgScore * 0.0225
-      totalWeight += 0.0225
+      console.log(`🌱 ESG Analysis: ${esgScore.toFixed(3)} (weight: 1.5%)`)
+      totalScore += esgScore * 0.015
+      totalWeight += 0.015
       factorContributions.push('esgAnalysis', 'esg_composite')
     } else {
       console.log('🌱 ESG Analysis: No data (fallback to neutral 0.6 - industry baseline)')
-      totalScore += 0.6 * 0.0225
-      totalWeight += 0.0225
+      totalScore += 0.6 * 0.015
+      totalWeight += 0.015
+    }
+
+    // Short Interest Analysis (1.0% of 5% alternative)
+    const shortInterestScore = await this.calculateShortInterestComposite(symbol)
+    if (shortInterestScore !== null) {
+      console.log(`📊 Short Interest Analysis: ${shortInterestScore.toFixed(3)} (weight: 1.0%)`)
+      totalScore += shortInterestScore * 0.010
+      totalWeight += 0.010
+      factorContributions.push('shortInterestAnalysis', 'short_interest_composite')
+    } else {
+      console.log('📊 Short Interest Analysis: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.010
+      totalWeight += 0.010
+    }
+
+    // Extended Market Data Analysis (0.5% of 5% alternative)
+    const extendedMarketScore = await this.calculateExtendedMarketComposite(symbol)
+    if (extendedMarketScore !== null) {
+      console.log(`💹 Extended Market Data: ${extendedMarketScore.toFixed(3)} (weight: 0.5%)`)
+      totalScore += extendedMarketScore * 0.005
+      totalWeight += 0.005
+      factorContributions.push('extendedMarketData', 'extended_market_composite')
+    } else {
+      console.log('💹 Extended Market Data: No data (fallback to neutral 0.5)')
+      totalScore += 0.5 * 0.005
+      totalWeight += 0.005
     }
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0.5
 
-    console.log(`🎯 Main composite calculation for ${symbol}:`)
+    console.log(`🎯 PHASE 1 CALIBRATION - Main composite calculation for ${symbol}:`)
     console.log(`   Final weighted score: ${finalScore.toFixed(4)}`)
-    console.log(`   Weight Allocation: Technical(37.0%) + Fundamental(22.0%) + Macroeconomic(18.0%) + Sentiment(9.0%) + Options(5.0%) + Extended Market(4.5%) + Short Interest(2.25%) + ESG(2.25%) = 100.0%`)
+    console.log(`   🔍 DEBUG totalScore: ${totalScore.toFixed(4)}, totalWeight: ${totalWeight.toFixed(4)}`)
+    console.log(`   Weight Allocation: Technical(30.0%) + Fundamental(35.0%) + Macroeconomic(20.0%) + Sentiment(10.0%) + Alternative(5.0% = Options 2.0% + ESG 1.5% + Short Interest 1.0% + Extended Market 0.5%) = 100.0%`)
     console.log(`   ✅ WEIGHT VERIFICATION: Total weights = ${totalWeight.toFixed(3)} (target: 1.000)`)
     console.log(`   Contributing factors: [${factorContributions.join(', ')}]`)
 
@@ -2167,7 +2330,17 @@ export class FactorLibrary {
       })
     }
 
-    return Math.max(0, Math.min(1, finalScore))
+    const clampedScore = Math.max(0, Math.min(1, finalScore))
+    console.log(`   🔍 DEBUG: Returning clamped score: ${clampedScore.toFixed(4)} (original: ${finalScore.toFixed(4)})`)
+    console.log(`✅ FactorLibrary: Composite score = ${clampedScore.toFixed(4)} (0-1 scale) for ${symbol}`)
+
+    // 🚨 VALIDATION: Ensure score is in 0-1 range (KISS architecture enforcement)
+    if (clampedScore < 0 || clampedScore > 1 || isNaN(clampedScore)) {
+      console.error(`❌ VALIDATION FAILED: Score ${clampedScore} is outside 0-1 range for ${symbol}!`)
+      throw new Error(`FactorLibrary returned invalid score: ${clampedScore} (must be 0-1)`)
+    }
+
+    return clampedScore
   }
 
   // ==================== ESG FACTOR CALCULATIONS ====================
@@ -2582,11 +2755,9 @@ export class FactorLibrary {
     try {
       const { macroScore, adjustedScore, confidence } = macroContext
 
-      // Use the adjusted score if available, otherwise use macro score
-      let score = adjustedScore || macroScore || 5.0
-
-      // Normalize from 0-10 scale to 0-1 scale
-      score = score / 10
+      // BUG FIX: Both adjustedScore and macroScore are on 0-10 scale from MacroeconomicAnalysisService
+      // Always normalize to 0-1 scale before use
+      let score = (adjustedScore || macroScore || 5.0) / 10
 
       // Apply confidence weighting
       if (confidence && confidence < 0.7) {

@@ -4,29 +4,13 @@
  * Supports easy switching between data sources for all financial data
  */
 
-import { PolygonAPI } from './PolygonAPI'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
-import { TwelveDataAPI } from './TwelveDataAPI'
-import { SECEdgarAPI } from './SECEdgarAPI'
-import { TreasuryAPI } from './TreasuryAPI'
-import { FREDAPI } from './FREDAPI'
-import { BLSAPI } from './BLSAPI'
-import { EIAAPI } from './EIAAPI'
 import { EODHDAPI } from './EODHDAPI'
 import { StockData, CompanyInfo, FinancialDataProvider, OptionsContract, OptionsChain, PutCallRatio, OptionsAnalysis } from './types'
 
 export type DataSourceProvider =
-  | 'polygon'
-  | 'yahoo'
   | 'fmp'
-  | 'twelvedata'
   | 'eodhd'
-  | 'sec_edgar'
-  | 'treasury'
-  | 'fred'
-  | 'bls'
-  | 'eia'
 
 export type DataType =
   | 'stock_price'
@@ -63,162 +47,82 @@ export class DataSourceManager {
   private providers: Map<DataSourceProvider, FinancialDataProvider> = new Map()
 
   private providerConfigs: Record<DataSourceProvider, DataSourceConfig> = {
-    polygon: {
+    fmp: {
       enabled: true,
       priority: 1,
       costTier: 'paid',
       reliability: 0.95,
-      dataQuality: 0.98,
-      rateLimit: '5 req/min (free), unlimited (paid)',
-      description: 'Polygon.io - Premium real-time and historical market data',
-      supportedDataTypes: ['stock_price', 'company_info', 'options_data', 'options_chain', 'put_call_ratio', 'options_analysis', 'fundamentals', 'market_data']
-    },
-    fmp: {
-      enabled: true,
-      priority: 3,
-      costTier: 'free',
-      reliability: 0.90,
-      dataQuality: 0.88,
-      rateLimit: '250 req/day (free)',
-      description: 'Financial Modeling Prep - Free financial statements and ratios',
-      supportedDataTypes: ['stock_price', 'company_info', 'fundamentals', 'earnings', 'market_data']
-    },
-    yahoo: {
-      enabled: true,
-      priority: 4,
-      costTier: 'free',
-      reliability: 0.70,
-      dataQuality: 0.75,
-      rateLimit: 'Rate limited, unreliable',
-      description: 'Yahoo Finance - Free but unreliable for automation',
-      supportedDataTypes: ['stock_price', 'company_info', 'market_data']
-    },
-    twelvedata: {
-      enabled: true,
-      priority: 5,
-      costTier: 'free',
-      reliability: 0.85,
-      dataQuality: 0.85,
-      rateLimit: '800 req/day (free)',
-      description: 'TwelveData - Good free tier, excellent paid plans',
-      supportedDataTypes: ['stock_price', 'company_info', 'market_data', 'options_data', 'options_chain', 'put_call_ratio']
+      dataQuality: 0.95,
+      rateLimit: '300 req/min',
+      description: 'Financial Modeling Prep - Primary data source for financial statements, ratios, and market data',
+      supportedDataTypes: ['stock_price', 'company_info', 'fundamentals', 'earnings', 'market_data', 'news']
     },
     eodhd: {
       enabled: true,
-      priority: 3,
+      priority: 2,
       costTier: 'paid',
       reliability: 0.92,
       dataQuality: 0.94,
-      rateLimit: '100,000 req/day',
-      description: 'EODHD - Premium EOD data with options add-on subscription',
-      supportedDataTypes: ['stock_price', 'company_info', 'market_data', 'options_data', 'options_chain', 'put_call_ratio', 'options_analysis']
-    },
-    sec_edgar: {
-      enabled: true,
-      priority: 6,
-      costTier: 'free',
-      reliability: 0.95,
-      dataQuality: 0.95,
-      rateLimit: '10 req/sec per IP',
-      description: 'SEC EDGAR - Official government filings',
-      supportedDataTypes: ['company_info', 'fundamentals', 'earnings']
-    },
-    treasury: {
-      enabled: true,
-      priority: 1,
-      costTier: 'free',
-      reliability: 0.98,
-      dataQuality: 0.98,
-      rateLimit: 'No official limit',
-      description: 'US Treasury - Official treasury rates and data',
-      supportedDataTypes: ['treasury_data', 'economic_data']
-    },
-    fred: {
-      enabled: true,
-      priority: 1,
-      costTier: 'free',
-      reliability: 0.98,
-      dataQuality: 0.98,
-      rateLimit: '120 req/min',
-      description: 'Federal Reserve Economic Data - Official economic data',
-      supportedDataTypes: ['economic_data', 'treasury_data']
-    },
-    bls: {
-      enabled: true,
-      priority: 2,
-      costTier: 'free',
-      reliability: 0.95,
-      dataQuality: 0.95,
-      rateLimit: '500 req/day',
-      description: 'Bureau of Labor Statistics - Employment and inflation data',
-      supportedDataTypes: ['economic_data']
-    },
-    eia: {
-      enabled: true,
-      priority: 2,
-      costTier: 'free',
-      reliability: 0.90,
-      dataQuality: 0.90,
-      rateLimit: '5000 req/hour',
-      description: 'Energy Information Administration - Energy data',
-      supportedDataTypes: ['economic_data']
+      rateLimit: '100 req/min',
+      description: 'EODHD - Fallback data source with EOD pricing and options data',
+      supportedDataTypes: ['stock_price', 'company_info', 'market_data', 'options_data', 'options_chain', 'put_call_ratio', 'options_analysis', 'fundamentals']
     }
   }
 
   private dataTypePreferences: Record<DataType, DataTypePreferences> = {
     stock_price: {
       primary: 'fmp',
-      fallbacks: ['polygon', 'yahoo', 'twelvedata'],
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     company_info: {
       primary: 'fmp',
-      fallbacks: ['polygon', 'sec_edgar', 'yahoo'],
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     options_data: {
-      primary: 'polygon',
-      fallbacks: ['eodhd', 'twelvedata'],
+      primary: 'eodhd',
+      fallbacks: ['fmp'],
       lastUpdated: Date.now()
     },
     options_chain: {
-      primary: 'polygon',
-      fallbacks: ['eodhd', 'twelvedata'],
+      primary: 'eodhd',
+      fallbacks: ['fmp'],
       lastUpdated: Date.now()
     },
     put_call_ratio: {
-      primary: 'polygon',
-      fallbacks: ['eodhd', 'twelvedata'],
+      primary: 'eodhd',
+      fallbacks: ['fmp'],
       lastUpdated: Date.now()
     },
     options_analysis: {
-      primary: 'polygon',
-      fallbacks: ['eodhd', 'twelvedata'],
+      primary: 'eodhd',
+      fallbacks: ['fmp'],
       lastUpdated: Date.now()
     },
     fundamentals: {
       primary: 'fmp',
-      fallbacks: ['polygon', 'sec_edgar'],
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     market_data: {
       primary: 'fmp',
-      fallbacks: ['polygon', 'twelvedata', 'yahoo'],
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     economic_data: {
-      primary: 'fred',
-      fallbacks: ['bls', 'eia'],
+      primary: 'fmp',
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     treasury_data: {
-      primary: 'fred',
-      fallbacks: ['treasury'],
+      primary: 'fmp',
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     earnings: {
       primary: 'fmp',
-      fallbacks: ['sec_edgar'],
+      fallbacks: ['eodhd'],
       lastUpdated: Date.now()
     },
     news: {
@@ -236,16 +140,8 @@ export class DataSourceManager {
    * Initialize all data provider instances
    */
   private initializeProviders(): void {
-    this.providers.set('polygon', new PolygonAPI())
-    this.providers.set('yahoo', new YahooFinanceAPI())
     this.providers.set('fmp', new FinancialModelingPrepAPI())
-    this.providers.set('twelvedata', new TwelveDataAPI())
     this.providers.set('eodhd', new EODHDAPI(undefined, 30000))  // 30 second timeout for options chains
-    this.providers.set('sec_edgar', new SECEdgarAPI())
-    this.providers.set('treasury', new TreasuryAPI())
-    this.providers.set('fred', new FREDAPI())
-    this.providers.set('bls', new BLSAPI())
-    this.providers.set('eia', new EIAAPI())
   }
 
   /**
@@ -412,10 +308,13 @@ export class DataSourceManager {
       recommendations.push('⚠️ More than half of data providers are unavailable')
     }
 
-    if (!providerStatus.polygon?.available) {
-      recommendations.push('💡 Consider upgrading Polygon.io for better data quality and options support')
+    if (!providerStatus.fmp?.available) {
+      recommendations.push('⚠️ FMP (primary data source) is unavailable - check API key and connectivity')
     }
 
+    if (!providerStatus.eodhd?.available) {
+      recommendations.push('⚠️ EODHD (fallback data source) is unavailable - options data may be limited')
+    }
 
     return {
       dataTypePreferences: this.getDataSourcePreferences(),
@@ -436,57 +335,57 @@ export class DataSourceManager {
     this.dataTypePreferences = {
       stock_price: {
         primary: 'fmp',
-        fallbacks: ['polygon', 'yahoo', 'twelvedata'],
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       company_info: {
         primary: 'fmp',
-        fallbacks: ['polygon', 'sec_edgar', 'yahoo'],
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       options_data: {
-        primary: 'polygon',
-        fallbacks: ['twelvedata'],
+        primary: 'eodhd',
+        fallbacks: ['fmp'],
         lastUpdated: Date.now()
       },
       options_chain: {
-        primary: 'polygon',
-        fallbacks: ['twelvedata'],
+        primary: 'eodhd',
+        fallbacks: ['fmp'],
         lastUpdated: Date.now()
       },
       put_call_ratio: {
-        primary: 'polygon',
-        fallbacks: ['twelvedata'],
+        primary: 'eodhd',
+        fallbacks: ['fmp'],
         lastUpdated: Date.now()
       },
       options_analysis: {
-        primary: 'polygon',
-        fallbacks: ['twelvedata'],
+        primary: 'eodhd',
+        fallbacks: ['fmp'],
         lastUpdated: Date.now()
       },
       fundamentals: {
         primary: 'fmp',
-        fallbacks: ['polygon', 'sec_edgar'],
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       market_data: {
         primary: 'fmp',
-        fallbacks: ['polygon', 'twelvedata', 'yahoo'],
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       economic_data: {
-        primary: 'fred',
-        fallbacks: ['bls', 'eia'],
+        primary: 'fmp',
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       treasury_data: {
-        primary: 'fred',
-        fallbacks: ['treasury'],
+        primary: 'fmp',
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       earnings: {
         primary: 'fmp',
-        fallbacks: ['sec_edgar'],
+        fallbacks: ['eodhd'],
         lastUpdated: Date.now()
       },
       news: {
@@ -496,6 +395,6 @@ export class DataSourceManager {
       }
     }
 
-    console.log('🔄 Reset all data source preferences to defaults')
+    console.log('🔄 Reset all data source preferences to defaults (FMP primary, EODHD fallback)')
   }
 }

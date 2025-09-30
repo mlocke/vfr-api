@@ -229,6 +229,8 @@ function convertToAdminResponse(response: any): any {
   const stocks = response.topSelections?.map((selection: any) => {
     // Extract factor scores from the factorScores object
     const factorScores = selection.score?.factorScores || {}
+    console.log(`🔍 DEBUG factorScores for ${selection.symbol}:`, JSON.stringify(factorScores, null, 2))
+    console.log(`🔍 DEBUG overallScore:`, selection.score?.overallScore)
 
     // Extract scores with proper fallback logic matching actual factor names in AlgorithmEngine
     // Technical: technical_overall_score or technicalScore (0-100 scale)
@@ -261,10 +263,21 @@ function convertToAdminResponse(response: any): any {
                         factorScores.analyst ||
                         factorScores.analysts || 0
 
+    // 🎯 DISPLAY FORMATTING ONLY: Convert 0-1 scale to 0-100 for frontend display
+    const overallScoreRaw = selection.score?.overallScore || 0
+    const compositeScoreDisplay = overallScoreRaw * 100
+
+    // 🚨 VALIDATION: Verify score is in expected 0-1 range before display formatting
+    if (overallScoreRaw < 0 || overallScoreRaw > 1) {
+      console.error(`❌ API VALIDATION FAILED: overallScore ${overallScoreRaw} is outside 0-1 range for ${selection.symbol}!`)
+    }
+
+    console.log(`✅ API /stocks/analyze: Display score = ${compositeScoreDisplay.toFixed(2)} (formatted from ${overallScoreRaw.toFixed(4)})`)
+
     return {
       symbol: selection.symbol,
       price: selection.score?.marketData?.price || 0,
-      compositeScore: selection.score?.overallScore || 0,
+      compositeScore: compositeScoreDisplay,
       recommendation: selection.action || 'HOLD',
       sector: selection.context?.sector || 'Unknown',
       confidence: selection.confidence ? Math.round(selection.confidence * 100) : undefined,

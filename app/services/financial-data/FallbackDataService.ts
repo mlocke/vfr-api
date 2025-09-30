@@ -4,10 +4,8 @@
  */
 
 import { StockData, CompanyInfo, MarketData, FinancialDataProvider, ApiResponse, AnalystRatings, PriceTarget, RatingChange, FundamentalRatios, InstitutionalIntelligence, InstitutionalHolding, InsiderTransaction } from './types'
-import { PolygonAPI } from './PolygonAPI'
-import { YahooFinanceAPI } from './YahooFinanceAPI'
-import { TwelveDataAPI } from './TwelveDataAPI'
 import { FinancialModelingPrepAPI } from './FinancialModelingPrepAPI'
+import { EODHDAPI } from './EODHDAPI'
 import { InstitutionalDataService } from './InstitutionalDataService'
 import { FMPCacheManager } from './FMPCacheManager'
 import SecurityValidator from '../security/SecurityValidator'
@@ -41,100 +39,51 @@ export class FallbackDataService implements FinancialDataProvider {
   }
 
   private initializeDataSources(): void {
-    // Priority order optimized for FMP Starter Plan (300 calls/min)
-    // New structure: FMP Primary → Yahoo Fallback → Premium APIs → Free tiers
+    // Authorized APIs only: FMP (Primary) and EODHD (Fallback)
+    // Priority order: FMP → EODHD
 
-    // 2. Yahoo Finance - Fallback for when FMP rate limited (demoted from priority 1)
-    const yahooPriority = process.env.YAHOO_PRIORITY ? parseInt(process.env.YAHOO_PRIORITY) : 2
-    this.dataSources.push({
-      name: 'Yahoo Finance',
-      provider: new YahooFinanceAPI(),
-      priority: yahooPriority,
-      isFree: true,
-      rateLimit: 60 // Unofficial, be conservative
-    })
-
-
-    // 3. Twelve Data - Free tier: 800 requests/day, 8/minute
-    if (process.env.TWELVE_DATA_API_KEY) {
-      const twelveDataPriority = process.env.TWELVEDATA_PRIORITY ? parseInt(process.env.TWELVEDATA_PRIORITY) : 3
-      this.dataSources.push({
-        name: 'Twelve Data',
-        provider: new TwelveDataAPI(),
-        priority: twelveDataPriority,
-        isFree: true,
-        rateLimit: 8,
-        dailyLimit: 800
-      })
-    }
-
-    // 1. FMP - Enhanced Starter Plan Configuration (PROMOTED TO PRIMARY)
+    // 1. FMP - Primary data source (Priority 1)
     if (process.env.FMP_API_KEY) {
-      const fmpPlan = process.env.FMP_PLAN || 'basic'
-      const isStarterPlan = fmpPlan === 'starter'
-      const isProfessionalPlan = fmpPlan === 'professional'
-
-      // Enhanced plan detection and configuration
-      let rateLimit = 10 // Basic plan default
-      let dailyLimit = 250 // Basic plan default
-      let priority = 4 // Basic plan default
-
-      if (isProfessionalPlan) {
-        rateLimit = 600 // 600/min for Professional
-        dailyLimit = 999999 // Effectively unlimited for Professional
-        priority = 1 // Highest priority
-      } else if (isStarterPlan) {
-        rateLimit = 300 // 300/min for Starter
-        dailyLimit = 999999 // Effectively unlimited for Starter
-        priority = 1 // Highest priority
-      }
-
-      // Environment variable override for FMP priority
-      const fmpPriorityOverride = process.env.FMP_PRIORITY ? parseInt(process.env.FMP_PRIORITY) : null
-      if (fmpPriorityOverride !== null) {
-        priority = fmpPriorityOverride
-      }
-
       this.dataSources.push({
         name: 'Financial Modeling Prep',
         provider: new FinancialModelingPrepAPI(),
-        priority: priority,
-        isFree: !isStarterPlan && !isProfessionalPlan,
-        rateLimit: rateLimit,
-        dailyLimit: dailyLimit
+        priority: 1,
+        isFree: false,
+        rateLimit: 300, // 300 requests/minute
+        dailyLimit: undefined // No daily limit on paid plans
       })
 
-      // Log the detected plan configuration
-      this.errorHandler.logger.info(`FMP Plan detected: ${fmpPlan}`, {
-        rateLimit: `${rateLimit}/minute`,
-        dailyLimit: dailyLimit ? `${dailyLimit}/day` : 'unlimited',
-        priority: priority,
-        tier: isStarterPlan || isProfessionalPlan ? 'paid' : 'free'
+      this.errorHandler.logger.info('FMP initialized as primary data source', {
+        rateLimit: '300/minute',
+        priority: 1
       })
     }
 
-    // 4. Polygon - Free tier: 5 requests/minute (limited but reliable)
-    if (process.env.POLYGON_API_KEY) {
-      const polygonPriority = process.env.POLYGON_PRIORITY ? parseInt(process.env.POLYGON_PRIORITY) : 4
+    // 2. EODHD - Fallback data source (Priority 2)
+    if (process.env.EODHD_API_KEY) {
       this.dataSources.push({
-        name: 'Polygon',
-        provider: new PolygonAPI(),
-        priority: polygonPriority,
-        isFree: true,
-        rateLimit: 5,
-        dailyLimit: 50000 // Monthly limit, ~1600/day
+        name: 'EODHD API',
+        provider: new EODHDAPI(),
+        priority: 2,
+        isFree: false,
+        rateLimit: 100, // 100 requests/minute
+        dailyLimit: undefined // No daily limit on paid plans
+      })
+
+      this.errorHandler.logger.info('EODHD initialized as fallback data source', {
+        rateLimit: '100/minute',
+        priority: 2
       })
     }
 
     // Sort by priority
     this.dataSources.sort((a, b) => a.priority - b.priority)
 
-    this.errorHandler.logger.info(`Fallback Data Service initialized with ${this.dataSources.length} free sources`, {
+    this.errorHandler.logger.info(`Fallback Data Service initialized with ${this.dataSources.length} authorized sources`, {
       sources: this.dataSources.map(ds => ({
         priority: ds.priority,
         name: ds.name,
-        rateLimit: ds.rateLimit,
-        dailyLimit: ds.dailyLimit
+        rateLimit: ds.rateLimit
       }))
     })
   }
@@ -885,9 +834,7 @@ export class FallbackDataService implements FinancialDataProvider {
   private sourceSupportsDataType(source: DataSourceConfig, dataType: string): boolean {
     const supportMap: Record<string, string[]> = {
       'Financial Modeling Prep': ['stock_price', 'company_info', 'fundamental_ratios', 'market_data', 'analyst_ratings', 'price_targets'],
-      'Yahoo Finance': ['stock_price', 'company_info', 'market_data'],
-      'Twelve Data': ['stock_price', 'company_info', 'market_data'],
-      'Polygon': ['stock_price', 'company_info', 'market_data', 'fundamental_ratios']
+      'EODHD API': ['stock_price', 'company_info', 'fundamental_ratios', 'market_data', 'options_data']
     }
 
     return supportMap[source.name]?.includes(dataType) || false
@@ -929,14 +876,10 @@ export class FallbackDataService implements FinancialDataProvider {
 
       // Determine what this source is recommended for based on capacity and capabilities
       const recommendedFor: string[] = []
-      if (source.name === 'Financial Modeling Prep' && source.rateLimit >= 300) {
-        recommendedFor.push('High-volume fundamental data', 'Batch processing', 'Analyst ratings')
-      } else if (source.name === 'Yahoo Finance') {
-        recommendedFor.push('Backup data source', 'Basic market data')
-      } else if (source.name === 'Twelve Data') {
-        recommendedFor.push('Technical indicators', 'Market data')
-      } else if (source.name === 'Polygon') {
-        recommendedFor.push('Real-time data', 'Options data', 'High-frequency requests')
+      if (source.name === 'Financial Modeling Prep') {
+        recommendedFor.push('Primary data source', 'Fundamental data', 'Batch processing', 'Analyst ratings')
+      } else if (source.name === 'EODHD API') {
+        recommendedFor.push('Fallback data source', 'Options data', 'Market data', 'EOD pricing')
       }
 
       return {
@@ -957,26 +900,12 @@ export class FallbackDataService implements FinancialDataProvider {
   }
 
   /**
-   * Get stocks by sector (limited support in free APIs)
+   * Get stocks by sector
    */
   async getStocksBySector(sector: string, limit?: number): Promise<StockData[]> {
-    // Yahoo Finance is best for this as it's free
-    const yahooSource = this.dataSources.find(s => s.name === 'Yahoo Finance')
-    if (yahooSource && this.canMakeRequest(yahooSource)) {
-      try {
-        const stocks = await yahooSource.provider.getStocksBySector?.(sector, limit)
-        if (stocks && stocks.length > 0) {
-          this.recordRequest(yahooSource)
-          return stocks
-        }
-      } catch (error) {
-        console.error('Yahoo sector fetch failed:', error)
-      }
-    }
-
-    // Fallback to other sources
+    // Try available sources in priority order
     for (const source of this.dataSources) {
-      if (!this.canMakeRequest(source) || source.name === 'Yahoo Finance') continue
+      if (!this.canMakeRequest(source)) continue
 
       try {
         const stocks = await source.provider.getStocksBySector?.(sector, limit)
@@ -984,8 +913,9 @@ export class FallbackDataService implements FinancialDataProvider {
           this.recordRequest(source)
           return stocks
         }
-      } catch {
-        // Continue to next source
+      } catch (error) {
+        this.errorHandler.logger.warn(`${source.name} sector fetch failed`, { error, sector })
+        continue
       }
     }
 
@@ -993,92 +923,92 @@ export class FallbackDataService implements FinancialDataProvider {
   }
 
   /**
-   * Get analyst ratings with fallback (FMP primary, limited TwelveData backup)
+   * Get analyst ratings with fallback (FMP only)
    */
   async getAnalystRatings(symbol: string): Promise<AnalystRatings | null> {
-    // Prioritize sources that support analyst ratings
-    const analystSources = this.dataSources.filter(source =>
-      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
-    )
+    // Only FMP supports analyst ratings
+    const fmpSource = this.dataSources.find(source => source.name === 'Financial Modeling Prep')
 
-    for (const source of analystSources) {
-      if (!this.canMakeRequest(source)) continue
-
-      try {
-        if (source.provider.getAnalystRatings) {
-          const data = await source.provider.getAnalystRatings(symbol)
-          if (data) {
-            this.recordRequest(source)
-            console.log(`📊 Analyst ratings from ${source.name} for ${symbol}: ${data.consensus} (${data.totalAnalysts} analysts)`)
-            return data
-          }
-        }
-      } catch (error) {
-        console.error(`${source.name} analyst ratings failed:`, error)
-      }
+    if (!fmpSource || !this.canMakeRequest(fmpSource)) {
+      this.errorHandler.logger.warn(`FMP not available for analyst ratings: ${symbol}`)
+      return null
     }
 
-    console.warn(`⚠️ No analyst ratings available for ${symbol}`)
+    try {
+      if (fmpSource.provider.getAnalystRatings) {
+        const data = await fmpSource.provider.getAnalystRatings(symbol)
+        if (data) {
+          this.recordRequest(fmpSource)
+          this.errorHandler.logger.info(`Analyst ratings from FMP for ${symbol}`, {
+            consensus: data.consensus,
+            totalAnalysts: data.totalAnalysts
+          })
+          return data
+        }
+      }
+    } catch (error) {
+      this.errorHandler.logger.error(`FMP analyst ratings failed for ${symbol}`, { error })
+    }
+
     return null
   }
 
   /**
-   * Get price targets with fallback (FMP primary, limited TwelveData backup)
+   * Get price targets (FMP only)
    */
   async getPriceTargets(symbol: string): Promise<PriceTarget | null> {
-    // Prioritize sources that support price targets
-    const targetSources = this.dataSources.filter(source =>
-      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
-    )
+    const fmpSource = this.dataSources.find(source => source.name === 'Financial Modeling Prep')
 
-    for (const source of targetSources) {
-      if (!this.canMakeRequest(source)) continue
-
-      try {
-        if (source.provider.getPriceTargets) {
-          const data = await source.provider.getPriceTargets(symbol)
-          if (data) {
-            this.recordRequest(source)
-            console.log(`🎯 Price targets from ${source.name} for ${symbol}: $${data.targetConsensus} (${data.upside?.toFixed(1) || 'N/A'}% upside)`)
-            return data
-          }
-        }
-      } catch (error) {
-        console.error(`${source.name} price targets failed:`, error)
-      }
+    if (!fmpSource || !this.canMakeRequest(fmpSource)) {
+      this.errorHandler.logger.warn(`FMP not available for price targets: ${symbol}`)
+      return null
     }
 
-    console.warn(`⚠️ No price targets available for ${symbol}`)
+    try {
+      if (fmpSource.provider.getPriceTargets) {
+        const data = await fmpSource.provider.getPriceTargets(symbol)
+        if (data) {
+          this.recordRequest(fmpSource)
+          this.errorHandler.logger.info(`Price targets from FMP for ${symbol}`, {
+            targetConsensus: data.targetConsensus,
+            upside: data.upside
+          })
+          return data
+        }
+      }
+    } catch (error) {
+      this.errorHandler.logger.error(`FMP price targets failed for ${symbol}`, { error })
+    }
+
     return null
   }
 
   /**
-   * Get recent rating changes with fallback (FMP primary, limited TwelveData backup)
+   * Get recent rating changes (FMP only)
    */
   async getRecentRatingChanges(symbol: string, limit = 10): Promise<RatingChange[]> {
-    // Prioritize sources that support rating changes
-    const changeSources = this.dataSources.filter(source =>
-      ['Financial Modeling Prep', 'Twelve Data'].includes(source.name)
-    )
+    const fmpSource = this.dataSources.find(source => source.name === 'Financial Modeling Prep')
 
-    for (const source of changeSources) {
-      if (!this.canMakeRequest(source)) continue
-
-      try {
-        if (source.provider.getRecentRatingChanges) {
-          const data = await source.provider.getRecentRatingChanges(symbol, limit)
-          if (data && data.length > 0) {
-            this.recordRequest(source)
-            console.log(`📈 Rating changes from ${source.name} for ${symbol}: ${data.length} recent changes`)
-            return data
-          }
-        }
-      } catch (error) {
-        console.error(`${source.name} rating changes failed:`, error)
-      }
+    if (!fmpSource || !this.canMakeRequest(fmpSource)) {
+      this.errorHandler.logger.warn(`FMP not available for rating changes: ${symbol}`)
+      return []
     }
 
-    console.warn(`⚠️ No rating changes available for ${symbol}`)
+    try {
+      if (fmpSource.provider.getRecentRatingChanges) {
+        const data = await fmpSource.provider.getRecentRatingChanges(symbol, limit)
+        if (data && data.length > 0) {
+          this.recordRequest(fmpSource)
+          this.errorHandler.logger.info(`Rating changes from FMP for ${symbol}`, {
+            count: data.length
+          })
+          return data
+        }
+      }
+    } catch (error) {
+      this.errorHandler.logger.error(`FMP rating changes failed for ${symbol}`, { error })
+    }
+
     return []
   }
 

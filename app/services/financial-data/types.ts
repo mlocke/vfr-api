@@ -32,6 +32,7 @@ export interface CompanyInfo {
   marketCap: number
   employees?: number
   website?: string
+  source?: string
 }
 
 export interface MarketData {

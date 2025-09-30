@@ -80,7 +80,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
       this.validateApiKey()
       const normalizedSymbol = this.normalizeSymbol(symbol)
 
-      const response = await this.makeRequest(`/profile?symbol=${normalizedSymbol}`)
+      const response = await this.makeRequest(`/profile/${normalizedSymbol}`)
 
       if (!this.validateResponse(response, 'array')) {
         return null

@@ -6,23 +6,20 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { financialDataService } from '../../../services/financial-data/FinancialDataService'
-import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
 import { YahooFinanceAPI } from '../../../services/financial-data/YahooFinanceAPI'
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { SECEdgarAPI } from '../../../services/financial-data/SECEdgarAPI'
 import { TreasuryAPI } from '../../../services/financial-data/TreasuryAPI'
-import { FREDAPI } from '../../../services/financial-data/FREDAPI'
 import { TreasuryService } from '../../../services/financial-data/TreasuryService'
 import { BLSAPI } from '../../../services/financial-data/BLSAPI'
 import { EIAAPI } from '../../../services/financial-data/EIAAPI'
-import { TwelveDataAPI } from '../../../services/financial-data/TwelveDataAPI'
 import { EODHDAPI } from '../../../services/financial-data/EODHDAPI'
 import { MarketIndicesService } from '../../../services/financial-data/MarketIndicesService'
 import { OptionsDataService } from '../../../services/financial-data/OptionsDataService'
 import { EnhancedDataService } from '../../../services/financial-data/EnhancedDataService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { ErrorHandler } from '../../../services/error-handling/ErrorHandler'
-import { RedditAPIEnhanced } from '../../../services/financial-data'
+import RedditAPIEnhanced from '../../../services/financial-data/providers/RedditAPIEnhanced'
 import { RedisCache } from '../../../services/cache/RedisCache'
 
 interface TestRequest {
@@ -47,27 +44,21 @@ interface TestResult {
   }
 }
 
-// Data source configuration mapping
+// Data source configuration mapping - AUTHORIZED APIs ONLY
 const DATA_SOURCE_CONFIGS = {
-  polygon: { name: 'Polygon.io API', timeout: 5000 },
   yahoo: { name: 'Yahoo Finance API', timeout: 3000 },
   fmp: { name: 'Financial Modeling Prep API', timeout: 8000 },
   sec_edgar: { name: 'SEC EDGAR API', timeout: 15000 },
   treasury: { name: 'Treasury API', timeout: 8000 },
   market_indices: { name: 'Market Indices Service', timeout: 10000 },
-  treasury_service: { name: 'Treasury Service (FRED-based)', timeout: 10000 },
-  fred: { name: 'FRED API', timeout: 10000 },
   bls: { name: 'BLS API', timeout: 15000 },
   eia: { name: 'EIA API', timeout: 8000 },
-  twelvedata: { name: 'TwelveData API', timeout: 8000 },
   eodhd: { name: 'EODHD API', timeout: 8000 },
   eodhd_unicornbay: { name: 'EODHD UnicornBay Options', timeout: 15000 },
   options: { name: 'Options Data Service', timeout: 15000 },
   enhanced: { name: 'Enhanced Data Service (Smart Switching)', timeout: 15000 },
   technical_indicators: { name: 'Technical Indicators Service', timeout: 5000 },
   extended_market: { name: 'Extended Market Data Service', timeout: 8000 },
-  firecrawl: { name: 'Firecrawl API', timeout: 20000 },
-  dappier: { name: 'Dappier API', timeout: 10000 },
   reddit: { name: 'Reddit WSB Sentiment API', timeout: 8000 }
 }
 
@@ -273,16 +264,10 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
   try {
     console.log(`🔗 Testing connection to ${dataSourceId}...`)
 
-    // For implemented data sources, use real health checks
-    if (['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    // For implemented data sources, use real health checks (AUTHORIZED APIs ONLY)
+    if (['yahoo', 'fmp', 'sec_edgar', 'treasury', 'bls', 'eia', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       let apiInstance: any
       switch (dataSourceId) {
-        case 'polygon':
-          apiInstance = new PolygonAPI()
-          // Log rate limiting status during health check
-          const rateLimitInfo = apiInstance.getRateLimitStatus()
-          console.log('🔴 Polygon rate limit status:', rateLimitInfo)
-          break
         case 'yahoo':
           apiInstance = new YahooFinanceAPI()
           break
@@ -295,20 +280,11 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
         case 'treasury':
           apiInstance = new TreasuryAPI()
           break
-        case 'treasury_service':
-          apiInstance = new TreasuryService()
-          break
-        case 'fred':
-          apiInstance = new FREDAPI(undefined, timeout, true)
-          break
         case 'bls':
           apiInstance = new BLSAPI(undefined, timeout, true)
           break
         case 'eia':
           apiInstance = new EIAAPI(undefined, timeout, true)
-          break
-        case 'twelvedata':
-          apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
         case 'eodhd':
           apiInstance = new EODHDAPI(undefined, timeout, true)
@@ -326,9 +302,8 @@ async function testDataSourceConnection(dataSourceId: string, timeout: number): 
           })
           return response.ok
         case 'extended_market':
-          const cache = new RedisCache()
-          const polygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
-          apiInstance = new ExtendedMarketDataService(polygonAPI, cache)
+          // Extended market uses authorized APIs only (FMP/EODHD)
+          apiInstance = new ExtendedMarketDataService(new FinancialModelingPrepAPI() as unknown as any, new RedisCache())
           break
         case 'reddit':
           apiInstance = new RedditAPIEnhanced()
@@ -353,67 +328,6 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
     let testData: any = null
 
     switch (dataSourceId) {
-      case 'polygon':
-        console.log('🔴 Making real Polygon API call...')
-        const polygonAPI = new PolygonAPI()
-        const priceData = await polygonAPI.getStockPrice('SPY')
-
-        // Test both direct Polygon options and OptionsDataService
-        const directPutCallRatio = await polygonAPI.getPutCallRatio('SPY')
-        const directOptionsAnalysis = await polygonAPI.getOptionsAnalysisFreeTier('SPY')
-        const rateLimitStatus = polygonAPI.getRateLimitStatus()
-
-        // Use OptionsDataService for comparison
-        const optionsService = new OptionsDataService()
-        const optionsAnalysis = await optionsService.getOptionsAnalysis('SPY')
-        const putCallRatio = await optionsService.getPutCallRatio('SPY')
-        const optionsServiceStatus = await optionsService.getServiceStatus()
-
-        testData = {
-          priceData,
-          polygon: {
-            directOptionsTest: {
-              putCallRatio: directPutCallRatio,
-              optionsAnalysis: directOptionsAnalysis,
-              rateLimitStatus,
-              freeTierOptimized: true
-            },
-            optionsSummary: directPutCallRatio ? {
-              volumeRatio: directPutCallRatio.volumeRatio.toFixed(2),
-              openInterestRatio: directPutCallRatio.openInterestRatio.toFixed(2),
-              totalPutVolume: directPutCallRatio.totalPutVolume.toLocaleString(),
-              totalCallVolume: directPutCallRatio.totalCallVolume.toLocaleString(),
-              dataCompleteness: directPutCallRatio.metadata?.dataCompleteness ? `${(directPutCallRatio.metadata.dataCompleteness * 100).toFixed(0)}%` : 'Unknown',
-              contractsProcessed: directPutCallRatio.metadata?.contractsProcessed || 0,
-              remainingApiCalls: rateLimitStatus.remainingRequests
-            } : {
-              error: 'No options data available - may be free tier limitation',
-              rateLimitStatus,
-              suggestion: 'Try again after rate limit resets or upgrade to paid plan'
-            }
-          },
-          optionsService: {
-            optionsAnalysis,
-            putCallRatio,
-            optionsServiceStatus,
-            optionsSummary: optionsAnalysis ? {
-              volumeRatio: optionsAnalysis.currentRatio.volumeRatio.toFixed(2),
-              openInterestRatio: optionsAnalysis.currentRatio.openInterestRatio.toFixed(2),
-              totalPutVolume: optionsAnalysis.currentRatio.totalPutVolume.toLocaleString(),
-              totalCallVolume: optionsAnalysis.currentRatio.totalCallVolume.toLocaleString(),
-              trend: optionsAnalysis.trend,
-              sentiment: optionsAnalysis.sentiment,
-              confidence: `${(optionsAnalysis.confidence * 100).toFixed(0)}%`
-            } : {
-              message: 'EODHD options data unavailable',
-              provider: optionsServiceStatus?.provider || 'EODHD',
-              status: optionsServiceStatus?.status || 'unavailable'
-            }
-          },
-          testType: 'comprehensive_with_options_free_tier'
-        }
-        break
-
       case 'yahoo':
         console.log('🟡 Making real Yahoo Finance call...')
         const yahooAPI = new YahooFinanceAPI()
@@ -465,32 +379,6 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         }
         break
 
-      case 'treasury_service':
-        console.log('💰 Making real Treasury Service call...')
-        const treasuryService = new TreasuryService()
-        const treasuryResult = await treasuryService.getTreasuryRates()
-        if (treasuryResult.success) {
-          testData = {
-            symbol: 'TREASURY_RATES',
-            price: treasuryResult.data?.rates['10Y'] || 0,
-            change: 0,
-            changePercent: 0,
-            volume: 0,
-            timestamp: Date.now(),
-            source: 'treasury_service',
-            treasuryData: treasuryResult.data
-          }
-        } else {
-          testData = null
-        }
-        break
-
-      case 'fred':
-        console.log('🏦 Making real FRED API call...')
-        const fredAPI = new FREDAPI(undefined, timeout, true)
-        testData = await fredAPI.getStockPrice('UNRATE') // Unemployment Rate - updated
-        break
-
       case 'bls':
         console.log('📊 Making real BLS API call...')
         const blsAPI = new BLSAPI(undefined, timeout, true)
@@ -501,12 +389,6 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
         console.log('⚡ Making real EIA API call...')
         const eiaAPI = new EIAAPI(undefined, timeout, true)
         testData = await eiaAPI.getStockPrice('PET.RWTC.D') // WTI Crude Oil Price from EIA
-        break
-
-      case 'twelvedata':
-        console.log('📊 Making real TwelveData API call...')
-        const twelveDataAPI = new TwelveDataAPI(undefined, timeout, true)
-        testData = await twelveDataAPI.getStockPrice('AAPL') // Apple stock price from TwelveData
         break
 
       case 'eodhd':
@@ -754,8 +636,9 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
       case 'extended_market':
         console.log('📈 Testing Extended Market Data Service...')
         const extendedCache = new RedisCache()
-        const extendedPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
-        const extendedMarketService = new ExtendedMarketDataService(extendedPolygonAPI, extendedCache)
+        // Use authorized FMP API instead of Polygon
+        const extendedFMPAPI = new FinancialModelingPrepAPI()
+        const extendedMarketService = new ExtendedMarketDataService(extendedFMPAPI as unknown as any, extendedCache)
 
         const testSymbolsExt = ['AAPL', 'MSFT', 'GOOGL']
         const extendedResults = []
@@ -876,7 +759,7 @@ async function testDataSourceData(dataSourceId: string, timeout: number): Promis
 
     if (testData) {
       testData.testTimestamp = Date.now()
-      testData.isRealData = ['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId) && !testData.error
+      testData.isRealData = ['yahoo', 'fmp', 'sec_edgar', 'treasury', 'bls', 'eia', 'eodhd', 'market_indices', 'technical_indicators', 'reddit'].includes(dataSourceId) && !testData.error
     }
 
     return testData
@@ -896,33 +779,8 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
   try {
     console.log(`📋 Listing API endpoints for ${dataSourceId}...`)
 
-    // Define available endpoints for each data source
+    // Define available endpoints for each data source (AUTHORIZED APIs ONLY)
     const endpointMappings: Record<string, any> = {
-      polygon: {
-        baseUrl: 'https://api.polygon.io',
-        endpoints: [
-          { path: '/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}', description: 'Stock aggregates (OHLC)', method: 'GET' },
-          { path: '/v3/reference/tickers', description: 'List all tickers', method: 'GET' },
-          { path: '/v2/last/trade/{ticker}', description: 'Last trade for ticker', method: 'GET' },
-          { path: '/v2/snapshot/locale/us/markets/stocks/tickers', description: 'Market snapshot', method: 'GET' },
-          { path: '/v3/reference/financials', description: 'Company financials', method: 'GET' },
-          { path: '/v3/reference/options/contracts', description: 'Options contracts chain', method: 'GET' },
-          { path: '/v3/snapshot/options/{underlyingAsset}', description: 'Options snapshot with volume/OI', method: 'GET' },
-          { path: 'Custom: getPutCallRatio()', description: 'Calculate Put/Call volume and OI ratios', method: 'CUSTOM' },
-          { path: 'Custom: getOptionsAnalysis()', description: 'Complete options sentiment analysis', method: 'CUSTOM' }
-        ],
-        authentication: 'API Key required',
-        documentation: 'https://polygon.io/docs',
-        rateLimit: '5 requests per minute (free tier)',
-        optionsCapabilities: 'Full options chain, real-time volume/OI, Put/Call ratios, sentiment analysis',
-        freeTierFeatures: {
-          rateLimiting: 'Automatic 5 req/min compliance',
-          optionsData: 'End-of-day options data with volume/OI',
-          putCallRatios: 'Real-time P/C ratio calculations',
-          sentiment: 'Options sentiment analysis',
-          limitations: 'Reduced data limits, no historical data'
-        }
-      },
       yahoo: {
         baseUrl: 'https://query1.finance.yahoo.com',
         endpoints: [
@@ -976,19 +834,6 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         documentation: 'https://fiscaldata.treasury.gov/api-documentation/',
         rateLimit: 'No strict limits mentioned'
       },
-      fred: {
-        baseUrl: 'https://api.stlouisfed.org/fred',
-        endpoints: [
-          { path: '/series/observations', description: 'Series observations', method: 'GET' },
-          { path: '/series', description: 'Series information', method: 'GET' },
-          { path: '/series/search', description: 'Search series', method: 'GET' },
-          { path: '/category', description: 'Category information', method: 'GET' },
-          { path: '/releases', description: 'Economic releases', method: 'GET' }
-        ],
-        authentication: 'API Key required',
-        documentation: 'https://fred.stlouisfed.org/docs/api/',
-        rateLimit: '120 requests per 60 seconds'
-      },
       bls: {
         baseUrl: 'https://api.bls.gov/publicAPI',
         endpoints: [
@@ -1032,18 +877,6 @@ async function listDataSourceEndpoints(dataSourceId: string): Promise<any> {
         authentication: 'API Key required',
         documentation: 'https://docs.dappier.com/',
         rateLimit: 'Plan-based limits'
-      },
-      twelvedata: {
-        baseUrl: 'https://api.twelvedata.com',
-        endpoints: [
-          { path: '/price?symbol={symbol}', description: 'Real-time stock price', method: 'GET' },
-          { path: '/quote?symbol={symbol}', description: 'Real-time quote', method: 'GET' },
-          { path: '/time_series?symbol={symbol}', description: 'Time series data', method: 'GET' },
-          { path: '/profile?symbol={symbol}', description: 'Company profile', method: 'GET' }
-        ],
-        authentication: 'API Key required',
-        documentation: 'https://twelvedata.com/docs',
-        rateLimit: '800 requests per day (free tier)'
       },
       eodhd: {
         baseUrl: 'https://eodhd.com/api',
@@ -1153,16 +986,13 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
 
     const startTime = Date.now()
 
-    // For implemented data sources, do real performance testing
-    if (['polygon', 'yahoo', 'fmp', 'sec_edgar', 'treasury', 'treasury_service', 'fred', 'bls', 'eia', 'twelvedata', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
+    // For implemented data sources, do real performance testing (AUTHORIZED APIs ONLY)
+    if (['yahoo', 'fmp', 'sec_edgar', 'treasury', 'bls', 'eia', 'eodhd', 'eodhd_unicornbay', 'market_indices', 'technical_indicators', 'extended_market', 'reddit'].includes(dataSourceId)) {
       const requests = []
 
       // Get the appropriate API instance
       let apiInstance: any
       switch (dataSourceId) {
-        case 'polygon':
-          apiInstance = new PolygonAPI()
-          break
         case 'yahoo':
           apiInstance = new YahooFinanceAPI()
           break
@@ -1175,20 +1005,11 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
         case 'treasury':
           apiInstance = new TreasuryAPI()
           break
-        case 'treasury_service':
-          apiInstance = new TreasuryService()
-          break
-        case 'fred':
-          apiInstance = new FREDAPI(undefined, timeout, true)
-          break
         case 'bls':
           apiInstance = new BLSAPI(undefined, timeout, true)
           break
         case 'eia':
           apiInstance = new EIAAPI(undefined, timeout, true)
-          break
-        case 'twelvedata':
-          apiInstance = new TwelveDataAPI(undefined, timeout, true)
           break
         case 'eodhd':
           apiInstance = new EODHDAPI(undefined, timeout, true)
@@ -1197,9 +1018,8 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
           apiInstance = new MarketIndicesService()
           break
         case 'extended_market':
-          const perfCache = new RedisCache()
-          const perfPolygonAPI = new PolygonAPI(process.env.POLYGON_API_KEY || '')
-          apiInstance = new ExtendedMarketDataService(perfPolygonAPI, perfCache)
+          // Extended market uses authorized APIs only (FMP/EODHD)
+          apiInstance = new ExtendedMarketDataService(new FinancialModelingPrepAPI() as unknown as any, new RedisCache())
           break
         case 'reddit':
           apiInstance = new RedditAPIEnhanced(undefined, undefined, undefined, timeout, true)
@@ -1207,7 +1027,7 @@ async function testDataSourcePerformance(dataSourceId: string, timeout: number):
       }
 
       // Make 5 rapid requests to test performance
-      const testSymbol = dataSourceId === 'fred' ? 'UNRATE' : dataSourceId === 'bls' ? 'LNS14000000' : dataSourceId === 'eia' ? 'PET.RWTC.D' : 'AAPL'
+      const testSymbol = dataSourceId === 'bls' ? 'LNS14000000' : dataSourceId === 'eia' ? 'PET.RWTC.D' : 'AAPL'
       for (let i = 0; i < 5; i++) {
         if (dataSourceId === 'market_indices') {
           // Market indices service has different methods

@@ -20,6 +20,7 @@ import ESGDataService from '../../../services/financial-data/ESGDataService'
 import ShortInterestService from '../../../services/financial-data/ShortInterestService'
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { toSimpleRecommendation, getRecommendation } from '../../../services/utils/RecommendationUtils'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -435,14 +436,7 @@ function calculateSimpleScore(stock: EnhancedStockData): number {
   return Math.max(0, Math.min(100, score))
 }
 
-/**
- * Get recommendation based on composite score
- */
-function getRecommendation(score: number): 'BUY' | 'SELL' | 'HOLD' {
-  if (score >= 70) return 'BUY'
-  if (score <= 30) return 'SELL'
-  return 'HOLD'
-}
+// REMOVED: getRecommendation() - now using centralized RecommendationUtils
 
 /**
  * Enhance stock data with comprehensive analysis
@@ -661,7 +655,7 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
       // Calculate composite score and recommendation
       const compositeScore = calculateSimpleScore(enhancedStock)
       enhancedStock.compositeScore = compositeScore
-      enhancedStock.recommendation = getRecommendation(compositeScore)
+      enhancedStock.recommendation = toSimpleRecommendation(getRecommendation(compositeScore))
 
       return enhancedStock
     } catch (error) {

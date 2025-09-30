@@ -17,6 +17,7 @@ import ShortInterestService from '../../../services/financial-data/ShortInterest
 import { ExtendedMarketDataService } from '../../../services/financial-data/ExtendedMarketDataService'
 import { VWAPService } from '../../../services/financial-data/VWAPService'
 import { PolygonAPI } from '../../../services/financial-data/PolygonAPI'
+import { toSimpleRecommendation, getRecommendation } from '../../../services/utils/RecommendationUtils'
 
 // Request validation schema - compatible with admin dashboard format
 const AdminAnalysisRequestSchema = z.object({
@@ -330,14 +331,7 @@ function calculateCompositeScore(stock: AdminAnalysisStockData): number {
   return Math.max(0, Math.min(100, score))
 }
 
-/**
- * Get recommendation based on composite score
- */
-function getRecommendation(score: number): 'BUY' | 'SELL' | 'HOLD' {
-  if (score >= 70) return 'BUY'
-  if (score <= 30) return 'SELL'
-  return 'HOLD'
-}
+// REMOVED: getRecommendation() - now using centralized RecommendationUtils
 
 /**
  * Enhanced stock analysis with comprehensive service integration
@@ -506,7 +500,7 @@ async function enhanceStockWithComprehensiveAnalysis(stock: StockData): Promise<
 
   // Calculate composite score and recommendation
   enhancedStock.compositeScore = calculateCompositeScore(enhancedStock)
-  enhancedStock.recommendation = getRecommendation(enhancedStock.compositeScore)
+  enhancedStock.recommendation = toSimpleRecommendation(getRecommendation(enhancedStock.compositeScore))
 
   // Generate insights
   enhancedStock.primaryFactors = ['Technical Analysis', 'Fundamental Data']

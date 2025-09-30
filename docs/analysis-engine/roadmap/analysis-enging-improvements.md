@@ -1,4 +1,4 @@
-# **Short synopsis & high-impact recommendations**
+docs/analysis-engine/roadmap/analysis-enging-improvements.mddocs/analysis-engine/roadmap/analysis-enging-improvements.md# **Short synopsis & high-impact recommendations**
 
 **1\) Define the objective precisely.**  
  Decide exact prediction target(s): 1-day direction, 5-day return, probability of \>X% move, IV change, etc. Different targets need different labels, loss functions, and evaluation metrics (directional accuracy vs. information ratio vs. AUC vs. Sharpe).

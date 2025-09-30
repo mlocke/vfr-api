@@ -76,12 +76,13 @@ export interface SelectionRequest {
 
 /**
  * Enhanced stock result with additional context
+ * PHASE 1 CALIBRATION: 7-tier recommendation system
  */
 export interface EnhancedStockResult {
   symbol: string
   score: StockScore
   weight: number
-  action: 'BUY' | 'SELL' | 'HOLD'
+  action: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
   confidence: number
 
   // Additional context

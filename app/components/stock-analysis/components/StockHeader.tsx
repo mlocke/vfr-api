@@ -20,16 +20,40 @@ const getPriceChange = (stockData: EnhancedStockResult): number => {
 }
 
 const RecommendationBadge: React.FC<{
-  action: 'BUY' | 'SELL' | 'HOLD'
+  action: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL'
   confidence: number
 }> = ({ action, confidence }) => {
   const getActionStyles = () => {
     const styles = {
+      STRONG_BUY: {
+        background: 'linear-gradient(135deg, rgba(0, 230, 64, 1), rgba(0, 180, 50, 1))',
+        border: '2px solid rgba(0, 255, 85, 0.8)',
+        color: 'white',
+        shadow: '0 6px 20px rgba(0, 230, 64, 0.5)'
+      },
       BUY: {
         background: 'linear-gradient(135deg, rgba(0, 200, 83, 0.9), rgba(0, 150, 60, 0.9))',
         border: '1px solid rgba(0, 200, 83, 0.5)',
         color: 'white',
         shadow: '0 4px 12px rgba(0, 200, 83, 0.3)'
+      },
+      MODERATE_BUY: {
+        background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.8), rgba(22, 163, 74, 0.8))',
+        border: '1px solid rgba(34, 197, 94, 0.4)',
+        color: 'white',
+        shadow: '0 4px 12px rgba(34, 197, 94, 0.25)'
+      },
+      HOLD: {
+        background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(200, 150, 0, 0.9))',
+        border: '1px solid rgba(255, 193, 7, 0.5)',
+        color: 'white',
+        shadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
+      },
+      MODERATE_SELL: {
+        background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.8), rgba(234, 88, 12, 0.8))',
+        border: '1px solid rgba(251, 146, 60, 0.4)',
+        color: 'white',
+        shadow: '0 4px 12px rgba(251, 146, 60, 0.25)'
       },
       SELL: {
         background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(200, 40, 40, 0.9))',
@@ -37,11 +61,11 @@ const RecommendationBadge: React.FC<{
         color: 'white',
         shadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
       },
-      HOLD: {
-        background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.9), rgba(200, 150, 0, 0.9))',
-        border: '1px solid rgba(255, 193, 7, 0.5)',
+      STRONG_SELL: {
+        background: 'linear-gradient(135deg, rgba(255, 0, 0, 1), rgba(180, 0, 0, 1))',
+        border: '2px solid rgba(255, 50, 50, 0.8)',
         color: 'white',
-        shadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
+        shadow: '0 6px 20px rgba(255, 0, 0, 0.5)'
       }
     }
     return styles[action]

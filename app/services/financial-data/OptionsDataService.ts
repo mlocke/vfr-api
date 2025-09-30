@@ -16,7 +16,7 @@ interface OptimizedOptionsContract {
   ask: number
   volume: number
   openInterest: number
-  impliedVolatility: number
+  impliedVolatility: number | null  // null indicates missing data
   delta: number
   gamma: number
   theta: number
@@ -593,7 +593,8 @@ export class OptionsDataService {
       ask: contract.ask || 0,
       volume: contract.volume || 0,
       openInterest: contract.openInterest || 0,
-      impliedVolatility: contract.impliedVolatility || 0,
+      // FIX: Don't use 0 for missing IV - use null to indicate no data
+      impliedVolatility: contract.impliedVolatility || null,
       delta: contract.delta || 0,
       gamma: contract.gamma || 0,
       theta: contract.theta || 0,
@@ -720,7 +721,7 @@ export class OptionsDataService {
   private calculateAvgIV(contracts: OptimizedOptionsContract[]): number {
     const validIVs = contracts
       .map(c => c.impliedVolatility)
-      .filter(iv => iv && iv > 0)
+      .filter((iv): iv is number => iv !== null && iv > 0)
 
     return validIVs.length > 0 ?
       validIVs.reduce((sum, iv) => sum + iv, 0) / validIVs.length : 0
