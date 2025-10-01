@@ -276,7 +276,7 @@ export class MLEnhancementOrchestrator {
     if (enableTechnical) {
       promises.push(
         this.executeSafely(
-          () => this.technicalIntegrator.extractTechnicalFeatures(symbol),
+          async () => this.technicalIntegrator.extractTechnicalFeatures(symbol),
           'technical'
         ).then(result => {
           results.technical = result;
@@ -328,13 +328,19 @@ export class MLEnhancementOrchestrator {
     category: string
   ): Promise<{ success: boolean; data?: T; error?: string; latency: number }> {
     const startTime = Date.now();
+    let timeoutId: NodeJS.Timeout | null = null;
 
     try {
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`${category} timeout`)), this.config.timeout)
-      );
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${category} timeout`)), this.config.timeout);
+      });
 
       const data = await Promise.race([fn(), timeoutPromise]);
+
+      // Clear timeout if function completed successfully
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
 
       return {
         success: true,
@@ -342,6 +348,11 @@ export class MLEnhancementOrchestrator {
         latency: Date.now() - startTime
       };
     } catch (error) {
+      // Clear timeout on error
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
       this.logger.warn(`${category} enhancement failed`, { error });
 
       return {
