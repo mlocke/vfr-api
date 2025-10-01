@@ -46,11 +46,22 @@ describe('MLCacheService', () => {
         modelId,
         modelVersion: '1.0',
         horizon,
-        prediction: 0.75,
-        confidence: 0.85,
+        prediction: {
+          direction: 'BUY',
+          confidence: 0.85,
+          expectedReturn: 0.05,
+          probability: 0.75
+        },
+        features: {
+          symbol,
+          features: { momentum: 0.5, volatility: 0.3 },
+          featureNames: ['momentum', 'volatility'],
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.95
+        },
         timestamp: Date.now(),
-        features: { momentum: 0.5, volatility: 0.3 },
-        metadata: { predictionType: 'price_direction', source: 'ml-engine' }
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
       }
 
       // Cache prediction
@@ -61,8 +72,8 @@ describe('MLCacheService', () => {
       const retrieved = await mlCacheService.getCachedPrediction(symbol, horizon, modelId)
       expect(retrieved).toBeTruthy()
       expect(retrieved?.symbol).toBe(symbol)
-      expect(retrieved?.prediction).toBe(0.75)
-      expect(retrieved?.confidence).toBe(0.85)
+      expect(retrieved?.prediction.probability).toBe(0.75)
+      expect(retrieved?.prediction.confidence).toBe(0.85)
     }, 10000)
 
     it('should handle large prediction payloads with compression', async () => {
@@ -81,11 +92,22 @@ describe('MLCacheService', () => {
         modelId,
         modelVersion: '1.0',
         horizon,
-        prediction: 0.65,
-        confidence: 0.90,
+        prediction: {
+          direction: 'BUY',
+          confidence: 0.90,
+          expectedReturn: 0.08,
+          probability: 0.65
+        },
+        features: {
+          symbol,
+          features: largeFeatures,
+          featureNames: Object.keys(largeFeatures),
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.95
+        },
         timestamp: Date.now(),
-        features: largeFeatures,
-        metadata: { predictionType: 'ensemble', source: 'ml-engine' }
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
       }
 
       // Cache large prediction (should compress)
@@ -95,59 +117,52 @@ describe('MLCacheService', () => {
       // Retrieve and verify decompression
       const retrieved = await mlCacheService.getCachedPrediction(symbol, horizon, modelId)
       expect(retrieved).toBeTruthy()
-      expect(retrieved?.features).toEqual(largeFeatures)
-      expect(Object.keys(retrieved?.features || {}).length).toBe(1000)
+      expect(retrieved?.features.features).toEqual(largeFeatures)
+      expect(Object.keys(retrieved?.features.features || {}).length).toBe(1000)
     }, 10000)
 
     it('should batch cache multiple predictions', async () => {
+      const createPrediction = (sym: string, prob: number, conf: number): MLPrediction => ({
+        symbol: sym,
+        modelId: 'batch-model-v1',
+        modelVersion: '1.0',
+        horizon: MLPredictionHorizon.ONE_DAY,
+        prediction: {
+          direction: 'BUY',
+          confidence: conf,
+          expectedReturn: 0.05,
+          probability: prob
+        },
+        features: {
+          symbol: sym,
+          features: { momentum: 0.5 },
+          featureNames: ['momentum'],
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.9
+        },
+        timestamp: Date.now(),
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
+      })
+
       const predictions = [
         {
           symbol: 'AAPL',
           horizon: MLPredictionHorizon.ONE_DAY,
           modelId: 'batch-model-v1',
-          prediction: {
-            symbol: 'AAPL',
-            modelId: 'batch-model-v1',
-            modelVersion: '1.0',
-            horizon: MLPredictionHorizon.ONE_DAY,
-            prediction: 0.75,
-            confidence: 0.85,
-            timestamp: Date.now(),
-            features: {},
-            metadata: {}
-          } as MLPrediction
+          prediction: createPrediction('AAPL', 0.75, 0.85)
         },
         {
           symbol: 'GOOGL',
           horizon: MLPredictionHorizon.ONE_DAY,
           modelId: 'batch-model-v1',
-          prediction: {
-            symbol: 'GOOGL',
-            modelId: 'batch-model-v1',
-            modelVersion: '1.0',
-            horizon: MLPredictionHorizon.ONE_DAY,
-            prediction: 0.68,
-            confidence: 0.82,
-            timestamp: Date.now(),
-            features: {},
-            metadata: {}
-          } as MLPrediction
+          prediction: createPrediction('GOOGL', 0.68, 0.82)
         },
         {
           symbol: 'MSFT',
           horizon: MLPredictionHorizon.ONE_DAY,
           modelId: 'batch-model-v1',
-          prediction: {
-            symbol: 'MSFT',
-            modelId: 'batch-model-v1',
-            modelVersion: '1.0',
-            horizon: MLPredictionHorizon.ONE_DAY,
-            prediction: 0.72,
-            confidence: 0.88,
-            timestamp: Date.now(),
-            features: {},
-            metadata: {}
-          } as MLPrediction
+          prediction: createPrediction('MSFT', 0.72, 0.88)
         }
       ]
 
@@ -320,11 +335,22 @@ describe('MLCacheService', () => {
         modelId,
         modelVersion: '1.0',
         horizon,
-        prediction: 0.65,
-        confidence: 0.80,
+        prediction: {
+          direction: 'HOLD',
+          confidence: 0.80,
+          expectedReturn: 0.02,
+          probability: 0.65
+        },
+        features: {
+          symbol,
+          features: { test: 1.0 },
+          featureNames: ['test'],
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.9
+        },
         timestamp: Date.now(),
-        features: {},
-        metadata: {}
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
       }
 
       // Cache prediction
@@ -385,11 +411,22 @@ describe('MLCacheService', () => {
         modelId,
         modelVersion: '1.0',
         horizon,
-        prediction: 0.70,
-        confidence: 0.85,
+        prediction: {
+          direction: 'BUY',
+          confidence: 0.85,
+          expectedReturn: 0.04,
+          probability: 0.70
+        },
+        features: {
+          symbol,
+          features: { momentum: 0.3 },
+          featureNames: ['momentum'],
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.9
+        },
         timestamp: Date.now(),
-        features: {},
-        metadata: {}
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
       }
 
       // Cache prediction
@@ -431,11 +468,22 @@ describe('MLCacheService', () => {
         modelId,
         modelVersion: '1.0',
         horizon,
-        prediction: 0.80,
-        confidence: 0.90,
+        prediction: {
+          direction: 'BUY',
+          confidence: 0.90,
+          expectedReturn: 0.06,
+          probability: 0.80
+        },
+        features: {
+          symbol,
+          features: { momentum: 0.4 },
+          featureNames: ['momentum'],
+          timestamp: Date.now(),
+          completeness: 1.0,
+          qualityScore: 0.95
+        },
         timestamp: Date.now(),
-        features: {},
-        metadata: {}
+        expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
       }
 
       // Cache prediction
@@ -464,11 +512,22 @@ describe('MLCacheService', () => {
           modelId,
           modelVersion: '1.0',
           horizon,
-          prediction: 0.70,
-          confidence: 0.85,
+          prediction: {
+            direction: 'BUY',
+            confidence: 0.85,
+            expectedReturn: 0.05,
+            probability: 0.70
+          },
+          features: {
+            symbol,
+            features: { momentum: 0.3 },
+            featureNames: ['momentum'],
+            timestamp: Date.now(),
+            completeness: 1.0,
+            qualityScore: 0.9
+          },
           timestamp: Date.now(),
-          features: {},
-          metadata: {}
+          expiresAt: Date.now() + ML_CACHE_TTL.PREDICTION
         }
         await mlCacheService.cachePrediction(symbol, horizon, modelId, prediction)
       }
