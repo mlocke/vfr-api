@@ -352,8 +352,8 @@ export class SentimentAnalysisService {
 
       const indicators: SentimentIndicators = {
         news: finalNewsData,
-        reddit: redditData,
-        options: optionsData,
+        reddit: redditData || undefined,
+        options: optionsData || undefined,
         aggregatedScore,
         confidence,
         lastUpdated: Date.now()
