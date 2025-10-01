@@ -1568,8 +1568,38 @@ export class FinancialDataService implements FinancialDataProvider {
    * TODO: Implement proper historical data fetching from FMP or EODHD
    */
   async getHistoricalOHLC(symbol: string, days = 50): Promise<import('./types').HistoricalOHLC[]> {
-    console.warn(`⚠️ getHistoricalOHLC not yet implemented for ${symbol}`)
-    return []
+    const fmpSource = this.getFMPSource()
+    if (!fmpSource) {
+      this.errorHandler.logger.warn('No FMP data source available for historical OHLC', { symbol })
+      return []
+    }
+
+    try {
+      const historicalData = await (fmpSource.provider as any).getHistoricalData(symbol, days)
+
+      if (!historicalData || historicalData.length === 0) {
+        return []
+      }
+
+      // Convert MarketData to HistoricalOHLC format
+      return historicalData.map((bar: any) => ({
+        symbol: bar.symbol || symbol,
+        date: new Date(bar.timestamp).toISOString(),
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+        source: bar.source || 'fmp'
+      }))
+    } catch (error) {
+      this.errorHandler.logger.error('Failed to fetch historical OHLC data', {
+        symbol,
+        days,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+      return []
+    }
   }
 
   /**
