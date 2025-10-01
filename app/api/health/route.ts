@@ -14,11 +14,47 @@ export async function GET(request: NextRequest) {
     // Get health status
     const health = await serviceInitializer.healthCheck()
 
+    // Check ML services health (optional, non-blocking)
+    let mlServicesHealth = {
+      available: false,
+      services: {},
+      phase: 'Phase 1.4 - API structure only'
+    }
+
+    try {
+      const { MLCacheService } = await import('../../services/ml/cache/MLCacheService')
+
+      // Check ML cache service
+      const mlCache = MLCacheService.getInstance()
+      const mlCacheHealthy = await mlCache.healthCheck()
+
+      mlServicesHealth = {
+        available: true,
+        services: {
+          mlCache: {
+            healthy: mlCacheHealthy.healthy,
+            details: mlCacheHealthy
+          },
+          modelManager: {
+            healthy: true,
+            status: 'not_yet_implemented',
+            phase: 'Phase 3',
+            message: 'Model management will be available in Phase 3'
+          }
+        },
+        phase: 'Phase 1.4 - Partial implementation'
+      }
+    } catch (error) {
+      // ML services not available - this is acceptable (optional enhancement)
+      console.log('ML services not available:', error instanceof Error ? error.message : 'Unknown error')
+    }
+
     const response = {
       success: true,
       timestamp: Date.now(),
       environment: process.env.NODE_ENV,
       services: health,
+      mlServices: mlServicesHealth,
       uptime: process.uptime(),
       memory: {
         used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),

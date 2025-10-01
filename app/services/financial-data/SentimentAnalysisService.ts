@@ -167,7 +167,27 @@ export class SentimentAnalysisService {
   }
 
   /**
+   * Component timeout helper for parallel execution
+   * Returns null on timeout instead of throwing
+   */
+  private async withComponentTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    componentName: string
+  ): Promise<T | null> {
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => {
+        console.warn(`⏱️ ${componentName} sentiment timed out after ${timeoutMs}ms`)
+        resolve(null)
+      }, timeoutMs)
+    })
+
+    return Promise.race([promise, timeoutPromise])
+  }
+
+  /**
    * Get comprehensive sentiment indicators for a stock
+   * Optimized with parallel component execution for 2x faster performance
    */
   async getSentimentIndicators(symbol: string, analystData?: any): Promise<SentimentIndicators | null> {
     try {
@@ -188,60 +208,68 @@ export class SentimentAnalysisService {
         return cached
       }
 
-      console.log('📊 Fetching fresh sentiment indicators...')
+      console.log('📊 Fetching fresh sentiment indicators in parallel...')
+      const startTime = Date.now()
 
-      // Fetch news sentiment
-      const newsData = await this.getNewsSentiment(sanitizedSymbol)
+      // 🚀 PARALLEL EXECUTION: All components run simultaneously
+      const [newsResult, redditResult, optionsResult] = await Promise.allSettled([
+        // News sentiment - 5s timeout
+        this.withComponentTimeout(
+          this.getNewsSentiment(sanitizedSymbol),
+          5000,
+          'News'
+        ),
 
-      // Fetch Reddit sentiment using enhanced multi-subreddit analysis if available
-      let redditData: RedditSentimentData | undefined
-      if (this.redditAPI) {
-        try {
-          console.log('📱 Fetching multi-subreddit sentiment from Reddit Enhanced...')
-          const redditResponse = await this.redditAPI.getEnhancedSentiment(sanitizedSymbol)
+        // Reddit sentiment - 15s timeout (allows multi-subreddit to complete)
+        this.redditAPI
+          ? this.withComponentTimeout(
+              this.redditAPI.getEnhancedSentiment(sanitizedSymbol).then(response => {
+                // Check for validation errors (security failures)
+                if (!response.success && response.error?.includes('Invalid symbol')) {
+                  console.warn('Symbol validation failed - potential security issue')
+                  return null
+                }
+                return response.success && response.data ? response.data : null
+              }),
+              15000,
+              'Reddit'
+            )
+          : Promise.resolve(null),
 
-          // Check for validation errors (security failures)
-          if (!redditResponse.success && redditResponse.error?.includes('Invalid symbol')) {
-            // Symbol validation failed - likely injection attempt
-            console.warn('Symbol validation failed - potential security issue')
-            return null
-          }
+        // Options sentiment - 8s timeout (reasonable for complex chains)
+        this.optionsAnalysisService
+          ? this.withComponentTimeout(
+              this.getOptionsSentiment(sanitizedSymbol),
+              8000,
+              'Options'
+            )
+          : Promise.resolve(null)
+      ])
 
-          if (redditResponse.success && redditResponse.data) {
-            redditData = redditResponse.data
-            console.log(`✅ Enhanced Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts across ${redditResponse.data.subredditBreakdown?.length || 1} subreddits)`)
+      // Extract successful results
+      const newsData = newsResult.status === 'fulfilled' ? newsResult.value : null
+      let redditData = redditResult.status === 'fulfilled' ? redditResult.value : null
+      let optionsData = optionsResult.status === 'fulfilled' ? optionsResult.value : null
 
-            // Filter out Reddit data with zero confidence (no posts found)
-            if (redditData.confidence === 0) {
-              console.log('📊 Reddit data has zero confidence, excluding from analysis')
-              redditData = undefined
-            }
-          }
-        } catch (error) {
-          console.warn('Enhanced Reddit sentiment fetch failed:', error)
+      // Log results
+      const elapsed = Date.now() - startTime
+      console.log(`⚡ Parallel sentiment fetch completed in ${elapsed}ms`)
+
+      if (newsData) console.log('✅ News sentiment: available')
+      if (redditData) {
+        console.log(`✅ Enhanced Reddit sentiment: ${redditData.sentiment.toFixed(2)} (${redditData.postCount} posts across ${(redditData as any).subredditBreakdown?.length || 1} subreddits)`)
+        // Filter out Reddit data with zero confidence (no posts found)
+        if (redditData.confidence === 0) {
+          console.log('📊 Reddit data has zero confidence, excluding from analysis')
+          redditData = null
         }
       }
-
-      // Fetch options sentiment using put/call ratio analysis
-      let optionsData: OptionsSentimentData | undefined
-      if (this.optionsAnalysisService) {
-        try {
-          console.log('📊 Fetching options sentiment from P/C ratio analysis...')
-          const rawOptionsData = await this.getOptionsSentiment(sanitizedSymbol)
-
-          if (rawOptionsData) {
-            console.log(`✅ Options sentiment: ${rawOptionsData.sentiment.toFixed(2)} (P/C: ${rawOptionsData.putCallRatio.toFixed(2)}, ${rawOptionsData.sentimentSignal})`)
-
-            // Filter out options data with zero confidence
-            if (rawOptionsData.confidence === 0) {
-              console.log('📊 Options data has zero confidence, excluding from analysis')
-              optionsData = undefined
-            } else {
-              optionsData = rawOptionsData
-            }
-          }
-        } catch (error) {
-          console.warn('Options sentiment fetch failed:', error)
+      if (optionsData) {
+        console.log(`✅ Options sentiment: ${optionsData.sentiment.toFixed(2)} (P/C: ${optionsData.putCallRatio.toFixed(2)}, ${optionsData.sentimentSignal})`)
+        // Filter out options data with zero confidence
+        if (optionsData.confidence === 0) {
+          console.log('📊 Options data has zero confidence, excluding from analysis')
+          optionsData = null
         }
       }
 

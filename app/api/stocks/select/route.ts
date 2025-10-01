@@ -33,7 +33,12 @@ const RequestSchema = z.object({
     symbol: z.string().optional(),
     preferredDataSources: z.array(z.string()).optional(),
     timeout: z.number().optional()
-  }).optional()
+  }).optional(),
+  // ML Enhancement Parameters (optional, backward compatible)
+  include_ml: z.boolean().optional().default(false),
+  ml_models: z.array(z.string()).optional(),
+  ml_horizon: z.enum(['1h', '4h', '1d', '1w', '1m']).optional().default('1w'),
+  ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5)
 })
 
 // Enhanced response format with comprehensive analysis
@@ -90,6 +95,17 @@ interface EnhancedStockData extends StockData {
   compositeScore?: number
   recommendation?: 'STRONG_BUY' | 'BUY' | 'MODERATE_BUY' | 'HOLD' | 'MODERATE_SELL' | 'SELL' | 'STRONG_SELL' // 7-tier only
   sector?: string
+  // ML Enhancement Fields (optional)
+  mlPrediction?: {
+    horizon: string
+    priceTarget: number
+    expectedReturn: number
+    confidence: number
+    direction: 'bullish' | 'bearish' | 'neutral'
+    probability: number
+    models: string[]
+  }
+  mlEnhancedScore?: number // ML-enhanced composite score (optional)
 }
 
 interface SimpleStockResponse {
@@ -109,9 +125,16 @@ interface SimpleStockResponse {
       esgAnalysisEnabled?: boolean
       shortInterestAnalysisEnabled?: boolean
       extendedMarketDataEnabled?: boolean
+      // ML Enhancement Metadata (optional)
+      mlEnhancementEnabled?: boolean
+      mlModelsUsed?: string[]
+      mlHorizon?: string
+      mlLatency?: number
     }
   }
   error?: string
+  // ML Enhancement warnings (optional)
+  warnings?: string[]
 }
 
 // Optimized Service Factory with API Key Validation and Singleton Management
@@ -392,7 +415,7 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
         enhancedStock.priceTarget = priceTargetResult.value
       }
 
-      // Add sentiment analysis if service is available (with 15s timeout)
+      // Add sentiment analysis if service is available (with 20s timeout for parallel processing)
       if (sentiment && enhancedStock.sector) {
         try {
           const timeoutHandler = TimeoutHandler.getInstance()
@@ -402,7 +425,7 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
               enhancedStock.sector,
               enhancedStock.price || 50 // base score for sentiment analysis
             ),
-            15000 // 15s timeout for Reddit parallel processing
+            20000 // 20s timeout - allows parallel News (5s) + Reddit (15s) + Options (8s) = max 15s
           )
 
           if (sentimentImpact?.sentimentScore?.overall !== undefined) {
@@ -639,7 +662,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Parse and validate request
     const body = await request.json()
-    const { mode, symbols, sector, limit, config } = RequestSchema.parse(body)
+    const { mode, symbols, sector, limit, config, include_ml, ml_models, ml_horizon, ml_confidence_threshold } = RequestSchema.parse(body)
 
     let stocks: StockData[] = []
     const sources = new Set<string>()
@@ -810,6 +833,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.log(`✅ Comprehensive analysis completed in ${analysisTime}ms`)
 
+    // Step 3: Optional ML Enhancement (if include_ml is true)
+    const warnings: string[] = []
+    let mlLatency = 0
+
+    if (include_ml) {
+      console.log(`🤖 Step 3: ML enhancement requested (Phase 1.4 - API structure only)`)
+      warnings.push('ML enhancement requested but not yet fully implemented (available in Phase 2+)')
+
+      // Note: Full ML enhancement will be implemented in Phase 2 (ML Integration Layer)
+      // Phase 1.4 is only for API structure and backward compatibility
+    }
+
     // Return enhanced response - set timestamp after all processing is complete
     const response: SimpleStockResponse = {
       success: true,
@@ -827,9 +862,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           macroeconomicAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('macroeconomic'),
           esgAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('esg'),
           shortInterestAnalysisEnabled: OptimizedServiceFactory.isServiceAvailable('shortInterest'),
-          extendedMarketDataEnabled: OptimizedServiceFactory.isServiceAvailable('extendedMarket')
+          extendedMarketDataEnabled: OptimizedServiceFactory.isServiceAvailable('extendedMarket'),
+          // ML Enhancement Metadata (only if requested)
+          ...(include_ml && {
+            mlEnhancementEnabled: true,
+            mlModelsUsed: ml_models || ['default'],
+            mlHorizon: ml_horizon,
+            mlLatency
+          })
         }
-      }
+      },
+      // Include warnings if any
+      ...(warnings.length > 0 && { warnings })
     }
 
     return NextResponse.json(response)

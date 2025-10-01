@@ -213,7 +213,7 @@ export class RedditAPIEnhanced extends RedditAPI {
       ],
       parallelProcessing: {
         maxConcurrency: 5, // All subreddits can run in parallel
-        timeoutPerRequest: 12000, // Reduced timeout for faster failure detection
+        timeoutPerRequest: 10000, // 10s per subreddit (fits within 15s component timeout)
         retryAttempts: 1 // Single retry for speed
       },
       rateLimiting: {

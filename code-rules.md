@@ -1,6 +1,7 @@
 ### IMPORTANT CODING `RULES`
 - NO ASSUMPTIONS! EVER! EVER! EVER! Do you understand? Ask questions if anything is unclear.
-- Always employ all relevant agents in parallel when possible.
+- Always use relevant agents to do the work.
+- Employ agents in parallel wherever possible.
 - Always follow KISS principles.
 - Do what is necessary, but no more.
 - NEVER create files or folders that are not strictly necessary.

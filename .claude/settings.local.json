@@ -72,7 +72,10 @@
       "WebFetch(domain:developers.google.com)",
       "Bash(mkdir:*)",
       "WebFetch(domain:site.financialmodelingprep.com)",
-      "Bash(redis-cli:*)"
+      "Bash(redis-cli:*)",
+      "Bash(npm run dev:status:*)",
+      "Bash(cat:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []
