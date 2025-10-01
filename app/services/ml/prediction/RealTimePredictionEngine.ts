@@ -158,7 +158,6 @@ export class RealTimePredictionEngine {
       // Initialize dependencies
       await this.modelRegistry.initialize()
       await this.featureStore.initialize()
-      await this.mlCache.connect()
 
       this.initialized = true
       this.logger.info('RealTimePredictionEngine initialized successfully')
@@ -166,19 +165,23 @@ export class RealTimePredictionEngine {
       return {
         success: true,
         data: undefined,
-        source: 'RealTimePredictionEngine',
-        timestamp: Date.now(),
-        cached: false
+        metadata: {
+          latency: Date.now() - Date.now(),
+          cacheHit: false
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       this.logger.error(`Failed to initialize RealTimePredictionEngine: ${errorMessage}`)
-      return ErrorHandler.createResponse(
-        ErrorType.SERVICE_ERROR,
-        ErrorCode.INITIALIZATION_FAILED,
-        'RealTimePredictionEngine',
-        errorMessage
+      const errorHandler = ErrorHandler.getInstance()
+      const errorResponse = errorHandler.createErrorResponse(
+        error,
+        'RealTimePredictionEngine'
       )
+      return {
+        success: false,
+        error: errorResponse.error
+      }
     }
   }
 
@@ -204,9 +207,10 @@ export class RealTimePredictionEngine {
           return {
             success: true,
             data: cached,
-            source: 'RealTimePredictionEngine',
-            timestamp: Date.now(),
-            cached: true
+            metadata: {
+              latency: Date.now() - startTime,
+              cacheHit: true
+            }
           }
         }
         this.statistics.cacheMisses++
@@ -215,12 +219,15 @@ export class RealTimePredictionEngine {
       // Get model (from cache or registry)
       const modelResult = await this.getModel(modelId, horizon)
       if (!modelResult.success || !modelResult.data) {
-        return ErrorHandler.createResponse(
-          ErrorType.SERVICE_ERROR,
-          ErrorCode.NOT_FOUND,
-          'RealTimePredictionEngine',
-          `Model not found: ${modelId || 'default'}`
+        const errorHandler = ErrorHandler.getInstance()
+        const errorResponse = errorHandler.createErrorResponse(
+          new Error(`Model not found: ${modelId || 'default'}`),
+          'RealTimePredictionEngine'
         )
+        return {
+          success: false,
+          error: errorResponse.error
+        }
       }
 
       const model = modelResult.data
@@ -228,12 +235,15 @@ export class RealTimePredictionEngine {
       // Get feature vector (provided or fetch from FeatureStore)
       const featureVector = request.features || await this.getFeatureVector(symbol)
       if (!featureVector) {
-        return ErrorHandler.createResponse(
-          ErrorType.SERVICE_ERROR,
-          ErrorCode.NOT_FOUND,
-          'RealTimePredictionEngine',
-          `Feature vector not found for symbol: ${symbol}`
+        const errorHandler = ErrorHandler.getInstance()
+        const errorResponse = errorHandler.createErrorResponse(
+          new Error(`Feature vector not found for symbol: ${symbol}`),
+          'RealTimePredictionEngine'
         )
+        return {
+          success: false,
+          error: errorResponse.error
+        }
       }
 
       // Perform inference
@@ -256,7 +266,7 @@ export class RealTimePredictionEngine {
 
       // Cache result (if enabled and confidence meets threshold)
       if (this.config.enableCaching && result.confidence >= confidenceThreshold) {
-        await this.cachePrediction(symbol, modelId || model.modelId, horizon, result)
+        await this.cachePrediction(symbol, modelId || model.modelId, result)
       }
 
       // Track metrics
@@ -266,21 +276,25 @@ export class RealTimePredictionEngine {
       return {
         success: true,
         data: result,
-        source: 'RealTimePredictionEngine',
-        timestamp: Date.now(),
-        cached: false
+        metadata: {
+          latency: result.latencyMs,
+          cacheHit: false
+        }
       }
     } catch (error) {
       this.statistics.failures++
       this.trackLatency(Date.now() - startTime)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       this.logger.error(`Prediction failed for ${request.symbol}: ${errorMessage}`)
-      return ErrorHandler.createResponse(
-        ErrorType.SERVICE_ERROR,
-        ErrorCode.UNKNOWN,
-        'RealTimePredictionEngine',
-        errorMessage
+      const errorHandler = ErrorHandler.getInstance()
+      const errorResponse = errorHandler.createErrorResponse(
+        error,
+        'RealTimePredictionEngine'
       )
+      return {
+        success: false,
+        error: errorResponse.error
+      }
     }
   }
 
@@ -339,19 +353,23 @@ export class RealTimePredictionEngine {
       return {
         success: true,
         data: batchResult,
-        source: 'RealTimePredictionEngine',
-        timestamp: Date.now(),
-        cached: false
+        metadata: {
+          latency: totalLatency,
+          cacheHit: cacheHitRate > 0
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       this.logger.error(`Batch prediction failed: ${errorMessage}`)
-      return ErrorHandler.createResponse(
-        ErrorType.SERVICE_ERROR,
-        ErrorCode.UNKNOWN,
-        'RealTimePredictionEngine',
-        errorMessage
+      const errorHandler = ErrorHandler.getInstance()
+      const errorResponse = errorHandler.createErrorResponse(
+        error,
+        'RealTimePredictionEngine'
       )
+      return {
+        success: false,
+        error: errorResponse.error
+      }
     }
   }
 
@@ -364,9 +382,36 @@ export class RealTimePredictionEngine {
     horizon: MLPredictionHorizon
   ): Promise<PredictionResult | null> {
     try {
-      const cacheKey = `${symbol}:${modelId || 'default'}:${horizon}`
-      const cached = await this.mlCache.getPrediction(cacheKey)
-      return cached as PredictionResult | null
+      const cached = await this.mlCache.getCachedPrediction(
+        symbol,
+        horizon,
+        modelId || 'default'
+      )
+
+      if (!cached) {
+        return null
+      }
+
+      // Convert MLPrediction to PredictionResult
+      const result: PredictionResult = {
+        symbol: cached.symbol,
+        modelId: cached.modelId,
+        modelType: this.mapModelType('lightgbm'), // Default type
+        horizon: cached.horizon,
+        prediction: cached.prediction.expectedReturn,
+        confidence: cached.prediction.confidence,
+        direction: cached.prediction.direction === 'BUY' ? 'UP' : cached.prediction.direction === 'SELL' ? 'DOWN' : 'NEUTRAL',
+        probability: {
+          up: cached.prediction.probability,
+          down: 1 - cached.prediction.probability,
+          neutral: 0
+        },
+        latencyMs: 0,
+        fromCache: true,
+        timestamp: cached.timestamp
+      }
+
+      return result
     } catch (error) {
       this.logger.warn(`Cache retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
       return null
@@ -379,12 +424,26 @@ export class RealTimePredictionEngine {
   private async cachePrediction(
     symbol: string,
     modelId: string,
-    horizon: MLPredictionHorizon,
     result: PredictionResult
   ): Promise<void> {
     try {
-      const cacheKey = `${symbol}:${modelId}:${horizon}`
-      await this.mlCache.cachePrediction(cacheKey, result, this.config.cacheTTL)
+      // Convert PredictionResult to MLPrediction format expected by cache
+      const mlPrediction: any = {
+        symbol: result.symbol,
+        modelId: result.modelId,
+        modelVersion: '1.0',
+        horizon: result.horizon,
+        prediction: {
+          direction: result.direction === 'UP' ? 'BUY' : result.direction === 'DOWN' ? 'SELL' : 'HOLD',
+          confidence: result.confidence,
+          expectedReturn: result.prediction,
+          probability: result.confidence
+        },
+        features: {} as any,
+        timestamp: result.timestamp,
+        expiresAt: result.timestamp + this.config.cacheTTL * 1000
+      }
+      await this.mlCache.cachePrediction(symbol, result.horizon, modelId, mlPrediction)
     } catch (error) {
       this.logger.warn(`Cache storage failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
@@ -396,7 +455,7 @@ export class RealTimePredictionEngine {
   private async getModel(modelId: string | undefined, horizon: MLPredictionHorizon): Promise<MLServiceResponse<ModelMetadata>> {
     try {
       if (modelId) {
-        return await this.modelRegistry.getModelById(modelId)
+        return await this.modelRegistry.getModel(modelId)
       }
 
       // Get default deployed model for horizon
@@ -408,35 +467,42 @@ export class RealTimePredictionEngine {
           return {
             success: true,
             data: match,
-            source: 'ModelRegistry',
-            timestamp: Date.now(),
-            cached: false
+            metadata: {
+              latency: 0,
+              cacheHit: false
+            }
           }
         }
         // Fallback to first deployed model
         return {
           success: true,
           data: deployed.data[0],
-          source: 'ModelRegistry',
-          timestamp: Date.now(),
-          cached: false
+          metadata: {
+            latency: 0,
+            cacheHit: false
+          }
         }
       }
 
-      return ErrorHandler.createResponse(
-        ErrorType.SERVICE_ERROR,
-        ErrorCode.NOT_FOUND,
-        'ModelRegistry',
-        'No deployed models available'
+      const errorHandler = ErrorHandler.getInstance()
+      const errorResponse = errorHandler.createErrorResponse(
+        new Error('No deployed models available'),
+        'ModelRegistry'
       )
+      return {
+        success: false,
+        error: errorResponse.error
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      return ErrorHandler.createResponse(
-        ErrorType.SERVICE_ERROR,
-        ErrorCode.UNKNOWN,
-        'ModelRegistry',
-        errorMessage
+      const errorHandler = ErrorHandler.getInstance()
+      const errorResponse = errorHandler.createErrorResponse(
+        error,
+        'ModelRegistry'
       )
+      return {
+        success: false,
+        error: errorResponse.error
+      }
     }
   }
 
@@ -445,9 +511,11 @@ export class RealTimePredictionEngine {
    */
   private async getFeatureVector(symbol: string): Promise<MLFeatureVector | null> {
     try {
-      const result = await this.featureStore.getLatestFeatures([symbol])
-      if (result.success && result.data && result.data.length > 0) {
-        return result.data[0]
+      const result = await this.featureStore.getFeatureMatrix({
+        symbols: [symbol]
+      })
+      if (result.size > 0) {
+        return result.get(symbol) || null
       }
       return null
     } catch (error) {

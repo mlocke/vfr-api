@@ -1564,10 +1564,12 @@ export class FinancialDataService implements FinancialDataProvider {
   }
 
   /**
-   * ⚠️ STUB METHOD - Historical OHLC data not yet implemented in authorized APIs
-   * TODO: Implement proper historical data fetching from FMP or EODHD
+   * Get historical OHLC data from FMP with optional date range
+   * @param symbol Stock symbol
+   * @param days Number of days to retrieve
+   * @param endDate Optional end date (default: today)
    */
-  async getHistoricalOHLC(symbol: string, days = 50): Promise<import('./types').HistoricalOHLC[]> {
+  async getHistoricalOHLC(symbol: string, days = 50, endDate?: Date): Promise<import('./types').HistoricalOHLC[]> {
     const fmpSource = this.getFMPSource()
     if (!fmpSource) {
       this.errorHandler.logger.warn('No FMP data source available for historical OHLC', { symbol })
@@ -1575,7 +1577,7 @@ export class FinancialDataService implements FinancialDataProvider {
     }
 
     try {
-      const historicalData = await (fmpSource.provider as any).getHistoricalData(symbol, days)
+      const historicalData = await (fmpSource.provider as any).getHistoricalData(symbol, days, endDate)
 
       if (!historicalData || historicalData.length === 0) {
         return []
@@ -1596,6 +1598,7 @@ export class FinancialDataService implements FinancialDataProvider {
       this.errorHandler.logger.error('Failed to fetch historical OHLC data', {
         symbol,
         days,
+        endDate: endDate?.toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error'
       })
       return []

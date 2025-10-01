@@ -130,7 +130,9 @@ export class InferenceOptimizer {
         // Limit cache size
         if (this.preprocessingCache.size > 1000) {
           const firstKey = this.preprocessingCache.keys().next().value
-          this.preprocessingCache.delete(firstKey)
+          if (firstKey !== undefined) {
+            this.preprocessingCache.delete(firstKey)
+          }
         }
       }
 

@@ -165,8 +165,9 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
    * Get historical data for a symbol (returns array of daily data)
    * @param symbol Stock symbol
    * @param limit Number of days to retrieve (default: 365)
+   * @param endDate Optional end date for historical data (default: today)
    */
-  async getHistoricalData(symbol: string, limit: number = 365): Promise<MarketData[]> {
+  async getHistoricalData(symbol: string, limit: number = 365, endDate?: Date): Promise<MarketData[]> {
     try {
       if (!this.apiKey) {
         const error = new Error('Financial Modeling Prep API key not configured')
@@ -175,7 +176,23 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
         return []
       }
 
-      const response = await this.makeRequest(`/historical-price-full?symbol=${symbol.toUpperCase()}&limit=${limit}`)
+      // Build URL with optional date range
+      let url = `/historical-price-full/${symbol.toUpperCase()}`
+
+      if (endDate) {
+        // Calculate start date based on limit and endDate
+        const startDate = new Date(endDate)
+        startDate.setDate(startDate.getDate() - limit)
+
+        const fromStr = startDate.toISOString().split('T')[0]
+        const toStr = endDate.toISOString().split('T')[0]
+
+        url += `?from=${fromStr}&to=${toStr}`
+      } else {
+        url += `?limit=${limit}`
+      }
+
+      const response = await this.makeRequest(url)
 
       if (!response.success) {
         const error = new Error(response.error || 'Financial Modeling Prep API request failed')
@@ -207,7 +224,7 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
         'historical_data',
         error,
         undefined,
-        { symbol, limit }
+        { symbol, limit, endDate: endDate?.toISOString() }
       )
       if (this.throwErrors) throw error
       return []
@@ -2189,6 +2206,35 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
     } catch (error) {
       this.errorHandler.logger.logApiError('GET', 'comprehensive_institutional', error, undefined, { symbol })
       return null
+    }
+  }
+
+  /**
+   * Get earnings surprises for a symbol
+   * Returns historical earnings data with actual vs estimated results
+   */
+  async getEarningsSurprises(symbol: string, limit = 60): Promise<{
+    date: string;
+    actualEarningResult: number;
+    estimatedEarning: number;
+  }[]> {
+    try {
+      this.validateApiKey()
+      const normalizedSymbol = this.normalizeSymbol(symbol)
+
+      const response = await this.makeRequest(`/earnings-surprises/${normalizedSymbol}?limit=${limit}`)
+
+      if (!this.validateResponse(response, 'array')) {
+        return []
+      }
+
+      return response.data.map((earnings: any) => ({
+        date: earnings.date || '',
+        actualEarningResult: this.parseNumeric(earnings.actualEarningResult) ?? 0,
+        estimatedEarning: this.parseNumeric(earnings.estimatedEarning) ?? 0
+      }))
+    } catch (error) {
+      return this.handleApiError(error, symbol, 'earnings surprises', [])
     }
   }
 }

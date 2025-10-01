@@ -86,28 +86,30 @@ export class EarlySignalFeatureExtractor {
   }
 
   /**
-   * Get historical OHLC data for the symbol
+   * Get historical OHLC data for the symbol at a specific date
    */
   private async getHistoricalData(symbol: string, asOfDate: Date, days: number): Promise<OHLC[]> {
     try {
-      const historicalData = await this.financialDataService.getHistoricalOHLC(symbol, days)
+      const historicalData = await this.financialDataService.getHistoricalOHLC(symbol, days, asOfDate)
 
       if (!historicalData || historicalData.length === 0) {
-        console.warn(`No historical data available for ${symbol}`)
+        console.warn(`No historical data available for ${symbol} as of ${asOfDate.toISOString().split('T')[0]}`)
         return []
       }
 
-      // Convert to OHLC format
-      return historicalData.map(bar => ({
-        date: new Date(bar.date),
-        open: bar.open,
-        high: bar.high,
-        low: bar.low,
-        close: bar.close,
-        volume: bar.volume
-      }))
+      // Convert to OHLC format and sort chronologically (oldest first)
+      return historicalData
+        .map(bar => ({
+          date: new Date(bar.date),
+          open: bar.open,
+          high: bar.high,
+          low: bar.low,
+          close: bar.close,
+          volume: bar.volume
+        }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
     } catch (error) {
-      console.error(`Failed to get historical data for ${symbol}:`, error)
+      console.error(`Failed to get historical data for ${symbol} as of ${asOfDate.toISOString().split('T')[0]}:`, error)
       return []
     }
   }
@@ -127,9 +129,9 @@ export class EarlySignalFeatureExtractor {
       return {
         symbol,
         date: asOfDate,
-        newsScore: sentiment.sentimentScore?.news || 0,
-        redditScore: sentiment.sentimentScore?.reddit || 0,
-        optionsScore: sentiment.sentimentScore?.options || 0,
+        newsScore: sentiment.sentimentScore?.components?.news || 0,
+        redditScore: sentiment.sentimentScore?.components?.reddit || 0,
+        optionsScore: sentiment.sentimentScore?.components?.options || 0,
         timestamp: Date.now()
       }
     } catch (error) {
@@ -176,7 +178,7 @@ export class EarlySignalFeatureExtractor {
       const technicalResult = await this.technicalService.calculateAllIndicators({
         symbol,
         ohlcData: historicalData.map(d => ({
-          date: d.date.toISOString(),
+          timestamp: d.date.getTime(),
           open: d.open,
           high: d.high,
           low: d.low,
@@ -186,11 +188,11 @@ export class EarlySignalFeatureExtractor {
       })
 
       // Extract RSI momentum and MACD histogram trend
-      const rsi = technicalResult.momentum?.rsi?.value || 50
+      const rsi = technicalResult.momentum?.indicators?.rsi?.value || 50
       const rsiAvg = 50 // TODO: Calculate 14-day average RSI
       const rsiMomentum = rsi - rsiAvg
 
-      const macdHistogram = technicalResult.trend?.macd?.histogram || 0
+      const macdHistogram = technicalResult.trend?.indicators?.macd?.histogram || 0
       const macdHistogramTrend = macdHistogram // TODO: Calculate 5-day slope
 
       return {

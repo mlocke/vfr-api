@@ -24,7 +24,6 @@ describe('RealTimePredictionEngine', () => {
 
     await modelRegistry.initialize()
     await featureStore.initialize()
-    await mlCache.connect()
   }, 30000)
 
   beforeEach(() => {
@@ -41,7 +40,7 @@ describe('RealTimePredictionEngine', () => {
   })
 
   afterAll(async () => {
-    await mlCache.disconnect()
+    // MLCacheService cleanup is handled automatically
   }, 10000)
 
   describe('Initialization', () => {
@@ -84,7 +83,7 @@ describe('RealTimePredictionEngine', () => {
       })
 
       // Store test features
-      await featureStore.storeFeatures([
+      await featureStore.storeBulkFeatures([
         {
           ticker: 'AAPL',
           timestamp: Date.now(),
@@ -140,7 +139,7 @@ describe('RealTimePredictionEngine', () => {
       const result = await engine.predict(request)
 
       expect(result.success).toBe(true)
-      expect(result.cached).toBe(true)
+      expect(result.metadata?.cacheHit).toBe(true)
       if (result.data) {
         expect(result.data.latencyMs).toBeLessThan(100)
       }
@@ -236,7 +235,7 @@ describe('RealTimePredictionEngine', () => {
         }
       ])
 
-      await featureStore.storeFeatures(features)
+      await featureStore.storeBulkFeatures(features)
     }, 30000)
 
     test('should process batch predictions successfully', async () => {
@@ -358,7 +357,7 @@ describe('RealTimePredictionEngine', () => {
       })
 
       // Store features
-      await featureStore.storeFeatures([
+      await featureStore.storeBulkFeatures([
         {
           ticker: 'PERF',
           timestamp: Date.now(),
@@ -475,7 +474,7 @@ describe('RealTimePredictionEngine', () => {
         status: ModelStatus.DEPLOYED
       })
 
-      await featureStore.storeFeatures([
+      await featureStore.storeBulkFeatures([
         {
           ticker: 'CACHE',
           timestamp: Date.now(),
@@ -497,11 +496,11 @@ describe('RealTimePredictionEngine', () => {
 
       // First prediction
       const firstResult = await engine.predict(request)
-      expect(firstResult.cached).toBe(false)
+      expect(firstResult.metadata?.cacheHit).toBe(false)
 
       // Second prediction (should be cached)
       const secondResult = await engine.predict(request)
-      expect(secondResult.cached).toBe(true)
+      expect(secondResult.metadata?.cacheHit).toBe(true)
     }, 15000)
 
     test('should improve cache hit rate over time', async () => {

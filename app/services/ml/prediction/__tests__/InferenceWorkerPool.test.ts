@@ -102,7 +102,7 @@ describe('InferenceWorkerPool', () => {
 
       expect(callbackExecuted).toBe(true)
       expect(resultReceived).toBeDefined()
-      expect(resultReceived?.taskId).toBe('callback_test')
+      expect(resultReceived!.taskId).toBe('callback_test')
     })
 
     test('should handle multiple concurrent tasks', async () => {

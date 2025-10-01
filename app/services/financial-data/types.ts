@@ -357,7 +357,7 @@ export interface FinancialDataProvider {
   getStockPrice(symbol: string): Promise<StockData | null>
   getCompanyInfo(symbol: string): Promise<CompanyInfo | null>
   getMarketData(symbol: string): Promise<MarketData | null>
-  getHistoricalOHLC?(symbol: string, days?: number): Promise<HistoricalOHLC[]>
+  getHistoricalOHLC?(symbol: string, days?: number, endDate?: Date): Promise<HistoricalOHLC[]>
   getFundamentalRatios?(symbol: string): Promise<FundamentalRatios | null>
   getAnalystRatings?(symbol: string): Promise<AnalystRatings | null>
   getPriceTargets?(symbol: string): Promise<PriceTarget | null>
