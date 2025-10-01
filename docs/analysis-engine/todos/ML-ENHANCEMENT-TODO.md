@@ -1,13 +1,14 @@
 # VFR ML Enhancement - Comprehensive Modular Implementation TODO
 
-**Status**: Phase 1.3 Complete - Redis Cache Extensions with ML Performance Monitoring Established
+**Status**: Phase 1.4 Complete - Enhanced API Endpoints with ML Integration Structure
 **Approach**: Modular Enhancement Layer (Not Replacement)
 **Philosophy**: Extend VFR's proven functionality with optional ML insights
 **Timeline**: 12-16 weeks phased implementation
-**Last Updated**: 2025-09-30
+**Last Updated**: 2025-10-01
 **Phase 1.1 Completion**: 2025-09-30 (Database Foundation)
 **Phase 1.2 Completion**: 2025-09-30 (ML Service Structure)
 **Phase 1.3 Completion**: 2025-09-30 (Redis Cache Extensions)
+**Phase 1.4 Completion**: 2025-10-01 (Enhanced API Endpoints)
 
 ---
 
@@ -23,7 +24,8 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ **Phase 1.1 COMPLETE** (2025-09-30): Database foundation established with 8 tables, 32 indexes, and excellent performance (2ms feature retrieval)
 - ✅ **Phase 1.2 COMPLETE** (2025-09-30): Modular ML service structure created with 6 core services, 400+ lines of type definitions, and 74.24% test coverage
 - ✅ **Phase 1.3 COMPLETE** (2025-09-30): Redis cache extensions fully implemented with 2,097 lines of production code - ML-specific caching patterns, automatic compression, batch operations, cache warming, and comprehensive performance monitoring
-- 📍 **Next Step**: Phase 1.4 - Enhanced API Endpoints (Days 9-10)
+- ✅ **Phase 1.4 COMPLETE** (2025-10-01): Enhanced API endpoints with ML integration structure - backward-compatible ML parameters in /api/stocks/select, comprehensive ML health monitoring, and Phase 2+ endpoint scaffolding with clear implementation notices
+- 📍 **Next Step**: Phase 2.1 - Technical Feature Integration (Days 11-13)
 
 ---
 
@@ -198,35 +200,47 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 
 ---
 
-### 1.4 Enhanced API Endpoints (Days 9-10)
-- [ ] **Enhance `/api/stocks/select`** with optional ML parameters
-  - [ ] Add `include_ml` boolean parameter (default: false)
-  - [ ] Add `ml_models` array parameter (optional model selection)
-  - [ ] Add `ml_horizon` parameter ('1h' | '4h' | '1d' | '1w' | '1m')
-  - [ ] Add `ml_confidence_threshold` parameter
-  - [ ] Preserve all existing request/response formats
-- [ ] **Enhance `/api/health`** with ML service status
-- [ ] **Enhance `/api/admin/data-sources`** with ML monitoring
-- [ ] **Add new `/api/ml/*` endpoints** for ML-specific operations
-  - [ ] `/api/ml/predict` - Direct ML predictions
-  - [ ] `/api/ml/models` - Model management
-  - [ ] `/api/ml/health` - ML service health
-- [ ] **Implement backward-compatible response format**
+### 1.4 Enhanced API Endpoints (Days 9-10) ✅ COMPLETED 2025-10-01
+- [x] **Enhance `/api/stocks/select`** with optional ML parameters
+  - [x] Add `include_ml` boolean parameter (default: false)
+  - [x] Add `ml_models` array parameter (optional model selection)
+  - [x] Add `ml_horizon` parameter ('1h' | '4h' | '1d' | '1w' | '1m', default: '1w')
+  - [x] Add `ml_confidence_threshold` parameter (default: 0.5)
+  - [x] Preserve all existing request/response formats
+- [x] **Enhance `/api/health`** with ML service status
+- [x] **Enhance `/api/admin/data-sources`** with ML monitoring
+- [x] **Add new `/api/ml/*` endpoints** for ML-specific operations
+  - [x] `/api/ml/predict` - Direct ML predictions (Phase 2+ implementation notice)
+  - [x] `/api/ml/models` - Model management (Phase 3 implementation notice)
+  - [x] `/api/ml/health` - ML service health (comprehensive checks)
+- [x] **Implement backward-compatible response format**
 
-**Files to Modify**:
-- `app/api/stocks/select/route.ts` (enhance, don't replace)
-- `app/api/health/route.ts` (add ML status)
-- `app/api/admin/data-sources/route.ts` (add ML monitoring)
+**Files Modified**:
+- `app/api/stocks/select/route.ts` ✅ (enhanced with optional ML parameters)
+- `app/api/health/route.ts` ✅ (added ML service health monitoring)
+- `app/api/admin/data-sources/route.ts` ✅ (added ML performance statistics)
 
-**Files to Create**:
-- `app/api/ml/predict/route.ts`
-- `app/api/ml/models/route.ts`
-- `app/api/ml/health/route.ts`
+**Files Created**:
+- `app/api/ml/predict/route.ts` ✅ (POST endpoint with validation, returns 501 with Phase 2+ notice)
+- `app/api/ml/models/route.ts` ✅ (GET/POST endpoints, returns Phase 3 implementation notice)
+- `app/api/ml/health/route.ts` ✅ (comprehensive ML service health check)
 
-**Success Criteria**:
-- All existing API contracts unchanged
-- New ML parameters are optional
-- Graceful fallback when ML unavailable
+**Success Criteria** (All Met ✅):
+- ✅ All existing API contracts unchanged
+- ✅ New ML parameters are optional with sensible defaults
+- ✅ Graceful fallback when ML unavailable
+- ✅ TypeScript type-check passing
+- ✅ Backward-compatible response formats
+- ✅ KISS principles followed
+- ✅ Zero breaking changes
+
+**Implementation Details**:
+- **ML Parameter Defaults**: `include_ml=false`, `ml_horizon='1w'`, `ml_confidence_threshold=0.5`
+- **Phase 1.4 Scope**: API structure only - full ML functionality in Phase 2+
+- **Non-Blocking Integration**: ML service checks are non-blocking and gracefully degrade
+- **Clear Messaging**: New endpoints return 501 (Not Implemented) with clear Phase 2+ implementation roadmap
+- **MLCacheService Integration**: Health endpoint monitors ML cache performance
+- **Admin Dashboard Ready**: ML performance statistics available in data sources endpoint
 
 ---
 

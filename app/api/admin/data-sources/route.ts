@@ -47,12 +47,37 @@ export async function GET(request: NextRequest) {
       dataSources = dataSources.filter(dataSource => dataSource.category === category)
     }
 
+    // Get ML service statistics (optional, non-blocking)
+    let mlStats = null
+    try {
+      const { MLPerformanceCacheService } = await import('../../../services/ml/cache/MLPerformanceCacheService')
+
+      const mlPerformanceCache = MLPerformanceCacheService.getInstance()
+
+      mlStats = {
+        models: {
+          total: 0,
+          status: 'not_yet_implemented',
+          phase: 'Phase 3',
+          message: 'Model management will be available in Phase 3'
+        },
+        performance: {
+          cacheHitRate: await mlPerformanceCache.getCachePerformance(),
+          systemPerformance: await mlPerformanceCache.getSystemPerformance()
+        }
+      }
+    } catch (error) {
+      // ML services not available - this is acceptable (optional enhancement)
+      console.log('ML statistics not available:', error instanceof Error ? error.message : 'Unknown error')
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         dataSources,
         totalCount: dataSources.length,
-        filters: { type, category }
+        filters: { type, category },
+        mlServices: mlStats
       }
     })
 
