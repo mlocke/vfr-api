@@ -1,0 +1,4 @@
+symbol,date,price_change_5d,price_change_10d,price_change_20d,volume_ratio,volume_trend,sentiment_news_delta,sentiment_reddit_accel,sentiment_options_shift,earnings_surprise,revenue_growth_accel,analyst_coverage_change,rsi_momentum,macd_histogram_trend,label
+AAPL,2024-08-01,0,0,0,1,0,0.5,0.33692000000000005,0.828795683946775,0,0,0,0,0,1
+MSFT,2024-07-30,0,0,0,1,0,0.5,0.45616999999999996,0.8610074471336872,0,0,0,0,0,1
+GOOGL,2024-07-23,0,0,0,1,0,0.5,0.7268753333333333,0.6392575043620901,0,0,0,0,0,1
