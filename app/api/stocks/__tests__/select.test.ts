@@ -778,4 +778,186 @@ describe('Enhanced Stock Selection API', () => {
       console.log(`✅ Memory management: ${memoryIncreaseMB.toFixed(1)}MB increase after ${symbols.length} analyses`)
     }, 60000)
   })
+
+  describe('Early Signal Detection Integration (Phase 4)', () => {
+    test('should accept include_early_signal parameter', async () => {
+      const symbol = TEST_SYMBOLS.largeCap[0] // AAPL
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: true
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      expect(response.status).toBe(200)
+      expect(result.success).toBe(true)
+      expect(result.data.metadata.early_signal_enabled).toBe(true)
+      expect(typeof result.data.metadata.early_signal_latency_ms).toBe('number')
+
+      console.log(`✅ Early signal parameter accepted, latency: ${result.data.metadata.early_signal_latency_ms}ms`)
+    }, 30000)
+
+    test('should return early_signal field when requested', async () => {
+      const symbol = TEST_SYMBOLS.largeCap[1] // MSFT
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: true
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      expect(result.success).toBe(true)
+      const stock = result.data.stocks[0]
+
+      if (stock.early_signal) {
+        expect(typeof stock.early_signal.upgrade_likely).toBe('boolean')
+        expect(typeof stock.early_signal.confidence).toBe('number')
+        expect(stock.early_signal.confidence).toBeGreaterThanOrEqual(0)
+        expect(stock.early_signal.confidence).toBeLessThanOrEqual(1)
+        expect(stock.early_signal.horizon).toBe('2_weeks')
+        expect(Array.isArray(stock.early_signal.reasoning)).toBe(true)
+        expect(stock.early_signal.model_version).toBeDefined()
+
+        console.log(`✅ ${symbol} early signal: ${stock.early_signal.upgrade_likely ? 'UPGRADE' : 'NO UPGRADE'} (confidence=${(stock.early_signal.confidence * 100).toFixed(1)}%)`)
+      } else {
+        console.log(`✅ ${symbol} early signal: Low confidence prediction skipped`)
+      }
+    }, 30000)
+
+    test('should be backward compatible when include_early_signal is false', async () => {
+      const symbol = TEST_SYMBOLS.largeCap[2] // GOOGL
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: false
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      expect(result.success).toBe(true)
+      expect(result.data.metadata.early_signal_enabled).toBeUndefined()
+      expect(result.data.metadata.early_signal_latency_ms).toBeUndefined()
+
+      const stock = result.data.stocks[0]
+      expect(stock.early_signal).toBeUndefined()
+
+      console.log(`✅ ${symbol} backward compatibility: No early signal when disabled`)
+    }, 20000)
+
+    test('should handle multiple stocks with early signal predictions', async () => {
+      const symbols = TEST_SYMBOLS.largeCap.slice(0, 3) // AAPL, MSFT, GOOGL
+      const request = createRequest({
+        mode: 'multiple',
+        symbols: symbols,
+        include_early_signal: true
+      })
+
+      const startTime = Date.now()
+      const response = await POST(request)
+      const analysisTime = Date.now() - startTime
+      const result = await parseResponse(response)
+
+      expect(result.success).toBe(true)
+      expect(result.data.metadata.early_signal_enabled).toBe(true)
+      expect(typeof result.data.metadata.early_signal_latency_ms).toBe('number')
+
+      let predictionsCount = 0
+      result.data.stocks.forEach((stock: any) => {
+        if (stock.early_signal) {
+          expect(typeof stock.early_signal.upgrade_likely).toBe('boolean')
+          expect(typeof stock.early_signal.confidence).toBe('number')
+          predictionsCount++
+        }
+      })
+
+      console.log(`✅ Multiple stocks early signal: ${predictionsCount}/${symbols.length} predictions, total time: ${analysisTime}ms, early signal latency: ${result.data.metadata.early_signal_latency_ms}ms`)
+    }, 45000)
+
+    test('should complete early signal predictions within performance target', async () => {
+      const symbol = TEST_SYMBOLS.techGrowth[0] // TSLA
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: true
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      expect(result.success).toBe(true)
+      expect(result.data.metadata.early_signal_latency_ms).toBeDefined()
+
+      // Performance target: <5s without cache (first call may be slower due to model loading)
+      // <100ms with cache (subsequent calls)
+      expect(result.data.metadata.early_signal_latency_ms).toBeLessThan(6000)
+
+      console.log(`✅ ${symbol} early signal performance: ${result.data.metadata.early_signal_latency_ms}ms (target: <5s first call, <100ms cached)`)
+    }, 35000)
+
+    test('should handle early signal errors gracefully', async () => {
+      const symbol = TEST_SYMBOLS.invalid[0] // Invalid symbol
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: true
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      // Should not crash even with invalid symbol
+      expect([200, 400, 500]).toContain(response.status)
+
+      // If successful, early signal should be absent for invalid stock
+      if (result.success && result.data.stocks.length > 0) {
+        const stock = result.data.stocks[0]
+        // Early signal should be undefined for invalid symbols
+        expect(stock.early_signal).toBeUndefined()
+      }
+
+      console.log(`✅ Early signal error handling: Invalid symbol handled gracefully`)
+    }, 20000)
+
+    test('should validate early signal data structure', async () => {
+      const symbol = TEST_SYMBOLS.largeCap[3] // AMZN
+      const request = createRequest({
+        mode: 'single',
+        symbols: [symbol],
+        include_early_signal: true
+      })
+
+      const response = await POST(request)
+      const result = await parseResponse(response)
+
+      expect(result.success).toBe(true)
+      const stock = result.data.stocks[0]
+
+      if (stock.early_signal) {
+        // Validate complete data structure
+        expect(stock.early_signal).toHaveProperty('upgrade_likely')
+        expect(stock.early_signal).toHaveProperty('confidence')
+        expect(stock.early_signal).toHaveProperty('horizon')
+        expect(stock.early_signal).toHaveProperty('reasoning')
+        expect(stock.early_signal).toHaveProperty('model_version')
+        expect(stock.early_signal).toHaveProperty('features_used')
+        expect(stock.early_signal).toHaveProperty('timestamp')
+
+        // Validate data types
+        expect(typeof stock.early_signal.upgrade_likely).toBe('boolean')
+        expect(typeof stock.early_signal.confidence).toBe('number')
+        expect(typeof stock.early_signal.horizon).toBe('string')
+        expect(Array.isArray(stock.early_signal.reasoning)).toBe(true)
+        expect(typeof stock.early_signal.model_version).toBe('string')
+        expect(Array.isArray(stock.early_signal.features_used)).toBe(true)
+        expect(typeof stock.early_signal.timestamp).toBe('number')
+
+        console.log(`✅ ${symbol} early signal data structure validated`)
+      }
+    }, 30000)
+  })
 })

@@ -23,6 +23,7 @@ import { FinancialModelingPrepAPI } from '../../../services/financial-data/Finan
 import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 import { TimeoutHandler } from '../../../services/error-handling/TimeoutHandler'
 import { EarlySignalService } from '../../../services/ml/early-signal/EarlySignalService'
+import { EarlySignalPrediction } from '../../../services/ml/early-signal/types'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -110,16 +111,7 @@ interface EnhancedStockData extends StockData {
   }
   mlEnhancedScore?: number // ML-enhanced composite score (optional)
   // Early Signal Detection (NEW - Phase 4)
-  early_signal?: {
-    upgrade_likely: boolean
-    downgrade_likely: boolean
-    confidence: number
-    horizon: string
-    reasoning: string[]
-    feature_importance: Record<string, number>
-    prediction_timestamp: number
-    model_version: string
-  }
+  early_signal?: EarlySignalPrediction
 }
 
 interface SimpleStockResponse {
