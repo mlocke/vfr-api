@@ -153,8 +153,86 @@ export class DataSourceConfigManager {
       features: ['energy_prices', 'oil_data', 'natural_gas', 'electricity_data']
     })
 
+    // Commercial Data Sources (Paid APIs)
+    this.dataSources.set('fmp', {
+      id: 'fmp',
+      name: 'Financial Modeling Prep API (Starter Plan)',
+      type: 'commercial',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://financialmodelingprep.com/api/v3',
+      hasApiKey: !!process.env.FMP_API_KEY,
+      requiresAuth: true,
+      rateLimit: 18000, // 300 calls/min = 18,000/hour
+      timeout: 8000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['stock_quotes', 'company_profiles', 'fundamentals', 'financial_statements', 'analyst_ratings', 'earnings', 'dividends', 'splits']
+    })
 
-    // Commercial Data Sources - FMP and EODHD (Authorized APIs)
+    this.dataSources.set('eodhd', {
+      id: 'eodhd',
+      name: 'EODHD API',
+      type: 'commercial',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://eodhistoricaldata.com/api',
+      hasApiKey: !!process.env.EODHD_API_KEY,
+      requiresAuth: true,
+      rateLimit: 100000,
+      timeout: 8000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['eod_data', 'real_time_quotes', 'fundamentals', 'historical_data', 'company_info']
+    })
+
+    this.dataSources.set('eodhd_unicornbay', {
+      id: 'eodhd_unicornbay',
+      name: 'EODHD UnicornBay Options',
+      type: 'commercial',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://eodhistoricaldata.com/api/options',
+      hasApiKey: !!process.env.EODHD_API_KEY,
+      requiresAuth: true,
+      rateLimit: 100000,
+      timeout: 15000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['options_chains', 'advanced_greeks', 'implied_volatility_surface', '40+_options_fields', 'moneyness_ratio', 'theoretical_price']
+    })
+
+    this.dataSources.set('twelvedata', {
+      id: 'twelvedata',
+      name: 'TwelveData API',
+      type: 'commercial',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://api.twelvedata.com',
+      hasApiKey: !!process.env.TWELVEDATA_API_KEY,
+      requiresAuth: true,
+      rateLimit: 300,
+      timeout: 8000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['real_time_data', 'technical_indicators', 'time_series', 'forex', 'crypto']
+    })
+
+    this.dataSources.set('polygon', {
+      id: 'polygon',
+      name: 'Polygon.io API',
+      type: 'commercial',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://api.polygon.io',
+      hasApiKey: !!process.env.POLYGON_API_KEY,
+      requiresAuth: true,
+      rateLimit: 1000,
+      timeout: 5000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['real_time_market_data', 'aggregates', 'trades', 'quotes', 'snapshots']
+    })
 
     // Free Stock Data Sources
     this.dataSources.set('yahoo', {
@@ -172,6 +250,83 @@ export class DataSourceConfigManager {
       category: 'stock_data',
       features: ['stock_quotes', 'historical_data', 'news', 'earnings', 'market_summary']
     })
+
+    // Service Layer Data Sources (Internal Services)
+    this.dataSources.set('options', {
+      id: 'options',
+      name: 'Options Data Service',
+      type: 'free',
+      status: 'online',
+      enabled: true,
+      hasApiKey: false,
+      requiresAuth: false,
+      rateLimit: 100,
+      timeout: 15000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['options_chains', 'put_call_ratios', 'options_analysis', 'greeks', 'implied_volatility']
+    })
+
+    this.dataSources.set('enhanced', {
+      id: 'enhanced',
+      name: 'Enhanced Data Service',
+      type: 'free',
+      status: 'online',
+      enabled: true,
+      hasApiKey: false,
+      requiresAuth: false,
+      rateLimit: 500,
+      timeout: 15000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['smart_data_source_switching', 'fallback_strategies', 'data_aggregation']
+    })
+
+    this.dataSources.set('technical_indicators', {
+      id: 'technical_indicators',
+      name: 'Technical Indicators Service',
+      type: 'free',
+      status: 'online',
+      enabled: true,
+      hasApiKey: false,
+      requiresAuth: false,
+      rateLimit: 1000,
+      timeout: 5000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['50+_technical_indicators', 'moving_averages', 'rsi', 'macd', 'bollinger_bands', 'stochastic']
+    })
+
+    this.dataSources.set('reddit', {
+      id: 'reddit',
+      name: 'Reddit WSB Sentiment API',
+      type: 'free',
+      status: 'online',
+      enabled: true,
+      endpoint: 'https://www.reddit.com/r/wallstreetbets',
+      hasApiKey: false,
+      requiresAuth: false,
+      rateLimit: 300,
+      timeout: 8000,
+      retryAttempts: 3,
+      category: 'web_intelligence',
+      features: ['wallstreetbets_sentiment', 'social_mentions', 'trending_stocks', 'community_sentiment']
+    })
+
+    this.dataSources.set('extended_market', {
+      id: 'extended_market',
+      name: 'Extended Market Data Service',
+      type: 'free',
+      status: 'online',
+      enabled: true,
+      hasApiKey: false,
+      requiresAuth: false,
+      rateLimit: 500,
+      timeout: 8000,
+      retryAttempts: 3,
+      category: 'stock_data',
+      features: ['pre_market_data', 'post_market_data', 'bid_ask_spreads', 'extended_hours_trading']
+    })
   }
 
   /**
@@ -185,14 +340,38 @@ export class DataSourceConfigManager {
         persistedState.enabledDataSources.forEach(id => this.enabledDataSources.add(id))
         console.log('✅ Loaded data source states from persistent storage:', persistedState.enabledDataSources)
       } else {
-        // Initialize with safe defaults - only government and free sources enabled
+        // Initialize with safe defaults - government, free, and service layer sources enabled
+        // Commercial APIs require valid API keys to be enabled by default
         this.enabledDataSources.add('sec_edgar')
         this.enabledDataSources.add('treasury')
         this.enabledDataSources.add('fred')
         this.enabledDataSources.add('bls')
         this.enabledDataSources.add('eia')
         this.enabledDataSources.add('yahoo')
-        console.log('🔧 Initialized default data source states (government and free sources enabled)')
+
+        // Enable commercial APIs if they have valid API keys
+        if (process.env.FMP_API_KEY) {
+          this.enabledDataSources.add('fmp')
+        }
+        if (process.env.EODHD_API_KEY) {
+          this.enabledDataSources.add('eodhd')
+          this.enabledDataSources.add('eodhd_unicornbay')
+        }
+        if (process.env.TWELVEDATA_API_KEY) {
+          this.enabledDataSources.add('twelvedata')
+        }
+        if (process.env.POLYGON_API_KEY) {
+          this.enabledDataSources.add('polygon')
+        }
+
+        // Enable internal service layer sources (always available)
+        this.enabledDataSources.add('options')
+        this.enabledDataSources.add('enhanced')
+        this.enabledDataSources.add('technical_indicators')
+        this.enabledDataSources.add('reddit')
+        this.enabledDataSources.add('extended_market')
+
+        console.log('🔧 Initialized default data source states:', Array.from(this.enabledDataSources))
         this.savePersistedState()
       }
     } catch (error) {
