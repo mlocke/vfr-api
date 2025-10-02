@@ -344,7 +344,7 @@ export default function MLMonitoringPanel() {
               background: activeTab === tab ? 'rgba(99, 102, 241, 0.3)' : 'rgba(255, 255, 255, 0.1)',
               border: activeTab === tab ? '1px solid rgba(99, 102, 241, 0.5)' : '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '8px',
-              color: activeTab === tab ? 'rgba(99, 102, 241, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+              color: activeTab === tab ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.7)',
               fontSize: '0.9rem',
               fontWeight: '500',
               cursor: 'pointer',
@@ -431,7 +431,7 @@ export default function MLMonitoringPanel() {
                   gridTemplateColumns: '1fr 1fr',
                   gap: '0.5rem',
                   fontSize: '0.8rem',
-                  color: 'rgba(255, 255, 255, 0.6)'
+                  color: 'rgba(255, 255, 255, 0.9)'
                 }}>
                   <div>Response: {service.responseTime ? `${service.responseTime}ms` : 'N/A'}</div>
                   <div>Success: {service.successRate ? `${(service.successRate * 100).toFixed(1)}%` : 'N/A'}</div>
@@ -451,10 +451,10 @@ export default function MLMonitoringPanel() {
                       key={feature}
                       style={{
                         padding: '0.25rem 0.5rem',
-                        background: 'rgba(99, 102, 241, 0.2)',
+                        background: 'rgba(99, 102, 241, 0.3)',
                         borderRadius: '4px',
                         fontSize: '0.7rem',
-                        color: 'rgba(99, 102, 241, 0.9)'
+                        color: 'rgba(255, 255, 255, 0.95)'
                       }}
                     >
                       {feature.replace(/_/g, ' ')}
@@ -466,7 +466,7 @@ export default function MLMonitoringPanel() {
                       background: 'rgba(255, 255, 255, 0.1)',
                       borderRadius: '4px',
                       fontSize: '0.7rem',
-                      color: 'rgba(255, 255, 255, 0.6)'
+                      color: 'rgba(255, 255, 255, 0.9)'
                     }}>
                       +{service.features.length - 3} more
                     </span>

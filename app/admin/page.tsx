@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import AdminStatusMonitor from "../components/AdminStatusMonitor";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
 import MLMonitoringPanel from "../components/admin/MLMonitoringPanel";
 
@@ -567,12 +566,6 @@ export default function AdminDashboard() {
 				{/* Main Dashboard Content */}
 				<section style={{ padding: "2rem 1rem", position: "relative", zIndex: 2 }}>
 					<div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-						{/* Status Monitor Widget */}
-						<AdminStatusMonitor
-							dataSources={dataSourceConfigs.map(ds => ds.id)}
-							updateInterval={3000}
-						/>
-
 						{/* Dashboard Header */}
 						<div
 							style={{
