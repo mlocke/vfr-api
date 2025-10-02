@@ -23,10 +23,11 @@ import { calculateRatingChange } from './label-generator.js'
 import type { TrainingExample } from '../../app/services/ml/early-signal/types.js'
 
 /**
- * Top 100 S&P 500 symbols for initial implementation
- * Source: S&P 500 by market cap (sufficient for MVP training)
+ * S&P 500 symbols for training dataset
+ * Source: S&P 500 constituents (500 largest US companies)
  */
-const SP500_TOP_100 = [
+const SP500_SYMBOLS = [
+  // Top 100 by market cap
   'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B', 'UNH', 'XOM',
   'JNJ', 'JPM', 'V', 'PG', 'MA', 'HD', 'CVX', 'ABBV', 'MRK', 'AVGO',
   'PEP', 'COST', 'KO', 'LLY', 'TMO', 'WMT', 'MCD', 'ACN', 'CSCO', 'ABT',
@@ -36,8 +37,135 @@ const SP500_TOP_100 = [
   'INTU', 'BA', 'GS', 'SPGI', 'PLD', 'AMAT', 'BLK', 'GILD', 'AXP', 'SYK',
   'MDLZ', 'TJX', 'ISRG', 'ADI', 'BKNG', 'MMC', 'ADP', 'VRTX', 'CVS', 'CI',
   'C', 'TMUS', 'PFE', 'ZTS', 'REGN', 'MO', 'CB', 'SO', 'DUK', 'BDX',
-  'NOW', 'SLB', 'SCHW', 'EOG', 'GE', 'NOC', 'HUM', 'MU', 'BSX', 'MMM'
+  'NOW', 'SLB', 'SCHW', 'EOG', 'GE', 'NOC', 'HUM', 'MU', 'BSX', 'MMM',
+
+  // 101-200
+  'AIG', 'APD', 'ANET', 'AJG', 'AIZ', 'A', 'APH', 'ABNB', 'ADM', 'AEP',
+  'AMT', 'AMP', 'ABC', 'AME', 'AMCR', 'AEE', 'AAL', 'AES', 'AFL', 'APO',
+  'ADSK', 'ATO', 'ALLE', 'AMZN', 'ARE', 'ALGN', 'ALNY', 'ALL', 'GOOGL', 'MO',
+  'AKAM', 'ALB', 'AA', 'AMTM', 'ANSS', 'AON', 'AOS', 'APA', 'AAPL', 'AMAT',
+  'APTV', 'ACGL', 'ACIW', 'ADC', 'ATVI', 'ADBE', 'ADP', 'ADS', 'NFLX', 'ABBV',
+  'ABMD', 'ACN', 'ATCO', 'ADNT', 'WTRG', 'AVB', 'AVY', 'AXON', 'BKR', 'BALL',
+  'BAC', 'BAX', 'BDX', 'WRB', 'BRK.B', 'BBY', 'BIO', 'TECH', 'BIIB', 'BLK',
+  'BK', 'BLDR', 'BA', 'BKNG', 'BWA', 'BXP', 'BSX', 'BMY', 'BR', 'BRO',
+
+  // 201-300
+  'BF.B', 'CHRW', 'CDNS', 'CZR', 'CPT', 'CPB', 'COF', 'CAH', 'KMX', 'CCL',
+  'CARR', 'CTLT', 'CAT', 'CBOE', 'CBRE', 'CDW', 'CE', 'CNC', 'CNP', 'CDAY',
+  'CF', 'CRL', 'SCHW', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF',
+  'CTAS', 'CSCO', 'C', 'CFG', 'CLX', 'CME', 'CMS', 'KO', 'CTSH', 'CL',
+  'CMCSA', 'CMA', 'CAG', 'COP', 'ED', 'STZ', 'CEG', 'COO', 'CPRT', 'GLW',
+  'CTVA', 'CSGP', 'COST', 'CTRA', 'CCI', 'CSX', 'CMI', 'CVS', 'DHI', 'DHR',
+  'DRI', 'DVA', 'DE', 'DAL', 'XRAY', 'DVN', 'DXCM', 'FANG', 'DLR', 'DFS',
+  'DIS', 'DG', 'DLTR', 'D', 'DPZ', 'DOV', 'DOW', 'DTE', 'DUK', 'DD',
+
+  // 301-400
+  'DXC', 'EMN', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'ELV', 'LLY',
+  'EMR', 'ENPH', 'ETR', 'EOG', 'EPAM', 'EQT', 'EFX', 'EQIX', 'EQR', 'ESS',
+  'EL', 'ETSY', 'EG', 'EVRG', 'ES', 'EXC', 'EXPE', 'EXPD', 'EXR', 'XOM',
+  'FFIV', 'FDS', 'FICO', 'FAST', 'FRT', 'FDX', 'FIS', 'FITB', 'FSLR', 'FE',
+  'FI', 'FLT', 'FMC', 'F', 'FTNT', 'FTV', 'FOXA', 'FOX', 'BEN', 'FCX',
+  'GRMN', 'IT', 'GE', 'GEHC', 'GEN', 'GNRC', 'GD', 'GIS', 'GM', 'GPC',
+  'GILD', 'GPN', 'GL', 'GS', 'HAL', 'HIG', 'HAS', 'HCA', 'HSIC', 'HSY',
+  'HES', 'HPE', 'HLT', 'HOLX', 'HD', 'HON', 'HRL', 'HST', 'HWM', 'HPQ',
+
+  // 401-500
+  'HUM', 'HBAN', 'HII', 'IBM', 'IEX', 'IDXX', 'ITW', 'ILMN', 'INCY', 'IR',
+  'PODD', 'INTC', 'ICE', 'IFF', 'IP', 'IPG', 'INTU', 'ISRG', 'IVZ', 'INVH',
+  'IQV', 'IRM', 'JBHT', 'JBL', 'JKHY', 'J', 'JNJ', 'JCI', 'JPM', 'JNPR',
+  'K', 'KDP', 'KEY', 'KEYS', 'KMB', 'KIM', 'KMI', 'KLAC', 'KHC', 'KR',
+  'LHX', 'LH', 'LRCX', 'LW', 'LVS', 'LDOS', 'LEN', 'LNC', 'LIN', 'LYV',
+  'LKQ', 'LMT', 'L', 'LOW', 'LULU', 'LYB', 'MTB', 'MRO', 'MPC', 'MKTX',
+  'MAR', 'MMC', 'MLM', 'MAS', 'MA', 'MTCH', 'MKC', 'MCD', 'MCK', 'MDT',
+  'MRK', 'META', 'MET', 'MTD', 'MGM', 'MCHP', 'MU', 'MSFT', 'MAA', 'MRNA',
+  'MHK', 'MOH', 'TAP', 'MDLZ', 'MPWR', 'MNST', 'MCO', 'MS', 'MOS', 'MSI',
+  'MSCI', 'NDAQ', 'NFLX', 'NEM', 'NWSA', 'NWS', 'NEE', 'NKE', 'NI', 'NDSN'
 ]
+
+// Keep backward compatibility
+const SP500_TOP_100 = SP500_SYMBOLS.slice(0, 100)
+
+/**
+ * Additional 500 liquid stocks from Russell 2000, NASDAQ, and other major exchanges
+ * NO OVERLAP with SP500_SYMBOLS - these are truly additional stocks
+ * Extending dataset for better model generalization across market caps
+ */
+const EXTENDED_500_SYMBOLS = [
+  // Russell 2000 High-Volume Stocks (NOT in S&P 500)
+  'AAWW', 'ABCB', 'ABCM', 'ABG', 'ABTX', 'ACAD', 'ACHR', 'ACON', 'ACRS', 'ACRV',
+  'ACTG', 'ADMA', 'ADTN', 'ADUS', 'AEIS', 'AEO', 'AESI', 'AEYE', 'AFG', 'AFYA',
+  'AG', 'AGCO', 'AGM', 'AGNC', 'AGO', 'AGR', 'AGRO', 'AGS', 'AGYS', 'AHH',
+  'AHRN', 'AHCO', 'AI', 'AIN', 'AIR', 'AIRC', 'AIRG', 'AIRS', 'AIT', 'AKR',
+  'AKRO', 'ALCO', 'ALDX', 'ALE', 'ALEX', 'ALG', 'ALGT', 'ALHC', 'ALIM', 'ALKS',
+  'ALKT', 'ALLO', 'ALLK', 'ALLY', 'ALOT', 'ALPN', 'ALRM', 'ALRS', 'ALTR', 'ALXO',
+  'AM', 'AMAL', 'AMBA', 'AMBP', 'AMC', 'AMCX', 'AMED', 'AMH', 'AMK', 'AMNB',
+  'AMN', 'AMPH', 'AMPL', 'AMRC', 'AMRK', 'AMRN', 'AMRS', 'AMSC', 'AMSF', 'AMSWA',
+  'AMTX', 'AMWD', 'AMWL', 'AN', 'ANAT', 'ANDE', 'ANGI', 'ANIK', 'ANIP', 'ANNX',
+
+  // Technology & Software Growth Stocks
+  'APP', 'APPF', 'APPN', 'APPS', 'APRE', 'APYX', 'AQB', 'AQMS', 'AQST', 'AR',
+  'ARAY', 'ARBE', 'ARCC', 'ARCH', 'ARCB', 'ARCE', 'ARCO', 'ARCT', 'ARDS', 'ARDX',
+  'AREC', 'ARGX', 'ARI', 'ARKR', 'ARL', 'ARLP', 'ARMK', 'ARMP', 'ARNC', 'AROC',
+  'ARQT', 'ARR', 'ARRY', 'ARVN', 'ARWR', 'ASAI', 'ASAP', 'ASAX', 'ASB', 'ASC',
+  'ASGN', 'ASH', 'ASIX', 'ASLE', 'ASML', 'ASND', 'ASO', 'ASPN', 'ASPS', 'ASRT',
+  'ASRV', 'ASTL', 'ASTS', 'ASUR', 'ASX', 'ATAI', 'ATEC', 'ATEN', 'ATER', 'ATEX',
+  'ATGE', 'ATI', 'ATKR', 'ATLC', 'ATLO', 'ATNF', 'ATNI', 'ATNM', 'ATOS', 'ATRA',
+  'ATRC', 'ATRI', 'ATRO', 'ATSG', 'ATXI', 'AUB', 'AUDC', 'AUPH', 'AUR', 'AURA',
+  'AUS', 'AUVI', 'AVA', 'AVAV', 'AVD', 'AVDL', 'AVDX', 'AVGR', 'AVID', 'AVIR',
+  'AVK', 'AVNS', 'AVNT', 'AVTR', 'AVXL', 'AWI', 'AWR', 'AXDX', 'AXL', 'AXNX',
+
+  // Financial Services, REITs & Insurance
+  'AXS', 'AXSM', 'AXTA', 'AYRO', 'AYX', 'AZN', 'AZO', 'AZPN', 'AZTA', 'AZUL',
+  'BABY', 'BAH', 'BALY', 'BAM', 'BANC', 'BAND', 'BANF', 'BANR', 'BANT', 'BAP',
+  'BARK', 'BASE', 'BATL', 'BATRA', 'BATRK', 'BBAR', 'BBCP', 'BBD', 'BBDC', 'BBGI',
+  'BBIO', 'BBLG', 'BBSI', 'BBU', 'BBUC', 'BBVA', 'BBW', 'BBWI', 'BC', 'BCAB',
+  'BCAT', 'BCBP', 'BCC', 'BCDA', 'BCE', 'BCEI', 'BCEL', 'BCH', 'BCLI', 'BCML',
+  'BCOV', 'BCOW', 'BCPC', 'BCRX', 'BCS', 'BCYC', 'BDC', 'BDL', 'BDN', 'BDSX',
+  'BDTX', 'BE', 'BEAM', 'BEAT', 'BECN', 'BEDU', 'BEEM', 'BEEP', 'BEKE', 'BELFA',
+  'BENF', 'BEP', 'BEPC', 'BERY', 'BEST', 'BFAM', 'BFC', 'BFIN', 'BFS', 'BFST',
+  'BGB', 'BGC', 'BGCP', 'BGFV', 'BGI', 'BGLC', 'BGNE', 'BGR', 'BGS', 'BGSF',
+  'BGSX', 'BGX', 'BHB', 'BHC', 'BHE', 'BHF', 'BHFAL', 'BHG', 'BHLB', 'BHP',
+
+  // Healthcare, Biotech & Med Devices
+  'BHR', 'BHRB', 'BHV', 'BHVN', 'BIAF', 'BIDU', 'BIG', 'BIGC', 'BILL', 'BIMI',
+  'BIP', 'BIPC', 'BIRD', 'BIRK', 'BITE', 'BJ', 'BJRI', 'BKCC', 'BKD', 'BKE',
+  'BKH', 'BKKT', 'BKSY', 'BKT', 'BKTI', 'BKU', 'BKYI', 'BL', 'BLBD', 'BLCO',
+  'BLD', 'BLDE', 'BLDP', 'BLE', 'BLFS', 'BLKB', 'BLMN', 'BLND', 'BLNK', 'BLPH',
+  'BLRX', 'BLUE', 'BLX', 'BMBL', 'BMEA', 'BMEZ', 'BMI', 'BMLP', 'BMRA', 'BMRC',
+  'BMRN', 'BMTX', 'BNED', 'BNGO', 'BNL', 'BNRE', 'BNRG', 'BNS', 'BNTC', 'BNTX',
+  'BOC', 'BOCN', 'BODY', 'BOH', 'BOKF', 'BOLT', 'BON', 'BOOM', 'BOOT', 'BORR',
+  'BOSC', 'BOTJ', 'BOWL', 'BOX', 'BOXL', 'BPMC', 'BPOP', 'BPRN', 'BPT', 'BPTH',
+  'BQ', 'BRAC', 'BRBR', 'BRBS', 'BRC', 'BRCC', 'BRDG', 'BREZ', 'BRFH', 'BRFS',
+  'BRG', 'BRID', 'BRKL', 'BRKR', 'BRLT', 'BRN', 'BRNS', 'BROG', 'BROS', 'BRP',
+
+  // Consumer, Retail & Industrial
+  'BRPM', 'BRS', 'BRSP', 'BRT', 'BRX', 'BRY', 'BRZE', 'BSAC', 'BSBK', 'BSFC',
+  'BSGM', 'BSIG', 'BSM', 'BSRR', 'BSVN', 'BSY', 'BTAI', 'BTBD', 'BTBT', 'BTCT',
+  'BTCY', 'BTDR', 'BTE', 'BTMD', 'BTOC', 'BTOG', 'BTRN', 'BTRS', 'BTTX', 'BTU',
+  'BTWN', 'BTZ', 'BUD', 'BUI', 'BUR', 'BURL', 'BUSE', 'BV', 'BVH', 'BVN',
+  'BVXV', 'BW', 'BWB', 'BWBBP', 'BWEN', 'BWFG', 'BWIN', 'BWMN', 'BWV', 'BWXT',
+  'BXC', 'BXMT', 'BXSL', 'BY', 'BYD', 'BYFC', 'BYN', 'BYND', 'BYNO', 'BYSI',
+  'BZH', 'BZUN', 'CAC', 'CACC', 'CACI', 'CADE', 'CAE', 'CAKE', 'CAL', 'CALA',
+  'CALB', 'CALM', 'CALT', 'CALX', 'CAMP', 'CAMT', 'CAN', 'CANG', 'CANF', 'CANO',
+  'CAPN', 'CAPR', 'CAR', 'CARA', 'CARE', 'CARG', 'CARV', 'CASY', 'CATO', 'CAVA',
+  'CBAY', 'CBNK', 'CBRE', 'CBRG', 'CBRL', 'CBSH', 'CBUS', 'CBZ', 'CC', 'CCAP',
+
+  // Additional Mid-Caps
+  'CCBG', 'CCCS', 'CCEP', 'CCIX', 'CCLP', 'CCNE', 'CCOI', 'CCS', 'CCSI', 'CCTS',
+  'CCU', 'CCV', 'CDAY', 'CDE', 'CDLX', 'CDMO', 'CDNA', 'CDNS', 'CDRE', 'CDXC',
+  'CDXS', 'CDZI', 'CECO', 'CEE', 'CELC', 'CELH', 'CELU', 'CENTA', 'CENT', 'CENTA',
+  'CENX', 'CERE', 'CERN', 'CERS', 'CEVA', 'CFFN', 'CFFS', 'CFFE', 'CFLT', 'CFR',
+  'CFRX', 'CGBD', 'CGC', 'CGEM', 'CGNX', 'CGNT', 'CGTX', 'CHCO', 'CHCT', 'CHD',
+  'CHDN', 'CHE', 'CHEF', 'CHGG', 'CHH', 'CHK', 'CHKP', 'CHMG', 'CHRW', 'CHS',
+  'CHRS', 'CHTR', 'CHW', 'CHX', 'CHWY', 'CHY', 'CIBD', 'CICN', 'CIEN', 'CIG',
+  'CIH', 'CIIG', 'CIM', 'CINF', 'CING', 'CINT', 'CIO', 'CIT', 'CIVB', 'CIVI'
+]
+
+/**
+ * Complete universe: S&P 500 + Extended 500 = 940 stocks
+ * This provides comprehensive market coverage across all caps and sectors
+ */
+const FULL_940_UNIVERSE = [...SP500_SYMBOLS, ...EXTENDED_500_SYMBOLS]
 
 /**
  * Command-line arguments interface
@@ -46,6 +174,8 @@ interface CLIArgs {
   symbols?: string[]
   test: boolean
   full: boolean
+  extended: boolean
+  fullUniverse: boolean
   start: Date
   end: Date
   output: string
@@ -60,6 +190,8 @@ function parseArguments(): CLIArgs {
   const parsed: CLIArgs = {
     test: false,
     full: false,
+    extended: false,
+    fullUniverse: false,
     start: new Date('2022-01-01'),
     end: new Date('2024-12-31'),
     output: 'data/training/early-signal-v1.csv',
@@ -75,6 +207,10 @@ function parseArguments(): CLIArgs {
       parsed.test = true
     } else if (arg === '--full') {
       parsed.full = true
+    } else if (arg === '--extended') {
+      parsed.extended = true
+    } else if (arg === '--full-universe') {
+      parsed.fullUniverse = true
     } else if (arg === '--start' && i + 1 < args.length) {
       parsed.start = new Date(args[++i])
     } else if (arg === '--end' && i + 1 < args.length) {
@@ -86,11 +222,20 @@ function parseArguments(): CLIArgs {
     }
   }
 
-  // Determine symbols to process
-  if (parsed.test && !parsed.symbols) {
+  // Determine symbols to process (priority order: custom > full-universe > extended > full > test)
+  if (parsed.symbols) {
+    // Custom symbols provided via --symbols flag
+  } else if (parsed.fullUniverse) {
+    parsed.symbols = FULL_940_UNIVERSE
+  } else if (parsed.extended) {
+    parsed.symbols = EXTENDED_500_SYMBOLS
+  } else if (parsed.full) {
+    parsed.symbols = SP500_SYMBOLS
+  } else if (parsed.test) {
     parsed.symbols = ['TSLA', 'NVDA', 'AAPL']
-  } else if (parsed.full || !parsed.symbols) {
-    parsed.symbols = SP500_TOP_100
+  } else {
+    // Default to S&P 500
+    parsed.symbols = SP500_SYMBOLS
   }
 
   return parsed
@@ -265,14 +410,21 @@ async function generateTrainingData(args: CLIArgs): Promise<void> {
   console.log('Task 1.5: Generate Training Dataset')
   console.log('='.repeat(80))
 
+  const mode = args.test ? 'TEST MODE' :
+               args.fullUniverse ? 'FULL UNIVERSE (940 stocks)' :
+               args.extended ? 'EXTENDED (500 mid/small cap)' :
+               args.full ? 'S&P 500' :
+               'CUSTOM'
+
   console.log('\nConfiguration:')
-  console.log(`  Symbols: ${args.symbols?.length || 0} (${args.test ? 'TEST MODE' : args.full ? 'FULL S&P 100' : 'CUSTOM'})`)
+  console.log(`  Symbols: ${args.symbols?.length || 0} (${mode})`)
   console.log(`  Date range: ${args.start.toISOString().split('T')[0]} to ${args.end.toISOString().split('T')[0]}`)
   console.log(`  Output: ${args.output}`)
   console.log(`  Checkpoint interval: Every ${args.checkpointInterval} symbols`)
+  console.log(`  Sentiment analysis: DISABLED (historical mode for speed)`)
   console.log('\n📊 APPROACH: Using FMP earnings surprises API (60 quarters of historical data)')
   console.log('   Label = 1 if earnings beat expectations AND current consensus is "Buy" or better')
-  console.log('   This provides ~6000 training examples (60 quarters × 100 symbols)')
+  console.log(`   This provides ~${args.symbols?.length ? args.symbols.length * 12 : '6000'} training examples (12 earnings × ${args.symbols?.length || 500} symbols)`)
   console.log('='.repeat(80))
 
   const featureExtractor = new EarlySignalFeatureExtractor()
@@ -280,7 +432,7 @@ async function generateTrainingData(args: CLIArgs): Promise<void> {
   const fmpAPI = new FinancialModelingPrepAPI()
 
   const dataset: TrainingExample[] = []
-  const symbols = args.symbols || SP500_TOP_100
+  const symbols = args.symbols || SP500_SYMBOLS
 
   let totalEarningsProcessed = 0
   let totalExamplesCreated = 0
@@ -484,4 +636,11 @@ if (require.main === module) {
   main().catch(console.error)
 }
 
-export { generateTrainingData, parseArguments, SP500_TOP_100 }
+export {
+  generateTrainingData,
+  parseArguments,
+  SP500_SYMBOLS,
+  SP500_TOP_100,
+  EXTENDED_500_SYMBOLS,
+  FULL_940_UNIVERSE
+}

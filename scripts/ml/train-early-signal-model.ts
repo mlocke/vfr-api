@@ -39,6 +39,12 @@ const FEATURE_NAMES = [
   'sentiment_news_delta',
   'sentiment_reddit_accel',
   'sentiment_options_shift',
+  'social_stocktwits_24h_change',
+  'social_stocktwits_hourly_momentum',
+  'social_stocktwits_7d_trend',
+  'social_twitter_24h_change',
+  'social_twitter_hourly_momentum',
+  'social_twitter_7d_trend',
   'earnings_surprise',
   'revenue_growth_accel',
   'analyst_coverage_change',
@@ -62,8 +68,8 @@ function loadCSV(filepath: string): TrainingRow[] {
     const row: TrainingRow = {
       symbol: values[0],
       date: values[1],
-      features: values.slice(2, 15).map(Number),
-      label: Number(values[15])
+      features: values.slice(2, 21).map(Number), // 19 features (columns 3-21)
+      label: Number(values[21]) // actual label column
     }
 
     data.push(row)

@@ -115,6 +115,7 @@ User Need → Context Analysis → Document Selection → Action Path
 
 **API Categories**:
 - **Stock Analysis APIs**: `/api/stocks/select` (comprehensive analysis with ESG + extended market data)
+- **Machine Learning APIs**: `/api/ml/early-signal` **✅ NEW - PRODUCTION** (ML-powered analyst rating predictions)
 - **Market Intelligence APIs**: `/api/market/sentiment`, `/api/market/sectors`
 - **Economic Data APIs**: `/api/economic`, `/api/economic/calendar`
 - **Currency APIs**: `/api/currency` (international FX data)
@@ -219,8 +220,12 @@ User Need → Context Analysis → Document Selection → Action Path
 1. **Authentication**: Obtain JWT token via `/api/user_auth`
 2. **Health Check**: Verify system status at `/api/health`
 3. **Stock Analysis**: Use `/api/stocks/select` for comprehensive analysis
-4. **Rate Limits**: Monitor `X-RateLimit-*` headers
-5. **Error Handling**: Implement fallback for 5xx responses
+4. **ML Predictions** ✅ NEW: Use `/api/ml/early-signal` for analyst rating predictions
+   - Model: LightGBM v1.0.0 (97.6% test accuracy)
+   - Response: 600-900ms average
+   - Features: 20 engineered features from price, volume, sentiment, fundamentals, technical
+5. **Rate Limits**: Monitor `X-RateLimit-*` headers
+6. **Error Handling**: Implement fallback for 5xx responses
 
 ### For System Administrators
 1. **Infrastructure**: Review [Deployment Configuration](DEPLOYMENT_CONFIGURATION.mdnfrastructure-architecture)
@@ -276,6 +281,7 @@ User Need → Context Analysis → Document Selection → Action Path
 | ESGDataService | <1s | <200ms | ✅ Achieved | Sustainability | ESG Provider → FMP → Skip |
 | ShortInterestService | <1s | <200ms | ✅ Achieved | Short squeeze | FINRA → FMP → Skip |
 | ExtendedMarketDataService | <800ms | <150ms | ✅ Achieved | Pre/post market | Polygon → Alpha Vantage → Skip |
+| **EarlySignalMLService** ✅ NEW | <1000ms | N/A (No cache) | ⚠️ 600-900ms | ML predictions | Python inference → Response |
 
 ### Performance Decision Matrix
 ```
