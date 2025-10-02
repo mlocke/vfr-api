@@ -2237,4 +2237,53 @@ export class FinancialModelingPrepAPI extends BaseFinancialDataProvider implemen
       return this.handleApiError(error, symbol, 'earnings surprises', [])
     }
   }
+
+  /**
+   * Get social sentiment data from StockTwits and Twitter
+   * Returns hourly social sentiment metrics with post volume, engagement, and sentiment scores
+   * @param symbol Stock symbol
+   * @param page Page number for pagination (default: 0)
+   */
+  async getSocialSentiment(symbol: string, page = 0): Promise<{
+    date: string;
+    symbol: string;
+    stocktwitsPosts: number;
+    twitterPosts: number;
+    stocktwitsComments: number;
+    twitterComments: number;
+    stocktwitsLikes: number;
+    twitterLikes: number;
+    stocktwitsImpressions: number;
+    twitterImpressions: number;
+    stocktwitsSentiment: number;
+    twitterSentiment: number;
+  }[]> {
+    try {
+      this.validateApiKey()
+      const normalizedSymbol = this.normalizeSymbol(symbol)
+
+      const response = await this.makeRequest(`/historical/social-sentiment?symbol=${normalizedSymbol}&page=${page}`, 'v4')
+
+      if (!this.validateResponse(response, 'array')) {
+        return []
+      }
+
+      return response.data.map((sentiment: any) => ({
+        date: sentiment.date || '',
+        symbol: normalizedSymbol,
+        stocktwitsPosts: this.parseInt(sentiment.stocktwitsPosts),
+        twitterPosts: this.parseInt(sentiment.twitterPosts),
+        stocktwitsComments: this.parseInt(sentiment.stocktwitsComments),
+        twitterComments: this.parseInt(sentiment.twitterComments),
+        stocktwitsLikes: this.parseInt(sentiment.stocktwitsLikes),
+        twitterLikes: this.parseInt(sentiment.twitterLikes),
+        stocktwitsImpressions: this.parseInt(sentiment.stocktwitsImpressions),
+        twitterImpressions: this.parseInt(sentiment.twitterImpressions),
+        stocktwitsSentiment: this.parseNumeric(sentiment.stocktwitsSentiment),
+        twitterSentiment: this.parseNumeric(sentiment.twitterSentiment)
+      }))
+    } catch (error) {
+      return this.handleApiError(error, symbol, 'social sentiment', [])
+    }
+  }
 }
