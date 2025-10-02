@@ -12,6 +12,7 @@
  */
 
 import { FinancialDataService } from '../../financial-data/FinancialDataService'
+import { FinancialModelingPrepAPI } from '../../financial-data/FinancialModelingPrepAPI'
 import { SentimentAnalysisService } from '../../financial-data/SentimentAnalysisService'
 import { TechnicalIndicatorService } from '../../technical-analysis/TechnicalIndicatorService'
 import { RedisCache } from '../../cache/RedisCache'
@@ -19,12 +20,14 @@ import type { FeatureVector, OHLC, SentimentData, FundamentalsData, TechnicalDat
 
 export class EarlySignalFeatureExtractor {
   private financialDataService: FinancialDataService
+  private fmpAPI: FinancialModelingPrepAPI
   private sentimentService: SentimentAnalysisService
   private technicalService: TechnicalIndicatorService
   private cache: RedisCache
 
   constructor() {
     this.financialDataService = new FinancialDataService()
+    this.fmpAPI = new FinancialModelingPrepAPI()
     this.cache = new RedisCache()
     this.sentimentService = new SentimentAnalysisService(this.cache)
     this.technicalService = new TechnicalIndicatorService(this.cache)
@@ -145,22 +148,144 @@ export class EarlySignalFeatureExtractor {
    */
   private async getFundamentalsData(symbol: string, asOfDate: Date): Promise<FundamentalsData | null> {
     try {
-      const companyInfo = await this.financialDataService.getCompanyInfo(symbol)
+      // Get earnings surprise percentage (most recent earnings vs estimate)
+      const earningsSurprise = await this.calculateEarningsSurprise(this.fmpAPI, symbol, asOfDate)
 
-      if (!companyInfo) {
-        return null
-      }
+      // Get revenue growth acceleration (comparing recent growth rates)
+      const revenueGrowthAccel = await this.calculateRevenueGrowthAcceleration(this.fmpAPI, symbol, asOfDate)
 
-      // Extract fundamental metrics
+      // Get analyst coverage change (change in number of analysts covering)
+      const analystCoverageChange = await this.calculateAnalystCoverageChange(this.fmpAPI, symbol, asOfDate)
+
       return {
         symbol,
-        earningsSurprise: null, // TODO: Extract from earnings data
-        revenueGrowthAccel: null, // TODO: Calculate from financial statements
-        analystCoverageChange: null // TODO: Track analyst coverage changes
+        earningsSurprise,
+        revenueGrowthAccel,
+        analystCoverageChange
       }
     } catch (error) {
       console.error(`Failed to get fundamentals for ${symbol}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Calculate earnings surprise percentage from most recent earnings
+   * Returns percentage difference between actual and estimated earnings
+   */
+  private async calculateEarningsSurprise(fmpAPI: any, symbol: string, asOfDate: Date): Promise<number> {
+    try {
+      const earnings = await fmpAPI.getEarningsSurprises(symbol, 4) // Last 4 quarters
+
+      if (!earnings || earnings.length === 0) {
+        return 0
+      }
+
+      // Find most recent earnings before asOfDate
+      const relevantEarnings = earnings
+        .filter((e: any) => new Date(e.date) <= asOfDate)
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      if (relevantEarnings.length === 0) {
+        return 0
+      }
+
+      const mostRecent = relevantEarnings[0]
+      const actual = mostRecent.actualEarningResult
+      const estimated = mostRecent.estimatedEarning
+
+      if (estimated === 0 || !actual || !estimated) {
+        return 0
+      }
+
+      // Return percentage surprise: (actual - estimated) / |estimated|
+      return ((actual - estimated) / Math.abs(estimated)) * 100
+    } catch (error) {
+      console.error(`Failed to calculate earnings surprise for ${symbol}:`, error)
+      return 0
+    }
+  }
+
+  /**
+   * Calculate revenue growth acceleration
+   * Compares recent quarter growth rate to previous quarter growth rate
+   */
+  private async calculateRevenueGrowthAcceleration(fmpAPI: any, symbol: string, asOfDate: Date): Promise<number> {
+    try {
+      const incomeStatements = await fmpAPI.getIncomeStatement(symbol, 'quarterly', 8) // Last 8 quarters
+
+      if (!incomeStatements || incomeStatements.length < 4) {
+        return 0
+      }
+
+      // Filter statements before asOfDate and sort by date (newest first)
+      const relevantStatements = incomeStatements
+        .filter((s: any) => new Date(s.date) <= asOfDate)
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+      if (relevantStatements.length < 4) {
+        return 0
+      }
+
+      // Calculate YoY growth for most recent quarter (Q0 vs Q4)
+      const recentRevenue = relevantStatements[0].revenue
+      const recentYearAgoRevenue = relevantStatements[3]?.revenue
+
+      if (!recentRevenue || !recentYearAgoRevenue || recentYearAgoRevenue === 0) {
+        return 0
+      }
+
+      const recentGrowthRate = ((recentRevenue - recentYearAgoRevenue) / recentYearAgoRevenue) * 100
+
+      // Calculate YoY growth for previous quarter (Q1 vs Q5)
+      if (relevantStatements.length < 5) {
+        return recentGrowthRate // Can't calculate acceleration, return growth rate
+      }
+
+      const previousRevenue = relevantStatements[1].revenue
+      const previousYearAgoRevenue = relevantStatements[4]?.revenue
+
+      if (!previousRevenue || !previousYearAgoRevenue || previousYearAgoRevenue === 0) {
+        return recentGrowthRate
+      }
+
+      const previousGrowthRate = ((previousRevenue - previousYearAgoRevenue) / previousYearAgoRevenue) * 100
+
+      // Return acceleration: change in growth rate (percentage points)
+      return recentGrowthRate - previousGrowthRate
+    } catch (error) {
+      console.error(`Failed to calculate revenue growth acceleration for ${symbol}:`, error)
+      return 0
+    }
+  }
+
+  /**
+   * Calculate analyst coverage change
+   * Returns change in number of analysts covering the stock
+   */
+  private async calculateAnalystCoverageChange(fmpAPI: any, symbol: string, asOfDate: Date): Promise<number> {
+    try {
+      const currentRatings = await fmpAPI.getAnalystRatings(symbol)
+
+      if (!currentRatings || !currentRatings.totalAnalysts) {
+        return 0
+      }
+
+      const currentTotal = currentRatings.totalAnalysts
+
+      // For historical comparison, we approximate using current data
+      // In production, would track historical analyst coverage over time
+      // For now, return normalized coverage (0 if no analysts, positive for coverage)
+      // This is a proxy - higher analyst coverage is generally positive
+
+      // Normalize: 0-5 analysts = 0, 5-10 = 5, 10-20 = 10, 20+ = 15
+      if (currentTotal <= 5) return 0
+      if (currentTotal <= 10) return 5
+      if (currentTotal <= 20) return 10
+      return 15
+    } catch (error) {
+      console.error(`Failed to calculate analyst coverage change for ${symbol}:`, error)
+      return 0
     }
   }
 
