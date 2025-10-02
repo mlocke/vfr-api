@@ -119,6 +119,12 @@ function exampleToCSV(example: TrainingExample): string {
     features.sentiment_news_delta,
     features.sentiment_reddit_accel,
     features.sentiment_options_shift,
+    features.social_stocktwits_24h_change,
+    features.social_stocktwits_hourly_momentum,
+    features.social_stocktwits_7d_trend,
+    features.social_twitter_24h_change,
+    features.social_twitter_hourly_momentum,
+    features.social_twitter_7d_trend,
     features.earnings_surprise,
     features.revenue_growth_accel,
     features.analyst_coverage_change,
@@ -143,6 +149,12 @@ function generateCSVHeader(): string {
     'sentiment_news_delta',
     'sentiment_reddit_accel',
     'sentiment_options_shift',
+    'social_stocktwits_24h_change',
+    'social_stocktwits_hourly_momentum',
+    'social_stocktwits_7d_trend',
+    'social_twitter_24h_change',
+    'social_twitter_hourly_momentum',
+    'social_twitter_7d_trend',
     'earnings_surprise',
     'revenue_growth_accel',
     'analyst_coverage_change',
@@ -325,8 +337,8 @@ async function generateTrainingData(args: CLIArgs): Promise<void> {
           const earnings = filteredEarnings[j]
           const earningsDate = new Date(earnings.date)
 
-          // Step 3: Extract features at earnings date
-          const features = await featureExtractor.extractFeatures(symbol, earningsDate)
+          // Step 3: Extract features at earnings date (skip sentiment for historical data)
+          const features = await featureExtractor.extractFeatures(symbol, earningsDate, true)
 
           // Step 4: Calculate label based on earnings surprise AND analyst consensus
           // Label = 1 if earnings beat AND current consensus is positive

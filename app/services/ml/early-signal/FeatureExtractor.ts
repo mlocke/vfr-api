@@ -37,17 +37,20 @@ export class EarlySignalFeatureExtractor {
    * Extract all 13 features for ML model prediction
    * @param symbol Stock symbol (e.g., 'TSLA')
    * @param asOfDate Historical date for feature extraction (default: today)
+   * @param useHistoricalMode For historical training data, skip live sentiment (we can't get historical sentiment)
    * @returns Feature vector with 13 numeric features
    */
-  async extractFeatures(symbol: string, asOfDate?: Date): Promise<FeatureVector> {
+  async extractFeatures(symbol: string, asOfDate?: Date, useHistoricalMode: boolean = false): Promise<FeatureVector> {
     const date = asOfDate || new Date()
     const startTime = Date.now()
 
     try {
       // Parallel data collection (leverage existing VFR services)
+      // For historical training data: skip live sentiment since APIs only return current sentiment
+      // This is correct - we use neutral (0) sentiment for historical data since we can't time-travel
       const [historicalData, sentimentData, fundamentals, technicals] = await Promise.all([
         this.getHistoricalData(symbol, date, 50), // 50 days for 20d momentum
-        this.getSentimentData(symbol, date),
+        useHistoricalMode ? Promise.resolve(null) : this.getSentimentData(symbol, date),
         this.getFundamentalsData(symbol, date),
         this.getTechnicalData(symbol, date)
       ])
@@ -66,6 +69,14 @@ export class EarlySignalFeatureExtractor {
         sentiment_news_delta: sentimentData?.newsScore || 0,
         sentiment_reddit_accel: sentimentData?.redditScore || 0,
         sentiment_options_shift: sentimentData?.optionsScore || 0,
+
+        // Social sentiment features (6)
+        social_stocktwits_24h_change: sentimentData?.social_stocktwits_24h_change || 0,
+        social_stocktwits_hourly_momentum: sentimentData?.social_stocktwits_hourly_momentum || 0,
+        social_stocktwits_7d_trend: sentimentData?.social_stocktwits_7d_trend || 0,
+        social_twitter_24h_change: sentimentData?.social_twitter_24h_change || 0,
+        social_twitter_hourly_momentum: sentimentData?.social_twitter_hourly_momentum || 0,
+        social_twitter_7d_trend: sentimentData?.social_twitter_7d_trend || 0,
 
         // Fundamental features (3)
         earnings_surprise: fundamentals?.earningsSurprise || 0,
@@ -125,21 +136,149 @@ export class EarlySignalFeatureExtractor {
       // Get current sentiment
       const sentiment = await this.sentimentService.analyzeStockSentimentImpact(symbol, 'Technology', 0.5)
 
-      if (!sentiment) {
+      // Get social sentiment data from FMP
+      const socialSentiment = await this.calculateSocialSentimentFeatures(symbol, asOfDate)
+
+      if (!sentiment && !socialSentiment) {
         return null
       }
 
       return {
         symbol,
         date: asOfDate,
-        newsScore: sentiment.sentimentScore?.components?.news || 0,
-        redditScore: sentiment.sentimentScore?.components?.reddit || 0,
-        optionsScore: sentiment.sentimentScore?.components?.options || 0,
+        newsScore: sentiment?.sentimentScore?.components?.news || 0,
+        redditScore: sentiment?.sentimentScore?.components?.reddit || 0,
+        optionsScore: sentiment?.sentimentScore?.components?.options || 0,
+        ...socialSentiment,
         timestamp: Date.now()
       }
     } catch (error) {
       console.error(`Failed to get sentiment data for ${symbol}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Calculate social sentiment features from StockTwits and Twitter
+   * Returns 6 new features: 24h, hourly, 7-day trends for both platforms
+   */
+  private async calculateSocialSentimentFeatures(symbol: string, asOfDate: Date): Promise<{
+    social_stocktwits_24h_change: number;
+    social_stocktwits_hourly_momentum: number;
+    social_stocktwits_7d_trend: number;
+    social_twitter_24h_change: number;
+    social_twitter_hourly_momentum: number;
+    social_twitter_7d_trend: number;
+  }> {
+    try {
+      // Get social sentiment data (returns hourly data)
+      const socialData = await this.fmpAPI.getSocialSentiment(symbol, 0)
+
+      if (!socialData || socialData.length === 0) {
+        return this.getZeroSocialSentimentFeatures()
+      }
+
+      // Sort by date descending (newest first)
+      const sortedData = socialData
+        .map(d => ({
+          ...d,
+          date: new Date(d.date)
+        }))
+        .filter(d => d.date <= asOfDate) // Only data before asOfDate
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+
+      if (sortedData.length === 0) {
+        return this.getZeroSocialSentimentFeatures()
+      }
+
+      // Calculate 24h sentiment change (most recent vs 24h ago)
+      const stocktwits24hChange = this.calculate24hSentimentChange(sortedData, 'stocktwits')
+      const twitter24hChange = this.calculate24hSentimentChange(sortedData, 'twitter')
+
+      // Calculate hourly momentum (last hour vs 2h ago)
+      const stocktwitsHourlyMomentum = this.calculateHourlySentimentMomentum(sortedData, 'stocktwits')
+      const twitterHourlyMomentum = this.calculateHourlySentimentMomentum(sortedData, 'twitter')
+
+      // Calculate 7-day trend (linear regression of sentiment over 7 days)
+      const stocktwits7dTrend = this.calculate7dSentimentTrend(sortedData, 'stocktwits')
+      const twitter7dTrend = this.calculate7dSentimentTrend(sortedData, 'twitter')
+
+      return {
+        social_stocktwits_24h_change: stocktwits24hChange,
+        social_stocktwits_hourly_momentum: stocktwitsHourlyMomentum,
+        social_stocktwits_7d_trend: stocktwits7dTrend,
+        social_twitter_24h_change: twitter24hChange,
+        social_twitter_hourly_momentum: twitterHourlyMomentum,
+        social_twitter_7d_trend: twitter7dTrend
+      }
+    } catch (error) {
+      console.error(`Failed to calculate social sentiment features for ${symbol}:`, error)
+      return this.getZeroSocialSentimentFeatures()
+    }
+  }
+
+  /**
+   * Calculate 24-hour sentiment change
+   */
+  private calculate24hSentimentChange(data: any[], platform: 'stocktwits' | 'twitter'): number {
+    if (data.length < 24) return 0
+
+    const currentSentiment = platform === 'stocktwits' ? data[0].stocktwitsSentiment : data[0].twitterSentiment
+    const past24hSentiment = platform === 'stocktwits' ? data[23].stocktwitsSentiment : data[23].twitterSentiment
+
+    if (!currentSentiment || !past24hSentiment) return 0
+
+    // Return change in sentiment (range: -1 to 1)
+    return currentSentiment - past24hSentiment
+  }
+
+  /**
+   * Calculate hourly sentiment momentum
+   */
+  private calculateHourlySentimentMomentum(data: any[], platform: 'stocktwits' | 'twitter'): number {
+    if (data.length < 3) return 0
+
+    const recent = platform === 'stocktwits' ? data[0].stocktwitsSentiment : data[0].twitterSentiment
+    const oneHourAgo = platform === 'stocktwits' ? data[1].stocktwitsSentiment : data[1].twitterSentiment
+    const twoHoursAgo = platform === 'stocktwits' ? data[2].stocktwitsSentiment : data[2].twitterSentiment
+
+    if (!recent || !oneHourAgo || !twoHoursAgo) return 0
+
+    // Calculate momentum (acceleration of sentiment change)
+    const recentChange = recent - oneHourAgo
+    const pastChange = oneHourAgo - twoHoursAgo
+
+    return recentChange - pastChange
+  }
+
+  /**
+   * Calculate 7-day sentiment trend using linear regression
+   */
+  private calculate7dSentimentTrend(data: any[], platform: 'stocktwits' | 'twitter'): number {
+    const hoursIn7Days = 7 * 24 // 168 hours
+    if (data.length < hoursIn7Days) return 0
+
+    const sentiments = data
+      .slice(0, hoursIn7Days)
+      .map(d => platform === 'stocktwits' ? d.stocktwitsSentiment : d.twitterSentiment)
+      .filter(s => s !== null && s !== undefined)
+
+    if (sentiments.length < hoursIn7Days * 0.8) return 0 // Need at least 80% data coverage
+
+    return this.linearRegressionSlope(sentiments)
+  }
+
+  /**
+   * Return zero social sentiment features
+   */
+  private getZeroSocialSentimentFeatures() {
+    return {
+      social_stocktwits_24h_change: 0,
+      social_stocktwits_hourly_momentum: 0,
+      social_stocktwits_7d_trend: 0,
+      social_twitter_24h_change: 0,
+      social_twitter_hourly_momentum: 0,
+      social_twitter_7d_trend: 0
     }
   }
 
@@ -175,18 +314,35 @@ export class EarlySignalFeatureExtractor {
    */
   private async calculateEarningsSurprise(fmpAPI: any, symbol: string, asOfDate: Date): Promise<number> {
     try {
-      const earnings = await fmpAPI.getEarningsSurprises(symbol, 4) // Last 4 quarters
+      const earnings = await fmpAPI.getEarningsSurprises(symbol, 60) // Get 60 quarters (15 years) of historical data
 
       if (!earnings || earnings.length === 0) {
+        console.warn(`[FeatureExtractor] No earnings data returned from FMP for ${symbol}`)
         return 0
       }
 
-      // Find most recent earnings before asOfDate
+      // Debug: Log raw earnings data
+      console.debug(`[FeatureExtractor] Got ${earnings.length} earnings records for ${symbol}`)
+      if (earnings.length > 0) {
+        console.debug(`[FeatureExtractor] Sample earnings date: ${earnings[0].date}, asOfDate: ${asOfDate.toISOString().split('T')[0]}`)
+      }
+
+      // Find most recent earnings before asOfDate (within 120 days before asOfDate)
       const relevantEarnings = earnings
-        .filter((e: any) => new Date(e.date) <= asOfDate)
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .map((e: any) => ({
+          ...e,
+          date: new Date(e.date)
+        }))
+        .filter((e: any) => {
+          const earnDate = e.date
+          const daysDiff = (asOfDate.getTime() - earnDate.getTime()) / (1000 * 60 * 60 * 24)
+          // Include earnings from 1-120 days before asOfDate (typical earnings announcement window)
+          return daysDiff >= 0 && daysDiff <= 120
+        })
+        .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
 
       if (relevantEarnings.length === 0) {
+        console.debug(`[FeatureExtractor] No earnings within 120 days before ${asOfDate.toISOString().split('T')[0]} for ${symbol}`)
         return 0
       }
 
@@ -195,11 +351,14 @@ export class EarlySignalFeatureExtractor {
       const estimated = mostRecent.estimatedEarning
 
       if (estimated === 0 || !actual || !estimated) {
+        console.debug(`[FeatureExtractor] Invalid earnings values for ${symbol}: actual=${actual}, estimated=${estimated}`)
         return 0
       }
 
       // Return percentage surprise: (actual - estimated) / |estimated|
-      return ((actual - estimated) / Math.abs(estimated)) * 100
+      const surprise = ((actual - estimated) / Math.abs(estimated)) * 100
+      console.debug(`[FeatureExtractor] Earnings surprise for ${symbol}: ${surprise.toFixed(2)}%`)
+      return surprise
     } catch (error) {
       console.error(`Failed to calculate earnings surprise for ${symbol}:`, error)
       return 0
@@ -212,18 +371,36 @@ export class EarlySignalFeatureExtractor {
    */
   private async calculateRevenueGrowthAcceleration(fmpAPI: any, symbol: string, asOfDate: Date): Promise<number> {
     try {
-      const incomeStatements = await fmpAPI.getIncomeStatement(symbol, 'quarterly', 8) // Last 8 quarters
+      const incomeStatements = await fmpAPI.getIncomeStatement(symbol, 'quarterly', 40) // Get 10 years (40 quarters) of data
 
       if (!incomeStatements || incomeStatements.length < 4) {
+        console.warn(`[FeatureExtractor] Insufficient income statement data for ${symbol} (got ${incomeStatements?.length || 0})`)
         return 0
       }
 
+      // Debug: Log raw data
+      console.debug(`[FeatureExtractor] Got ${incomeStatements.length} quarterly income statements for ${symbol}`)
+      if (incomeStatements.length > 0) {
+        console.debug(`[FeatureExtractor] Sample income date: ${incomeStatements[0].date}, asOfDate: ${asOfDate.toISOString().split('T')[0]}`)
+      }
+
       // Filter statements before asOfDate and sort by date (newest first)
+      // Need 5 statements minimum: Q0, Q1, Q3 (year ago for Q0), Q4 (year ago for Q1)
       const relevantStatements = incomeStatements
-        .filter((s: any) => new Date(s.date) <= asOfDate)
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .map((s: any) => ({
+          ...s,
+          date: new Date(s.date)
+        }))
+        .filter((s: any) => {
+          const statementDate = s.date
+          // Only include statements BEFORE asOfDate (but within 2 years to get enough quarters)
+          const daysDiff = (asOfDate.getTime() - statementDate.getTime()) / (1000 * 60 * 60 * 24)
+          return daysDiff >= 0 && daysDiff <= 730 // 2 years = 8 quarters
+        })
+        .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
 
       if (relevantStatements.length < 4) {
+        console.debug(`[FeatureExtractor] Insufficient relevant statements for ${symbol} (need 4, got ${relevantStatements.length})`)
         return 0
       }
 
@@ -232,6 +409,7 @@ export class EarlySignalFeatureExtractor {
       const recentYearAgoRevenue = relevantStatements[3]?.revenue
 
       if (!recentRevenue || !recentYearAgoRevenue || recentYearAgoRevenue === 0) {
+        console.debug(`[FeatureExtractor] Invalid revenue values for ${symbol}: recent=${recentRevenue}, yearAgo=${recentYearAgoRevenue}`)
         return 0
       }
 
@@ -239,6 +417,7 @@ export class EarlySignalFeatureExtractor {
 
       // Calculate YoY growth for previous quarter (Q1 vs Q5)
       if (relevantStatements.length < 5) {
+        console.debug(`[FeatureExtractor] Can't calculate acceleration for ${symbol}, returning growth rate: ${recentGrowthRate.toFixed(2)}%`)
         return recentGrowthRate // Can't calculate acceleration, return growth rate
       }
 
@@ -252,7 +431,9 @@ export class EarlySignalFeatureExtractor {
       const previousGrowthRate = ((previousRevenue - previousYearAgoRevenue) / previousYearAgoRevenue) * 100
 
       // Return acceleration: change in growth rate (percentage points)
-      return recentGrowthRate - previousGrowthRate
+      const acceleration = recentGrowthRate - previousGrowthRate
+      console.debug(`[FeatureExtractor] Revenue growth accel for ${symbol}: ${acceleration.toFixed(2)}% (recent: ${recentGrowthRate.toFixed(2)}%, prev: ${previousGrowthRate.toFixed(2)}%)`)
+      return acceleration
     } catch (error) {
       console.error(`Failed to calculate revenue growth acceleration for ${symbol}:`, error)
       return 0
@@ -426,6 +607,12 @@ export class EarlySignalFeatureExtractor {
       sentiment_news_delta: 0,
       sentiment_reddit_accel: 0,
       sentiment_options_shift: 0,
+      social_stocktwits_24h_change: 0,
+      social_stocktwits_hourly_momentum: 0,
+      social_stocktwits_7d_trend: 0,
+      social_twitter_24h_change: 0,
+      social_twitter_hourly_momentum: 0,
+      social_twitter_7d_trend: 0,
       earnings_surprise: 0,
       revenue_growth_accel: 0,
       analyst_coverage_change: 0,

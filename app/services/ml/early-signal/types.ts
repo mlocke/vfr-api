@@ -21,6 +21,14 @@ export interface FeatureVector {
   sentiment_reddit_accel: number
   sentiment_options_shift: number
 
+  // Social sentiment features (6)
+  social_stocktwits_24h_change: number
+  social_stocktwits_hourly_momentum: number
+  social_stocktwits_7d_trend: number
+  social_twitter_24h_change: number
+  social_twitter_hourly_momentum: number
+  social_twitter_7d_trend: number
+
   // Fundamental features (3)
   earnings_surprise: number
   revenue_growth_accel: number
@@ -83,6 +91,12 @@ export interface SentimentData {
   newsScore: number
   redditScore: number
   optionsScore: number
+  social_stocktwits_24h_change?: number
+  social_stocktwits_hourly_momentum?: number
+  social_stocktwits_7d_trend?: number
+  social_twitter_24h_change?: number
+  social_twitter_hourly_momentum?: number
+  social_twitter_7d_trend?: number
   timestamp: number
 }
 

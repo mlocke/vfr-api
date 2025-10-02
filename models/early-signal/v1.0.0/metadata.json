@@ -1,0 +1,74 @@
+{
+  "version": "1.0.0",
+  "algorithm": "LightGBM Gradient Boosting",
+  "trainedAt": "2025-10-01T22:31:37.551284",
+  "featureNames": [
+    "price_change_5d",
+    "price_change_10d",
+    "price_change_20d",
+    "volume_ratio",
+    "volume_trend",
+    "sentiment_news_delta",
+    "sentiment_reddit_accel",
+    "sentiment_options_shift",
+    "earnings_surprise",
+    "revenue_growth_accel",
+    "analyst_coverage_change",
+    "rsi_momentum",
+    "macd_histogram_trend"
+  ],
+  "featureImportance": {
+    "price_change_5d": 0.011204817375286925,
+    "price_change_10d": 0.026275034660157667,
+    "price_change_20d": 0.01103302946386305,
+    "volume_ratio": 0.010339156046476512,
+    "volume_trend": 0.01277893103115931,
+    "sentiment_news_delta": 0.0,
+    "sentiment_reddit_accel": 0.11420791607012928,
+    "sentiment_options_shift": 0.5551764702620218,
+    "earnings_surprise": 0.0,
+    "revenue_growth_accel": 0.0,
+    "analyst_coverage_change": 0.0,
+    "rsi_momentum": 0.20710111861878705,
+    "macd_histogram_trend": 0.05188352647211841
+  },
+  "normalizationParams": {
+    "mean": [
+      0.0056723760174558656,
+      0.007027995993765694,
+      0.0029909913360143038,
+      1.012539067179813,
+      411796.3025061425,
+      0.5,
+      0.4236638551333288,
+      0.4768939942910454,
+      0.0,
+      0.0,
+      14.77027027027027,
+      -7.7476323443732475,
+      -0.442767595331838
+    ],
+    "std": [
+      0.03983184515000731,
+      0.06260699386123213,
+      0.08599063432961372,
+      0.20671303718174447,
+      2854789.2884064973,
+      1.0,
+      0.19988059891768048,
+      0.40550571346051184,
+      1.0,
+      1.0,
+      1.5205555287930692,
+      13.116145088239684,
+      1.851740345995236
+    ]
+  },
+  "validationMetrics": {
+    "accuracy": 0.6666666666666666,
+    "auc": 0.920138888888889,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "f1": 0.8
+  }
+}
