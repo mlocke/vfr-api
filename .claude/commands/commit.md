@@ -1,7 +1,7 @@
 ## When run, it git adds, git commits and git pushes the current branch.
 1. Run git status to see the current state of the repository.
    - If there are no changes to commit, output "No changes to commit." and exit.
-2. Run git add from the root. 
+2. Run git add --all
    - Examine the output for any errors and if any files or folders need to be added to .gitignore. Do a git status. Understand the current state and branch.
    - If there are no changes to commit, output "No changes to commit." and exit.
 3. If there are changes to commit, create a meaningful commit message based on the changes.
