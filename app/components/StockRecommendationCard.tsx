@@ -24,7 +24,12 @@ interface StockRecommendationCardProps {
       positive?: string[];
       risks?: string[];
     };
-    reasoning?: string;
+    reasoning?: string | {
+      primaryFactors?: string[];
+      warnings?: string[];
+      opportunities?: string[];
+      optionsAnalysis?: any;
+    };
   };
 }
 
@@ -371,7 +376,75 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
               color: 'rgba(255, 255, 255, 0.8)',
               lineHeight: '1.6',
             }}>
-              {stock.reasoning}
+              {typeof stock.reasoning === 'string' ? (
+                stock.reasoning
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {stock.reasoning.primaryFactors && stock.reasoning.primaryFactors.length > 0 && (
+                    <div>
+                      <h5 style={{
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        marginBottom: '0.5rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}>
+                        Primary Factors
+                      </h5>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
+                        {stock.reasoning.primaryFactors.map((factor, idx) => (
+                          <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                            {factor}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {stock.reasoning.opportunities && stock.reasoning.opportunities.length > 0 && (
+                    <div>
+                      <h5 style={{
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        color: 'rgba(34, 197, 94, 0.9)',
+                        marginBottom: '0.5rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}>
+                        Opportunities
+                      </h5>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
+                        {stock.reasoning.opportunities.map((opp, idx) => (
+                          <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                            {opp}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {stock.reasoning.warnings && stock.reasoning.warnings.length > 0 && (
+                    <div>
+                      <h5 style={{
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        color: 'rgba(251, 191, 36, 0.9)',
+                        marginBottom: '0.5rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}>
+                        Warnings
+                      </h5>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
+                        {stock.reasoning.warnings.map((warning, idx) => (
+                          <li key={idx} style={{ marginBottom: '0.25rem' }}>
+                            {warning}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
