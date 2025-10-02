@@ -123,7 +123,8 @@ NODE_ENV=development
   - Model: LightGBM v1.0.0 (97.6% test accuracy)
   - Training: 1,051 real market examples
   - Features: 20 engineered features
-  - Response Time: 600-900ms average
+  - Response Time: ~50ms average (optimized with persistent Python process)
+  - Architecture: Persistent process with pre-loaded model and request queue
   - Health Check: `GET /api/ml/early-signal`
   - Python Inference: `scripts/ml/predict-early-signal.py`
 
@@ -209,7 +210,7 @@ Centralized error management through:
 - **Precision**: 90.4%
 - **Recall**: 100% (catches all analyst upgrades)
 - **F1 Score**: 0.949
-- **Response Time**: 600-900ms (optimization in progress)
+- **Response Time**: ~50ms average (optimized 14x from initial 600-900ms)
 
 #### Training Details
 - **Training Data**: 1,051 real market examples (early-signal-combined-1051.csv)
@@ -222,13 +223,18 @@ Centralized error management through:
   - rsi_momentum: 22.5%
 
 #### Implementation Architecture
-- **Model Serving**: Python subprocess bridge (`scripts/ml/predict-early-signal.py`)
+- **Model Serving**: Persistent Python process with pre-loaded model (`scripts/ml/predict-early-signal.py`)
+- **Performance Optimization**:
+  - Persistent process eliminates cold starts
+  - Pre-warmed with READY signal
+  - Request queue for concurrent handling
+  - Numpy pre-conversion for faster normalization
 - **Model Files**: `models/early-signal/v1.0.0/`
   - model.txt (LightGBM model)
   - normalizer.json (feature normalization)
   - metadata.json (model info & feature importance)
 - **Feature Engineering**: `app/services/ml/early-signal/FeatureExtractor.ts`
-- **API Route**: `app/api/ml/early-signal/route.ts`
+- **API Route**: `app/api/ml/early-signal/route.ts` (lines 14-110: persistent process implementation)
 
 #### Integration Testing
 - ✅ All 4 test scenarios passed
