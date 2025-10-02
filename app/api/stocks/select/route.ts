@@ -22,6 +22,7 @@ import { ExtendedMarketDataService } from '../../../services/financial-data/Exte
 import { FinancialModelingPrepAPI } from '../../../services/financial-data/FinancialModelingPrepAPI'
 import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 import { TimeoutHandler } from '../../../services/error-handling/TimeoutHandler'
+import { EarlySignalService } from '../../../services/ml/early-signal/EarlySignalService'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -38,7 +39,9 @@ const RequestSchema = z.object({
   include_ml: z.boolean().optional().default(false),
   ml_models: z.array(z.string()).optional(),
   ml_horizon: z.enum(['1h', '4h', '1d', '1w', '1m']).optional().default('1w'),
-  ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5)
+  ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5),
+  // Early Signal Detection (NEW - Phase 4)
+  include_early_signal: z.boolean().optional().default(false)
 })
 
 // Enhanced response format with comprehensive analysis
@@ -106,6 +109,17 @@ interface EnhancedStockData extends StockData {
     models: string[]
   }
   mlEnhancedScore?: number // ML-enhanced composite score (optional)
+  // Early Signal Detection (NEW - Phase 4)
+  early_signal?: {
+    upgrade_likely: boolean
+    downgrade_likely: boolean
+    confidence: number
+    horizon: string
+    reasoning: string[]
+    feature_importance: Record<string, number>
+    prediction_timestamp: number
+    model_version: string
+  }
 }
 
 interface SimpleStockResponse {
@@ -130,6 +144,9 @@ interface SimpleStockResponse {
       mlModelsUsed?: string[]
       mlHorizon?: string
       mlLatency?: number
+      // Early Signal Detection Metadata (NEW - Phase 4)
+      early_signal_enabled?: boolean
+      early_signal_latency_ms?: number
     }
   }
   error?: string
@@ -371,7 +388,11 @@ function convertToOHLCData(historicalData: import('../../../services/financial-d
 /**
  * Enhance stock data with comprehensive analysis
  */
-async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[]> {
+async function enhanceStockData(
+  stocks: StockData[],
+  options?: { include_early_signal?: boolean }
+): Promise<{ enhancedStocks: EnhancedStockData[], earlySignalLatencyMs: number }> {
+  const validatedRequest = { include_early_signal: options?.include_early_signal || false }
   const technical = getTechnicalService()
   const sentiment = getSentimentService()
   const macro = getMacroService()
@@ -633,16 +654,44 @@ async function enhanceStockData(stocks: StockData[]): Promise<EnhancedStockData[
     }
   })
 
-  const results = await Promise.allSettled(analysisPromises)
+  // Wait for all stock enhancements to complete
+  const enhancedStocksList = (await Promise.all(analysisPromises)).filter(s => s !== null)
 
-  results.forEach((result) => {
-    if (result.status === 'fulfilled' && result.value && result.value.symbol) {
-      // Only include stocks that have valid data
-      enhancedStocks.push(result.value)
+  // Early Signal Detection Integration (NEW - Phase 4)
+  let earlySignalLatencyMs = 0
+  if (validatedRequest.include_early_signal) {
+    const earlySignalStartTime = Date.now()
+    try {
+      const earlySignalService = new EarlySignalService()
+
+      // Run predictions in parallel for all stocks
+      await Promise.all(
+        enhancedStocksList.map(async (stock) => {
+          try {
+            const prediction = await earlySignalService.predictAnalystChange(
+              stock.symbol,
+              stock.sector || 'Unknown'
+            )
+
+            if (prediction) {
+              stock.early_signal = prediction
+            }
+          } catch (error) {
+            console.warn(`Early signal prediction failed for ${stock.symbol}:`, error)
+            // Continue without early signal for this stock
+          }
+        })
+      )
+
+      earlySignalLatencyMs = Date.now() - earlySignalStartTime
+      console.log(`Early signal predictions completed (${earlySignalLatencyMs}ms)`)
+    } catch (error) {
+      console.error('Early signal service failed:', error)
+      // Continue without early signals
     }
-  })
+  }
 
-  return enhancedStocks
+  return { enhancedStocks: enhancedStocksList, earlySignalLatencyMs }
 }
 
 /**
@@ -662,7 +711,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Parse and validate request
     const body = await request.json()
-    const { mode, symbols, sector, limit, config, include_ml, ml_models, ml_horizon, ml_confidence_threshold } = RequestSchema.parse(body)
+    const { mode, symbols, sector, limit, config, include_ml, ml_models, ml_horizon, ml_confidence_threshold, include_early_signal } = RequestSchema.parse(body)
 
     let stocks: StockData[] = []
     const sources = new Set<string>()
@@ -828,7 +877,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log(`🔬 Step 2: Performing comprehensive analysis on ${stocks.length} stocks...`)
     const startTime = Date.now()
 
-    const enhancedStocks = await enhanceStockData(stocks)
+    const { enhancedStocks, earlySignalLatencyMs } = await enhanceStockData(stocks, { include_early_signal })
     const analysisTime = Date.now() - startTime
 
     console.log(`✅ Comprehensive analysis completed in ${analysisTime}ms`)
@@ -869,6 +918,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             mlModelsUsed: ml_models || ['default'],
             mlHorizon: ml_horizon,
             mlLatency
+          }),
+          // Early Signal Detection Metadata (NEW - Phase 4)
+          ...(include_early_signal && {
+            early_signal_enabled: true,
+            early_signal_latency_ms: earlySignalLatencyMs
           })
         }
       },
