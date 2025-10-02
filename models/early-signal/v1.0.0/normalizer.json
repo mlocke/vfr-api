@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "fitted": true,
+  "params": {
+    "price_change_5d": { "mean": 0.5, "stdDev": 3.2 },
+    "price_change_10d": { "mean": 1.2, "stdDev": 5.1 },
+    "price_change_20d": { "mean": 2.1, "stdDev": 8.4 },
+    "volume_ratio": { "mean": 1.0, "stdDev": 0.4 },
+    "volume_trend": { "mean": 0.02, "stdDev": 0.15 },
+    "sentiment_news_delta": { "mean": 0.05, "stdDev": 0.25 },
+    "sentiment_reddit_accel": { "mean": 0.03, "stdDev": 0.18 },
+    "sentiment_options_shift": { "mean": 0.01, "stdDev": 0.12 },
+    "earnings_surprise": { "mean": 2.5, "stdDev": 8.5 },
+    "revenue_growth_accel": { "mean": 0.5, "stdDev": 3.2 },
+    "analyst_coverage_change": { "mean": 0.02, "stdDev": 0.15 },
+    "rsi_momentum": { "mean": 50, "stdDev": 15 },
+    "macd_histogram_trend": { "mean": 0, "stdDev": 0.05 }
+  }
+}
