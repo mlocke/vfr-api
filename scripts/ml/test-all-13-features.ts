@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
-import { EarlySignalFeatureExtractor } from '../../app/services/ml/early-signal/FeatureExtractor'
+import { EarlySignalFeatureExtractor } from '../../app/services/ml/early-signal/FeatureExtractor.js'
 
 async function test() {
   console.log('=== Testing All 13 Features ===\n')

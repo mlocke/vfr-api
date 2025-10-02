@@ -4,8 +4,8 @@
  * Purpose: Verify Z-score normalization, fit/transform, and save/load functionality
  */
 
-import { FeatureNormalizer } from '../../app/services/ml/early-signal/FeatureNormalizer'
-import type { FeatureVector } from '../../app/services/ml/early-signal/types'
+import { FeatureNormalizer } from '../../app/services/ml/early-signal/FeatureNormalizer.js'
+import type { FeatureVector } from '../../app/services/ml/early-signal/types.js'
 
 function createMockFeatureVector(multiplier: number = 1): FeatureVector {
   return {
