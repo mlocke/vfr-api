@@ -657,7 +657,7 @@ export default function AdminDashboard() {
 											background: "rgba(99, 102, 241, 0.2)",
 											border: "1px solid rgba(99, 102, 241, 0.4)",
 											borderRadius: "8px",
-											color: "rgba(99, 102, 241, 0.9)",
+											color: "rgba(255, 255, 255, 0.95)",
 											fontSize: "0.9rem",
 											fontWeight: "500",
 											cursor: "pointer",
@@ -682,7 +682,7 @@ export default function AdminDashboard() {
 												background: "rgba(34, 197, 94, 0.2)",
 												border: "1px solid rgba(34, 197, 94, 0.4)",
 												borderRadius: "6px",
-												color: "rgba(34, 197, 94, 0.9)",
+												color: "rgba(255, 255, 255, 0.95)",
 												fontSize: "0.8rem",
 												fontWeight: "500",
 												cursor: "pointer",
@@ -706,7 +706,7 @@ export default function AdminDashboard() {
 												background: "rgba(251, 191, 36, 0.2)",
 												border: "1px solid rgba(251, 191, 36, 0.4)",
 												borderRadius: "6px",
-												color: "rgba(251, 191, 36, 0.9)",
+												color: "rgba(255, 255, 255, 0.95)",
 												fontSize: "0.8rem",
 												fontWeight: "500",
 												cursor: "pointer",
@@ -730,7 +730,7 @@ export default function AdminDashboard() {
 												background: "rgba(168, 85, 247, 0.2)",
 												border: "1px solid rgba(168, 85, 247, 0.4)",
 												borderRadius: "6px",
-												color: "rgba(168, 85, 247, 0.9)",
+												color: "rgba(255, 255, 255, 0.95)",
 												fontSize: "0.8rem",
 												fontWeight: "500",
 												cursor: "pointer",
@@ -754,7 +754,7 @@ export default function AdminDashboard() {
 												background: "rgba(6, 182, 212, 0.2)",
 												border: "1px solid rgba(6, 182, 212, 0.4)",
 												borderRadius: "6px",
-												color: "rgba(6, 182, 212, 0.9)",
+												color: "rgba(255, 255, 255, 0.95)",
 												fontSize: "0.8rem",
 												fontWeight: "500",
 												cursor: "pointer",
@@ -779,7 +779,7 @@ export default function AdminDashboard() {
 											background: "rgba(239, 68, 68, 0.2)",
 											border: "1px solid rgba(239, 68, 68, 0.4)",
 											borderRadius: "8px",
-											color: "rgba(239, 68, 68, 0.9)",
+											color: "rgba(255, 255, 255, 0.95)",
 											fontSize: "0.8rem",
 											fontWeight: "500",
 											cursor: "pointer",
@@ -930,7 +930,7 @@ export default function AdminDashboard() {
 										style={{
 											fontSize: "0.9rem",
 											fontWeight: "600",
-											color: "rgba(99, 102, 241, 0.9)",
+											color: "rgba(255, 255, 255, 0.95)",
 										}}
 									>
 										{selectedDataSources.length} of {dataSourceConfigs.length}{" "}
@@ -1227,7 +1227,7 @@ export default function AdminDashboard() {
 										<div
 											style={{
 												fontSize: "0.9rem",
-												color: "rgba(99, 102, 241, 0.9)",
+												color: "rgba(255, 255, 255, 0.95)",
 												marginBottom: "0.5rem",
 											}}
 										>
@@ -1380,7 +1380,7 @@ export default function AdminDashboard() {
 												borderRadius: "6px",
 												color:
 													activeTab === tab
-														? "rgba(99, 102, 241, 0.9)"
+														? "rgba(255, 255, 255, 0.95)"
 														: "rgba(255, 255, 255, 0.7)",
 												fontSize: "0.8rem",
 												fontWeight: "500",
