@@ -1,0 +1,6 @@
+{
+  "version": "1.0.0",
+  "algorithm": "placeholder",
+  "trained_date": "2025-10-01",
+  "note": "Mock model for Phase 4 manual testing. Replace with trained LightGBM model in production."
+}
