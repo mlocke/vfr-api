@@ -6,6 +6,7 @@
 import { SectorOption } from '../../components/SectorDropdown'
 import { AlgorithmConfiguration, SelectionResult, StockScore } from '../algorithms/types'
 import { QualityScore } from '../types/core-types'
+import { EarlySignalPrediction } from '../ml/early-signal/types'
 
 /**
  * Selection mode types
@@ -117,6 +118,9 @@ export interface EnhancedStockResult {
     }
     lastUpdated: number
   }
+
+  // ML Early Signal Detection (NEW - Phase 4)
+  early_signal?: EarlySignalPrediction
 }
 
 /**
