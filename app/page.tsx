@@ -369,7 +369,7 @@ export default function Home() {
         <section className="data-engines-section">
           <div className="data-engines-container">
             <div className="data-engines-header">
-              <h2 className="data-engines-title">Powered by 14 Financial Data Sources</h2>
+              <h2 className="data-engines-title">Powered by 13 Financial Data Sources</h2>
               <p className="data-engines-subtitle">
                 Institutional-grade data sources across the entire financial ecosystem
               </p>
@@ -448,7 +448,7 @@ export default function Home() {
                 <div className="category-header">
                   <span className="category-icon">📊</span>
                   <h3 className="category-title">Economic Data</h3>
-                  <span className="category-count">4 Sources</span>
+                  <span className="category-count">3 Sources</span>
                 </div>
                 <div className="data-sources-grid">
                   <div className="data-source-card government">
@@ -516,7 +516,7 @@ export default function Home() {
 
             <div className="data-engines-stats">
               <div className="stat-item">
-                <div className="stat-number">14</div>
+                <div className="stat-number">13</div>
                 <div className="stat-label">Data Sources</div>
               </div>
               <div className="stat-item">
