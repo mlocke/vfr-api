@@ -43,6 +43,7 @@ export interface SelectionOptions {
   useRealTimeData?: boolean // Prefer real-time over cached data
   includeSentiment?: boolean // Include sentiment analysis
   includeNews?: boolean // Include news impact analysis
+  includeEarlySignal?: boolean // Include Early Signal Detection (ML analyst rating predictions)
   riskTolerance?: 'conservative' | 'moderate' | 'aggressive'
 
   // Data preferences

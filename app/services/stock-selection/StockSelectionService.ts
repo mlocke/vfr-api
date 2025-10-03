@@ -40,6 +40,8 @@ import { ExtendedMarketDataService } from '../financial-data/ExtendedMarketDataS
 import { InstitutionalDataService } from '../financial-data/InstitutionalDataService'
 import { OptionsDataService } from '../financial-data/OptionsDataService'
 import { MLPredictionService } from '../ml/prediction/MLPredictionService'
+import { EarlySignalService } from '../ml/early-signal/EarlySignalService'
+import { EarlySignalPrediction } from '../ml/early-signal/types'
 import ErrorHandler from '../error-handling/ErrorHandler'
 
 /**
@@ -467,6 +469,21 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // ❌ BUG FIX: ML service was overwriting correct FactorLibrary score (0.61 → 2.11)
     // ML predictions are NOT yet integrated and should not modify the composite score
 
+    // Early Signal Detection (ESD) - ML analyst rating predictions
+    let earlySignalPrediction: EarlySignalPrediction | undefined
+    if (request.options?.includeEarlySignal) {
+      try {
+        const esdService = new EarlySignalService()
+        const prediction = await esdService.predictAnalystChange(symbol, additionalData.sector || 'Unknown')
+        earlySignalPrediction = prediction || undefined
+        if (earlySignalPrediction) {
+          console.log(`🎯 Early Signal Detection completed for ${symbol}: ${earlySignalPrediction.upgrade_likely ? 'UPGRADE' : 'DOWNGRADE'} likely (${(earlySignalPrediction.confidence * 100).toFixed(1)}% confidence)`)
+        }
+      } catch (error) {
+        console.warn(`Early Signal Detection failed for ${symbol}:`, error)
+      }
+    }
+
     // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration
     const scoreBasedAction = getRecommendation(adjustedScore.overallScore, additionalData.analystData as AnalystData)
 
@@ -496,7 +513,10 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
         overall: stockScore.dataQuality,
         sourceBreakdown: additionalData.sourceBreakdown || {},
         lastUpdated: stockScore.timestamp
-      }
+      },
+
+      // ML Early Signal Detection
+      early_signal: earlySignalPrediction
     }
   }
 

@@ -161,7 +161,7 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 /**
  * Convert admin dashboard request format to SelectionRequest
  */
-function convertToSelectionRequest(body: any): SelectionRequest {
+async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
   const { mode, symbols, sector, limit, config } = body
 
   // Handle test format where symbol is in config
@@ -208,6 +208,11 @@ function convertToSelectionRequest(body: any): SelectionRequest {
       throw new Error(`Unsupported mode: ${mode}`)
   }
 
+  // Check if Early Signal Detection is enabled via admin toggle
+  const { MLFeatureToggleService } = await import('../../../services/admin/MLFeatureToggleService')
+  const toggleService = MLFeatureToggleService.getInstance()
+  const esdEnabled = await toggleService.isEarlySignalEnabled()
+
   return {
     scope,
     options: {
@@ -215,6 +220,7 @@ function convertToSelectionRequest(body: any): SelectionRequest {
       useRealTimeData: true,
       includeSentiment: true,
       includeNews: true,
+      includeEarlySignal: esdEnabled,
       riskTolerance: 'moderate',
       timeout: config?.timeout || 60000 // Increased to 60s for comprehensive analysis with timeout protection
     },
@@ -326,7 +332,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const service = await getStockSelectionService()
 
     // Convert to SelectionRequest format
-    const selectionRequest = convertToSelectionRequest(validatedRequest)
+    const selectionRequest = await convertToSelectionRequest(validatedRequest)
 
     console.log('📊 Executing comprehensive stock analysis:', {
       mode: selectionRequest.scope.mode,

@@ -9,6 +9,8 @@ import { FeatureEngineeringService } from '../ml/features/FeatureEngineeringServ
 import { MLEnhancementStore } from '../ml/database/MLEnhancementStore'
 import { RedisCache } from '../cache/RedisCache'
 import ErrorHandler from '../error-handling/ErrorHandler'
+import { MLFeatureToggleService } from './MLFeatureToggleService'
+import { EarlySignalService } from '../ml/early-signal/EarlySignalService'
 
 export interface MLServiceInfo {
   id: string
@@ -208,6 +210,35 @@ export class MLMonitoringService {
       },
       dependencies: ['redis']
     })
+
+    // Early Signal Detection Service (NEW - Phase 4)
+    this.mlServices.set('early_signal_detection', {
+      id: 'early_signal_detection',
+      name: 'Early Signal Detection',
+      type: 'ml_prediction',
+      status: 'initializing',
+      enabled: false, // Controlled by MLFeatureToggleService
+      description: 'ML-powered analyst rating upgrade predictions (2-week horizon, 97.6% accuracy)',
+      endpoint: '/api/ml/early-signal',
+      features: [
+        'analyst_upgrade_prediction',
+        'lightgbm_model',
+        '20_engineered_features',
+        'earnings_surprise_analysis',
+        'macd_histogram_trend',
+        'rsi_momentum',
+        'feature_importance_ranking',
+        'confidence_filtering',
+        'human_readable_reasoning'
+      ],
+      performance: {
+        avgResponseTime: 50, // ~50ms average
+        totalRequests: 0,
+        errorCount: 0,
+        uptime: 0
+      },
+      dependencies: ['feature_extraction', 'ml_cache', 'normalizer']
+    })
   }
 
   /**
@@ -250,6 +281,15 @@ export class MLMonitoringService {
    */
   async getAllMLServices(): Promise<MLServiceInfo[]> {
     const services = Array.from(this.mlServices.values())
+
+    // Sync Early Signal Detection state from MLFeatureToggleService
+    const toggleService = MLFeatureToggleService.getInstance()
+    const esdEnabled = await toggleService.isEarlySignalEnabled()
+    if (esdEnabled) {
+      this.enabledServices.add('early_signal_detection')
+    } else {
+      this.enabledServices.delete('early_signal_detection')
+    }
 
     // Update status with latest health check data
     for (const service of services) {
@@ -410,6 +450,9 @@ export class MLMonitoringService {
           break
         case 'ml_cache':
           healthResult = await this.testMLCache()
+          break
+        case 'early_signal_detection':
+          healthResult = await this.testEarlySignalDetection()
           break
         default:
           throw new Error(`Unknown ML service: ${serviceId}`)
@@ -803,6 +846,35 @@ export class MLMonitoringService {
     }
   }
 
+  private async testEarlySignalDetection(): Promise<any> {
+    try {
+      const earlySignalService = new EarlySignalService()
+      const healthStatus = await earlySignalService.getHealthStatus()
+
+      return {
+        success: healthStatus.modelLoaded && healthStatus.normalizerFitted,
+        status: healthStatus.modelLoaded ? 'healthy' : 'degraded',
+        components: {
+          modelLoaded: healthStatus.modelLoaded,
+          normalizerFitted: healthStatus.normalizerFitted,
+          cacheConnected: healthStatus.cacheConnected,
+          modelVersion: healthStatus.modelVersion
+        },
+        metadata: {
+          modelVersion: healthStatus.modelVersion,
+          accuracy: 0.976, // 97.6% test accuracy
+          avgResponseTime: 50 // ~50ms average
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Early Signal Detection test failed'
+      }
+    }
+  }
+
   private calculateFeatureQuality(features: Map<string, any>): number {
     if (features.size === 0) return 0
 
@@ -877,6 +949,31 @@ export class MLMonitoringService {
     try {
       const wasEnabled = this.enabledServices.has(serviceId)
 
+      // Special handling for Early Signal Detection - use MLFeatureToggleService
+      if (serviceId === 'early_signal_detection') {
+        const toggleService = MLFeatureToggleService.getInstance()
+        const isNowEnabled = !wasEnabled
+
+        // Update feature toggle service
+        await toggleService.setEarlySignalEnabled(isNowEnabled, 'admin', 'Admin dashboard toggle')
+
+        // Update local state
+        if (isNowEnabled) {
+          this.enabledServices.add(serviceId)
+        } else {
+          this.enabledServices.delete(serviceId)
+        }
+
+        console.log(`✅ Early Signal Detection ${isNowEnabled ? 'ENABLED' : 'DISABLED'} via admin dashboard`)
+
+        return {
+          success: true,
+          enabled: isNowEnabled,
+          message: `Early Signal Detection has been ${isNowEnabled ? 'enabled' : 'disabled'}. This will ${isNowEnabled ? 'include' : 'exclude'} ML predictions in stock analysis.`
+        }
+      }
+
+      // Standard toggle for other services
       if (wasEnabled) {
         this.enabledServices.delete(serviceId)
       } else {

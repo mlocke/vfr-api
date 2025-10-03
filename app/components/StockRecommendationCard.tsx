@@ -88,6 +88,37 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  // Helper function to format camelCase factor names to display names
+  const formatFactorName = (factor: string): string => {
+    // Handle common factor names
+    const factorMap: Record<string, string> = {
+      'fundamentalScore': 'Fundamental Score',
+      'technicalScore': 'Technical Score',
+      'macroScore': 'Macro Score',
+      'sentimentScore': 'Sentiment Score',
+      'esgScore': 'ESG Score',
+      'analystScore': 'Analyst Score',
+      'momentum_composite': 'Momentum Composite',
+      'quality_composite': 'Quality Composite',
+      'value_composite': 'Value Composite',
+      'composite': 'Composite Score',
+    };
+
+    // Return mapped name if exists
+    if (factorMap[factor]) {
+      return factorMap[factor];
+    }
+
+    // Otherwise, convert camelCase to Title Case
+    return factor
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/_/g, ' ') // Replace underscores with spaces
+      .trim()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   return (
     <div style={{
       background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%)',
@@ -395,7 +426,7 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
                       <ul style={{ margin: 0, paddingLeft: '1.25rem', listStyle: 'disc' }}>
                         {stock.reasoning.primaryFactors.map((factor, idx) => (
                           <li key={idx} style={{ marginBottom: '0.25rem' }}>
-                            {factor}
+                            {formatFactorName(factor)}
                           </li>
                         ))}
                       </ul>

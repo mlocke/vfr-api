@@ -24,6 +24,7 @@ import { getRecommendation } from '../../../services/utils/RecommendationUtils'
 import { TimeoutHandler } from '../../../services/error-handling/TimeoutHandler'
 import { EarlySignalService } from '../../../services/ml/early-signal/EarlySignalService'
 import { EarlySignalPrediction } from '../../../services/ml/early-signal/types'
+import { MLFeatureToggleService } from '../../../services/admin/MLFeatureToggleService'
 
 // Request validation - supports both test format and production format
 const RequestSchema = z.object({
@@ -384,7 +385,11 @@ async function enhanceStockData(
   stocks: StockData[],
   options?: { include_early_signal?: boolean }
 ): Promise<{ enhancedStocks: EnhancedStockData[], earlySignalLatencyMs: number }> {
-  const validatedRequest = { include_early_signal: options?.include_early_signal || false }
+  // Check both admin toggle AND explicit request parameter
+  const toggleService = MLFeatureToggleService.getInstance()
+  const esdEnabled = await toggleService.isEarlySignalEnabled() || options?.include_early_signal
+
+  const validatedRequest = { include_early_signal: esdEnabled }
   const technical = getTechnicalService()
   const sentiment = getSentimentService()
   const macro = getMacroService()
@@ -649,41 +654,10 @@ async function enhanceStockData(
   // Wait for all stock enhancements to complete
   const enhancedStocksList = (await Promise.all(analysisPromises)).filter(s => s !== null)
 
-  // Early Signal Detection Integration (NEW - Phase 4)
-  let earlySignalLatencyMs = 0
-  if (validatedRequest.include_early_signal) {
-    const earlySignalStartTime = Date.now()
-    try {
-      const earlySignalService = new EarlySignalService()
+  // NOTE: Early Signal Detection now handled in StockSelectionService.enhanceSingleStockResult()
+  // No longer needs manual integration here - automatically included when includeEarlySignal option is set
 
-      // Run predictions in parallel for all stocks
-      await Promise.all(
-        enhancedStocksList.map(async (stock) => {
-          try {
-            const prediction = await earlySignalService.predictAnalystChange(
-              stock.symbol,
-              stock.sector || 'Unknown'
-            )
-
-            if (prediction) {
-              stock.early_signal = prediction
-            }
-          } catch (error) {
-            console.warn(`Early signal prediction failed for ${stock.symbol}:`, error)
-            // Continue without early signal for this stock
-          }
-        })
-      )
-
-      earlySignalLatencyMs = Date.now() - earlySignalStartTime
-      console.log(`Early signal predictions completed (${earlySignalLatencyMs}ms)`)
-    } catch (error) {
-      console.error('Early signal service failed:', error)
-      // Continue without early signals
-    }
-  }
-
-  return { enhancedStocks: enhancedStocksList, earlySignalLatencyMs }
+  return { enhancedStocks: enhancedStocksList, earlySignalLatencyMs: 0 }
 }
 
 /**
@@ -910,12 +884,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             mlModelsUsed: ml_models || ['default'],
             mlHorizon: ml_horizon,
             mlLatency
-          }),
-          // Early Signal Detection Metadata (NEW - Phase 4)
-          ...(include_early_signal && {
-            early_signal_enabled: true,
-            early_signal_latency_ms: earlySignalLatencyMs
           })
+          // Early Signal Detection Metadata - removed, now handled in StockSelectionService
         }
       },
       // Include warnings if any
