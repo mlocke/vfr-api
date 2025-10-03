@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatMarketCap } from './stock-analysis/utils/formatters';
+import { getESDRecommendationStrength, getCombinedRecommendation } from '../services/utils/RecommendationUtils';
 
 interface StockRecommendationCardProps {
   stock: {
@@ -29,6 +30,16 @@ interface StockRecommendationCardProps {
       warnings?: string[];
       opportunities?: string[];
       optionsAnalysis?: any;
+    };
+    early_signal?: {
+      upgrade_likely: boolean;
+      downgrade_likely: boolean;
+      confidence: number;
+      horizon: '2_weeks';
+      reasoning: string[];
+      feature_importance: Record<string, number>;
+      prediction_timestamp: number;
+      model_version: string;
     };
   };
 }
@@ -180,39 +191,49 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
           )}
         </div>
 
-        {/* Recommendation Badge */}
-        <div style={{
-          background: recColors.bg,
-          border: `2px solid ${recColors.border}`,
-          borderRadius: '12px',
-          padding: '1rem 1.5rem',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '0.5rem',
-          minWidth: '120px',
-        }}>
-          <div style={{
-            fontSize: '1.5rem',
-            fontWeight: '700',
-            color: recColors.text,
-            letterSpacing: '0.5px',
-          }}>
-            {stock.recommendation?.toUpperCase() || 'HOLD'}
-          </div>
-          {stock.confidence && (
+        {/* Recommendation Display */}
+        {(() => {
+          // Use combined recommendation when ESD exists, otherwise use current recommendation
+          const displayRec = stock.early_signal
+            ? getCombinedRecommendation(stock.recommendation?.toUpperCase() as any || 'HOLD', stock.early_signal)
+            : stock.recommendation?.toUpperCase() || 'HOLD';
+          const displayColors = getRecommendationColor(displayRec);
+
+          return (
             <div style={{
-              fontSize: '0.85rem',
-              fontWeight: '600',
-              color: recColors.text,
-              background: 'rgba(0, 0, 0, 0.3)',
-              padding: '0.25rem 0.75rem',
-              borderRadius: '20px',
+              background: displayColors.bg,
+              border: `2px solid ${displayColors.border}`,
+              borderRadius: '12px',
+              padding: '1rem 1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.5rem',
+              minWidth: '120px',
             }}>
-              {stock.confidence}%
+              <div style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: displayColors.text,
+                letterSpacing: '0.5px',
+              }}>
+                {displayRec}
+              </div>
+              {stock.confidence && (
+                <div style={{
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  color: displayColors.text,
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '20px',
+                }}>
+                  {stock.confidence}%
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
 
       {/* Overall Score Section */}
@@ -364,6 +385,104 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
       )}
 
       {/* Expandable Sections */}
+
+      {/* ESD Details Section */}
+      {stock.early_signal && (
+        <>
+          <div
+            onClick={() => toggleSection('esd_details')}
+            style={{
+              background: 'rgba(99, 102, 241, 0.1)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '0.75rem',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '0.9rem', fontWeight: '600', color: 'rgba(99, 102, 241, 0.9)' }}>
+                🔮 Future Signal Details
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginLeft: '0.5rem' }}>
+                {stock.early_signal.upgrade_likely ? 'Upgrade' : 'Downgrade'} likely in 2 weeks
+              </span>
+            </div>
+            <span style={{ fontSize: '1.2rem', color: 'rgba(99, 102, 241, 0.6)' }}>
+              {expandedSection === 'esd_details' ? '−' : '+'}
+            </span>
+          </div>
+
+          {expandedSection === 'esd_details' && (
+            <div style={{
+              background: 'rgba(99, 102, 241, 0.05)',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '0.75rem',
+            }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <h5 style={{ color: 'rgba(99, 102, 241, 0.9)', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
+                  Prediction Confidence
+                </h5>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    flex: 1,
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '20px',
+                    height: '8px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      background: 'linear-gradient(90deg, rgba(99,102,241,0.8), rgba(168,85,247,0.8))',
+                      height: '100%',
+                      width: `${stock.early_signal.confidence * 100}%`,
+                      borderRadius: '20px',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '1.2rem', fontWeight: '700', color: 'rgba(99,102,241,0.9)' }}>
+                    {(stock.early_signal.confidence * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+
+              {stock.early_signal.reasoning && stock.early_signal.reasoning.length > 0 && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <h5 style={{ color: 'rgba(99, 102, 241, 0.9)', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>
+                    Why This Prediction
+                  </h5>
+                  <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.25rem', listStyle: 'disc', color: 'rgba(255,255,255,0.8)' }}>
+                    {stock.early_signal.reasoning.map((reason, idx) => (
+                      <li key={idx} style={{ marginBottom: '0.5rem', fontSize: '0.9rem', lineHeight: '1.5' }}>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div style={{
+                marginTop: '1rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                fontSize: '0.75rem',
+                color: 'rgba(255,255,255,0.5)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.5rem'
+              }}>
+                <span>Model: LightGBM {stock.early_signal.model_version}</span>
+                <span>Predicted: {new Date(stock.early_signal.prediction_timestamp).toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {stock.reasoning && (
         <>
           <div

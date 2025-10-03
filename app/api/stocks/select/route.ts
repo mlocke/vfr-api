@@ -387,7 +387,10 @@ async function enhanceStockData(
 ): Promise<{ enhancedStocks: EnhancedStockData[], earlySignalLatencyMs: number }> {
   // Check both admin toggle AND explicit request parameter
   const toggleService = MLFeatureToggleService.getInstance()
-  const esdEnabled = await toggleService.isEarlySignalEnabled() || options?.include_early_signal
+  const adminToggle = await toggleService.isEarlySignalEnabled()
+  const esdEnabled = adminToggle || options?.include_early_signal
+
+  console.log(`🔍 ESD Toggle Check: adminToggle=${adminToggle}, requestParam=${options?.include_early_signal}, esdEnabled=${esdEnabled}`)
 
   const validatedRequest = { include_early_signal: esdEnabled }
   const technical = getTechnicalService()
@@ -639,6 +642,25 @@ async function enhanceStockData(
 
       enhancedStock.recommendation = getRecommendation(compositeScore, analystData)
 
+      // Early Signal Detection
+      if (esdEnabled) {
+        try {
+          console.log(`🚀 Calling Early Signal Service for ${stock.symbol}`)
+          const earlySignalService = new EarlySignalService()
+          const earlySignal = await earlySignalService.predictAnalystChange(stock.symbol, enhancedStock.sector || 'Unknown')
+          if (earlySignal) {
+            enhancedStock.early_signal = earlySignal
+            console.log(`✅ Early Signal for ${stock.symbol}: ${earlySignal.upgrade_likely ? 'UPGRADE' : 'DOWNGRADE'} (${(earlySignal.confidence * 100).toFixed(1)}%)`)
+          } else {
+            console.warn(`⚠️ Early Signal Service returned null for ${stock.symbol}`)
+          }
+        } catch (error) {
+          console.error(`❌ Early signal prediction failed for ${stock.symbol}:`, error)
+        }
+      } else {
+        console.log(`⏭️  ESD disabled - skipping Early Signal for ${stock.symbol}`)
+      }
+
       return enhancedStock
     } catch (error) {
       console.error(`Stock enhancement failed for ${stock.symbol}:`, error)
@@ -653,9 +675,6 @@ async function enhanceStockData(
 
   // Wait for all stock enhancements to complete
   const enhancedStocksList = (await Promise.all(analysisPromises)).filter(s => s !== null)
-
-  // NOTE: Early Signal Detection now handled in StockSelectionService.enhanceSingleStockResult()
-  // No longer needs manual integration here - automatically included when includeEarlySignal option is set
 
   return { enhancedStocks: enhancedStocksList, earlySignalLatencyMs: 0 }
 }

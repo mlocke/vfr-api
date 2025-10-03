@@ -282,6 +282,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
    */
   private async executeSingleStockAnalysis(request: SelectionRequest, requestId: string): Promise<any> {
     const { scope } = request
+    console.log(`🔍 executeSingleStockAnalysis START`)
+    console.log(`🔍 request.options:`, JSON.stringify(request.options, null, 2))
 
     if (!scope.symbols || scope.symbols.length === 0) {
       throw new Error('Single stock analysis requires at least one symbol')
@@ -296,8 +298,10 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     // Check cache first
     const cacheKey = this.config.generateCacheKey(`single_stock_${symbol}`, request.options)
     const cached = await this.getCachedData(cacheKey)
+    console.log(`🔍 Cache check for ${symbol}: ${cached ? 'HIT' : 'MISS'}`)
 
     if (cached) {
+      console.log(`🔍 Returning cached result for ${symbol}`)
       this.emitEvent({
         type: 'cache_hit',
         timestamp: Date.now(),
@@ -306,6 +310,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
       })
       return cached
     }
+
+    console.log(`🔍 No cache, proceeding with fresh analysis for ${symbol}`)
 
     // Execute algorithm analysis
     const algorithmResult = await this.algorithmIntegration.executeAnalysis(request)
@@ -428,6 +434,8 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
     algorithmResult: SelectionResult,
     request: SelectionRequest
   ): Promise<EnhancedStockResult> {
+    console.log(`🔍 enhanceSingleStockResult START for ${symbol}`)
+    console.log(`🔍 request.options:`, JSON.stringify(request.options, null, 2))
     const stockScore = algorithmResult.selections[0]?.score
 
     if (!stockScore) {
@@ -471,17 +479,24 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
     // Early Signal Detection (ESD) - ML analyst rating predictions
     let earlySignalPrediction: EarlySignalPrediction | undefined
+    console.log(`🔍 ESD Check for ${symbol}: includeEarlySignal=${request.options?.includeEarlySignal}`)
     if (request.options?.includeEarlySignal) {
       try {
+        console.log(`🚀 Starting ESD prediction for ${symbol}...`)
         const esdService = new EarlySignalService()
         const prediction = await esdService.predictAnalystChange(symbol, additionalData.sector || 'Unknown')
+        console.log(`📊 ESD raw prediction for ${symbol}:`, prediction)
         earlySignalPrediction = prediction || undefined
         if (earlySignalPrediction) {
           console.log(`🎯 Early Signal Detection completed for ${symbol}: ${earlySignalPrediction.upgrade_likely ? 'UPGRADE' : 'DOWNGRADE'} likely (${(earlySignalPrediction.confidence * 100).toFixed(1)}% confidence)`)
+        } else {
+          console.warn(`⚠️ ESD returned null/undefined for ${symbol}`)
         }
       } catch (error) {
-        console.warn(`Early Signal Detection failed for ${symbol}:`, error)
+        console.error(`❌ Early Signal Detection failed for ${symbol}:`, error)
       }
+    } else {
+      console.log(`⏭️ ESD skipped for ${symbol} (feature not enabled in request options)`)
     }
 
     // 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration

@@ -49,7 +49,7 @@ export class MLFeatureToggleService {
       id: 'early_signal_detection',
       name: 'Early Signal Detection',
       description: 'ML-powered analyst rating upgrade predictions (2-week horizon)',
-      defaultState: false // Conservative default - feature is off unless explicitly enabled
+      defaultState: true // Production-ready model (v1.0.0, 97.6% accuracy, deployed Oct 2, 2025)
     }
   }
 
@@ -60,7 +60,43 @@ export class MLFeatureToggleService {
 
   private constructor() {
     this.cache = new RedisCache()
-    this.initializeFeatures()
+    // Don't call initializeFeatures() here - it's async and needs to be awaited
+    // Instead, we'll initialize on first use via ensureInitialized()
+  }
+
+  private initializePromise: Promise<void> | null = null
+
+  /**
+   * Wait for Redis to be ready (with timeout)
+   */
+  private async waitForRedis(maxAttempts: number = 10, delayMs: number = 100): Promise<void> {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const result = await this.cache.ping()
+        if (result === 'PONG' || result === 'PONG (fallback)') {
+          return // Redis is ready
+        }
+      } catch (error) {
+        // Redis not ready yet, continue waiting
+      }
+
+      if (i < maxAttempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+
+    console.warn('⚠️ Redis not ready after waiting, proceeding with in-memory fallback')
+  }
+
+  /**
+   * Ensure features are initialized before any operation
+   * Called automatically by all public methods
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initializePromise) {
+      this.initializePromise = this.initializeFeatures()
+    }
+    await this.initializePromise
   }
 
   /**
@@ -78,6 +114,9 @@ export class MLFeatureToggleService {
    */
   private async initializeFeatures(): Promise<void> {
     try {
+      // Wait for Redis to be ready before attempting to initialize features
+      await this.waitForRedis()
+
       // Initialize Early Signal Detection feature
       const esdKey = this.getFeatureKey(MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id)
       const existingStatus = await this.cache.get(esdKey)
@@ -138,6 +177,7 @@ export class MLFeatureToggleService {
    */
   public async isEarlySignalEnabled(): Promise<boolean> {
     try {
+      await this.ensureInitialized()
       const status = await this.getFeatureStatus(MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id)
       return status.enabled
     } catch (error) {
@@ -151,6 +191,7 @@ export class MLFeatureToggleService {
    * Enable or disable Early Signal Detection
    */
   public async setEarlySignalEnabled(enabled: boolean, userId?: string, reason?: string): Promise<void> {
+    await this.ensureInitialized()
     await this.setFeatureEnabled(
       MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id,
       enabled,
@@ -163,6 +204,7 @@ export class MLFeatureToggleService {
    * Get current status of a feature
    */
   public async getFeatureStatus(featureId: string): Promise<MLFeatureStatus> {
+    await this.ensureInitialized()
     try {
       const key = this.getFeatureKey(featureId)
       const cached = await this.cache.get(key)
@@ -217,6 +259,7 @@ export class MLFeatureToggleService {
     userId?: string,
     reason?: string
   ): Promise<void> {
+    await this.ensureInitialized()
     try {
       // Get current status
       const currentStatus = await this.getFeatureStatus(featureId)
@@ -269,6 +312,7 @@ export class MLFeatureToggleService {
    * Get all feature statuses
    */
   public async getAllFeatures(): Promise<MLFeatureStatus[]> {
+    await this.ensureInitialized()
     const features: MLFeatureStatus[] = []
 
     for (const feature of Object.values(MLFeatureToggleService.FEATURES)) {
@@ -287,6 +331,7 @@ export class MLFeatureToggleService {
    * Get audit log for a feature (last 100 entries)
    */
   public async getAuditLog(featureId: string, limit: number = 100): Promise<ToggleAuditLog[]> {
+    await this.ensureInitialized()
     try {
       // This is a simplified implementation
       // In production, you might want to use Redis SCAN or a time-series database
@@ -306,6 +351,7 @@ export class MLFeatureToggleService {
     cacheConnected: boolean
     featuresInitialized: number
   }> {
+    await this.ensureInitialized()
     try {
       const cacheConnected = await this.cache.ping().then(() => true).catch(() => false)
       const features = await this.getAllFeatures()
@@ -328,6 +374,7 @@ export class MLFeatureToggleService {
    * Clear all feature toggles (for testing only)
    */
   public async clearAllToggles(): Promise<void> {
+    await this.ensureInitialized()
     console.warn('⚠️  Clearing all ML feature toggles - this should only be used in testing!')
 
     for (const feature of Object.values(MLFeatureToggleService.FEATURES)) {

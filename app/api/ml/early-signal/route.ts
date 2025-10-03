@@ -27,25 +27,43 @@ const EarlySignalRequestSchema = z.object({
 })
 
 /**
- * Extract features for a symbol (placeholder - integrate with FeatureEngineeringService)
+ * Extract features for a symbol using EarlySignalFeatureExtractor
+ *
+ * INTEGRATION NOTES (2025-10-02):
+ * - Uses real-time feature extraction from FeatureExtractor.ts
+ * - Feature order matches model training order from metadata.json
+ * - useHistoricalMode: false for live predictions (includes real-time sentiment)
+ * - Returns 19 features in exact order expected by LightGBM model
  */
 async function extractFeatures(symbol: string): Promise<number[]> {
-  // TODO: Integrate with FeatureEngineeringService to extract real features
-  // For now, return zeros (sentiment features are zero anyway)
-  // Features: price_change_5d, price_change_10d, price_change_20d, volume_ratio, volume_trend,
-  //           sentiment_news_delta, sentiment_reddit_accel, sentiment_options_shift,
-  //           social_stocktwits_24h_change, social_stocktwits_hourly_momentum, social_stocktwits_7d_trend,
-  //           social_twitter_24h_change, social_twitter_hourly_momentum, social_twitter_7d_trend,
-  //           earnings_surprise, revenue_growth_accel, analyst_coverage_change, rsi_momentum, macd_histogram_trend
+  const { EarlySignalFeatureExtractor } = await import('../../../services/ml/early-signal/FeatureExtractor')
+  const extractor = new EarlySignalFeatureExtractor()
 
+  // Extract features with live sentiment data (useHistoricalMode: false)
+  const featureVector = await extractor.extractFeatures(symbol, new Date(), false)
+
+  // Convert FeatureVector object to array in model's expected order
+  // Order matches metadata.json featureNames (lines 5-25)
   return [
-    0, 0, 0,     // price changes (placeholder)
-    1, 0,        // volume features (placeholder)
-    0, 0, 0,     // sentiment (not implemented)
-    0, 0, 0,     // social stocktwits (not implemented)
-    0, 0, 0,     // social twitter (not implemented)
-    0, 0, 15,    // fundamental features (placeholder)
-    0, 0         // technical features (placeholder)
+    featureVector.price_change_5d,
+    featureVector.price_change_10d,
+    featureVector.price_change_20d,
+    featureVector.volume_ratio,
+    featureVector.volume_trend,
+    featureVector.sentiment_news_delta,
+    featureVector.sentiment_reddit_accel,
+    featureVector.sentiment_options_shift,
+    featureVector.social_stocktwits_24h_change,
+    featureVector.social_stocktwits_hourly_momentum,
+    featureVector.social_stocktwits_7d_trend,
+    featureVector.social_twitter_24h_change,
+    featureVector.social_twitter_hourly_momentum,
+    featureVector.social_twitter_7d_trend,
+    featureVector.earnings_surprise,
+    featureVector.revenue_growth_accel,
+    featureVector.analyst_coverage_change,
+    featureVector.rsi_momentum,
+    featureVector.macd_histogram_trend
   ]
 }
 
