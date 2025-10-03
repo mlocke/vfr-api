@@ -186,3 +186,36 @@ export function getRecommendationColor(recommendation: RecommendationTier): {
     border: 'rgba(251, 191, 36, 0.5)'
   }
 }
+
+/**
+ * Map ESD probability to 7-tier recommendation
+ */
+export function getESDRecommendationStrength(upgrade_likely: boolean, confidence: number): RecommendationTier {
+  const STRONG = 0.85, MODERATE = 0.75
+  if (upgrade_likely) {
+    if (confidence >= STRONG) return 'STRONG_BUY'
+    if (confidence >= MODERATE) return 'BUY'
+    return 'MODERATE_BUY'
+  } else {
+    if (confidence >= STRONG) return 'STRONG_SELL'
+    if (confidence >= MODERATE) return 'SELL'
+    return 'MODERATE_SELL'
+  }
+}
+
+/**
+ * Blend current + ESD (70% current, 30% ESD)
+ */
+export function getCombinedRecommendation(current: RecommendationTier, esd: {upgrade_likely: boolean, confidence: number}): RecommendationTier {
+  const scoreMap: Record<RecommendationTier, number> = {STRONG_BUY: 95, BUY: 80, MODERATE_BUY: 65, HOLD: 50, MODERATE_SELL: 35, SELL: 20, STRONG_SELL: 5}
+  const reverseMap: [number, RecommendationTier][] = [[90,'STRONG_BUY'],[75,'BUY'],[60,'MODERATE_BUY'],[40,'HOLD'],[25,'MODERATE_SELL'],[15,'SELL'],[0,'STRONG_SELL']]
+
+  const currentScore = scoreMap[current]
+  const esdScore = scoreMap[getESDRecommendationStrength(esd.upgrade_likely, esd.confidence)]
+  const combined = currentScore * 0.70 + esdScore * 0.30
+
+  for (const [threshold, tier] of reverseMap) {
+    if (combined >= threshold) return tier
+  }
+  return 'HOLD'
+}

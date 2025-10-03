@@ -275,6 +275,7 @@ Components: ${Object.keys(service.components).length} components`;
                         risks: stock.insights?.risks || stock.risks,
                       },
                       reasoning: stock.reasoning || stock.rationale,
+                      early_signal: stock.early_signal,
                     }}
                   />
                 ))}

@@ -653,9 +653,70 @@ npm test -- app/api/early-signal-detection/__tests__/route.test.ts
 
 ---
 
+## Feature Extraction Integration (October 2, 2025 - POST-PRODUCTION)
+
+**Status**: ✅ COMPLETED
+**Completion Date**: October 2, 2025
+**Integration Type**: Real-time feature extraction from market data
+
+### Integration Details
+
+**Problem**: API endpoint accepted features as input parameters but didn't extract them automatically from market data.
+
+**Solution Implemented**:
+1. Integrated `EarlySignalFeatureExtractor` into `/api/ml/early-signal/route.ts`
+2. Removed placeholder feature extraction (zeros array)
+3. Wired real-time feature extraction using existing VFR services
+
+**Implementation Decisions** (documented per user request):
+
+| Decision | Rationale | File Reference |
+|----------|-----------|----------------|
+| **Feature Array Order** | Matches `metadata.json` featureNames (lines 5-25) exactly | `route.ts:47-67` |
+| **useHistoricalMode: false** | Live predictions need real-time sentiment data | `route.ts:43` |
+| **Dynamic Import** | Lazy load FeatureExtractor to reduce cold start time | `route.ts:39` |
+| **FeatureVector → Array** | Model expects array, extractor returns object; manual mapping required | `route.ts:45-67` |
+| **Error Handling** | FeatureExtractor returns neutral features (zeros) on error | `FeatureExtractor.ts:98` |
+
+**Testing Results** (October 2, 2025):
+```bash
+# AAPL Test
+{"success":true,"data":{"symbol":"AAPL","prediction":"upgrade",
+ "probability":0.9345852538379951,"confidence":0.8691705076759901,
+ "processingTimeMs":9274}}
+
+# TSLA Test
+{"success":true,"data":{"symbol":"TSLA","prediction":"upgrade",
+ "probability":0.9227548963408435,"confidence":0.845509792681687,
+ "processingTimeMs":8122}}
+
+# NVDA Test
+{"success":true,"data":{"symbol":"NVDA","prediction":"upgrade",
+ "probability":0.9219935267229101,"confidence":0.8439870534458203,
+ "processingTimeMs":8120}}
+```
+
+**Performance Observations**:
+- Processing time: ~8-9 seconds per prediction (feature extraction dominates)
+- Health check: ✅ Operational
+- TypeScript: ✅ No errors (type-check passed)
+- Feature extraction: ✅ Working with real market data
+
+**Known Limitations**:
+- Social sentiment features return 0 (StockTwits/Twitter APIs not implemented)
+- Sentiment features rely on current data only (no historical sentiment APIs)
+- Processing time 8-9s exceeds original 50ms target (feature extraction overhead)
+
+**Next Optimization Opportunities**:
+1. Cache feature vectors (5min TTL) to reduce repeated API calls
+2. Pre-warm feature cache for popular symbols
+3. Implement parallel feature extraction for batch predictions
+
+---
+
 ## Completion Summary ✅
 
-**ALL TASKS COMPLETE**: Production deployment and documentation update finished October 2, 2025
+**ALL TASKS COMPLETE**: Production deployment, documentation update, and feature extraction integration finished October 2, 2025
 
 **Files Updated** (9 total):
 1. ✅ `/README.md` - Main project README with ML features section

@@ -26,11 +26,24 @@ class PredictionServer:
 
             # Load normalizer
             with open('models/early-signal/v1.0.0/normalizer.json', 'r') as f:
-                self.normalizer = json.load(f)
+                normalizer_data = json.load(f)
 
-            # Pre-convert to numpy for faster predictions
-            self.mean = np.array(self.normalizer['mean'])
-            self.std = np.array(self.normalizer['std'])
+            # Extract mean and std from params structure
+            params = normalizer_data['params']
+            feature_names = [
+                'price_change_5d', 'price_change_10d', 'price_change_20d',
+                'volume_ratio', 'volume_trend',
+                'sentiment_news_delta', 'sentiment_reddit_accel', 'sentiment_options_shift',
+                'social_stocktwits_24h_change', 'social_stocktwits_hourly_momentum',
+                'social_stocktwits_7d_trend', 'social_twitter_24h_change',
+                'social_twitter_hourly_momentum', 'social_twitter_7d_trend',
+                'earnings_surprise', 'revenue_growth_accel', 'analyst_coverage_change',
+                'rsi_momentum', 'macd_histogram_trend'
+            ]
+
+            # Pre-convert to numpy arrays (19 features in order)
+            self.mean = np.array([params[fname]['mean'] for fname in feature_names])
+            self.std = np.array([params[fname]['stdDev'] for fname in feature_names])
 
             # Signal ready
             sys.stderr.write('READY\n')
