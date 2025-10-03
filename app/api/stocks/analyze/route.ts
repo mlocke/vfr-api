@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { StockSelectionService } from "../../../services/stock-selection/StockSelectionService";
+import { MLEnhancedStockSelectionService } from "../../../services/stock-selection/MLEnhancedStockSelectionService";
 import {
 	SelectionRequest,
 	SelectionMode,
@@ -39,15 +39,20 @@ const RequestSchema = z.object({
 			timeout: z.number().optional(),
 		})
 		.optional(),
+	// ML Enhancement Parameters (Phase 4.1)
+	include_ml: z.boolean().optional().default(false),
+	ml_horizon: z.enum(["1h", "4h", "1d", "1w", "1m"]).optional().default("1w"),
+	ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5),
+	ml_weight: z.number().min(0).max(1).optional().default(0.15),
 });
 
 // Initialize services (lazy initialization for optimal performance)
-let stockSelectionService: StockSelectionService | null = null;
+let stockSelectionService: MLEnhancedStockSelectionService | null = null;
 
 /**
- * Get or initialize the comprehensive StockSelectionService
+ * Get or initialize the comprehensive MLEnhancedStockSelectionService (Phase 4.1)
  */
-async function getStockSelectionService(): Promise<StockSelectionService> {
+async function getStockSelectionService(): Promise<MLEnhancedStockSelectionService> {
 	if (stockSelectionService) {
 		return stockSelectionService;
 	}
@@ -138,8 +143,8 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 			console.warn("ML prediction service not available:", error);
 		}
 
-		// Create the comprehensive service
-		stockSelectionService = new StockSelectionService(
+		// Create the comprehensive ML-enhanced service (Phase 4.1)
+		stockSelectionService = new MLEnhancedStockSelectionService(
 			financialDataService,
 			factorLibrary,
 			cache,
@@ -156,7 +161,7 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 		);
 
 		console.log(
-			"✅ Comprehensive StockSelectionService initialized with full analysisInputServices"
+			"✅ Comprehensive MLEnhancedStockSelectionService initialized (Phase 4.1 - ML enhancement layer active)"
 		);
 		return stockSelectionService;
 	} catch (error) {
@@ -166,10 +171,10 @@ async function getStockSelectionService(): Promise<StockSelectionService> {
 }
 
 /**
- * Convert admin dashboard request format to SelectionRequest
+ * Convert admin dashboard request format to SelectionRequest (Phase 4.1 - ML support added)
  */
 async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
-	const { mode, symbols, sector, limit, config } = body;
+	const { mode, symbols, sector, limit, config, include_ml, ml_horizon, ml_confidence_threshold, ml_weight } = body;
 
 	// Handle test format where symbol is in config
 	const symbolToUse = config?.symbol || symbols?.[0];
@@ -222,7 +227,7 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 	const toggleService = MLFeatureToggleService.getInstance();
 	const esdEnabled = await toggleService.isEarlySignalEnabled();
 
-	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}`);
+	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, ML Enhancement: ${include_ml || false}`);
 
 	return {
 		scope,
@@ -234,6 +239,11 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			includeEarlySignal: esdEnabled,
 			riskTolerance: "moderate",
 			timeout: config?.timeout || 120000, // Increased to 120s for comprehensive analysis with ESD (Python model loading + feature extraction)
+			// ML Enhancement Options (Phase 4.1)
+			include_ml,
+			ml_horizon,
+			ml_confidence_threshold,
+			ml_weight,
 		},
 		requestId: `admin_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 	};

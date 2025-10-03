@@ -64,6 +64,12 @@ export interface SelectionOptions {
 	// Performance constraints
 	timeout?: number; // Maximum analysis time (ms)
 	parallel?: boolean; // Enable parallel processing
+
+	// ML Enhancement Options (Phase 4.1)
+	include_ml?: boolean; // Enable ML prediction enhancement
+	ml_horizon?: "1h" | "4h" | "1d" | "1w" | "1m"; // ML prediction time horizon
+	ml_confidence_threshold?: number; // Minimum ML confidence (0-1)
+	ml_weight?: number; // ML weight in composite score (0-1, default 0.15)
 }
 
 /**
