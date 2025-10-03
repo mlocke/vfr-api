@@ -50,7 +50,7 @@ export class FMPCacheManager {
   private cacheConfigs: Record<string, CacheConfig> = {
     // High-frequency data with shorter TTL
     stock_price: {
-      ttl: 60, // 1 minute
+      ttl: 15, // 15 seconds - near real-time during market hours
       priority: 'high',
       compressionEnabled: false,
       refreshThreshold: 0.8

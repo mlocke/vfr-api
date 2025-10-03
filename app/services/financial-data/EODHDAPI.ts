@@ -717,10 +717,12 @@ export class EODHDAPI implements FinancialDataProvider {
           console.log(`✅ Using UnicornBay enhanced put/call ratio for ${symbol}`)
           return enhancedRatio
         }
-        console.log(`⚠️ UnicornBay data unavailable, falling back to standard EODHD for ${symbol}`)
+        // UnicornBay failed - don't fallback to standard API (requires higher tier)
+        console.log(`⚠️ UnicornBay data unavailable for ${symbol}, skipping options data (standard endpoint requires higher tier)`)
+        return null
       }
 
-      // Fallback to standard EODHD options API
+      // Fallback to standard EODHD options API (only if not using UnicornBay)
       const normalizedSymbol = symbol.toUpperCase()
       const url = `${this.baseUrl}/options/${normalizedSymbol}.US?api_token=${this.apiKey}&fmt=json`
 

@@ -440,7 +440,7 @@ export class SelectionCache {
     const strategies: { [name: string]: CacheStrategy } = {
       single_stock: {
         name: 'single_stock',
-        ttl: 300000, // 5 minutes
+        ttl: 30000, // 30 seconds - near real-time during market hours
         invalidationRules: ['symbol_update', 'market_close'],
         compressionEnabled: false,
         priorityLevel: 'high'
