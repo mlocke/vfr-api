@@ -18,23 +18,23 @@ The Enhanced Error Logging System (`AnalysisErrorLogger`) automatically categori
 
 ### Error Types with Auto-Detection
 
-| Type | Detection Patterns | Severity | Retryable | Typical Causes |
-|------|-------------------|----------|-----------|----------------|
-| **RATE_LIMIT** | "rate limit", "429", "quota exceeded", "too many requests" | LOW | ✅ | API usage limits, high traffic |
-| **API_UNAVAILABLE** | "503", "connection refused", "fetch failed", "network error" | MEDIUM | ✅ | Service downtime, network issues |
-| **TIMEOUT** | "timeout", "timed out", "etimedout" | MEDIUM | ✅ | High API load, slow networks |
-| **INVALID_RESPONSE** | "invalid json", "malformed response", "parse error" | HIGH | ❌ | API format changes, data corruption |
-| **CONFIGURATION** | "unauthorized", "401", "403", "invalid api key" | CRITICAL | ❌ | Missing/invalid credentials |
-| **DATA_QUALITY** | "missing core financial data", "incomplete data" | MEDIUM | ❌ | New stocks, delisted stocks |
-| **UNKNOWN** | Any unmatched error | HIGH | ❌ | Unexpected issues requiring investigation |
+| Type                 | Detection Patterns                                           | Severity | Retryable | Typical Causes                            |
+| -------------------- | ------------------------------------------------------------ | -------- | --------- | ----------------------------------------- |
+| **RATE_LIMIT**       | "rate limit", "429", "quota exceeded", "too many requests"   | LOW      | ✅        | API usage limits, high traffic            |
+| **API_UNAVAILABLE**  | "503", "connection refused", "fetch failed", "network error" | MEDIUM   | ✅        | Service downtime, network issues          |
+| **TIMEOUT**          | "timeout", "timed out", "etimedout"                          | MEDIUM   | ✅        | High API load, slow networks              |
+| **INVALID_RESPONSE** | "invalid json", "malformed response", "parse error"          | HIGH     | ❌        | API format changes, data corruption       |
+| **CONFIGURATION**    | "unauthorized", "401", "403", "invalid api key"              | CRITICAL | ❌        | Missing/invalid credentials               |
+| **DATA_QUALITY**     | "missing core financial data", "incomplete data"             | MEDIUM   | ❌        | New stocks, delisted stocks               |
+| **UNKNOWN**          | Any unmatched error                                          | HIGH     | ❌        | Unexpected issues requiring investigation |
 
 ### Severity Levels and Response
 
-| Severity | Response Required | Examples |
-|----------|------------------|----------|
-| **LOW** | Monitor only | Rate limits during high usage |
-| **MEDIUM** | Investigate if persistent | Service timeouts, data unavailable |
-| **HIGH** | Investigate within 24h | API format changes, unexpected errors |
+| Severity     | Response Required         | Examples                                  |
+| ------------ | ------------------------- | ----------------------------------------- |
+| **LOW**      | Monitor only              | Rate limits during high usage             |
+| **MEDIUM**   | Investigate if persistent | Service timeouts, data unavailable        |
+| **HIGH**     | Investigate within 24h    | API format changes, unexpected errors     |
 | **CRITICAL** | Immediate action required | Invalid credentials, configuration errors |
 
 ## Enhanced JSON Output Format
@@ -43,23 +43,23 @@ The Enhanced Error Logging System (`AnalysisErrorLogger`) automatically categori
 
 ```json
 {
-  "metadata": {
-    "errorAnalysis": {
-      "totalErrors": 3,
-      "errorsByType": {
-        "RATE_LIMIT": 2,
-        "DATA_QUALITY": 1
-      },
-      "errorsBySeverity": {
-        "LOW": 2,
-        "MEDIUM": 1
-      },
-      "retryableErrors": 2,
-      "criticalErrors": 0,
-      "rateLimitErrors": 2,
-      "serviceUnavailableErrors": 0
-    }
-  }
+	"metadata": {
+		"errorAnalysis": {
+			"totalErrors": 3,
+			"errorsByType": {
+				"RATE_LIMIT": 2,
+				"DATA_QUALITY": 1
+			},
+			"errorsBySeverity": {
+				"LOW": 2,
+				"MEDIUM": 1
+			},
+			"retryableErrors": 2,
+			"criticalErrors": 0,
+			"rateLimitErrors": 2,
+			"serviceUnavailableErrors": 0
+		}
+	}
 }
 ```
 
@@ -67,51 +67,51 @@ The Enhanced Error Logging System (`AnalysisErrorLogger`) automatically categori
 
 ```json
 {
-  "detailedErrors": {
-    "summary": {
-      "totalErrors": 3,
-      "errorsByType": { "RATE_LIMIT": 2, "DATA_QUALITY": 1 },
-      "errorsBySeverity": { "LOW": 2, "MEDIUM": 1 },
-      "retryableErrors": 2,
-      "criticalErrors": [],
-      "rateLimitErrors": [
-        {
-          "type": "RATE_LIMIT",
-          "severity": "LOW",
-          "reason": "Rate limit exceeded for Alpha Vantage (500 requests/day). This is expected during high usage periods. Data will resume when limit resets.",
-          "symbol": "AAPL",
-          "service": "AlphaVantageAPI",
-          "retryable": true,
-          "timestamp": 1758816096120,
-          "originalError": "HTTP 429: Too Many Requests"
-        }
-      ],
-      "serviceIssues": [],
-      "criticalIssues": []
-    },
-    "categorizedErrors": [
-      {
-        "type": "RATE_LIMIT",
-        "severity": "LOW",
-        "reason": "Rate limit exceeded for Alpha Vantage (500 requests/day). This is expected during high usage periods. Data will resume when limit resets.",
-        "symbol": "AAPL",
-        "service": "AlphaVantageAPI",
-        "retryable": true,
-        "timestamp": 1758816096120,
-        "originalError": "HTTP 429: Too Many Requests"
-      },
-      {
-        "type": "DATA_QUALITY",
-        "severity": "MEDIUM",
-        "reason": "Symbol NEWSTOCK lacks fundamental financial data from FMP. This could be due to: Stock is too new or recently listed, Data provider doesn't cover this symbol, Temporary data synchronization issue, Symbol may be delisted or inactive",
-        "symbol": "NEWSTOCK",
-        "service": "FMPAPI",
-        "retryable": false,
-        "timestamp": 1758816096125,
-        "originalError": "Incomplete data for NEWSTOCK: missing core financial data"
-      }
-    ]
-  }
+	"detailedErrors": {
+		"summary": {
+			"totalErrors": 3,
+			"errorsByType": { "RATE_LIMIT": 2, "DATA_QUALITY": 1 },
+			"errorsBySeverity": { "LOW": 2, "MEDIUM": 1 },
+			"retryableErrors": 2,
+			"criticalErrors": [],
+			"rateLimitErrors": [
+				{
+					"type": "RATE_LIMIT",
+					"severity": "LOW",
+					"reason": "Rate limit exceeded for Alpha Vantage (500 requests/day). This is expected during high usage periods. Data will resume when limit resets.",
+					"symbol": "AAPL",
+					"service": "AlphaVantageAPI",
+					"retryable": true,
+					"timestamp": 1758816096120,
+					"originalError": "HTTP 429: Too Many Requests"
+				}
+			],
+			"serviceIssues": [],
+			"criticalIssues": []
+		},
+		"categorizedErrors": [
+			{
+				"type": "RATE_LIMIT",
+				"severity": "LOW",
+				"reason": "Rate limit exceeded for Alpha Vantage (500 requests/day). This is expected during high usage periods. Data will resume when limit resets.",
+				"symbol": "AAPL",
+				"service": "AlphaVantageAPI",
+				"retryable": true,
+				"timestamp": 1758816096120,
+				"originalError": "HTTP 429: Too Many Requests"
+			},
+			{
+				"type": "DATA_QUALITY",
+				"severity": "MEDIUM",
+				"reason": "Symbol NEWSTOCK lacks fundamental financial data from FMP. This could be due to: Stock is too new or recently listed, Data provider doesn't cover this symbol, Temporary data synchronization issue, Symbol may be delisted or inactive",
+				"symbol": "NEWSTOCK",
+				"service": "FMPAPI",
+				"retryable": false,
+				"timestamp": 1758816096125,
+				"originalError": "Incomplete data for NEWSTOCK: missing core financial data"
+			}
+		]
+	}
 }
 ```
 
@@ -131,6 +131,7 @@ The Enhanced Error Logging System (`AnalysisErrorLogger`) automatically categori
 ### 3. **Operational Dashboards**
 
 Error summaries enable creation of monitoring dashboards showing:
+
 - Rate limit utilization across APIs
 - Service availability trends
 - Critical configuration issues requiring attention
@@ -173,18 +174,22 @@ The error logging system is automatically integrated into the analysis pipeline:
 ## Error Pattern Examples
 
 ### Rate Limit Detection
+
 - **Pattern**: `error.toLowerCase().includes('rate limit')`
 - **Reason**: "Rate limit exceeded for Alpha Vantage (500 requests/day). This is expected during high usage periods. Data will resume when limit resets."
 
 ### Service Unavailability
+
 - **Pattern**: `error.toLowerCase().includes('503') || error.includes('connection refused')`
 - **Reason**: "Alpha Vantage temporarily unavailable (503). This is usually temporary maintenance or high load."
 
 ### Data Quality Issues
+
 - **Pattern**: `error.toLowerCase().includes('missing core financial data')`
 - **Reason**: "Symbol AAPL lacks fundamental financial data from FMP. This could be due to: Stock is too new or recently listed, Data provider doesn't cover this symbol, Temporary data synchronization issue, Symbol may be delisted or inactive"
 
 ### Configuration Errors
+
 - **Pattern**: `error.toLowerCase().includes('unauthorized') || error.includes('401')`
 - **Reason**: "Configuration error for Polygon.io - check API keys and endpoints"
 
@@ -192,12 +197,12 @@ The error logging system is automatically integrated into the analysis pipeline:
 
 ### Suggested Alert Thresholds
 
-| Metric | Warning | Critical |
-|--------|---------|----------|
-| Rate Limit Errors | > 10/hour | > 50/hour |
-| Service Unavailable | > 5/hour | > 20/hour |
-| Critical Configuration | Any occurrence | N/A |
-| Data Quality Issues | > 20% of symbols | > 50% of symbols |
+| Metric                 | Warning          | Critical         |
+| ---------------------- | ---------------- | ---------------- |
+| Rate Limit Errors      | > 10/hour        | > 50/hour        |
+| Service Unavailable    | > 5/hour         | > 20/hour        |
+| Critical Configuration | Any occurrence   | N/A              |
+| Data Quality Issues    | > 20% of symbols | > 50% of symbols |
 
 ### Dashboard Metrics
 

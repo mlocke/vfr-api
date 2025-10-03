@@ -7,7 +7,9 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 ## Test Files Structure
 
 ### 1. **OptionsAnalysisService.integration.test.ts**
+
 **Primary Integration Tests**
+
 - Real API integration with EODHD UnicornBay data
 - End-to-end analysis workflow validation
 - Multi-symbol processing tests
@@ -18,6 +20,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - VFR platform integration testing
 
 **Key Test Categories:**
+
 - ✅ Real API data fetching (AAPL, SPY, QQQ, TSLA)
 - ✅ Performance validation (<400ms target)
 - ✅ Mathematical accuracy (P/C ratios, Greeks)
@@ -26,7 +29,9 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - ✅ Low liquidity and unusual market activity handling
 
 ### 2. **OptionsAnalysisService.unit.test.ts**
+
 **Individual Method Testing**
+
 - Implied Volatility calculations and validation
 - Greeks calculations (Delta, Gamma, Theta, Vega)
 - Put/Call ratio mathematical precision
@@ -36,6 +41,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - Input validation and sanitization
 
 **Key Test Categories:**
+
 - ✅ IV calculations with real market examples
 - ✅ Greeks accuracy for calls and puts
 - ✅ Put-call parity relationships
@@ -45,7 +51,9 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - ✅ Boundary condition handling
 
 ### 3. **OptionsAnalysisService.performance.test.ts**
+
 **Performance and Scalability**
+
 - Response time validation (<400ms target)
 - Memory usage optimization (<100MB threshold)
 - Concurrent request handling (10+ requests)
@@ -55,6 +63,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - Resource cleanup validation
 
 **Key Test Categories:**
+
 - ✅ Single analysis completion within 400ms
 - ✅ Multi-symbol performance consistency
 - ✅ Cache performance improvement validation
@@ -64,7 +73,9 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - ✅ Performance monitoring and reporting
 
 ### 4. **OptionsAnalysisService.security.test.ts**
+
 **Security and Error Handling**
+
 - Input validation and sanitization
 - XSS and SQL injection prevention
 - Path traversal attack prevention
@@ -74,6 +85,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - OWASP Top 10 compliance
 
 **Key Test Categories:**
+
 - ✅ Malicious input sanitization
 - ✅ Injection attack prevention (SQL, XSS, LDAP)
 - ✅ Rate limiting protection
@@ -83,7 +95,9 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - ✅ Security logging implementation
 
 ### 5. **OptionsAnalysisService.cache.test.ts**
+
 **Cache Behavior and TTL**
+
 - Cache TTL validation and expiration
 - Cache hit/miss ratio optimization (>80% target)
 - Memory-efficient cache storage
@@ -93,6 +107,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - Cache invalidation and cleanup
 
 **Key Test Categories:**
+
 - ✅ TTL expiration behavior (short, medium, long)
 - ✅ Market hours based TTL adjustment
 - ✅ Cache hit rate optimization after warmup
@@ -104,24 +119,28 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 ## Performance Targets
 
 ### Response Time Targets
+
 - **Individual Analysis**: <400ms completion
 - **Cached Requests**: <50ms retrieval
 - **Batch Processing**: <320ms average per symbol
 - **Concurrent Load**: <1200ms under 15 concurrent requests
 
 ### Memory Usage Targets
+
 - **Large Options Chains**: <100MB total usage
 - **Cache Storage**: <5MB per cached entry
 - **Memory Leaks**: <50MB growth over extended operation
 - **Optimization**: >30% memory reduction through compression
 
 ### Cache Performance Targets
+
 - **Hit Rate**: >80% after warmup period
 - **TTL Behavior**: Proper expiration within 1s tolerance
 - **Compression**: >20% storage reduction
 - **Eviction**: Proper LRU behavior under pressure
 
 ### Security Compliance Targets
+
 - **Input Validation**: 100% malicious input rejection
 - **Injection Prevention**: 100% attack payload neutralization
 - **Rate Limiting**: <50% success rate under attack conditions
@@ -130,12 +149,14 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 ## Test Data Requirements
 
 ### Real Symbols Used
+
 - **High Volume**: SPY, QQQ, AAPL, MSFT
 - **Tech Stocks**: GOOGL, TSLA, NVDA, META
 - **Volatile Stocks**: TSLA, GME, AMC
 - **Low Liquidity**: ARKK, IWM, sector ETFs
 
 ### Market Conditions Tested
+
 - **During Market Hours**: 9:30 AM - 4:00 PM EST
 - **After Hours**: Extended trading sessions
 - **Weekends**: Non-trading periods
@@ -143,6 +164,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 - **Low Liquidity**: Unusual market conditions
 
 ### Mathematical Test Cases
+
 - **ATM Options**: At-the-money scenarios
 - **Deep ITM**: In-the-money edge cases
 - **Deep OTM**: Out-of-the-money scenarios
@@ -153,6 +175,7 @@ This comprehensive test suite follows TDD principles and validates all aspects o
 ## Running the Tests
 
 ### Prerequisites
+
 ```bash
 # Ensure environment variables are set
 export EODHD_API_KEY="your_key_here"
@@ -164,6 +187,7 @@ npm install
 ```
 
 ### Individual Test Suites
+
 ```bash
 # Run integration tests (30-60 minutes)
 npm test -- --testPathPattern="OptionsAnalysisService.integration.test.ts"
@@ -182,6 +206,7 @@ npm test -- --testPathPattern="OptionsAnalysisService.cache.test.ts"
 ```
 
 ### Complete Test Suite
+
 ```bash
 # Run all OptionsAnalysisService tests (2-4 hours)
 npm test -- --testPathPattern="OptionsAnalysisService"
@@ -191,6 +216,7 @@ npm run test:coverage -- --testPathPattern="OptionsAnalysisService"
 ```
 
 ### Performance Testing
+
 ```bash
 # Memory-optimized test run
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -203,18 +229,21 @@ node --expose-gc ./node_modules/.bin/jest --testPathPattern="OptionsAnalysisServ
 ## Test Environment Configuration
 
 ### Memory Optimization
+
 - **Heap Size**: 4096MB allocation
 - **Max Workers**: 1 (prevent memory pressure)
 - **Timeout**: 300,000ms (5 minutes for real API calls)
 - **Garbage Collection**: Explicit cleanup after tests
 
 ### API Configuration
+
 - **Real Data Only**: NO MOCK DATA policy
 - **Rate Limiting**: Respects API rate limits
 - **Fallback Strategy**: Multiple provider support
 - **Timeout Handling**: Graceful degradation
 
 ### Security Testing
+
 - **Input Sanitization**: OWASP ESAPI guidelines
 - **Error Handling**: Secure error message policies
 - **Rate Limiting**: DoS protection validation
@@ -223,6 +252,7 @@ node --expose-gc ./node_modules/.bin/jest --testPathPattern="OptionsAnalysisServ
 ## Expected Outcomes
 
 ### Success Criteria
+
 - **All Tests Pass**: 100% test completion
 - **Performance Targets Met**: All latency and memory targets achieved
 - **Security Compliance**: OWASP Top 10 protection validated
@@ -230,13 +260,16 @@ node --expose-gc ./node_modules/.bin/jest --testPathPattern="OptionsAnalysisServ
 - **Cache Efficiency**: Hit rates and TTL behavior optimal
 
 ### Coverage Targets
+
 - **Line Coverage**: >90% of service code
 - **Branch Coverage**: >85% of conditional logic
 - **Function Coverage**: 100% of public methods
 - **Integration Coverage**: All external API interactions
 
 ### Failure Investigation
+
 If tests fail, check:
+
 1. **API Keys**: Ensure all required API keys are configured
 2. **Network Connectivity**: Verify external API accessibility
 3. **Memory Limits**: Check Node.js heap size configuration
@@ -247,6 +280,7 @@ If tests fail, check:
 ## TDD Implementation Notes
 
 ### Test-First Development
+
 - ✅ **Tests Created First**: All tests written before service implementation
 - ✅ **Comprehensive Coverage**: Every method and scenario covered
 - ✅ **Real Data Integration**: No mock data, real API integration only
@@ -254,6 +288,7 @@ If tests fail, check:
 - ✅ **Security by Design**: Security testing integrated from start
 
 ### Implementation Guidance
+
 When implementing the actual OptionsAnalysisService:
 
 1. **Start with simplest tests** in unit test suite
@@ -264,6 +299,7 @@ When implementing the actual OptionsAnalysisService:
 6. **Optimize performance** to meet all targets
 
 ### Continuous Validation
+
 - **Every commit** should pass unit tests
 - **Before PR** should pass integration tests
 - **Before deployment** should pass all test suites
@@ -272,13 +308,16 @@ When implementing the actual OptionsAnalysisService:
 ## Maintenance and Updates
 
 ### Regular Test Maintenance
+
 - **Monthly**: Update test symbols for market relevance
 - **Quarterly**: Review performance targets and adjust
 - **Semi-annually**: Update security test payloads
 - **Annually**: Review mathematical test cases for accuracy
 
 ### API Changes
+
 When APIs change:
+
 1. Update integration tests first
 2. Modify service implementation
 3. Validate all test suites pass

@@ -5,67 +5,67 @@ docs/analysis-engine/roadmap/analysis-enging-improvements.mddocs/analysis-engine
 
 **2\) Data quality, alignment, and provenance (first-order effect).**
 
-* Build a *feature store* with strict schemas, timestamp alignment, and event-time semantics (avoid look-ahead).
+- Build a _feature store_ with strict schemas, timestamp alignment, and event-time semantics (avoid look-ahead).
 
-* Version all raw inputs and engineered features (DVC or similar).
+- Version all raw inputs and engineered features (DVC or similar).
 
-* Validate feeds automatically (Great Expectations): missingness, duplicates, latency, stale prices. Garbage in → garbage out.
+- Validate feeds automatically (Great Expectations): missingness, duplicates, latency, stale prices. Garbage in → garbage out.
 
 **3\) Labeling & leakage control.**
 
-* Use *event-based labeling* and robust forward-filling rules.
+- Use _event-based labeling_ and robust forward-filling rules.
 
-* Test for leakage by simulating production time (what would I have known at T?).
+- Test for leakage by simulating production time (what would I have known at T?).
 
-* Use transaction-cost-aware labels (net of expected costs) if the model drives trades.
+- Use transaction-cost-aware labels (net of expected costs) if the model drives trades.
 
 **4\) Feature engineering & representation.**
 
-* Combine fundamental, technical, options (IV surface, skew), sentiment (embedding vectors/topic exposures), and alternative data.
+- Combine fundamental, technical, options (IV surface, skew), sentiment (embedding vectors/topic exposures), and alternative data.
 
-* Build multi-scale features (minute, hourly, daily) and relative features (z-scores, rank transforms) to handle cross-sectional and temporal heterogeneity.
+- Build multi-scale features (minute, hourly, daily) and relative features (z-scores, rank transforms) to handle cross-sectional and temporal heterogeneity.
 
-* Use embeddings for tickers / sectors / filings to capture similarities.
+- Use embeddings for tickers / sectors / filings to capture similarities.
 
 **5\) Model design — ensembles \+ meta-learner.**
 
-* Favor robust tree ensembles (LightGBM/CatBoost/XGBoost) and gradient-boosted models for tabular; use time-aware neural nets (temporal transformer, TCN, LSTM) where long sequences matter.
+- Favor robust tree ensembles (LightGBM/CatBoost/XGBoost) and gradient-boosted models for tabular; use time-aware neural nets (temporal transformer, TCN, LSTM) where long sequences matter.
 
-* Combine many *weakly-correlated* models in an ensemble; then use a meta-learner (stacking) to produce final weights. This beats any single signal-weighting heuristic.
+- Combine many _weakly-correlated_ models in an ensemble; then use a meta-learner (stacking) to produce final weights. This beats any single signal-weighting heuristic.
 
-* Consider Bayesian model averaging or calibrated probabilistic outputs to capture uncertainty.
+- Consider Bayesian model averaging or calibrated probabilistic outputs to capture uncertainty.
 
 **6\) Time-series validation & backtesting rigour.**
 
-* Use rolling/walk-forward CV, nested hyperparameter tuning, and out-of-sample windows partitioned by economic regimes.
+- Use rolling/walk-forward CV, nested hyperparameter tuning, and out-of-sample windows partitioned by economic regimes.
 
-* Backtests must include slippage, market impact, fees, latency, and realistic order filling.
+- Backtests must include slippage, market impact, fees, latency, and realistic order filling.
 
-* Report statistical confidence (bootstrap/resampling) for performance metrics and test for multiple hypothesis bias.
+- Report statistical confidence (bootstrap/resampling) for performance metrics and test for multiple hypothesis bias.
 
 **7\) Online learning & non-stationarity handling.**
 
-* Implement model retraining cadence driven by data drift detection (input drift, concept drift). Use incremental / online updates for short-horizon signals and periodic full retrain for structural shifts.
+- Implement model retraining cadence driven by data drift detection (input drift, concept drift). Use incremental / online updates for short-horizon signals and periodic full retrain for structural shifts.
 
-* Use regime detection (hidden Markov, clustering on volatility/returns) to switch models or adjust weights.
+- Use regime detection (hidden Markov, clustering on volatility/returns) to switch models or adjust weights.
 
 **8\) Risk, constraints & execution realism.**
 
-* Optimize for risk-adjusted objective (maximize expected return subject to VaR/Drawdown constraints).
+- Optimize for risk-adjusted objective (maximize expected return subject to VaR/Drawdown constraints).
 
-* Include portfolio-level constraints (position limits, turnover caps).
+- Include portfolio-level constraints (position limits, turnover caps).
 
-* Integrate execution simulator before real trades.
+- Integrate execution simulator before real trades.
 
 **9\) Monitoring, observability & governance.**
 
-* Track prediction drift, feature distributions, production vs training performance, and model explainability (SHAP).
+- Track prediction drift, feature distributions, production vs training performance, and model explainability (SHAP).
 
-* Maintain model registry, CI/CD for models, canary deployment, and rollback procedures.
+- Maintain model registry, CI/CD for models, canary deployment, and rollback procedures.
 
 **10\) Explainability & calibration.**
 
-* Use SHAP/feature-importance and calibration (isotonic/Platt) so probabilities match realized frequencies—crucial for sizing/positioning.
+- Use SHAP/feature-importance and calibration (isotonic/Platt) so probabilities match realized frequencies—crucial for sizing/positioning.
 
 ---
 
@@ -87,15 +87,14 @@ docs/analysis-engine/roadmap/analysis-enging-improvements.mddocs/analysis-engine
 
 # **Bibliography / further reading**
 
-* Marcos López de Prado — *Advances in Financial Machine Learning*
+- Marcos López de Prado — _Advances in Financial Machine Learning_
 
-* Ernie Chan — *Algorithmic Trading*
+- Ernie Chan — _Algorithmic Trading_
 
-* Friedman, Hastie, Tibshirani — *The Elements of Statistical Learning*
+- Friedman, Hastie, Tibshirani — _The Elements of Statistical Learning_
 
-* Trevor Hastie & others — *Statistical Learning with Sparsity* (for regularization)
+- Trevor Hastie & others — _Statistical Learning with Sparsity_ (for regularization)
 
-* LightGBM / XGBoost docs; SHAP docs
+- LightGBM / XGBoost docs; SHAP docs
 
-* Tools: Great Expectations, DVC, Airflow/Prefect, MLflow (model registry), Backtrader/Backtesting.py
-
+- Tools: Great Expectations, DVC, Airflow/Prefect, MLflow (model registry), Backtrader/Backtesting.py

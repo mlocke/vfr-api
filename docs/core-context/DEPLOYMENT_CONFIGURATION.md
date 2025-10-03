@@ -9,44 +9,47 @@ This document provides comprehensive deployment and configuration guidance for t
 ### System Requirements
 
 #### Minimum Production Requirements
+
 ```yaml
 Hardware:
-  CPU: 4 cores (Intel Xeon or AMD EPYC recommended)
-  Memory: 8GB RAM (16GB recommended)
-  Storage: 100GB SSD (NVMe preferred)
-  Network: 1Gbps bandwidth
+    CPU: 4 cores (Intel Xeon or AMD EPYC recommended)
+    Memory: 8GB RAM (16GB recommended)
+    Storage: 100GB SSD (NVMe preferred)
+    Network: 1Gbps bandwidth
 
 Software:
-  OS: Ubuntu 20.04+ LTS / CentOS 8+ / RHEL 8+
-  Node.js: 18.x LTS
-  Docker: 20.10+
-  Docker Compose: 2.0+
+    OS: Ubuntu 20.04+ LTS / CentOS 8+ / RHEL 8+
+    Node.js: 18.x LTS
+    Docker: 20.10+
+    Docker Compose: 2.0+
 ```
 
 #### Recommended Production Infrastructure
+
 ```yaml
 Application Server:
-  CPU: 8 cores
-  Memory: 16GB RAM
-  Storage: 500GB NVMe SSD
-  Network: 10Gbps
+    CPU: 8 cores
+    Memory: 16GB RAM
+    Storage: 500GB NVMe SSD
+    Network: 10Gbps
 
 Database Servers:
-  PostgreSQL:
-    CPU: 4 cores
-    Memory: 8GB RAM
-    Storage: 200GB SSD
-  Redis:
-    CPU: 2 cores
-    Memory: 4GB RAM
-    Storage: 50GB SSD
-  InfluxDB (Optional):
-    CPU: 4 cores
-    Memory: 8GB RAM
-    Storage: 1TB SSD
+    PostgreSQL:
+        CPU: 4 cores
+        Memory: 8GB RAM
+        Storage: 200GB SSD
+    Redis:
+        CPU: 2 cores
+        Memory: 4GB RAM
+        Storage: 50GB SSD
+    InfluxDB (Optional):
+        CPU: 4 cores
+        Memory: 8GB RAM
+        Storage: 1TB SSD
 ```
 
 ### Network Architecture
+
 ```
                     ┌─────────────────┐
                     │   Load Balancer │
@@ -74,6 +77,7 @@ Database Servers:
 ### Environment Variables
 
 #### Core Configuration
+
 ```bash
 # Application Environment
 NODE_ENV=production                          # development|staging|production
@@ -93,6 +97,7 @@ ENABLE_RATE_LIMITING=true                   # API rate limiting
 ```
 
 #### Financial Data API Keys
+
 ```bash
 # Primary Commercial APIs
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
@@ -114,6 +119,7 @@ REDDIT_USER_AGENT=VFR-API/1.0
 ```
 
 #### Database Configuration
+
 ```bash
 # PostgreSQL (Primary Database)
 DATABASE_URL=postgresql://username:password@host:5432/database_name
@@ -140,6 +146,7 @@ INFLUXDB_BUCKET=market_data
 ```
 
 #### Performance & Monitoring
+
 ```bash
 # Memory Management
 NODE_OPTIONS=--max-old-space-size=4096      # 4GB heap size
@@ -162,6 +169,7 @@ HEALTH_CHECK_INTERVAL=30000                # 30s health check interval
 ### Environment-Specific Configurations
 
 #### Development Environment (`.env.development`)
+
 ```bash
 NODE_ENV=development
 ENABLE_ADMIN_AUTO_ACCESS=true
@@ -172,6 +180,7 @@ RATE_LIMIT_MAX_REQUESTS=10000              # Relaxed rate limits
 ```
 
 #### Staging Environment (`.env.staging`)
+
 ```bash
 NODE_ENV=staging
 ENABLE_ADMIN_AUTO_ACCESS=false
@@ -182,6 +191,7 @@ RATE_LIMIT_MAX_REQUESTS=5000               # Moderate rate limits
 ```
 
 #### Production Environment (`.env.production`)
+
 ```bash
 NODE_ENV=production
 ENABLE_ADMIN_AUTO_ACCESS=false
@@ -200,79 +210,80 @@ REDIS_TLS=true
 ### Development Docker Compose
 
 #### Infrastructure Services (`docker-compose.dev.yml`)
+
 ```yaml
 version: "3.8"
 
 services:
-  postgres:
-    image: postgres:15
-    container_name: vfr_postgres_dev
-    environment:
-      POSTGRES_DB: vfr_financial_platform
-      POSTGRES_USER: vfr_user
-      POSTGRES_PASSWORD: dev_password_123
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vfr_user -d vfr_financial_platform"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    postgres:
+        image: postgres:15
+        container_name: vfr_postgres_dev
+        environment:
+            POSTGRES_DB: vfr_financial_platform
+            POSTGRES_USER: vfr_user
+            POSTGRES_PASSWORD: dev_password_123
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U vfr_user -d vfr_financial_platform"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: vfr_redis_dev
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+    redis:
+        image: redis:7-alpine
+        container_name: vfr_redis_dev
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+            - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+        command: redis-server /usr/local/etc/redis/redis.conf
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
 
-  influxdb:
-    image: influxdb:2
-    container_name: vfr_influxdb_dev
-    environment:
-      INFLUXDB_DB: vfr_market_data
-      INFLUXDB_ADMIN_USER: admin
-      INFLUXDB_ADMIN_PASSWORD: dev_password_123
-      INFLUXDB_USER: vfr_user
-      INFLUXDB_USER_PASSWORD: dev_password_123
-    ports:
-      - "8086:8086"
-    volumes:
-      - influxdb_data:/var/lib/influxdb2
-      - influxdb_config:/etc/influxdb2
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "influx", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    influxdb:
+        image: influxdb:2
+        container_name: vfr_influxdb_dev
+        environment:
+            INFLUXDB_DB: vfr_market_data
+            INFLUXDB_ADMIN_USER: admin
+            INFLUXDB_ADMIN_PASSWORD: dev_password_123
+            INFLUXDB_USER: vfr_user
+            INFLUXDB_USER_PASSWORD: dev_password_123
+        ports:
+            - "8086:8086"
+        volumes:
+            - influxdb_data:/var/lib/influxdb2
+            - influxdb_config:/etc/influxdb2
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "influx", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  influxdb_data:
-    driver: local
-  influxdb_config:
-    driver: local
+    postgres_data:
+        driver: local
+    redis_data:
+        driver: local
+    influxdb_data:
+        driver: local
+    influxdb_config:
+        driver: local
 
 networks:
-  default:
-    name: vfr_network
+    default:
+        name: vfr_network
 ```
 
 #### Application Dockerfile
@@ -326,118 +337,119 @@ CMD ["node", "server.js"]
 ### Production Docker Compose
 
 #### Full Production Stack (`docker-compose.prod.yml`)
+
 ```yaml
 version: "3.8"
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
-    container_name: vfr_app_prod
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://vfr_user:${DB_PASSWORD}@postgres:5432/vfr_financial_platform
-      REDIS_URL: redis://redis:6379/0
-      INFLUXDB_URL: http://influxdb:8086
-    env_file:
-      - .env.production
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - app_network
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: runner
+        container_name: vfr_app_prod
+        environment:
+            NODE_ENV: production
+            DATABASE_URL: postgresql://vfr_user:${DB_PASSWORD}@postgres:5432/vfr_financial_platform
+            REDIS_URL: redis://redis:6379/0
+            INFLUXDB_URL: http://influxdb:8086
+        env_file:
+            - .env.production
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+        networks:
+            - app_network
 
-  nginx:
-    image: nginx:alpine
-    container_name: vfr_nginx_prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf
-      - ./config/ssl:/etc/nginx/ssl
-    depends_on:
-      - app
-    restart: unless-stopped
-    networks:
-      - app_network
+    nginx:
+        image: nginx:alpine
+        container_name: vfr_nginx_prod
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./config/nginx.conf:/etc/nginx/nginx.conf
+            - ./config/ssl:/etc/nginx/ssl
+        depends_on:
+            - app
+        restart: unless-stopped
+        networks:
+            - app_network
 
-  postgres:
-    image: postgres:15
-    container_name: vfr_postgres_prod
-    environment:
-      POSTGRES_DB: vfr_financial_platform
-      POSTGRES_USER: vfr_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vfr_user -d vfr_financial_platform"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app_network
+    postgres:
+        image: postgres:15
+        container_name: vfr_postgres_prod
+        environment:
+            POSTGRES_DB: vfr_financial_platform
+            POSTGRES_USER: vfr_user
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./backups:/backups
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U vfr_user -d vfr_financial_platform"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - app_network
 
-  redis:
-    image: redis:7-alpine
-    container_name: vfr_redis_prod
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD}", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    networks:
-      - app_network
+    redis:
+        image: redis:7-alpine
+        container_name: vfr_redis_prod
+        command: redis-server --requirepass ${REDIS_PASSWORD}
+        volumes:
+            - redis_data:/data
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD}", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+        networks:
+            - app_network
 
-  influxdb:
-    image: influxdb:2
-    container_name: vfr_influxdb_prod
-    environment:
-      INFLUXDB_DB: vfr_market_data
-      INFLUXDB_ADMIN_USER: admin
-      INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_PASSWORD}
-    volumes:
-      - influxdb_data:/var/lib/influxdb2
-      - influxdb_config:/etc/influxdb2
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "influx", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    networks:
-      - app_network
+    influxdb:
+        image: influxdb:2
+        container_name: vfr_influxdb_prod
+        environment:
+            INFLUXDB_DB: vfr_market_data
+            INFLUXDB_ADMIN_USER: admin
+            INFLUXDB_ADMIN_PASSWORD: ${INFLUXDB_PASSWORD}
+        volumes:
+            - influxdb_data:/var/lib/influxdb2
+            - influxdb_config:/etc/influxdb2
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "influx", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
+        networks:
+            - app_network
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  influxdb_data:
-    driver: local
-  influxdb_config:
-    driver: local
+    postgres_data:
+        driver: local
+    redis_data:
+        driver: local
+    influxdb_data:
+        driver: local
+    influxdb_config:
+        driver: local
 
 networks:
-  app_network:
-    driver: bridge
+    app_network:
+        driver: bridge
 ```
 
 ---
@@ -447,6 +459,7 @@ networks:
 ### PostgreSQL Configuration
 
 #### Database Initialization Script (`scripts/init-db.sql`)
+
 ```sql
 -- Create application database
 CREATE DATABASE vfr_financial_platform;
@@ -521,33 +534,35 @@ CREATE INDEX idx_api_requests_user_id ON audit_logs.api_requests(user_id);
 ```
 
 #### Database Migration Service
+
 ```typescript
 // app/services/database/DatabaseMigrationService.ts
 export class DatabaseMigrationService {
-  async runMigrations(): Promise<void> {
-    const migrations = [
-      '001_initial_schema.sql',
-      '002_add_user_management.sql',
-      '003_add_caching_tables.sql',
-      '004_add_audit_logging.sql'
-    ];
+	async runMigrations(): Promise<void> {
+		const migrations = [
+			"001_initial_schema.sql",
+			"002_add_user_management.sql",
+			"003_add_caching_tables.sql",
+			"004_add_audit_logging.sql",
+		];
 
-    for (const migration of migrations) {
-      await this.runMigration(migration);
-    }
-  }
+		for (const migration of migrations) {
+			await this.runMigration(migration);
+		}
+	}
 
-  private async runMigration(filename: string): Promise<void> {
-    const sql = await fs.readFile(`./migrations/${filename}`, 'utf8');
-    await this.database.query(sql);
-    console.log(`✅ Migration ${filename} completed`);
-  }
+	private async runMigration(filename: string): Promise<void> {
+		const sql = await fs.readFile(`./migrations/${filename}`, "utf8");
+		await this.database.query(sql);
+		console.log(`✅ Migration ${filename} completed`);
+	}
 }
 ```
 
 ### Redis Configuration
 
 #### Redis Configuration File (`config/redis.conf`)
+
 ```bash
 # Network
 bind 0.0.0.0
@@ -582,6 +597,7 @@ timeout 0
 ### Nginx Configuration
 
 #### Main Configuration (`config/nginx.conf`)
+
 ```nginx
 user nginx;
 worker_processes auto;
@@ -721,6 +737,7 @@ http {
 ### Development Deployment
 
 #### Local Development Setup
+
 ```bash
 # 1. Clone repository
 git clone <repository-url>
@@ -746,6 +763,7 @@ npm run dev:clean
 ### Staging Deployment
 
 #### Automated Staging Pipeline
+
 ```bash
 #!/bin/bash
 # scripts/deploy-staging.sh
@@ -780,6 +798,7 @@ echo "✅ Staging deployment completed successfully"
 ### Production Deployment
 
 #### Blue-Green Deployment Strategy
+
 ```bash
 #!/bin/bash
 # scripts/deploy-production.sh
@@ -849,93 +868,96 @@ echo "🌟 Application is now running on $TARGET environment"
 ### Health Monitoring
 
 #### Application Health Checks
+
 ```typescript
 // app/api/health/route.ts
 export async function GET() {
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version,
-    environment: process.env.NODE_ENV,
-    uptime: process.uptime(),
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
-    },
-    services: {
-      database: await checkDatabase(),
-      redis: await checkRedis(),
-      externalAPIs: await checkExternalAPIs()
-    }
-  };
+	const health = {
+		status: "healthy",
+		timestamp: new Date().toISOString(),
+		version: process.env.npm_package_version,
+		environment: process.env.NODE_ENV,
+		uptime: process.uptime(),
+		memory: {
+			used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+			total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+		},
+		services: {
+			database: await checkDatabase(),
+			redis: await checkRedis(),
+			externalAPIs: await checkExternalAPIs(),
+		},
+	};
 
-  const statusCode = health.services.database && health.services.redis ? 200 : 503;
-  return new Response(JSON.stringify(health), { status: statusCode });
+	const statusCode = health.services.database && health.services.redis ? 200 : 503;
+	return new Response(JSON.stringify(health), { status: statusCode });
 }
 ```
 
 #### Infrastructure Monitoring
+
 ```yaml
 # docker-compose.monitoring.yml
 version: "3.8"
 
 services:
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: vfr_prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: vfr_prometheus
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus_data:/prometheus
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: vfr_grafana
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./config/grafana:/etc/grafana/provisioning
+    grafana:
+        image: grafana/grafana:latest
+        container_name: vfr_grafana
+        ports:
+            - "3001:3000"
+        environment:
+            GF_SECURITY_ADMIN_PASSWORD: admin
+        volumes:
+            - grafana_data:/var/lib/grafana
+            - ./config/grafana:/etc/grafana/provisioning
 
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: vfr_node_exporter
-    ports:
-      - "9100:9100"
+    node-exporter:
+        image: prom/node-exporter:latest
+        container_name: vfr_node_exporter
+        ports:
+            - "9100:9100"
 
 volumes:
-  prometheus_data:
-  grafana_data:
+    prometheus_data:
+    grafana_data:
 ```
 
 ### Logging Configuration
 
 #### Structured Logging
+
 ```typescript
 // app/services/error-handling/Logger.ts
 export class Logger {
-  private static instance: Logger;
+	private static instance: Logger;
 
-  log(level: 'info' | 'warn' | 'error', message: string, meta?: any) {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      meta,
-      service: 'vfr-api',
-      version: process.env.npm_package_version,
-      environment: process.env.NODE_ENV
-    };
+	log(level: "info" | "warn" | "error", message: string, meta?: any) {
+		const logEntry = {
+			timestamp: new Date().toISOString(),
+			level,
+			message,
+			meta,
+			service: "vfr-api",
+			version: process.env.npm_package_version,
+			environment: process.env.NODE_ENV,
+		};
 
-    if (process.env.LOG_FORMAT === 'json') {
-      console.log(JSON.stringify(logEntry));
-    } else {
-      console.log(`[${logEntry.timestamp}] ${level.toUpperCase()}: ${message}`);
-    }
-  }
+		if (process.env.LOG_FORMAT === "json") {
+			console.log(JSON.stringify(logEntry));
+		} else {
+			console.log(`[${logEntry.timestamp}] ${level.toUpperCase()}: ${message}`);
+		}
+	}
 }
 ```
 
@@ -946,6 +968,7 @@ export class Logger {
 ### SSL/TLS Configuration
 
 #### Certificate Management
+
 ```bash
 # Generate self-signed certificates for development
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -960,6 +983,7 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 ### Environment Security
 
 #### Production Security Checklist
+
 ```bash
 # 1. Update all default passwords
 # 2. Enable database SSL connections
@@ -980,6 +1004,7 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 ### Database Backup Strategy
 
 #### Automated Backup Script
+
 ```bash
 #!/bin/bash
 # scripts/backup-database.sh
@@ -1001,6 +1026,7 @@ echo "✅ Database backup completed: db_backup_$TIMESTAMP.sql.gz"
 ```
 
 #### Recovery Procedure
+
 ```bash
 #!/bin/bash
 # scripts/restore-database.sh

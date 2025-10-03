@@ -1,4 +1,5 @@
 ## Restart Server
+
 1. Kill any running instance of the server.
 2. Start the server using `npm run dev`.
 3. Ensure the server is running on port 3000.

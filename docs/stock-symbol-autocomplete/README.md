@@ -76,23 +76,24 @@ async getSymbols(forceRefresh = false): Promise<StockSymbol[]> {
 ### Multi-Source Fallback Chain
 
 1. **Alpha Vantage LISTING_STATUS** (Primary)
-   - URL: `https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo`
-   - Format: CSV
-   - Rate Limit: Works with demo key
+    - URL: `https://www.alphavantage.co/query?function=LISTING_STATUS&apikey=demo`
+    - Format: CSV
+    - Rate Limit: Works with demo key
 
 2. **NASDAQ FTP** (Secondary)
-   - URL: `ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt`
-   - Format: Pipe-delimited CSV
-   - Update: Nightly
+    - URL: `ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt`
+    - Format: Pipe-delimited CSV
+    - Update: Nightly
 
 3. **SEC Company Tickers** (Tertiary)
-   - URL: `https://www.sec.gov/files/company_tickers.json`
-   - Format: JSON
-   - Source: Government official
+    - URL: `https://www.sec.gov/files/company_tickers.json`
+    - Format: JSON
+    - Source: Government official
 
 ### Fuzzy Search Algorithm
 
 The search prioritizes:
+
 1. Exact symbol match (100 points)
 2. Symbol starts with query (90 points)
 3. Symbol contains query (80 points)
@@ -122,20 +123,20 @@ The search prioritizes:
 ### Basic Usage
 
 ```tsx
-import StockAutocomplete from '../components/StockAutocomplete'
+import StockAutocomplete from "../components/StockAutocomplete";
 
 function MyComponent() {
-  const handleSelectionChange = (symbols: string[]) => {
-    console.log('Selected symbols:', symbols)
-  }
+	const handleSelectionChange = (symbols: string[]) => {
+		console.log("Selected symbols:", symbols);
+	};
 
-  return (
-    <StockAutocomplete
-      onSelectionChange={handleSelectionChange}
-      placeholder="Search stocks..."
-      maxSelections={10}
-    />
-  )
+	return (
+		<StockAutocomplete
+			onSelectionChange={handleSelectionChange}
+			placeholder="Search stocks..."
+			maxSelections={10}
+		/>
+	);
 }
 ```
 
@@ -143,10 +144,10 @@ function MyComponent() {
 
 ```tsx
 <StockAutocomplete
-  onSelectionChange={handleSelection}
-  placeholder="Custom placeholder text"
-  maxSelections={5}
-  initialValue={['AAPL', 'MSFT']}
+	onSelectionChange={handleSelection}
+	placeholder="Custom placeholder text"
+	maxSelections={5}
+	initialValue={["AAPL", "MSFT"]}
 />
 ```
 
@@ -195,16 +196,19 @@ The system provides built-in monitoring through:
 ### Troubleshooting
 
 **Issue: Symbols not loading**
+
 - Check Redis connectivity
 - Verify static file exists at `public/data/symbols.json`
 - Check API source availability
 
 **Issue: Slow search performance**
+
 - Monitor client-side memory usage
 - Check debounce settings (default: 300ms)
 - Verify result limiting (default: 50 results)
 
 **Issue: Stale data**
+
 - Force refresh via API: `POST /api/symbols {"action": "refresh"}`
 - Check refresh metadata for error status
 - Verify API source connectivity
@@ -219,18 +223,21 @@ The system provides built-in monitoring through:
 ## 🚦 Testing
 
 ### Unit Tests
+
 - SymbolDataService refresh logic
 - Search algorithm accuracy
 - Component state management
 - Error handling scenarios
 
 ### Integration Tests
+
 - API endpoint functionality
 - Redis cache integration
 - Multi-source fallback chain
 - UI component integration
 
 ### Performance Tests
+
 - Search response times
 - Memory usage under load
 - Concurrent user scenarios
@@ -239,12 +246,14 @@ The system provides built-in monitoring through:
 ## 🔄 Future Enhancements
 
 ### Planned Features
+
 - **Real-time Updates**: WebSocket integration for live symbol changes
 - **Advanced Filtering**: Exchange, sector, market cap filters
 - **Recent Selections**: Remember user's frequently searched symbols
 - **Keyboard Shortcuts**: Power user features
 
 ### Technical Improvements
+
 - **Virtual Scrolling**: Handle 100,000+ symbols efficiently
 - **Service Worker**: Offline capability with cached symbols
 - **Compression**: Optimize symbol data payload

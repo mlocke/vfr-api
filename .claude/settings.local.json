@@ -1,108 +1,108 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(claude mcp add:*)",
-      "Bash(claude mcp:*)",
-      "Bash(claude config show)",
-      "Bash(npm search:*)",
-      "Bash(npx firecrawl-mcp:*)",
-      "Bash(claude config)",
-      "Bash(claude config list)",
-      "Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp)",
-      "Read(//Users/michaellocke/**)",
-      "Bash(npx @executeautomation/playwright-mcp:*)",
-      "Bash(npx @playwright/mcp:*)",
-      "Bash(timeout 5 npx better-playwright-mcp)",
-      "Bash(gtimeout 5 npx better-playwright-mcp)",
-      "Bash(npx playwright:*)",
-      "Bash(timeout 5s npx @playwright/mcp)",
-      "Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp scrape --url \"https://www.caffeinemarketing.com/blog/best-fintech-website-design-examples\" --formats markdown)",
-      "WebFetch(domain:www.caffeinemarketing.com)",
-      "WebSearch",
-      "Bash(npx create-next-app:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(pip --version)",
-      "Bash(pip3:*)",
-      "Bash(docker:*)",
-      "Bash(git --version)",
-      "Bash(npx prettier:*)",
-      "Bash(python:*)",
-      "mcp__firecrawl__firecrawl_scrape",
-      "WebFetch(domain:mcp.alphavantage.co)",
-      "WebFetch(domain:www.alphavantage.co)",
-      "mcp__firecrawl__firecrawl_search",
-      "mcp__github__search_repositories",
-      "mcp__github__get_file_contents",
-      "Bash(lsof:*)",
-      "Bash(httpd:*)",
-      "Read(//private/etc/**)",
-      "Read(//private/var/log/**)",
-      "Bash(sudo apachectl:*)",
-      "Bash(nginx:*)",
-      "Read(//opt/homebrew/etc/nginx/**)",
-      "Bash(curl:*)",
-      "Bash(find:*)",
-      "Bash(npm test:*)",
-      "WebFetch(domain:github.com)",
-      "Bash(npm install:*)",
-      "Bash(npx ts-node:*)",
-      "Bash(git checkout:*)",
-      "Bash(git add:*)",
-      "Bash(git merge:*)",
-      "Bash(chmod:*)",
-      "WebFetch(domain:eodhd.com)",
-      "WebFetch(domain:polygon.io)",
-      "Bash(npm run test:coverage:*)",
-      "Bash(npx tsc:*)",
-      "Bash(npm run dev:clean:*)",
-      "mcp__context7__get-library-docs",
-      "Bash(npm run type-check:*)",
-      "Bash(node:*)",
-      "mcp__context7__resolve-library-id",
-      "Bash(sudo pkill:*)",
-      "Bash(git branch:*)",
-      "Bash(git stash:*)",
-      "Bash(timeout 15 npm run dev)",
-      "mcp__playwright__browser_navigate",
-      "mcp__playwright__browser_click",
-      "mcp__playwright__browser_type",
-      "mcp__playwright__browser_press_key",
-      "mcp__playwright__browser_console_messages",
-      "WebFetch(domain:developers.google.com)",
-      "Bash(mkdir:*)",
-      "WebFetch(domain:site.financialmodelingprep.com)",
-      "Bash(redis-cli:*)",
-      "Bash(npm run dev:status:*)",
-      "Bash(cat:*)",
-      "Bash(kill:*)"
-    ],
-    "deny": [],
-    "ask": []
-  },
-  "enableAllProjectMcpServers": true,
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/basso.aiff"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "afplay /System/Library/Sounds/blow.aiff"
-          }
-        ]
-      }
-    ]
-  }
+	"permissions": {
+		"allow": [
+			"Bash(claude mcp add:*)",
+			"Bash(claude mcp:*)",
+			"Bash(claude config show)",
+			"Bash(npm search:*)",
+			"Bash(npx firecrawl-mcp:*)",
+			"Bash(claude config)",
+			"Bash(claude config list)",
+			"Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp)",
+			"Read(//Users/michaellocke/**)",
+			"Bash(npx @executeautomation/playwright-mcp:*)",
+			"Bash(npx @playwright/mcp:*)",
+			"Bash(timeout 5 npx better-playwright-mcp)",
+			"Bash(gtimeout 5 npx better-playwright-mcp)",
+			"Bash(npx playwright:*)",
+			"Bash(timeout 5s npx @playwright/mcp)",
+			"Bash(FIRECRAWL_API_KEY=fc-e401933ab88d4caa8c53d4c371cba045 npx firecrawl-mcp scrape --url \"https://www.caffeinemarketing.com/blog/best-fintech-website-design-examples\" --formats markdown)",
+			"WebFetch(domain:www.caffeinemarketing.com)",
+			"WebSearch",
+			"Bash(npx create-next-app:*)",
+			"Bash(git commit:*)",
+			"Bash(git push:*)",
+			"Bash(pip --version)",
+			"Bash(pip3:*)",
+			"Bash(docker:*)",
+			"Bash(git --version)",
+			"Bash(npx prettier:*)",
+			"Bash(python:*)",
+			"mcp__firecrawl__firecrawl_scrape",
+			"WebFetch(domain:mcp.alphavantage.co)",
+			"WebFetch(domain:www.alphavantage.co)",
+			"mcp__firecrawl__firecrawl_search",
+			"mcp__github__search_repositories",
+			"mcp__github__get_file_contents",
+			"Bash(lsof:*)",
+			"Bash(httpd:*)",
+			"Read(//private/etc/**)",
+			"Read(//private/var/log/**)",
+			"Bash(sudo apachectl:*)",
+			"Bash(nginx:*)",
+			"Read(//opt/homebrew/etc/nginx/**)",
+			"Bash(curl:*)",
+			"Bash(find:*)",
+			"Bash(npm test:*)",
+			"WebFetch(domain:github.com)",
+			"Bash(npm install:*)",
+			"Bash(npx ts-node:*)",
+			"Bash(git checkout:*)",
+			"Bash(git add:*)",
+			"Bash(git merge:*)",
+			"Bash(chmod:*)",
+			"WebFetch(domain:eodhd.com)",
+			"WebFetch(domain:polygon.io)",
+			"Bash(npm run test:coverage:*)",
+			"Bash(npx tsc:*)",
+			"Bash(npm run dev:clean:*)",
+			"mcp__context7__get-library-docs",
+			"Bash(npm run type-check:*)",
+			"Bash(node:*)",
+			"mcp__context7__resolve-library-id",
+			"Bash(sudo pkill:*)",
+			"Bash(git branch:*)",
+			"Bash(git stash:*)",
+			"Bash(timeout 15 npm run dev)",
+			"mcp__playwright__browser_navigate",
+			"mcp__playwright__browser_click",
+			"mcp__playwright__browser_type",
+			"mcp__playwright__browser_press_key",
+			"mcp__playwright__browser_console_messages",
+			"WebFetch(domain:developers.google.com)",
+			"Bash(mkdir:*)",
+			"WebFetch(domain:site.financialmodelingprep.com)",
+			"Bash(redis-cli:*)",
+			"Bash(npm run dev:status:*)",
+			"Bash(cat:*)",
+			"Bash(kill:*)"
+		],
+		"deny": [],
+		"ask": []
+	},
+	"enableAllProjectMcpServers": true,
+	"hooks": {
+		"Stop": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "afplay /System/Library/Sounds/basso.aiff"
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "afplay /System/Library/Sounds/blow.aiff"
+					}
+				]
+			}
+		]
+	}
 }

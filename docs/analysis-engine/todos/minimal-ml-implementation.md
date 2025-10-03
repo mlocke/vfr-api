@@ -18,6 +18,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 ### Implementation Status Summary
 
 **✅ PHASE 1 COMPLETE (100%)** - Data Collection & Training Pipeline
+
 - 7/7 tasks completed
 - Training dataset generation: 6K+ examples with earnings integration
 - Feature extraction: All 13 features implemented (436 lines)
@@ -26,6 +27,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Commits: 7641555, ff13cb4
 
 **✅ PHASE 2 COMPLETE (100%)** - Feature Engineering & Optimization
+
 - 10/10 tasks completed
 - FeatureExtractor.ts: 436 lines with all 13 ML features
 - FeatureNormalizer.ts: 140 lines with fit/transform/save/load
@@ -36,6 +38,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Commits: ff13cb4
 
 **✅ PHASE 3 COMPLETE (100%)** - ML Infrastructure & Training
+
 - 13/13 tasks completed
 - Model Registry: 1,248 lines (enterprise lifecycle management)
 - Model Cache: 691 lines (dual-layer with Redis + memory)
@@ -52,6 +55,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Commits: f0650d2, c338088
 
 **✅ PHASE 4 IN PROGRESS (55%)** - API Integration (Tasks 4.1-4.6 Complete)
+
 - ✅ Task 4.1: EarlySignalService implementation (349 lines)
 - ✅ Task 4.2: Comprehensive service tests (328 lines, NO MOCK DATA)
 - ✅ Task 4.3: /api/stocks/select endpoint integration (backward compatible)
@@ -62,6 +66,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - TypeScript compilation: PASSING ✅
 
 ### Key Achievements
+
 - ✅ TypeScript compilation: PASSING (npm run type-check)
 - ✅ All commits pushed to origin/feature/engine-upgrade
 - ✅ NO MOCK DATA policy maintained across all tests
@@ -69,6 +74,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - ✅ Production-ready architecture with enterprise patterns
 
 ### Known Issues & Resolutions
+
 - ✅ **Historical feature extraction bug**: FIXED - API now supports historical date queries
 - ✅ **Import path issues**: RESOLVED - ES module .js extensions added to test scripts
 - ✅ **Private method access**: FIXED - generate-training-data.ts TypeScript errors resolved
@@ -86,6 +92,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - [ ] Phase 5: Production Deploy (Days 9-10) - 0/10 (Pending Phase 4)
 
 **Phase 4 Completed Tasks**:
+
 - ✅ 4.1: EarlySignalService (349 lines)
 - ✅ 4.2: Service tests (328 lines)
 - ✅ 4.3: API integration (route.ts)
@@ -101,6 +108,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 ## Phase Progress Summary
 
 ### Phase 1: Data Collection ✅ COMPLETE
+
 - All 7 tasks completed successfully
 - Training dataset generated with 6K+ examples
 - Data validation passing (4/5 checks, 1 acceptable warning)
@@ -108,6 +116,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - **Critical bug discovered and fixed**: Historical feature extraction
 
 ### Phase 2: Feature Engineering ✅ COMPLETE (100%)
+
 - ✅ Momentum features verified (price changes)
 - ✅ Volume features verified (ratio + trend)
 - ✅ Technical features verified (RSI + MACD)
@@ -120,13 +129,15 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - ✅ Test scripts created for validation (test-all-13-features.ts, test-feature-normalizer.ts)
 
 ### Critical Issues Resolved
+
 1. **Historical OHLC Data Bug** (FIXED ✅):
-   - Root cause: API only supported current data, not historical date ranges
-   - Impact: 9/13 features returning zeros
-   - Solution: Extended API to support historical date queries
-   - Result: 100% feature completeness achieved
+    - Root cause: API only supported current data, not historical date ranges
+    - Impact: 9/13 features returning zeros
+    - Solution: Extended API to support historical date queries
+    - Result: 100% feature completeness achieved
 
 ### Phase 3: Model Training Infrastructure ✅ COMPLETE (100%)
+
 - ✅ Model Registry implemented (1,248 lines - enterprise model lifecycle management)
 - ✅ Model Cache system complete (691 lines - dual-layer caching with warming)
 - ✅ Model Validator framework (991 lines - 50+ validation rules)
@@ -140,6 +151,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - ✅ All commits pushed to origin/feature/engine-upgrade
 
 ### Next Steps
+
 1. Begin Phase 4: API Integration (EarlySignalService + /api/stocks/select integration) 🔴
 2. Production deployment preparation (Phase 5)
 3. Monitoring and alerting configuration
@@ -149,80 +161,83 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 ### Recent Completions (2025-10-01)
 
 **PHASE 4 TASK 4.6 COMPLETE: Manual Testing (✅ LATEST - 2025-10-01)**
+
 - **Task 4.6**: Manual API testing of /api/stocks/select endpoint
-  - All 7 manual tests completed successfully (1.5h)
-  - Test Results Summary:
-    1. ✅ Backward compatibility test passed (API works without include_early_signal parameter, ~424ms)
-    2. ✅ Single stock tests passed (TSLA, NVDA, AAPL, ~8s per request)
-    3. ✅ Multiple stocks parallel processing confirmed (MSFT, GOOGL, ~8s for 2 stocks vs ~16s sequential)
-    4. ✅ Response structure validation passed (early_signal field present when requested)
-    5. ✅ Metadata tracking working (early_signal_enabled, early_signal_latency_ms)
-    6. ✅ Confidence filtering working (null predictions for low confidence 35-65%)
-    7. ✅ Graceful error handling confirmed (no crashes, clear logging)
-  - Performance Metrics:
-    - Backward compatibility: ✅ PASS (~424ms)
-    - Single stock with early_signal: ~8s (above 6s target but acceptable for mock model)
-    - Multiple stocks (2): ~8s parallel vs ~16s sequential - ✅ PASS
-    - Cache behavior: Expected (null predictions not cached by design)
-    - Error handling: ✅ PASS (no crashes, clear logging)
-  - Files Created for Testing:
-    - models/early-signal/v1.0.0/normalizer.json (mock normalizer params)
-    - models/early-signal/v1.0.0/model.json (placeholder model metadata)
-  - Key Findings:
-    - API integration working correctly
-    - Placeholder model returns low-confidence predictions consistently (expected)
-    - Once trained model is available, high-confidence predictions will populate early_signal field
-    - Parallel processing confirmed working
-    - All manual tests successful
+    - All 7 manual tests completed successfully (1.5h)
+    - Test Results Summary:
+        1. ✅ Backward compatibility test passed (API works without include_early_signal parameter, ~424ms)
+        2. ✅ Single stock tests passed (TSLA, NVDA, AAPL, ~8s per request)
+        3. ✅ Multiple stocks parallel processing confirmed (MSFT, GOOGL, ~8s for 2 stocks vs ~16s sequential)
+        4. ✅ Response structure validation passed (early_signal field present when requested)
+        5. ✅ Metadata tracking working (early_signal_enabled, early_signal_latency_ms)
+        6. ✅ Confidence filtering working (null predictions for low confidence 35-65%)
+        7. ✅ Graceful error handling confirmed (no crashes, clear logging)
+    - Performance Metrics:
+        - Backward compatibility: ✅ PASS (~424ms)
+        - Single stock with early_signal: ~8s (above 6s target but acceptable for mock model)
+        - Multiple stocks (2): ~8s parallel vs ~16s sequential - ✅ PASS
+        - Cache behavior: Expected (null predictions not cached by design)
+        - Error handling: ✅ PASS (no crashes, clear logging)
+    - Files Created for Testing:
+        - models/early-signal/v1.0.0/normalizer.json (mock normalizer params)
+        - models/early-signal/v1.0.0/model.json (placeholder model metadata)
+    - Key Findings:
+        - API integration working correctly
+        - Placeholder model returns low-confidence predictions consistently (expected)
+        - Once trained model is available, high-confidence predictions will populate early_signal field
+        - Parallel processing confirmed working
+        - All manual tests successful
 - **Phase 4 Progress**: 55% complete (6/11 tasks)
 - **Status**: Ready for Task 4.7 (API Documentation)
 
 **PHASE 4 TASK 4.5 COMPLETE: Integration Tests (✅ 2025-10-01)**
+
 - **Task 4.5**: Integration tests for /api/stocks/select endpoint
-  - 7 comprehensive integration tests (180 lines)
-  - File: `app/api/stocks/__tests__/select.test.ts` (lines 782-962)
-  - Test coverage: Parameter acceptance, early_signal field validation, backward compatibility, multiple stocks, performance validation, error handling, data structure validation
-  - Performance validation: <6s first call target (cold cache)
-  - Real API integration (NO MOCK DATA policy maintained)
-  - TypeScript compilation: PASSING ✅
-  - All tests validating production-ready integration
+    - 7 comprehensive integration tests (180 lines)
+    - File: `app/api/stocks/__tests__/select.test.ts` (lines 782-962)
+    - Test coverage: Parameter acceptance, early_signal field validation, backward compatibility, multiple stocks, performance validation, error handling, data structure validation
+    - Performance validation: <6s first call target (cold cache)
+    - Real API integration (NO MOCK DATA policy maintained)
+    - TypeScript compilation: PASSING ✅
+    - All tests validating production-ready integration
 - **Test Categories**:
-  1. Parameter acceptance test (include_early_signal flag)
-  2. Response validation (early_signal field present when requested)
-  3. Backward compatibility (optional parameter behavior)
-  4. Multiple stocks handling (parallel predictions)
-  5. Performance validation (<6s target on first call)
-  6. Error handling (graceful degradation on failures)
-  7. Data structure validation (EarlySignalPrediction type compliance)
+    1. Parameter acceptance test (include_early_signal flag)
+    2. Response validation (early_signal field present when requested)
+    3. Backward compatibility (optional parameter behavior)
+    4. Multiple stocks handling (parallel predictions)
+    5. Performance validation (<6s target on first call)
+    6. Error handling (graceful degradation on failures)
+    7. Data structure validation (EarlySignalPrediction type compliance)
 - **Phase 4 Progress**: 45% complete (5/11 tasks)
 - **Status**: Ready for Task 4.6 (Manual Testing)
 
 **PHASE 4 TASKS 4.1-4.4 COMPLETE: API Integration (✅ 2025-10-01)**
+
 - **Task 4.1**: EarlySignalService implementation (349 lines)
-  - Prediction logic with confidence filtering (skip 35-65% low-confidence)
-  - Model loading with singleton pattern
-  - Feature extraction & normalization integration
-  - Human-readable reasoning generation from top features
-  - Redis caching with 5-minute TTL
+    - Prediction logic with confidence filtering (skip 35-65% low-confidence)
+    - Model loading with singleton pattern
+    - Feature extraction & normalization integration
+    - Human-readable reasoning generation from top features
+    - Redis caching with 5-minute TTL
 - **Task 4.2**: Comprehensive service tests (328 lines)
-  - Service initialization, model loading, prediction logic tests
-  - Caching validation, performance tests, error handling
-  - NO MOCK DATA - Real API integration
-  - Performance: <5s without cache, <100ms with cache
+    - Service initialization, model loading, prediction logic tests
+    - Caching validation, performance tests, error handling
+    - NO MOCK DATA - Real API integration
+    - Performance: <5s without cache, <100ms with cache
 - **Task 4.3**: API Integration (app/api/stocks/select/route.ts)
-  - Added `include_early_signal` boolean parameter to request schema
-  - Added `early_signal` field to EnhancedStockData response type
-  - Integrated EarlySignalService into stock enhancement pipeline
-  - Parallel predictions for all stocks
-  - Backward compatible (optional feature)
-  - Metadata: early_signal_enabled, early_signal_latency_ms
+    - Added `include_early_signal` boolean parameter to request schema
+    - Added `early_signal` field to EnhancedStockData response type
+    - Integrated EarlySignalService into stock enhancement pipeline
+    - Parallel predictions for all stocks
+    - Backward compatible (optional feature)
+    - Metadata: early_signal_enabled, early_signal_latency_ms
 - **Task 4.4**: Type Definitions Updated (✅ COMPLETE)
-  - Imported `EarlySignalPrediction` type from `app/services/ml/early-signal/types.ts`
-  - Replaced inline type definition in `EnhancedStockData` interface (route.ts)
-  - Added `early_signal?: EarlySignalPrediction` to `EnhancedStockResult` (stock-selection types.ts)
-  - Type consistency achieved across API route and service layer
-  - DRY principle enforced (no duplicate type definitions)
-  - TypeScript compilation: PASSING ✅
+    - Imported `EarlySignalPrediction` type from `app/services/ml/early-signal/types.ts`
+    - Replaced inline type definition in `EnhancedStockData` interface (route.ts)
+    - Added `early_signal?: EarlySignalPrediction` to `EnhancedStockResult` (stock-selection types.ts)
+    - Type consistency achieved across API route and service layer
+    - DRY principle enforced (no duplicate type definitions)
+    - TypeScript compilation: PASSING ✅
 - **Phase 4 Progress**: 36% complete (4/11 tasks)
 - **Total Implementation**: 677 lines (349 service + 328 tests)
 - **Status**: Ready for Task 4.5 (Integration Tests)
@@ -230,6 +245,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 ### Previous Completions (2025-10-01)
 
 **PHASE 3 COMPLETE: ML Infrastructure (✅ LATEST - Commit c338088)**
+
 - Comprehensive ML training and prediction infrastructure (15,548 lines)
 - Model Registry, Cache, and Validator for enterprise model management
 - LightGBM/XGBoost/LSTM training pipelines with orchestration
@@ -239,6 +255,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Status: All commits pushed to origin/feature/engine-upgrade
 
 **Early Signal Detection Feature System (✅ Commit ff13cb4)**
+
 - FeatureExtractor.ts enhanced with all 13 ML features (436 lines total)
 - Implemented fundamental features: earnings surprise, revenue growth accel, analyst coverage
 - FeatureNormalizer.ts complete (140 lines) with fit/transform/save/load functionality
@@ -248,6 +265,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Test scripts created: test-all-13-features.ts, test-feature-normalizer.ts, test-fundamental-features.ts
 
 **Training Pipeline Implementation (✅ Commit 7641555)**
+
 - generate-training-data.ts complete (475 lines) with earnings integration
 - split-training-data.ts for train/val/test splitting (227 lines)
 - validate-training-data.ts for dataset validation (431 lines)
@@ -256,6 +274,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Total: 2,328 insertions across training pipeline
 
 **Task 2.6: Feature Normalizer (✅ Complete)**
+
 - Created `app/services/ml/early-signal/FeatureNormalizer.ts` (141 lines)
 - Z-score normalization implementation: (value - mean) / stdDev
 - `fit()`: Calculates mean and stdDev from training data (lines 32-57)
@@ -270,23 +289,25 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Ready for integration with ModelTrainer in Phase 3
 
 **Task 2.4: Fundamental Features (✅)**
+
 - Implemented in `app/services/ml/early-signal/FeatureExtractor.ts` (lines 146-290)
 - `earnings_surprise`: Calculates % difference between actual and estimated earnings (lines 176-207)
-  - Formula: (actualEPS - estimatedEPS) / |estimatedEPS| × 100
-  - Uses FMP `/earnings-surprises/{symbol}` API
-  - Returns most recent quarterly earnings surprise
+    - Formula: (actualEPS - estimatedEPS) / |estimatedEPS| × 100
+    - Uses FMP `/earnings-surprises/{symbol}` API
+    - Returns most recent quarterly earnings surprise
 - `revenue_growth_accel`: Compares recent quarter revenue growth to previous quarter (lines 213-260)
-  - Formula: (recentQuarterGrowth - previousQuarterGrowth)
-  - Uses FMP `/income-statement/{symbol}?period=quarter` API
-  - Detects acceleration or deceleration in revenue growth trends
+    - Formula: (recentQuarterGrowth - previousQuarterGrowth)
+    - Uses FMP `/income-statement/{symbol}?period=quarter` API
+    - Detects acceleration or deceleration in revenue growth trends
 - `analyst_coverage_change`: Normalized analyst coverage metric (lines 266-290)
-  - Formula: (currentAnalystCount - avgAnalystCount) / avgAnalystCount
-  - Uses FMP `/analyst-estimates/{symbol}` API
-  - Measures change in analyst attention/coverage
+    - Formula: (currentAnalystCount - avgAnalystCount) / avgAnalystCount
+    - Uses FMP `/analyst-estimates/{symbol}` API
+    - Measures change in analyst attention/coverage
 - All features working with real FMP API data
 - Graceful error handling with neutral fallback (0.0) for missing data
 
 **Task 2.7: Feature Extraction Tests (✅ Complete)**
+
 - `app/services/ml/early-signal/__tests__/FeatureExtractor.test.ts` (851 lines EXPANDED)
 - 60+ comprehensive test cases covering all 13 features
 - Category 1: Individual feature validation (momentum, volume, sentiment, fundamental, technical)
@@ -301,6 +322,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - All tests passing with appropriate timeouts for real API calls
 
 **Task 1.7: Train/Val/Test Split (✅ Phase 1 Complete)**
+
 - Created `scripts/ml/split-training-data.ts` (241 lines)
 - Temporal split: Train 83.3% (2022-2024 Q2), Val 8.3% (2024 Q3), Test 8.3% (2024 Q4)
 - No temporal overlap verified - chronological integrity maintained
@@ -309,23 +331,25 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Validation: verified split distributions and date ranges
 
 **CRITICAL BUG FIX: Historical Feature Extraction (✅ INSERTED WORK)**
+
 - **Issue**: All momentum/volume features returning 0 values (price_change_5d/10d/20d, volume_ratio, volume_trend)
 - **Root Cause**: `getHistoricalOHLC` only supported "as of today" data, not historical date ranges
 - **Fix Applied**:
-  1. Updated `FinancialDataService.getHistoricalOHLC()` to accept `endDate` parameter
-  2. Modified FMP API `getHistoricalPrices()` to support date range queries
-  3. Updated `FeatureExtractor.extractFeatures()` to pass `asOfDate` to OHLC retrieval
-  4. Created test script: `scripts/ml/test-historical-features.ts` (171 lines)
+    1. Updated `FinancialDataService.getHistoricalOHLC()` to accept `endDate` parameter
+    2. Modified FMP API `getHistoricalPrices()` to support date range queries
+    3. Updated `FeatureExtractor.extractFeatures()` to pass `asOfDate` to OHLC retrieval
+    4. Created test script: `scripts/ml/test-historical-features.ts` (171 lines)
 - **Validation Results**:
-  - Before fix: 9/13 features = 0 (momentum/volume broken)
-  - After fix: 100% feature completeness (468/468 values populated)
-  - Real variation confirmed: price_change_20d = -4.23%, volume_ratio = 1.15, RSI = 52.3
+    - Before fix: 9/13 features = 0 (momentum/volume broken)
+    - After fix: 100% feature completeness (468/468 values populated)
+    - Real variation confirmed: price_change_20d = -4.23%, volume_ratio = 1.15, RSI = 52.3
 - **Impact**: Regenerated training data with correct historical features
 - **Files Modified**:
-  - `app/services/financial-data/FinancialModelingPrepAPI.ts` (added endDate support)
-  - `app/services/ml/early-signal/FeatureExtractor.ts` (pass asOfDate to data retrieval)
+    - `app/services/financial-data/FinancialModelingPrepAPI.ts` (added endDate support)
+    - `app/services/ml/early-signal/FeatureExtractor.ts` (pass asOfDate to data retrieval)
 
 **Task 1.6: Data Validation Script (✅)**
+
 - Created `scripts/ml/validate-training-data.ts` (322 lines)
 - 5 validation checks: completeness, label balance, outliers, temporal leakage, symbol representation
 - Fixed critical temporal leakage bug by adding chronological sort to `generate-training-data.ts`
@@ -333,6 +357,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Identified known issue: most features returning 0 (historical data availability)
 
 **Task 1.1: Historical Data Collection Script (✅)**
+
 - Created `scripts/ml/collect-analyst-history.ts` (155 lines)
 - FMP API integration with `getAnalystRatingsHistory()`
 - Rate limiting: 200ms delay between requests (5 req/sec)
@@ -341,6 +366,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - CLI support: `--symbols`, `--start`, `--end`, `--output`, `--test` flags
 
 **Task 1.2: Label Generation Logic (✅)**
+
 - Created `scripts/ml/label-generator.ts` (214 lines)
 - Implements `calculateConsensusScore()` - weighted analyst rating aggregation
 - Implements `calculateRatingChange()` - upgrade detection (>5% threshold)
@@ -349,6 +375,7 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - Handles edge cases: zero analysts, missing data, negative changes
 
 **Task 1.3: FeatureExtractor (✅)**
+
 - Created `app/services/ml/early-signal/FeatureExtractor.ts` (309 lines)
 - All 13 features implemented with real APIs
 - Added `getHistoricalOHLC()` to FinancialDataService
@@ -356,10 +383,12 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 - NO MOCK DATA - real FMP, sentiment, technical APIs
 
 **Task 1.4: Type Definitions (✅)**
+
 - Verified `app/services/ml/early-signal/types.ts` (pre-existing, 2,107 bytes)
 - All interfaces validated: FeatureVector, TrainingExample, EarlySignalPrediction, AnalystRatings
 
 **Task 1.5: Generate Training Dataset (✅)**
+
 - Created `scripts/ml/generate-training-data.ts` (469 lines)
 - Pivoted from analyst consensus snapshots to earnings surprises approach
 - S&P 100 symbols (top 100 companies for MVP)
@@ -374,20 +403,24 @@ ML-powered early signal detection infrastructure for predicting analyst rating u
 ## Prerequisites
 
 ### Environment
+
 - [ ] Node.js 18+: `node --version`
 - [ ] Dev server: `npm run dev:clean`
 - [ ] Redis: `redis-cli PING`
 - [ ] PostgreSQL (optional): `psql -U postgres -c "SELECT version()"`
 
 ### API Access
+
 - [ ] FMP API key (250/day free or unlimited premium)
 - [ ] Historical analyst ratings access
 
 ### Dependencies
+
 - [ ] Install LightGBM: `npm install lightgbm3 --save`
 - [ ] Verify: `node -e "const lgb = require('lightgbm3'); console.log('OK')"`
 
 ### Directory Structure
+
 ```bash
 mkdir -p /Users/michaellocke/WebstormProjects/Home/public/vfr-api/{models/early-signal/v1.0.0,scripts/ml,data/training}
 ```
@@ -409,6 +442,7 @@ mkdir -p /Users/michaellocke/WebstormProjects/Home/public/vfr-api/{models/early-
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Key Features**:
+
 - FMP API integration with `getAnalystRatingsHistory()`
 - Rate limiting: 200ms delay between requests (5 req/sec)
 - Retry logic with exponential backoff for 429 responses
@@ -427,6 +461,7 @@ mkdir -p /Users/michaellocke/WebstormProjects/Home/public/vfr-api/{models/early-
 **Completion**: 2025-10-01 | **Time**: 1.5h
 
 **Key Features**:
+
 - `calculateConsensusScore()` - weighted analyst rating aggregation (strongBuy=1.0, buy=0.75, hold=0.5, sell=0.25, strongSell=0.0)
 - `calculateRatingChange()` - binary upgrade detection with >5% threshold
 - `calculateConsensusChangePercentage()` - relative change calculation for analysis
@@ -444,6 +479,7 @@ mkdir -p /Users/michaellocke/WebstormProjects/Home/public/vfr-api/{models/early-
 **Completion**: 2025-10-01 | **Time**: 3h
 
 **Key Features**:
+
 - 13 features: momentum (3), volume (2), sentiment (3), fundamental (3), technical (2)
 - Parallel data collection via existing VFR services
 - Graceful error handling with neutral fallback
@@ -468,41 +504,47 @@ mkdir -p /Users/michaellocke/WebstormProjects/Home/public/vfr-api/{models/early-
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Implementation Notes**:
+
 - **Original Plan**: Use analyst consensus snapshots over time
 - **Issue Discovered**: FMP doesn't provide historical consensus data in our tier
 - **Solution**: Pivoted to use earnings surprises (60 quarters of historical data available!)
 - **Approach**: For each earnings release, extract features and label based on earnings beat + analyst consensus
 
 **Implementation**:
+
 ```typescript
 // Uses FMP earnings surprises API (60 quarters per symbol)
 // Label = 1 if earnings beat AND current analyst consensus is Buy or better
 // Provides ~6000 examples (60 quarters × 100 symbols)
 
 async function generateTrainingData() {
-  const featureExtractor = new EarlySignalFeatureExtractor()
-  const fmpAPI = new FinancialModelingPrepAPI()
-  const dataset: TrainingExample[] = []
+	const featureExtractor = new EarlySignalFeatureExtractor();
+	const fmpAPI = new FinancialModelingPrepAPI();
+	const dataset: TrainingExample[] = [];
 
-  for (const symbol of SP500_TOP_100) {
-    const earnings = await fmpAPI.makeRequest(`/earnings-surprises/${symbol}`)
-    const analystRatings = await fmpAPI.getAnalystRatings(symbol)
+	for (const symbol of SP500_TOP_100) {
+		const earnings = await fmpAPI.makeRequest(`/earnings-surprises/${symbol}`);
+		const analystRatings = await fmpAPI.getAnalystRatings(symbol);
 
-    for (const earning of earnings.data) {
-      const features = await featureExtractor.extractFeatures(symbol, earning.date)
-      const label = (earning.actualEarningResult > earning.estimatedEarning &&
-                    analystRatings.consensus in ['Buy', 'Strong Buy']) ? 1 : 0
-      dataset.push({ symbol, date: earning.date, features, label })
-    }
+		for (const earning of earnings.data) {
+			const features = await featureExtractor.extractFeatures(symbol, earning.date);
+			const label =
+				earning.actualEarningResult > earning.estimatedEarning &&
+				analystRatings.consensus in ["Buy", "Strong Buy"]
+					? 1
+					: 0;
+			dataset.push({ symbol, date: earning.date, features, label });
+		}
 
-    if (i % 50 === 0) saveCheckpoint(dataset, `checkpoint_${i}.csv`)
-  }
+		if (i % 50 === 0) saveCheckpoint(dataset, `checkpoint_${i}.csv`);
+	}
 
-  saveDataset(dataset, 'early-signal-v1.csv')
+	saveDataset(dataset, "early-signal-v1.csv");
 }
 ```
 
 **Key Features**:
+
 - ✅ S&P 100 symbol list (top 100 companies for MVP)
 - ✅ CLI support: `--symbols`, `--test`, `--start`, `--end`, `--output`, `--checkpoint-interval`
 - ✅ Progress tracking with detailed logging
@@ -514,6 +556,7 @@ async function generateTrainingData() {
 **Test**: `npx tsx scripts/ml/generate-training-data.ts --test --symbols TSLA,NVDA,AAPL`
 
 **Success Criteria**:
+
 - ✅ Implementation complete with earnings-based approach
 - ⚠️ Dataset size: ~6K examples (vs 375K planned, but more realistic given API limitations)
 - ✅ 10-50% positive labels (earnings beats)
@@ -531,6 +574,7 @@ async function generateTrainingData() {
 **Completion**: 2025-10-01 | **Time**: 1h
 
 **Key Features**:
+
 - 5 comprehensive validation checks implemented
 - Completeness check: validates >90% features populated (no NaN/null values)
 - Label balance check: validates 10-50% positive labels for earnings beats
@@ -542,12 +586,14 @@ async function generateTrainingData() {
 - Helpful suggestions for fixing validation failures
 
 **Implementation Notes**:
+
 - **Issue Discovered**: Initial dataset had temporal leakage (dates reversed, newest→oldest)
 - **Root Cause**: FMP API returns earnings data in reverse chronological order
 - **Fix Applied**: Modified `generate-training-data.ts:298-304` to add `.sort()` for chronological ordering
 - **Result**: Temporal leakage FIXED - dates now properly ordered (oldest→first)
 
 **Validation Results** (Test Mode - 3 symbols, 36 examples):
+
 - ✅ Completeness: 100% features populated (468/468 values)
 - ⚠️ Label Balance: 83.3% positive (30/36) - outside 10-50% target but acceptable for test
 - ✅ Outlier Detection: 0% outliers detected
@@ -555,6 +601,7 @@ async function generateTrainingData() {
 - ✅ Symbol Representation: 3 symbols represented
 
 **Known Issue**:
+
 - Most features returning 0 values (price_change_5d/10d/20d, rsi_momentum, macd_histogram_trend, etc.)
 - Only sentiment features (reddit_accel, options_shift) showing variation
 - Root cause: FeatureExtractor requires historical OHLC data at earnings dates
@@ -564,6 +611,7 @@ async function generateTrainingData() {
 **Test**: `npx tsx scripts/ml/validate-training-data.ts`
 
 **Success Criteria**:
+
 - ✅ Script created with 5 validation checks
 - ✅ 4/5 checks passing (1 warning on label balance)
 - ✅ Temporal leakage FIXED via chronological sorting
@@ -579,11 +627,13 @@ async function generateTrainingData() {
 **Completion**: 2025-10-01 | **Time**: 45min
 
 **Split Strategy**:
+
 - Train: 2022-01-01 to 2024-06-30 (83.3%)
 - Validation: 2024-07-01 to 2024-09-30 (8.3%)
 - Test: 2024-10-01 to 2024-12-31 (8.3%)
 
 **Key Features**:
+
 - Temporal-based splitting (no data leakage across time boundaries)
 - CLI support: `--input`, `--output`, `--train-ratio`, `--val-ratio` flags
 - Automatic chronological validation
@@ -599,6 +649,7 @@ async function generateTrainingData() {
 ### Phase 1 Gate ✅ PASSED
 
 Before Phase 2:
+
 - [x] Historical data collection script completed (Task 1.1) ✅
 - [x] Label generation logic implemented (Task 1.2) ✅
 - [x] Feature extractor implemented (Task 1.3) ✅
@@ -627,11 +678,13 @@ Before Phase 2:
 **Files**: `app/services/ml/early-signal/FeatureExtractor.ts`, `app/services/financial-data/FinancialModelingPrepAPI.ts`
 
 **2.1 Momentum Features** ✅:
+
 - `price_change_5d`, `price_change_10d`, `price_change_20d` - All returning real variation
 - Verified with historical OHLC data via fixed `getHistoricalOHLC()`
 - Example output: -4.23%, 2.15%, -1.87% (real market data)
 
 **2.2 Volume Features** ✅:
+
 - `volume_ratio` (avg_5d/avg_20d) - Working correctly
 - `volume_trend` (linear regression slope) - Calculating properly
 - Example output: volume_ratio=1.15, volume_trend=0.023
@@ -645,6 +698,7 @@ Before Phase 2:
 **Status**: Partial implementation ✅ (news/reddit working, options data available)
 
 **Working Features**:
+
 - `news_sentiment_delta` - FMP news API integration ✅
 - `reddit_sentiment_accel` - WSB subreddit analysis ✅
 - `options_put_call_shift` - Options data service available ✅
@@ -662,6 +716,7 @@ Before Phase 2:
 **Implemented Features**:
 
 **2.4.1 Earnings Surprise** (lines 176-207):
+
 - Calculates percentage difference between actual and estimated earnings
 - Formula: `(actualEPS - estimatedEPS) / |estimatedEPS| × 100`
 - API: FMP `/earnings-surprises/{symbol}`
@@ -669,6 +724,7 @@ Before Phase 2:
 - Example: 5.2% beat means actual EPS was 5.2% higher than estimates
 
 **2.4.2 Revenue Growth Acceleration** (lines 213-260):
+
 - Compares recent quarter revenue growth to previous quarter
 - Formula: `(recentQuarterGrowth - previousQuarterGrowth)`
 - API: FMP `/income-statement/{symbol}?period=quarter`
@@ -676,6 +732,7 @@ Before Phase 2:
 - Example: 0.03 means revenue growth accelerated by 3 percentage points
 
 **2.4.3 Analyst Coverage Change** (lines 266-290):
+
 - Normalized analyst coverage metric
 - Formula: `(currentAnalystCount - avgAnalystCount) / avgAnalystCount`
 - API: FMP `/analyst-estimates/{symbol}`
@@ -683,6 +740,7 @@ Before Phase 2:
 - Example: 0.15 means 15% increase in analyst coverage
 
 **Key Features**:
+
 - All features using real FMP API data (NO MOCK DATA)
 - Graceful error handling with neutral fallback (0.0) for missing data
 - Comprehensive data validation and error logging
@@ -690,6 +748,7 @@ Before Phase 2:
 - Performance: <1s per symbol for all fundamental features
 
 **Success Criteria Met**:
+
 - ✅ All 3 fundamental features implemented
 - ✅ Real FMP API integration working
 - ✅ Graceful error handling validated
@@ -704,6 +763,7 @@ Before Phase 2:
 **Implementation**: `app/services/ml/early-signal/FeatureExtractor.ts`
 
 **Working Features**:
+
 - `rsi_momentum` - RSI via TechnicalIndicatorService ✅
 - `macd_histogram_trend` - MACD calculation working ✅
 
@@ -720,42 +780,44 @@ Before Phase 2:
 **Implementation Details**:
 
 **Core Methods**:
+
 - `fit(trainingData: FeatureVector[])` (lines 32-57): Calculates mean and stdDev from training data
-  - Iterates through all 13 features in FeatureVector
-  - Computes population mean for each feature
-  - Computes population standard deviation for each feature
-  - Stores parameters in internal Maps for later transformation
+    - Iterates through all 13 features in FeatureVector
+    - Computes population mean for each feature
+    - Computes population standard deviation for each feature
+    - Stores parameters in internal Maps for later transformation
 
 - `transform(features: FeatureVector)` (lines 63-76): Z-score normalization
-  - Formula: `(value - mean) / stdDev` for each feature
-  - Returns normalized array of 13 values
-  - Uses fitted parameters from training data
-  - Division by zero protection: defaults to stdDev=1 if zero
+    - Formula: `(value - mean) / stdDev` for each feature
+    - Returns normalized array of 13 values
+    - Uses fitted parameters from training data
+    - Division by zero protection: defaults to stdDev=1 if zero
 
 - `fitTransform(trainingData: FeatureVector[])` (lines 81-84): Convenience method
-  - Combines fit() and transform() operations
-  - Returns normalized training data in one call
+    - Combines fit() and transform() operations
+    - Returns normalized training data in one call
 
 - `getParams()` (lines 89-100): Export normalization parameters
-  - Returns Record<string, { mean: number; stdDev: number }>
-  - Enables persistence of normalization state
-  - Required for production inference with same scaling
+    - Returns Record<string, { mean: number; stdDev: number }>
+    - Enables persistence of normalization state
+    - Required for production inference with same scaling
 
 - `loadParams(params)` (lines 105-116): Import normalization parameters
-  - Loads pre-fitted parameters from training phase
-  - Enables consistent normalization in production
-  - Validates parameter structure before loading
+    - Loads pre-fitted parameters from training phase
+    - Enables consistent normalization in production
+    - Validates parameter structure before loading
 
 - `getStats()` (lines 121-132): Get normalization statistics
-  - Returns min, max, mean, stdDev for each feature
-  - Useful for monitoring and debugging
-  - Helps detect distribution shifts in production
+    - Returns min, max, mean, stdDev for each feature
+    - Useful for monitoring and debugging
+    - Helps detect distribution shifts in production
 
 - `isFitted()` (lines 137-139): Check if normalizer is ready
-  - Returns true if fit() has been called
-  - Prevents using unfitted normalizer
+    - Returns true if fit() has been called
+    - Prevents using unfitted normalizer
 
 **Key Features**:
+
 - Z-score normalization: transforms features to mean≈0, std≈1
 - Feature-wise normalization for all 13 features in FeatureVector
 - Division by zero protection (stdDev === 0 defaults to 1)
@@ -765,6 +827,7 @@ Before Phase 2:
 - Ready for integration with ModelTrainer in Phase 3
 
 **Success Criteria Met**:
+
 - ✅ Fits on training data successfully
 - ✅ Produces normalized features with mean≈0, std≈1
 - ✅ Can save/load parameters for production use
@@ -779,6 +842,7 @@ Before Phase 2:
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Key Features**:
+
 - All 13 features tested with real API integration (NO MOCK DATA)
 - Performance validation: <5s per symbol, <10s for 3 parallel extractions
 - Edge case handling: invalid symbols, limited history, empty strings
@@ -789,6 +853,7 @@ Before Phase 2:
 - Real symbols tested: TSLA, NVDA, AAPL, MSFT, GOOGL, AMD, PLTR
 
 **Test Coverage**:
+
 - Feature extraction completeness (13 features)
 - Historical data handling and edge cases
 - Performance requirements (<5s per symbol)
@@ -799,6 +864,7 @@ Before Phase 2:
 - Technical indicators (RSI, MACD)
 
 **Success Criteria Met**:
+
 - ✅ All 13 features tested
 - ✅ Missing data handling validated (graceful fallback)
 - ✅ Latency <5s confirmed for single symbol
@@ -815,6 +881,7 @@ Before Phase 2:
 **Status**: COMPLETE via comprehensive test scripts ✅
 **Files**: `scripts/ml/test-feature-normalizer.ts` (130 lines), test integration in FeatureExtractor.test.ts
 **Implementation**:
+
 - Z-score normalization validation with real feature data
 - Save/load parameter testing for production consistency
 - Statistical validation (mean≈0, std≈1 after normalization)
@@ -822,6 +889,7 @@ Before Phase 2:
 - Batch normalization testing with multiple feature vectors
 
 **Success Criteria Met**:
+
 - ✅ All normalization tests pass with real API data
 - ✅ Save/load parameters work correctly
 - ✅ Statistical properties validated
@@ -835,12 +903,14 @@ Before Phase 2:
 **Status**: COMPLETE via test scripts ✅
 **Files**: `scripts/ml/test-all-13-features.ts` (41 lines), comprehensive integration in tests
 **Implementation**:
+
 - End-to-end pipeline testing from raw data to normalized features
 - All 13 features extraction and normalization validated
 - Performance validation <5s per symbol
 - Real API integration across entire pipeline
 
 **Success Criteria Met**:
+
 - ✅ Pipeline runs without errors
 - ✅ Normalized features are numeric (no NaN/undefined)
 - ✅ <5s per symbol performance achieved
@@ -852,6 +922,7 @@ Before Phase 2:
 
 **Status**: COMPLETE via ML Infrastructure (Phase 3) ✅
 **Implementation**:
+
 - Dual-layer caching (memory + Redis) in ModelCache.ts (691 lines)
 - Parallel API calls in FeatureExtractor.ts
 - Inference optimization with Float32Array in InferenceOptimizer.ts (418 lines)
@@ -859,6 +930,7 @@ Before Phase 2:
 - Cache warming strategies for production deployment
 
 **Success Criteria Met**:
+
 - ✅ <100ms with cache hit (Real-Time Prediction Engine target)
 - ✅ <5s with cache miss for feature extraction
 - ✅ No performance regressions
@@ -869,6 +941,7 @@ Before Phase 2:
 ### Phase 2 Gate ✅ PASSED
 
 Before Phase 3:
+
 - [x] Momentum features working (5d/10d/20d price changes) ✅
 - [x] Volume features working (ratio + trend) ✅
 - [x] Technical features working (RSI + MACD) ✅
@@ -900,6 +973,7 @@ Before Phase 3:
 **File**: `app/services/ml/training/ModelTrainer.ts` (755 lines)
 
 **Implementation**:
+
 - Algorithm-specific training for LightGBM, XGBoost, and LSTM
 - Comprehensive configuration management with defaults
 - Early stopping and validation monitoring
@@ -908,6 +982,7 @@ Before Phase 3:
 - Cross-validation support
 
 **Key Features**:
+
 - Multi-algorithm support (classification, regression, time-series)
 - Hyperparameter optimization integration
 - Training progress callbacks
@@ -915,6 +990,7 @@ Before Phase 3:
 - Comprehensive error handling
 
 **Success Criteria Met**:
+
 - ✅ Trains without errors across all algorithm types
 - ✅ Validation metrics improve with early stopping
 - ✅ Model artifacts saved correctly
@@ -928,6 +1004,7 @@ Before Phase 3:
 **File**: `app/services/ml/training/TrainingOrchestrator.ts` (678 lines)
 
 **Implementation**:
+
 - End-to-end training workflow orchestration
 - Data preparation and validation
 - Feature engineering pipeline integration
@@ -937,6 +1014,7 @@ Before Phase 3:
 - Training job scheduling and management
 
 **Success Criteria Met**:
+
 - ✅ Complete training pipeline implemented
 - ✅ Scheduled training jobs supported
 - ✅ Model artifacts saved with versioning
@@ -951,6 +1029,7 @@ Before Phase 3:
 **File**: `app/services/ml/training/ModelEvaluator.ts` (688 lines)
 
 **Implementation**:
+
 - Comprehensive metrics for classification, regression, and financial analysis
 - AUC, precision, recall, F1 score calculations
 - Confusion matrix generation
@@ -959,12 +1038,14 @@ Before Phase 3:
 - Financial-specific metrics (Sharpe ratio, max drawdown)
 
 **Metrics Supported**:
+
 - Classification: AUC, precision@threshold, recall, F1, confusion matrix
 - Regression: MSE, RMSE, MAE, R², MAPE
 - Financial: Sharpe ratio, max drawdown, win rate, profit factor
 - Calibration: Expected calibration error (ECE)
 
 **Success Criteria Met**:
+
 - ✅ All metrics calculated correctly
 - ✅ Financial-specific metrics implemented
 - ✅ Feature importance intuitive and actionable
@@ -975,34 +1056,40 @@ Before Phase 3:
 ### ✅ Tasks 3.4-3.9: Infrastructure & Validation - COMPLETED
 
 **3.4 Model Registry** (✅ Commit f0650d2):
+
 - Enterprise model lifecycle management (1,248 lines)
 - A/B testing support with traffic allocation
 - Champion/challenger model patterns
 - Model promotion workflows
 
 **3.5 Model Cache** (✅ Commit f0650d2):
+
 - Dual-layer caching (memory + Redis, 691 lines)
 - Automatic cache warming strategies
 - LRU eviction with configurable TTL
 
 **3.6 Model Validator** (✅ Commit f0650d2):
+
 - 50+ validation rules across 8 categories (991 lines)
 - Metadata, performance, configuration validation
 - Data schema compatibility checks
 
 **3.7 Real-Time Prediction Engine** (✅ Commit c338088):
+
 - <100ms latency target with caching (591 lines)
 - Inference optimization with Float32Array
 - Worker pool for parallel processing (413 lines)
 
 **3.8 Inference Optimizer** (✅ Commit c338088):
+
 - Algorithm-specific preprocessing (418 lines)
 - Memory-efficient Float32Array operations
 - Batch inference optimization
 
 **3.9 Comprehensive Test Suites** (✅):
+
 - 3,382 test lines across all components
-- >90% test coverage achieved
+- > 90% test coverage achieved
 - Real API integration (NO MOCK DATA)
 - Performance validation (<100ms targets met)
 
@@ -1011,6 +1098,7 @@ Before Phase 3:
 ### Phase 3 Gate ✅ PASSED
 
 Before Phase 4:
+
 - [x] Model training infrastructure complete (755 lines ModelTrainer) ✅
 - [x] Training orchestration implemented (678 lines) ✅
 - [x] Model evaluation framework complete (688 lines, all metrics) ✅
@@ -1037,6 +1125,7 @@ Before Phase 4:
 **Success**: <100ms additional latency, backward compatible API
 
 **Prerequisites Met**:
+
 - ✅ All 13 features extraction pipeline complete
 - ✅ Feature normalization working
 - ✅ ML infrastructure ready (training, prediction, caching)
@@ -1044,6 +1133,7 @@ Before Phase 4:
 - ✅ TypeScript compilation passing
 
 **Completed (6/11 tasks - 55%)**:
+
 - ✅ Task 4.1: EarlySignalService implementation (349 lines)
 - ✅ Task 4.2: Comprehensive service tests (328 lines, NO MOCK DATA)
 - ✅ Task 4.3: API endpoint integration (backward compatible)
@@ -1052,6 +1142,7 @@ Before Phase 4:
 - ✅ Task 4.6: Manual testing (all 7 tests passing, 1.5h)
 
 **Remaining (5/11 tasks - 45%)**:
+
 - Task 4.7: API documentation
 - Task 4.8: User guide
 - Task 4.9: Code review
@@ -1065,38 +1156,47 @@ Before Phase 4:
 **Completion**: 2025-10-01 | **Time**: 3h
 
 **Implementation**:
+
 ```typescript
 export class EarlySignalService {
-  private static modelInstance: any = null
+	private static modelInstance: any = null;
 
-  async predictAnalystChange(symbol: string, sector: string): Promise<EarlySignalPrediction | null> {
-    // Check cache (5min TTL)
-    const cached = await this.cache.get(`early_signal:${symbol}:${dateKey}`)
-    if (cached) return JSON.parse(cached)
+	async predictAnalystChange(
+		symbol: string,
+		sector: string
+	): Promise<EarlySignalPrediction | null> {
+		// Check cache (5min TTL)
+		const cached = await this.cache.get(`early_signal:${symbol}:${dateKey}`);
+		if (cached) return JSON.parse(cached);
 
-    // Load model (singleton)
-    if (!EarlySignalService.modelInstance) await this.loadModel()
+		// Load model (singleton)
+		if (!EarlySignalService.modelInstance) await this.loadModel();
 
-    // Extract + normalize features
-    const features = await this.featureExtractor.extractFeatures(symbol)
-    const normalized = this.normalizer.transform(features)
+		// Extract + normalize features
+		const features = await this.featureExtractor.extractFeatures(symbol);
+		const normalized = this.normalizer.transform(features);
 
-    // Predict (skip if confidence 0.35-0.65)
-    const probability = await EarlySignalService.modelInstance.predict([normalized])[0]
-    if (probability < 0.65 && probability > 0.35) return null
+		// Predict (skip if confidence 0.35-0.65)
+		const probability = await EarlySignalService.modelInstance.predict([normalized])[0];
+		if (probability < 0.65 && probability > 0.35) return null;
 
-    // Generate reasoning from top features
-    const reasoning = this.generateReasoning(features, featureImportance)
+		// Generate reasoning from top features
+		const reasoning = this.generateReasoning(features, featureImportance);
 
-    const prediction = { upgrade_likely: probability > 0.65, confidence: probability,
-                        horizon: '2_weeks', reasoning, /* ... */ }
-    await this.cache.set(cacheKey, JSON.stringify(prediction), 300)
-    return prediction
-  }
+		const prediction = {
+			upgrade_likely: probability > 0.65,
+			confidence: probability,
+			horizon: "2_weeks",
+			reasoning /* ... */,
+		};
+		await this.cache.set(cacheKey, JSON.stringify(prediction), 300);
+		return prediction;
+	}
 }
 ```
 
 **Key Features**:
+
 - Prediction logic with confidence filtering (skip 35-65% low-confidence predictions)
 - Model loading with singleton pattern for performance
 - Feature extraction & normalization integration
@@ -1106,6 +1206,7 @@ export class EarlySignalService {
 - Performance: <5s without cache, <100ms with cache
 
 **Success Criteria Met**:
+
 - ✅ Service initializes successfully
 - ✅ Model loads on first call (singleton pattern)
 - ✅ Predictions work with confidence filtering
@@ -1121,6 +1222,7 @@ export class EarlySignalService {
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Test Coverage**:
+
 - Service initialization and dependency injection
 - Model loading (singleton pattern validation)
 - Prediction logic with confidence filtering
@@ -1131,12 +1233,14 @@ export class EarlySignalService {
 - Reasoning generation validation
 
 **Test Results**:
+
 - ✅ All tests passing
 - ✅ NO MOCK DATA policy maintained (real API integration)
 - ✅ Performance targets validated
 - ✅ Cache effectiveness confirmed (10x speedup on cache hit)
 
 **Success Criteria Met**:
+
 - ✅ All tests pass with real API integration
 - ✅ Null predictions for low confidence (35-65% range)
 - ✅ Cache hit 10x faster than cache miss
@@ -1151,42 +1255,49 @@ export class EarlySignalService {
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Implementation**:
+
 ```typescript
 interface StockSelectionRequest {
-  /* existing fields */
-  include_early_signal?: boolean // NEW - optional parameter
+	/* existing fields */
+	include_early_signal?: boolean; // NEW - optional parameter
 }
 
 interface EnhancedStockData {
-  /* existing fields */
-  early_signal?: EarlySignalPrediction // NEW - optional field
+	/* existing fields */
+	early_signal?: EarlySignalPrediction; // NEW - optional field
 }
 
 interface StockSelectionResponse {
-  data: {
-    stocks: EnhancedStockData[]
-    metadata: {
-      early_signal_enabled?: boolean // NEW - feature flag
-      early_signal_latency_ms?: number // NEW - performance tracking
-    }
-  }
+	data: {
+		stocks: EnhancedStockData[];
+		metadata: {
+			early_signal_enabled?: boolean; // NEW - feature flag
+			early_signal_latency_ms?: number; // NEW - performance tracking
+		};
+	};
 }
 
 // In route handler (enhanced with parallel predictions)
 if (include_early_signal) {
-  const earlySignalService = new EarlySignalService()
-  const startTime = performance.now()
+	const earlySignalService = new EarlySignalService();
+	const startTime = performance.now();
 
-  await Promise.all(enhancedStocks.map(async (stock) => {
-    const prediction = await earlySignalService.predictAnalystChange(stock.symbol, stock.sector)
-    if (prediction) stock.early_signal = prediction
-  }))
+	await Promise.all(
+		enhancedStocks.map(async stock => {
+			const prediction = await earlySignalService.predictAnalystChange(
+				stock.symbol,
+				stock.sector
+			);
+			if (prediction) stock.early_signal = prediction;
+		})
+	);
 
-  metadata.early_signal_latency_ms = performance.now() - startTime
+	metadata.early_signal_latency_ms = performance.now() - startTime;
 }
 ```
 
 **Integration Features**:
+
 - Request schema enhanced with `include_early_signal` boolean parameter
 - Response schema enhanced with `early_signal` field on stocks
 - Parallel prediction execution for all stocks
@@ -1195,6 +1306,7 @@ if (include_early_signal) {
 - Graceful error handling (early signal failures don't break stock selection)
 
 **Success Criteria Met**:
+
 - ✅ Accepts `include_early_signal` parameter
 - ✅ Returns `early_signal` field when requested
 - ✅ Backward compatible (existing clients unaffected)
@@ -1213,22 +1325,24 @@ if (include_early_signal) {
 Successfully updated type definitions across the API route and service layer to ensure consistency and adherence to the DRY (Don't Repeat Yourself) principle. The `EarlySignalPrediction` type is now centrally defined and imported where needed.
 
 **Changes Made**:
+
 1. **route.ts (API Route)**:
-   - Imported `EarlySignalPrediction` type from `app/services/ml/early-signal/types.ts`
-   - Replaced inline type definition in `EnhancedStockData` interface with imported type
-   - Added type import statement at top of file
+    - Imported `EarlySignalPrediction` type from `app/services/ml/early-signal/types.ts`
+    - Replaced inline type definition in `EnhancedStockData` interface with imported type
+    - Added type import statement at top of file
 
 2. **stock-selection/types.ts (Service Layer)**:
-   - Added `early_signal?: EarlySignalPrediction` to `EnhancedStockResult` interface
-   - Ensures type consistency between API responses and service layer
-   - Optional field maintains backward compatibility
+    - Added `early_signal?: EarlySignalPrediction` to `EnhancedStockResult` interface
+    - Ensures type consistency between API responses and service layer
+    - Optional field maintains backward compatibility
 
 3. **Type Consistency**:
-   - Single source of truth for `EarlySignalPrediction` type definition
-   - Consistent typing across API route and service layer
-   - No duplicate type definitions (DRY principle enforced)
+    - Single source of truth for `EarlySignalPrediction` type definition
+    - Consistent typing across API route and service layer
+    - No duplicate type definitions (DRY principle enforced)
 
 **Validation**:
+
 ```bash
 # TypeScript compilation verification
 npm run type-check
@@ -1236,6 +1350,7 @@ npm run type-check
 ```
 
 **Success Criteria Met**:
+
 - ✅ Type imported and reused (DRY principle)
 - ✅ Consistent typing across route.ts and stock-selection types.ts
 - ✅ TypeScript compilation passing (npm run type-check)
@@ -1252,48 +1367,51 @@ npm run type-check
 **Completion**: 2025-10-01 | **Time**: 2h
 
 **Implementation Details**:
+
 - 7 comprehensive integration tests validating end-to-end API functionality
 - All tests follow NO MOCK DATA policy with real API integration
 - Performance validation targeting <6s on first call (cold cache)
 - TypeScript compilation: PASSING ✅
 
 **Test Coverage**:
+
 1. **Parameter Acceptance Test**:
-   - Validates `include_early_signal` parameter is accepted
-   - Confirms API processes request without errors
-   - Ensures backward compatibility with optional flag
+    - Validates `include_early_signal` parameter is accepted
+    - Confirms API processes request without errors
+    - Ensures backward compatibility with optional flag
 
 2. **Early Signal Field Validation**:
-   - Verifies `early_signal` field is present in response when requested
-   - Validates field structure matches `EarlySignalPrediction` type
-   - Confirms data completeness and accuracy
+    - Verifies `early_signal` field is present in response when requested
+    - Validates field structure matches `EarlySignalPrediction` type
+    - Confirms data completeness and accuracy
 
 3. **Backward Compatibility Test**:
-   - Tests API behavior when `include_early_signal` is omitted
-   - Ensures existing clients continue working unchanged
-   - Validates optional parameter handling
+    - Tests API behavior when `include_early_signal` is omitted
+    - Ensures existing clients continue working unchanged
+    - Validates optional parameter handling
 
 4. **Multiple Stocks Handling**:
-   - Tests parallel early signal predictions for multiple symbols
-   - Validates each stock can receive independent predictions
-   - Confirms no cross-contamination between stock analyses
+    - Tests parallel early signal predictions for multiple symbols
+    - Validates each stock can receive independent predictions
+    - Confirms no cross-contamination between stock analyses
 
 5. **Performance Validation**:
-   - Measures response time on first call (cold cache)
-   - Target: <6s for initial request with feature extraction
-   - Monitors for performance regressions
+    - Measures response time on first call (cold cache)
+    - Target: <6s for initial request with feature extraction
+    - Monitors for performance regressions
 
 6. **Error Handling Test**:
-   - Validates graceful degradation when predictions fail
-   - Ensures API continues working even with ML service errors
-   - Confirms partial results returned when appropriate
+    - Validates graceful degradation when predictions fail
+    - Ensures API continues working even with ML service errors
+    - Confirms partial results returned when appropriate
 
 7. **Data Structure Validation**:
-   - Type-checks all response fields
-   - Validates confidence scores are numeric and in valid range
-   - Ensures reasoning fields are populated correctly
+    - Type-checks all response fields
+    - Validates confidence scores are numeric and in valid range
+    - Ensures reasoning fields are populated correctly
 
 **Success Criteria Met**:
+
 - ✅ All 7 tests passing
 - ✅ NO MOCK DATA - real API integration
 - ✅ Performance targets validated (<6s first call)
@@ -1303,6 +1421,7 @@ npm run type-check
 - ✅ Ready for manual testing (Task 4.6)
 
 **Test Execution**:
+
 ```bash
 npm test -- app/api/stocks/__tests__/select.test.ts --testNamePattern="early_signal"
 ```
@@ -1315,42 +1434,44 @@ npm test -- app/api/stocks/__tests__/select.test.ts --testNamePattern="early_sig
 **Completion**: 2025-10-01 | **Time**: 1.5h
 
 **Test Results Summary**:
+
 1. ✅ **Backward Compatibility Test** - API works without include_early_signal parameter
-   - Response time: ~424ms
-   - No early_signal field in response (expected)
-   - All existing functionality working
+    - Response time: ~424ms
+    - No early_signal field in response (expected)
+    - All existing functionality working
 
 2. ✅ **Single Stock Tests** - TSLA, NVDA, AAPL
-   - Response time: ~8s per request (above 6s target but acceptable for mock model)
-   - early_signal field present when include_early_signal=true
-   - Low-confidence predictions return null (35-65% range, expected for placeholder model)
+    - Response time: ~8s per request (above 6s target but acceptable for mock model)
+    - early_signal field present when include_early_signal=true
+    - Low-confidence predictions return null (35-65% range, expected for placeholder model)
 
 3. ✅ **Multiple Stocks Parallel Processing** - MSFT, GOOGL
-   - Parallel execution: ~8s for 2 stocks
-   - Sequential would be: ~16s for 2 stocks
-   - ✅ PASS - Parallel processing confirmed working
+    - Parallel execution: ~8s for 2 stocks
+    - Sequential would be: ~16s for 2 stocks
+    - ✅ PASS - Parallel processing confirmed working
 
 4. ✅ **Response Structure Validation**
-   - early_signal field structure matches EarlySignalPrediction type
-   - All required fields present: upgrade_likely, confidence, horizon, reasoning
-   - Metadata tracking working: early_signal_enabled, early_signal_latency_ms
+    - early_signal field structure matches EarlySignalPrediction type
+    - All required fields present: upgrade_likely, confidence, horizon, reasoning
+    - Metadata tracking working: early_signal_enabled, early_signal_latency_ms
 
 5. ✅ **Confidence Filtering**
-   - Low confidence predictions (35-65%) return null (expected)
-   - High confidence predictions (>65% or <35%) would populate early_signal field
-   - Placeholder model consistently returns low confidence (expected behavior)
+    - Low confidence predictions (35-65%) return null (expected)
+    - High confidence predictions (>65% or <35%) would populate early_signal field
+    - Placeholder model consistently returns low confidence (expected behavior)
 
 6. ✅ **Cache Behavior**
-   - Null predictions not cached by design (correct behavior)
-   - Valid predictions would be cached with 5-minute TTL
-   - Cache miss expected for all requests (placeholder model returns null)
+    - Null predictions not cached by design (correct behavior)
+    - Valid predictions would be cached with 5-minute TTL
+    - Cache miss expected for all requests (placeholder model returns null)
 
 7. ✅ **Error Handling**
-   - No crashes or unhandled errors
-   - Clear logging for debugging
-   - Graceful degradation working
+    - No crashes or unhandled errors
+    - Clear logging for debugging
+    - Graceful degradation working
 
 **Performance Metrics**:
+
 - Backward compatibility: ✅ PASS (~424ms)
 - Single stock with early_signal: ~8s (above 6s target but acceptable for mock model)
 - Multiple stocks (2): ~8s parallel vs ~16s sequential - ✅ PASS
@@ -1358,10 +1479,12 @@ npm test -- app/api/stocks/__tests__/select.test.ts --testNamePattern="early_sig
 - Error handling: ✅ PASS (no crashes, clear logging)
 
 **Files Created for Testing**:
+
 - `models/early-signal/v1.0.0/normalizer.json` (mock normalizer parameters)
 - `models/early-signal/v1.0.0/model.json` (placeholder model metadata)
 
 **Key Findings**:
+
 - API integration working correctly
 - Placeholder model returns low-confidence predictions consistently (expected)
 - Once trained model is available, high-confidence predictions will populate early_signal field
@@ -1369,6 +1492,7 @@ npm test -- app/api/stocks/__tests__/select.test.ts --testNamePattern="early_sig
 - All manual tests successful
 
 **Success Criteria Met**:
+
 - ✅ Backward compatibility validated
 - ✅ Single stock requests working
 - ✅ Multiple stock requests working with parallel execution
@@ -1392,6 +1516,7 @@ npm test -- app/api/stocks/__tests__/select.test.ts --testNamePattern="early_sig
 ### Phase 4 Gate
 
 Before Phase 5:
+
 - [x] API accepts include_early_signal ✅
 - [x] Returns early_signal correctly ✅
 - [x] Backward compatible ✅
@@ -1417,6 +1542,7 @@ Before Phase 5:
 **File**: Modify `EarlySignalService.ts` | **Time**: 2h
 
 **Schema** (optional PostgreSQL):
+
 ```sql
 CREATE TABLE ml_prediction_logs (
   id SERIAL PRIMARY KEY, symbol VARCHAR(10), prediction_date TIMESTAMP,
@@ -1457,6 +1583,7 @@ CREATE TABLE ml_prediction_logs (
 **File**: `scripts/ml/monitor-early-signal.ts` | **Time**: 1h
 
 **Alerts**:
+
 - Low Accuracy: precision_30d < 60% → Email (HIGH)
 - High Latency: p95 > 150ms → Slack (MEDIUM)
 - Low Uptime: uptime_24h < 95% → Page (CRITICAL)
@@ -1471,12 +1598,14 @@ CREATE TABLE ml_prediction_logs (
 **Time**: 1h
 
 **Option 1 - Env Var**:
+
 ```bash
 # .env
 EARLY_SIGNAL_ENABLED=true
 ```
 
 **Option 2 - Database**:
+
 ```sql
 CREATE TABLE feature_flags (feature_name VARCHAR(50) PRIMARY KEY, enabled BOOLEAN);
 INSERT INTO feature_flags VALUES ('early_signal', true);
@@ -1523,6 +1652,7 @@ INSERT INTO feature_flags VALUES ('early_signal', true);
 ### Phase 5 Gate
 
 Before completion:
+
 - [ ] Prediction logging active
 - [ ] Validation script weekly cron
 - [ ] Monitoring dashboard live
@@ -1539,6 +1669,7 @@ Before completion:
 ## Production Readiness Checklist
 
 ### Code Quality
+
 - [ ] Tests passing (>80% coverage)
 - [ ] TypeScript types correct (no `any`)
 - [ ] VFR style compliance
@@ -1548,6 +1679,7 @@ Before completion:
 - [ ] Code reviewed
 
 ### Performance
+
 - [ ] Training <5min
 - [ ] Inference <100ms (cached)
 - [ ] API overhead <100ms
@@ -1555,6 +1687,7 @@ Before completion:
 - [ ] Cache hit >85%
 
 ### Accuracy
+
 - [ ] Precision >65% @ 0.65
 - [ ] Recall >40% @ 0.65
 - [ ] AUC >0.72
@@ -1562,12 +1695,14 @@ Before completion:
 - [ ] No data leakage
 
 ### Documentation
+
 - [ ] API docs updated
 - [ ] User guide created
 - [ ] Model documented
 - [ ] Runbook created
 
 ### Monitoring
+
 - [ ] Logging active
 - [ ] Weekly validation
 - [ ] Dashboard live
@@ -1576,6 +1711,7 @@ Before completion:
 - [ ] Rollback tested
 
 ### Security
+
 - [ ] API keys secured
 - [ ] Model artifacts secured
 - [ ] No sensitive data logged
@@ -1589,6 +1725,7 @@ Before completion:
 ### Emergency Procedures
 
 **Option 1: Disable Feature Flag** (<5min)
+
 ```bash
 export EARLY_SIGNAL_ENABLED=false
 # OR
@@ -1597,12 +1734,14 @@ npm run dev:clean
 ```
 
 **Option 2: Code Rollback** (<15min)
+
 ```bash
 git revert <commit_hash> && git push origin main
 npm run build && npm start
 ```
 
 **Option 3: Model Rollback** (<10min)
+
 ```bash
 cd models/early-signal && rm current && ln -s v0.9.0 current
 redis-cli FLUSHDB
@@ -1610,6 +1749,7 @@ npm run dev:clean
 ```
 
 ### Validation After Rollback
+
 - [ ] Health check passes
 - [ ] No early_signal in responses
 - [ ] Latency baseline restored
@@ -1617,6 +1757,7 @@ npm run dev:clean
 - [ ] No user errors
 
 ### Post-Rollback
+
 - [ ] Root cause investigation
 - [ ] Incident report
 - [ ] Fix in development
@@ -1628,6 +1769,7 @@ npm run dev:clean
 ## Optional Enhancements (Post-MVP)
 
 ### ⭐ Future Improvements
+
 1. **Downgrade Predictions**: Extend to predict downgrades, multi-class model
 2. **Multiple Horizons**: 1-week, 4-week predictions
 3. **Confidence Calibration**: Platt scaling, isotonic regression
@@ -1641,59 +1783,67 @@ npm run dev:clean
 ## Progress Tracking
 
 ### Week 1 (Days 1-6) - COMPLETED ✅
+
 **Started**: 2025-10-01 | **Completed**: 2025-10-01
 
 **Completed**:
+
 - [x] Phase 1: Data Collection (7/7 tasks) ✅
 - [x] Phase 2: Feature Engineering (10/10 tasks) ✅
 - [x] Phase 3: Model Training Infrastructure (13/13 tasks) ✅
 
 **Blockers & Resolutions**:
+
 1. ✅ **Historical OHLC Data Bug** (Day 1-2)
-   - Issue: All momentum/volume features returning 0 values
-   - Root cause: API only supported current data, not historical date ranges
-   - Resolution: Extended API to support historical date queries
-   - Impact: 100% feature completeness achieved
+    - Issue: All momentum/volume features returning 0 values
+    - Root cause: API only supported current data, not historical date ranges
+    - Resolution: Extended API to support historical date queries
+    - Impact: 100% feature completeness achieved
 
 2. ✅ **Import Path Issues** (Day 3)
-   - Issue: ES module import errors in test scripts
-   - Root cause: Missing .js extensions for local imports
-   - Resolution: Updated all test scripts with proper .js extensions
-   - Impact: All test scripts now execute correctly
+    - Issue: ES module import errors in test scripts
+    - Root cause: Missing .js extensions for local imports
+    - Resolution: Updated all test scripts with proper .js extensions
+    - Impact: All test scripts now execute correctly
 
 3. ✅ **Private Method Access** (Day 3)
-   - Issue: TypeScript error in generate-training-data.ts
-   - Root cause: Accessing private method from external script
-   - Resolution: Made method public in FinancialModelingPrepAPI
-   - Impact: Training pipeline compiles without errors
+    - Issue: TypeScript error in generate-training-data.ts
+    - Root cause: Accessing private method from external script
+    - Resolution: Made method public in FinancialModelingPrepAPI
+    - Impact: Training pipeline compiles without errors
 
 **Key Technical Decisions**:
+
 1. ✅ Enterprise ML Infrastructure over minimal implementation
-   - Rationale: Production-ready system with proper monitoring and versioning
-   - Trade-off: 15,548 lines vs <1,000 line target (justified for production readiness)
+    - Rationale: Production-ready system with proper monitoring and versioning
+    - Trade-off: 15,548 lines vs <1,000 line target (justified for production readiness)
 
 2. ✅ Dual-layer caching strategy (Memory + Redis)
-   - Rationale: <100ms latency target requires aggressive caching
-   - Implementation: ModelCache.ts with automatic warming
+    - Rationale: <100ms latency target requires aggressive caching
+    - Implementation: ModelCache.ts with automatic warming
 
 3. ✅ Multi-algorithm support (LightGBM/XGBoost/LSTM)
-   - Rationale: Flexibility for different use cases
-   - Implementation: ModelTrainer.ts with algorithm abstraction
+    - Rationale: Flexibility for different use cases
+    - Implementation: ModelTrainer.ts with algorithm abstraction
 
 ### Week 2 (Days 7-10) - IN PROGRESS
-**Started**: 2025-10-01 | **Completed**: ___
+
+**Started**: 2025-10-01 | **Completed**: \_\_\_
 
 **Pending**:
+
 - [ ] Phase 4: API Integration (0/11 tasks)
 - [ ] Phase 5: Production Deploy (0/10 tasks)
 
 **Next Steps**:
+
 1. Task 4.1: Implement EarlySignalService
 2. Task 4.2: Integrate with /api/stocks/select endpoint
 3. Task 4.3: Integration testing
 4. Phase 5: Production deployment preparation
 
 ### Performance Achieved (Phase 1-3)
+
 - Feature Extraction: <5s per symbol ✅ (target: <5s)
 - Test Coverage: >90% ✅ (target: >80%)
 - TypeScript Compilation: PASSING ✅
@@ -1702,6 +1852,7 @@ npm run dev:clean
 - Cache Hit Ratio: Target >85% (infrastructure ready)
 
 ### Model Performance (Pending Phase 4 Training)
+
 - Training Time: TBD (target: <5 min)
 - Inference Latency: TBD (target: <100ms, infrastructure ready)
 - Precision: TBD (target: >65%)
@@ -1718,6 +1869,7 @@ npm run dev:clean
 Step-by-step guide for ML early signal detection in 10 days with <1,000 lines of code.
 
 **Key Principles**:
+
 - KISS: Single model, focused use case
 - NO MOCK DATA: Real API testing
 - Backward Compatible: No existing client impact
@@ -1725,6 +1877,7 @@ Step-by-step guide for ML early signal detection in 10 days with <1,000 lines of
 - Production Ready: Monitoring, logging, rollback
 
 **Next Steps**:
+
 1. Complete prerequisites
 2. Start Phase 1, Task 1.1
 3. Work sequentially
@@ -1734,7 +1887,8 @@ Step-by-step guide for ML early signal detection in 10 days with <1,000 lines of
 7. Iterate and improve
 
 **Success Criteria**:
-- >65% precision @ 2-week horizon
+
+- > 65% precision @ 2-week horizon
 - <100ms additional latency
 - Zero production incidents
 - 10 business day delivery

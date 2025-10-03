@@ -59,7 +59,8 @@ export default function AdminDashboard() {
 			id: "fmp",
 			name: "Financial Modeling Prep API (Starter Plan)",
 			category: "financial",
-			description: "PRIMARY: 300 calls/min - Financial modeling & analysis with premium endpoints",
+			description:
+				"PRIMARY: 300 calls/min - Financial modeling & analysis with premium endpoints",
 			status: "online",
 			enabled: true,
 			rateLimit: 18000, // 300 calls/min = 18,000/hour for display purposes
@@ -226,7 +227,6 @@ export default function AdminDashboard() {
 		setTestConfig(prev => ({ ...prev, selectedDataSources }));
 	}, [selectedDataSources]);
 
-
 	// Data source selection handlers
 	const handleDataSourceToggle = (dataSourceId: string) => {
 		// Only allow selection of enabled data sources
@@ -264,7 +264,6 @@ export default function AdminDashboard() {
 			return [...withoutCategory, ...categoryDataSources];
 		});
 	};
-
 
 	// Test execution handler
 	const handleRunTests = async () => {
@@ -377,7 +376,9 @@ export default function AdminDashboard() {
 				textToCopy = testResults
 					.map(result => {
 						const status = result.success ? "✅ SUCCESS" : "❌ FAILED";
-						const quality = result.metadata ? ` (Quality: ${Math.round(result.metadata.dataQuality * 100)}%)` : "";
+						const quality = result.metadata
+							? ` (Quality: ${Math.round(result.metadata.dataQuality * 100)}%)`
+							: "";
 						const cached = result.metadata?.cached ? " (Cached)" : "";
 						const error = result.error ? ` - Error: ${result.error}` : "";
 						return `${status} - ${result.dataSourceName} - ${result.responseTime}ms${quality}${cached}${error}`;
@@ -385,14 +386,21 @@ export default function AdminDashboard() {
 					.join("\n");
 			} else if (activeTab === "raw") {
 				textToCopy = testResults
-					.map(result => `${result.dataSourceName}:\n${JSON.stringify(result.data, null, 2)}`)
+					.map(
+						result =>
+							`${result.dataSourceName}:\n${JSON.stringify(result.data, null, 2)}`
+					)
 					.join("\n\n");
 			} else if (activeTab === "performance") {
 				textToCopy = testResults
 					.map(result => {
-						const quality = result.metadata ? `${Math.round(result.metadata.dataQuality * 100)}%` : "N/A";
+						const quality = result.metadata
+							? `${Math.round(result.metadata.dataQuality * 100)}%`
+							: "N/A";
 						const cached = result.metadata?.cached ? "Yes" : "No";
-						const timestamp = result.metadata ? new Date(result.metadata.timestamp).toLocaleString() : "N/A";
+						const timestamp = result.metadata
+							? new Date(result.metadata.timestamp).toLocaleString()
+							: "N/A";
 						return `${result.dataSourceName}: ${result.responseTime}ms | Quality: ${quality} | Cached: ${cached} | Time: ${timestamp}`;
 					})
 					.join("\n");
@@ -401,11 +409,11 @@ export default function AdminDashboard() {
 			if (navigator.clipboard && navigator.clipboard.writeText) {
 				await navigator.clipboard.writeText(textToCopy);
 			} else {
-				const textArea = document.createElement('textarea');
+				const textArea = document.createElement("textarea");
 				textArea.value = textToCopy;
 				document.body.appendChild(textArea);
 				textArea.select();
-				document.execCommand('copy');
+				document.execCommand("copy");
 				document.body.removeChild(textArea);
 			}
 			setCopySuccess(true);
@@ -599,7 +607,8 @@ export default function AdminDashboard() {
 									margin: "0 auto",
 								}}
 							>
-								Monitor and test connections to all 15 financial data APIs and ML services
+								Monitor and test connections to all 15 financial data APIs and ML
+								services
 							</p>
 						</div>
 
@@ -674,7 +683,13 @@ export default function AdminDashboard() {
 									>
 										Select All ({dataSourceConfigs.length})
 									</button>
-									<div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+									<div
+										style={{
+											display: "grid",
+											gridTemplateColumns: "1fr 1fr",
+											gap: "0.5rem",
+										}}
+									>
 										<button
 											onClick={() => handleSelectByCategory("financial")}
 											style={{
@@ -909,7 +924,6 @@ export default function AdminDashboard() {
 														{dataSource.description}
 													</div>
 												</div>
-
 											</div>
 										</div>
 									))}
@@ -1319,14 +1333,18 @@ export default function AdminDashboard() {
 											}}
 											onMouseEnter={e => {
 												if (!copySuccess) {
-													e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)";
-													e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.3)";
+													e.currentTarget.style.background =
+														"rgba(255, 255, 255, 0.15)";
+													e.currentTarget.style.borderColor =
+														"rgba(255, 255, 255, 0.3)";
 												}
 											}}
 											onMouseLeave={e => {
 												if (!copySuccess) {
-													e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-													e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+													e.currentTarget.style.background =
+														"rgba(255, 255, 255, 0.1)";
+													e.currentTarget.style.borderColor =
+														"rgba(255, 255, 255, 0.2)";
 												}
 											}}
 										>
@@ -1344,7 +1362,14 @@ export default function AdminDashboard() {
 													<path d="M20 6L9 17l-5-5" />
 												) : (
 													<>
-														<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+														<rect
+															x="9"
+															y="9"
+															width="13"
+															height="13"
+															rx="2"
+															ry="2"
+														/>
 														<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
 													</>
 												)}

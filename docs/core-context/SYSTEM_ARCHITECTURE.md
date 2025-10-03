@@ -6,6 +6,7 @@
 ## When to Use This Document
 
 **Primary Use Cases**:
+
 - Understanding system-wide architecture and design patterns
 - Designing new services or features that integrate with existing system
 - Making architectural decisions about data flow or service communication
@@ -14,6 +15,7 @@
 - Planning infrastructure changes or scaling strategies
 
 **Related Documents**:
+
 - `SERVICE_DOCUMENTATION.md` - Detailed service implementation specs
 - `API_DOCUMENTATION.md` - REST API endpoint specifications
 - `DEPLOYMENT_CONFIGURATION.md` - Infrastructure and deployment
@@ -26,6 +28,7 @@ The VFR (Veritak Financial Research) Platform is a cyberpunk-themed, institution
 ## Architecture Principles
 
 ### Core Design Philosophy
+
 - **Context-First**: Every component provides business context before technical implementation
 - **Real Data Only**: No mock data - all services connect to live APIs
 - **Performance-Optimized**: Promise.allSettled parallel execution achieving 83.8% performance improvement
@@ -98,15 +101,18 @@ The VFR (Veritak Financial Research) Platform is a cyberpunk-themed, institution
 ### Core Services
 
 #### 1. Stock Selection Service (`app/services/stock-selection/`)
+
 **Purpose**: Multi-modal stock analysis engine supporting single stocks, sectors, and portfolio analysis
 
 **Key Components**:
+
 - `StockSelectionService.ts` - Main orchestration service
 - `AlgorithmIntegration.ts` - Algorithm engine integration
 - `SectorIntegration.ts` - Sector-based analysis
 - `SelectionCache.ts` - Result caching with TTL management
 
 **Data Flow**:
+
 ```
 User Input → Security Validation → Service Orchestration →
 Parallel API Calls → Data Aggregation → Algorithm Processing →
@@ -114,9 +120,11 @@ Cache Storage → Response Formatting
 ```
 
 #### 2. Financial Data Services (`app/services/financial-data/`)
+
 **Purpose**: Real-time financial data aggregation from 12+ providers
 
 **Primary APIs**:
+
 - **Polygon.io**: Real-time market data, VWAP calculations
 - **Alpha Vantage**: Technical indicators, fundamental data
 - **Financial Modeling Prep**: Enhanced ratios, analyst ratings
@@ -125,14 +133,17 @@ Cache Storage → Response Formatting
 - **Reddit WSB**: Sentiment analysis
 
 **Fallback Strategy**:
+
 ```
 Primary API → Secondary API → Tertiary API → Cache Fallback → Error Response
 ```
 
 #### 3. Technical Analysis Service (`app/services/technical-analysis/`)
+
 **Purpose**: Advanced technical indicator calculations
 
 **Capabilities**:
+
 - VWAP analysis with multi-timeframe support
 - Moving averages (SMA, EMA)
 - Momentum indicators (RSI, MACD)
@@ -140,9 +151,11 @@ Primary API → Secondary API → Tertiary API → Cache Fallback → Error Resp
 - Price pattern recognition
 
 #### 4. Machine Learning Service (`app/services/ml/early-signal/`) ✅ NEW
+
 **Purpose**: Production-grade ML-powered analyst rating change prediction
 
 **Architecture**:
+
 - **Model**: LightGBM Gradient Boosting v1.0.0
 - **Performance**: 97.6% test accuracy, 94.3% validation accuracy, 0.998 AUC
 - **Deployment**: Python-Node.js subprocess bridge for model serving
@@ -151,6 +164,7 @@ Primary API → Secondary API → Tertiary API → Cache Fallback → Error Resp
 - **Status**: PRODUCTION DEPLOYED (October 2, 2025)
 
 **Key Capabilities**:
+
 - 2-week analyst upgrade/downgrade prediction
 - 100% recall (catches all upgrade opportunities)
 - Feature importance analysis (earnings_surprise 36.9%, macd_histogram 27.8%, rsi_momentum 22.5%)
@@ -158,9 +172,11 @@ Primary API → Secondary API → Tertiary API → Cache Fallback → Error Resp
 - Comprehensive integration testing (4/4 scenarios passed)
 
 #### 5. Cache Service (`app/services/cache/`)
+
 **Purpose**: High-performance caching with Redis primary and in-memory fallback
 
 **Architecture**:
+
 - **Primary**: Redis with configurable TTL (2min dev, 10min prod)
 - **Fallback**: In-memory cache for high availability
 - **Strategy**: Cache-aside pattern with automatic invalidation
@@ -208,6 +224,7 @@ Algorithm Processing → Cache Storage → Response
 ### Multi-API Data Aggregation Strategy
 
 **Execution Pattern**:
+
 1. **Parallel Execution**: Promise.allSettled for concurrent API calls (83.8% performance improvement)
 2. **Quality Scoring**: Each data source receives quality scores (1-10) based on reliability, latency, freshness
 3. **Fallback Logic**: Automatic switching on API failures following priority chain
@@ -216,14 +233,14 @@ Algorithm Processing → Cache Storage → Response
 
 ### Fallback Chain Decision Matrix
 
-| Data Type | Primary Source | Secondary | Tertiary | Cache Fallback | Final Action |
-|-----------|---------------|-----------|----------|----------------|--------------|
-| **Real-time Prices** | Polygon | Alpha Vantage | FMP | Last known | Error if >1hr old |
-| **Technical Indicators** | Alpha Vantage | Polygon | TwelveData | Calculated | Error if no source |
-| **Fundamental Ratios** | FMP | EODHD | Alpha Vantage | Last quarter | Error if >1 quarter |
-| **Macroeconomic** | FRED | BLS | EIA | Last release | Skip if unavailable |
-| **Sentiment** | News API | Reddit | Yahoo | Neutral default | Use neutral if all fail |
-| **Regulatory (13F)** | SEC EDGAR | FMP | None | Last filing | Skip if unavailable |
+| Data Type                | Primary Source | Secondary     | Tertiary      | Cache Fallback  | Final Action            |
+| ------------------------ | -------------- | ------------- | ------------- | --------------- | ----------------------- |
+| **Real-time Prices**     | Polygon        | Alpha Vantage | FMP           | Last known      | Error if >1hr old       |
+| **Technical Indicators** | Alpha Vantage  | Polygon       | TwelveData    | Calculated      | Error if no source      |
+| **Fundamental Ratios**   | FMP            | EODHD         | Alpha Vantage | Last quarter    | Error if >1 quarter     |
+| **Macroeconomic**        | FRED           | BLS           | EIA           | Last release    | Skip if unavailable     |
+| **Sentiment**            | News API       | Reddit        | Yahoo         | Neutral default | Use neutral if all fail |
+| **Regulatory (13F)**     | SEC EDGAR      | FMP           | None          | Last filing     | Skip if unavailable     |
 
 ## Security Architecture
 
@@ -243,22 +260,22 @@ Algorithm Processing → Cache Storage → Response
 ```typescript
 // Example: Secure API endpoint pattern
 export async function POST(request: Request) {
-  try {
-    // 1. Input validation
-    const validatedInput = SecurityValidator.validateStockSymbols(input);
+	try {
+		// 1. Input validation
+		const validatedInput = SecurityValidator.validateStockSymbols(input);
 
-    // 2. Rate limiting
-    await rateLimiter.checkLimit(clientId);
+		// 2. Rate limiting
+		await rateLimiter.checkLimit(clientId);
 
-    // 3. Business logic execution
-    const result = await service.processRequest(validatedInput);
+		// 3. Business logic execution
+		const result = await service.processRequest(validatedInput);
 
-    // 4. Secure response
-    return SecurityValidator.sanitizeResponse(result);
-  } catch (error) {
-    // 5. Secure error handling
-    return ErrorHandler.handleSecurely(error);
-  }
+		// 4. Secure response
+		return SecurityValidator.sanitizeResponse(result);
+	} catch (error) {
+		// 5. Secure error handling
+		return ErrorHandler.handleSecurely(error);
+	}
 }
 ```
 
@@ -266,19 +283,20 @@ export async function POST(request: Request) {
 
 ### Performance Targets Quick Reference Table
 
-| Metric Category | Development Target | Production Target | Current Achievement | Monitoring Method |
-|-----------------|-------------------|-------------------|---------------------|-------------------|
-| **Single Stock Analysis** | <1s | <500ms | ✅ ~400ms avg | `/api/health` timing |
-| **Multi-Stock Analysis** | <3s | <2s | ✅ ~1.8s avg | Performance tests |
-| **VWAP Calculation** | <300ms | <200ms | ✅ ~150ms avg | Service metrics |
-| **Cache Hit Ratio** | >80% | >85% | ✅ ~87% | Redis INFO stats |
-| **Memory Usage (Heap)** | <4GB | <6GB | ✅ ~3.2GB avg | Node heap metrics |
-| **API Availability** | >95% | >99.5% | ✅ ~99.7% | Admin dashboard |
-| **Error Rate** | <5% | <1% | ✅ ~0.3% | Error logs |
+| Metric Category           | Development Target | Production Target | Current Achievement | Monitoring Method    |
+| ------------------------- | ------------------ | ----------------- | ------------------- | -------------------- |
+| **Single Stock Analysis** | <1s                | <500ms            | ✅ ~400ms avg       | `/api/health` timing |
+| **Multi-Stock Analysis**  | <3s                | <2s               | ✅ ~1.8s avg        | Performance tests    |
+| **VWAP Calculation**      | <300ms             | <200ms            | ✅ ~150ms avg       | Service metrics      |
+| **Cache Hit Ratio**       | >80%               | >85%              | ✅ ~87%             | Redis INFO stats     |
+| **Memory Usage (Heap)**   | <4GB               | <6GB              | ✅ ~3.2GB avg       | Node heap metrics    |
+| **API Availability**      | >95%               | >99.5%            | ✅ ~99.7%           | Admin dashboard      |
+| **Error Rate**            | <5%                | <1%               | ✅ ~0.3%            | Error logs           |
 
 ### Caching Strategy with Decision Logic
 
 **Multi-Layer Caching**:
+
 ```
 Data Request
     ↓
@@ -309,6 +327,7 @@ Layer 4: External API Call (slowest, most complete)
 ### Memory Management
 
 **Jest Configuration** (`jest.config.js`):
+
 - Heap Size: 4096MB allocation
 - Garbage Collection: Explicit GC with `--expose-gc`
 - Concurrency: `maxWorkers: 1` for memory optimization
@@ -319,26 +338,29 @@ Layer 4: External API Call (slowest, most complete)
 ### API Provider Integration
 
 **Base Provider Pattern**:
+
 ```typescript
 abstract class BaseFinancialDataProvider {
-  abstract async getStockData(symbol: string): Promise<StockData>;
-  abstract async validateConnection(): Promise<boolean>;
-  abstract getRateLimit(): RateLimitInfo;
+	abstract async getStockData(symbol: string): Promise<StockData>;
+	abstract async validateConnection(): Promise<boolean>;
+	abstract getRateLimit(): RateLimitInfo;
 }
 ```
 
 **Concrete Implementation**:
+
 ```typescript
 export class PolygonAPI extends BaseFinancialDataProvider {
-  async getStockData(symbol: string): Promise<StockData> {
-    // Implementation with error handling, rate limiting, caching
-  }
+	async getStockData(symbol: string): Promise<StockData> {
+		// Implementation with error handling, rate limiting, caching
+	}
 }
 ```
 
 ### Fallback Mechanism
 
 **Priority-Based Fallback**:
+
 1. **Tier 1**: Polygon.io, Alpha Vantage (Premium APIs)
 2. **Tier 2**: FMP, EODHD (Enhanced APIs)
 3. **Tier 3**: Yahoo Finance (Backup)
@@ -349,13 +371,13 @@ export class PolygonAPI extends BaseFinancialDataProvider {
 
 ### Development vs Production
 
-| Aspect | Development | Production |
-|--------|-------------|------------|
-| Cache TTL | 2 minutes | 10 minutes |
-| Rate Limits | Relaxed | Strict |
-| Admin Access | Auto-granted | JWT Required |
-| Logging Level | Debug | Info |
-| Memory Allocation | 4GB | 8GB+ |
+| Aspect            | Development  | Production   |
+| ----------------- | ------------ | ------------ |
+| Cache TTL         | 2 minutes    | 10 minutes   |
+| Rate Limits       | Relaxed      | Strict       |
+| Admin Access      | Auto-granted | JWT Required |
+| Logging Level     | Debug        | Info         |
+| Memory Allocation | 4GB          | 8GB+         |
 
 ### Required Environment Variables
 
@@ -385,12 +407,14 @@ ENABLE_PERFORMANCE_MONITORING=true
 ### Testing Strategy
 
 **Test Architecture**:
+
 - **Unit Tests**: Individual service testing
 - **Integration Tests**: Real API testing with 5-minute timeouts
 - **Performance Tests**: Memory leak detection and optimization
 - **Security Tests**: OWASP compliance validation
 
 **Current Test Coverage**:
+
 - Service Layer: 85%+ coverage
 - API Endpoints: 90%+ coverage
 - Security Components: 95%+ coverage
@@ -399,12 +423,14 @@ ENABLE_PERFORMANCE_MONITORING=true
 ### Performance Metrics
 
 **Response Time Targets**:
+
 - Single Stock Analysis: <500ms
 - Multi-Stock Analysis: <2s
 - Sector Analysis: <3s
 - VWAP Calculations: <200ms additional latency
 
 **Availability Targets**:
+
 - Primary APIs: 99.9% uptime
 - Cache Layer: 99.99% uptime
 - Overall System: 99.5% uptime
@@ -415,6 +441,7 @@ ENABLE_PERFORMANCE_MONITORING=true
 
 **Endpoint**: `/api/health`
 **Monitoring**:
+
 - Database connectivity
 - Redis availability
 - External API status
@@ -425,6 +452,7 @@ ENABLE_PERFORMANCE_MONITORING=true
 
 **Location**: `/admin`
 **Capabilities**:
+
 - Real-time API status monitoring
 - Data source toggling
 - Performance metrics
@@ -436,6 +464,7 @@ ENABLE_PERFORMANCE_MONITORING=true
 ### Infrastructure Requirements
 
 **Minimum Production Requirements**:
+
 - **CPU**: 4 cores
 - **Memory**: 8GB RAM
 - **Storage**: 100GB SSD
@@ -446,12 +475,14 @@ ENABLE_PERFORMANCE_MONITORING=true
 ### Scalability Considerations
 
 **Horizontal Scaling**:
+
 - Stateless service design
 - Redis-based session management
 - Load balancer compatibility
 - Database connection pooling
 
 **Vertical Scaling**:
+
 - Memory optimization patterns
 - CPU-intensive calculation optimization
 - Database query optimization

@@ -40,13 +40,13 @@ Early Signal Detection uses **machine learning** to predict analyst rating upgra
 
 ### How This Differs from Traditional Analysis
 
-| Traditional Analysis | Early Signal Detection |
-|---------------------|----------------------|
-| Reactive (after events occur) | Predictive (2 weeks ahead) |
+| Traditional Analysis           | Early Signal Detection         |
+| ------------------------------ | ------------------------------ |
+| Reactive (after events occur)  | Predictive (2 weeks ahead)     |
 | Manual interpretation required | AI-powered pattern recognition |
-| Lagging indicators | Leading indicators |
-| All signals shown | Only high-confidence signals |
-| Static recommendations | Dynamic ML-based predictions |
+| Lagging indicators             | Leading indicators             |
+| All signals shown              | Only high-confidence signals   |
+| Static recommendations         | Dynamic ML-based predictions   |
 
 ---
 
@@ -59,28 +59,33 @@ Early Signal Detection analyzes **13 financial features** across 5 categories to
 #### Feature Categories
 
 **1. Momentum Indicators (3 features)**
+
 - 5-day, 10-day, and 20-day price trends
 - Detects acceleration or deceleration in stock price movements
 - Example: Strong 20-day positive momentum (12.4%) often precedes upgrades
 
 **2. Volume Analysis (2 features)**
+
 - Trading volume ratio (current vs historical average)
 - Volume trend direction (increasing or decreasing)
 - Example: Above-average volume with positive momentum signals institutional accumulation
 
 **3. Sentiment Signals (3 features)**
+
 - News sentiment changes (5-day delta)
 - Social media sentiment (Reddit acceleration)
 - Options market sentiment (put/call ratio shifts)
 - Example: Improving news sentiment combined with bullish options activity
 
 **4. Fundamental Metrics (3 features)**
+
 - Earnings surprise percentage (beat or miss vs estimates)
 - Revenue growth acceleration (quarter-over-quarter change)
 - Analyst coverage changes (increasing or decreasing attention)
 - Example: Earnings beat by 3.2% combined with accelerating revenue growth
 
 **5. Technical Indicators (2 features)**
+
 - RSI momentum (overbought/oversold conditions)
 - MACD histogram trend (bullish or bearish crossovers)
 - Example: RSI showing oversold conditions before analyst upgrades
@@ -149,18 +154,18 @@ For developers and algorithmic traders, predictions are available via the `/api/
 
 ```typescript
 // Example API request
-const response = await fetch('/api/stocks/select', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    mode: 'single',
-    symbols: ['AAPL'],
-    include_early_signal: true  // Enable predictions
-  })
-})
+const response = await fetch("/api/stocks/select", {
+	method: "POST",
+	headers: { "Content-Type": "application/json" },
+	body: JSON.stringify({
+		mode: "single",
+		symbols: ["AAPL"],
+		include_early_signal: true, // Enable predictions
+	}),
+});
 
-const data = await response.json()
-const appleSignal = data.data.stocks[0].early_signal
+const data = await response.json();
+const appleSignal = data.data.stocks[0].early_signal;
 ```
 
 ### What You'll See
@@ -190,11 +195,13 @@ Every Early Signal Detection result includes these components:
 #### 1. Signal Direction
 
 **Upgrade Likely**
+
 - Confidence > 65%
 - Model predicts analysts will upgrade rating within 2 weeks
 - Typical price action: Positive momentum before official upgrade
 
 **Downgrade Likely**
+
 - Confidence < 35% (inverted scale: higher confidence of downgrade)
 - Model predicts analysts will downgrade rating within 2 weeks
 - Typical price action: Negative momentum before official downgrade
@@ -203,14 +210,15 @@ Every Early Signal Detection result includes these components:
 
 The confidence score represents the model's certainty:
 
-| Confidence Range | Interpretation | Model Performance (v1.0.0) |
-|-----------------|----------------|------------------|
-| **85-100%** | Extremely high confidence | 66.7% precision, 100% recall |
-| **75-85%** | Very high confidence | Based on validation metrics |
-| **65-75%** | High confidence (threshold) | AUC: 0.920, F1: 0.800 |
-| **35-65%** | Too uncertain (filtered out) | Not shown to users |
+| Confidence Range | Interpretation               | Model Performance (v1.0.0)   |
+| ---------------- | ---------------------------- | ---------------------------- |
+| **85-100%**      | Extremely high confidence    | 66.7% precision, 100% recall |
+| **75-85%**       | Very high confidence         | Based on validation metrics  |
+| **65-75%**       | High confidence (threshold)  | AUC: 0.920, F1: 0.800        |
+| **35-65%**       | Too uncertain (filtered out) | Not shown to users           |
 
 **Important**: Confidence ≠ Guarantee. A 75% confidence upgrade prediction means:
+
 - 75% probability of analyst upgrade occurring within 2 weeks
 - 25% probability of no upgrade or downgrade
 - Use as one input among many in your investment decision
@@ -220,6 +228,7 @@ The confidence score represents the model's certainty:
 The model provides human-readable explanations for its predictions:
 
 **Example 1: Upgrade Signal for NVDA**
+
 ```
 Reasoning:
 1. Strong positive signals detected (78.0% confidence)
@@ -230,6 +239,7 @@ Reasoning:
 ```
 
 **Example 2: Downgrade Signal for Example Stock**
+
 ```
 Reasoning:
 1. Strong negative signals detected (71.0% confidence)
@@ -272,31 +282,31 @@ See which factors contributed most to the prediction (based on trained model v1.
 **Workflow**:
 
 1. **Create Earnings Watchlist**
-   - Select 10-15 stocks with upcoming earnings in 2-3 weeks
-   - Example: AAPL, MSFT, GOOGL, NVDA, TSLA
+    - Select 10-15 stocks with upcoming earnings in 2-3 weeks
+    - Example: AAPL, MSFT, GOOGL, NVDA, TSLA
 
 2. **Request Early Signal Predictions**
-   - Analyze entire watchlist with Early Signal Detection enabled
-   - Filter for **upgrade_likely = true** and **confidence ≥ 70%**
+    - Analyze entire watchlist with Early Signal Detection enabled
+    - Filter for **upgrade_likely = true** and **confidence ≥ 70%**
 
 3. **Rank by Combined Score**
-   - Sort by: `(confidence × 0.6) + (composite_score × 0.4)`
-   - This weights ML prediction (60%) and fundamental analysis (40%)
+    - Sort by: `(confidence × 0.6) + (composite_score × 0.4)`
+    - This weights ML prediction (60%) and fundamental analysis (40%)
 
 4. **Position Portfolio**
-   - Allocate capital to top 3-5 signals
-   - Enter positions 1-2 weeks before earnings
-   - Set stop-losses based on individual risk tolerance
+    - Allocate capital to top 3-5 signals
+    - Enter positions 1-2 weeks before earnings
+    - Set stop-losses based on individual risk tolerance
 
 **Example Results** (Hypothetical):
 
-| Symbol | Confidence | Composite Score | Combined Rank | Action |
-|--------|-----------|----------------|---------------|--------|
-| NVDA | 78% | 84.2 | 86.8 | Buy |
-| MSFT | 73% | 79.5 | 82.4 | Buy |
-| AAPL | 70% | 78.1 | 79.2 | Buy |
-| GOOGL | 52% | 76.0 | - | No signal (filtered) |
-| TSLA | 68% | 71.0 | 71.2 | Consider |
+| Symbol | Confidence | Composite Score | Combined Rank | Action               |
+| ------ | ---------- | --------------- | ------------- | -------------------- |
+| NVDA   | 78%        | 84.2            | 86.8          | Buy                  |
+| MSFT   | 73%        | 79.5            | 82.4          | Buy                  |
+| AAPL   | 70%        | 78.1            | 79.2          | Buy                  |
+| GOOGL  | 52%        | 76.0            | -             | No signal (filtered) |
+| TSLA   | 68%        | 71.0            | 71.2          | Consider             |
 
 **Expected Outcome**: If 3/5 predictions are correct (60% win rate), and correct predictions average +5% move before upgrade, you capture alpha unavailable to reactive investors.
 
@@ -309,18 +319,18 @@ See which factors contributed most to the prediction (based on trained model v1.
 **Workflow**:
 
 1. **Daily Portfolio Scan**
-   - Run Early Signal Detection on all 20 holdings
-   - Monitor for **downgrade_likely = true** signals
+    - Run Early Signal Detection on all 20 holdings
+    - Monitor for **downgrade_likely = true** signals
 
 2. **Risk Assessment**
-   - Any position with downgrade confidence ≥ 65%: High risk
-   - Review fundamental rationale for continuing to hold
-   - Consider position sizing reduction or defensive options strategies
+    - Any position with downgrade confidence ≥ 65%: High risk
+    - Review fundamental rationale for continuing to hold
+    - Consider position sizing reduction or defensive options strategies
 
 3. **Proactive Rebalancing**
-   - If 2+ high-conviction downgrade signals: Consider portfolio rotation
-   - Shift capital from at-risk positions to upgrade candidates
-   - Document reasoning for portfolio management audit trail
+    - If 2+ high-conviction downgrade signals: Consider portfolio rotation
+    - Shift capital from at-risk positions to upgrade candidates
+    - Document reasoning for portfolio management audit trail
 
 **Example Alert** (Hypothetical):
 
@@ -354,38 +364,40 @@ Recommended Action:
 **Workflow**:
 
 1. **Sector Analysis**
-   - Analyze all Technology sector stocks (30-50 stocks)
-   - Enable Early Signal Detection for comprehensive coverage
+    - Analyze all Technology sector stocks (30-50 stocks)
+    - Enable Early Signal Detection for comprehensive coverage
 
 2. **Multi-Factor Ranking**
-   ```
-   Combined Score =
-     (Composite Score × 0.4) +
-     (Early Signal Confidence × 0.6) +
-     (Upgrade Signal Bonus: +10 if upgrade_likely = true)
-   ```
+
+    ```
+    Combined Score =
+      (Composite Score × 0.4) +
+      (Early Signal Confidence × 0.6) +
+      (Upgrade Signal Bonus: +10 if upgrade_likely = true)
+    ```
 
 3. **Top Picks Selection**
-   - Rank all stocks by combined score
-   - Select top 5-7 stocks with highest scores
-   - Ensure diversification across sub-sectors (semiconductors, software, hardware)
+    - Rank all stocks by combined score
+    - Select top 5-7 stocks with highest scores
+    - Ensure diversification across sub-sectors (semiconductors, software, hardware)
 
 4. **Portfolio Construction**
-   - Equal-weight top picks or weight by confidence scores
-   - Set position limits (e.g., max 20% per stock)
-   - Rebalance monthly or when signals change
+    - Equal-weight top picks or weight by confidence scores
+    - Set position limits (e.g., max 20% per stock)
+    - Rebalance monthly or when signals change
 
 **Example Results** (Hypothetical Technology Sector):
 
 | Symbol | Composite Score | Early Signal | Confidence | Combined Score | Rank |
-|--------|----------------|--------------|-----------|----------------|------|
-| NVDA | 87.3 | Upgrade | 78% | 86.8 | 1 |
-| MSFT | 81.2 | Upgrade | 73% | 82.4 | 2 |
-| AAPL | 79.5 | Upgrade | 70% | 79.2 | 3 |
-| AMD | 72.1 | None | - | 52.1 | 8 |
-| INTC | 41.2 | Downgrade | 71% | 31.2 | 25 |
+| ------ | --------------- | ------------ | ---------- | -------------- | ---- |
+| NVDA   | 87.3            | Upgrade      | 78%        | 86.8           | 1    |
+| MSFT   | 81.2            | Upgrade      | 73%        | 82.4           | 2    |
+| AAPL   | 79.5            | Upgrade      | 70%        | 79.2           | 3    |
+| AMD    | 72.1            | None         | -          | 52.1           | 8    |
+| INTC   | 41.2            | Downgrade    | 71%        | 31.2           | 25   |
 
 **Portfolio Allocation**:
+
 - NVDA: 20%
 - MSFT: 20%
 - AAPL: 20%
@@ -403,31 +415,33 @@ Recommended Action:
 **Workflow**:
 
 1. **Earnings Beat Screening**
-   - Identify stocks that beat earnings by ≥3% in the last 2 weeks
-   - Example universe: 50 stocks with recent earnings beats
+    - Identify stocks that beat earnings by ≥3% in the last 2 weeks
+    - Example universe: 50 stocks with recent earnings beats
 
 2. **Early Signal Confirmation**
-   - Run Early Signal Detection on earnings beat universe
-   - Filter for **upgrade_likely = true** and **confidence ≥ 68%**
+    - Run Early Signal Detection on earnings beat universe
+    - Filter for **upgrade_likely = true** and **confidence ≥ 68%**
 
 3. **Momentum Validation**
-   - Check that **price_change_20d > 5%** (positive momentum)
-   - Verify **volume_ratio > 1.0** (above-average volume)
+    - Check that **price_change_20d > 5%** (positive momentum)
+    - Verify **volume_ratio > 1.0** (above-average volume)
 
 4. **Trade Execution**
-   - Enter positions on stocks with all 3 criteria met
-   - Set price targets at +10-15% from entry
-   - Use trailing stops to protect gains
+    - Enter positions on stocks with all 3 criteria met
+    - Set price targets at +10-15% from entry
+    - Use trailing stops to protect gains
 
 **Example Analysis** (Hypothetical Post-Earnings):
 
 **Stock: XYZ Corp**
+
 - Earnings surprise: +4.2% beat
 - Early signal: Upgrade likely (confidence: 72%)
 - Price momentum: +8.3% (20-day)
 - Volume: 1.35x average
 
 **Reasoning**:
+
 ```
 1. Strong positive signals detected (72.0% confidence)
 2. Moderate 20-day price positive momentum (8.3%)
@@ -437,6 +451,7 @@ Recommended Action:
 ```
 
 **Trade Setup**:
+
 - Entry: $95.50
 - Target: $107.00 (+12%)
 - Stop: $91.00 (-5%)
@@ -513,15 +528,16 @@ The model's confidence scores are **calibrated** to historical accuracy:
 
 **Model Performance (v1.0.0 - Validation Set)**:
 
-| Metric | Value | Interpretation |
-|--------|-------|----------------|
-| **AUC** | 0.920 | Excellent discriminative ability |
-| **Accuracy** | 66.7% | 2 out of 3 predictions correct |
-| **Precision** | 66.7% | Of predicted upgrades, 66.7% were correct |
-| **Recall** | 100% | Catches ALL analyst upgrades (no false negatives) |
-| **F1 Score** | 0.800 | Strong balanced performance |
+| Metric        | Value | Interpretation                                    |
+| ------------- | ----- | ------------------------------------------------- |
+| **AUC**       | 0.920 | Excellent discriminative ability                  |
+| **Accuracy**  | 66.7% | 2 out of 3 predictions correct                    |
+| **Precision** | 66.7% | Of predicted upgrades, 66.7% were correct         |
+| **Recall**    | 100%  | Catches ALL analyst upgrades (no false negatives) |
+| **F1 Score**  | 0.800 | Strong balanced performance                       |
 
 **What This Means**:
+
 - The model has **excellent** discriminative ability (AUC 0.920)
 - **Perfect recall (100%)**: The model catches ALL analyst upgrades - no missed opportunities
 - **66.7% precision**: When the model predicts an upgrade, it's correct 2 out of 3 times
@@ -540,6 +556,7 @@ The model's confidence scores are **calibrated** to historical accuracy:
 Early Signal Detection is a **leading indicator**, not a complete investment thesis. Always combine ML predictions with fundamental research:
 
 ✅ **Good Practice**:
+
 - Review company fundamentals (revenue growth, profit margins, competitive position)
 - Verify business model sustainability
 - Check valuation metrics (P/E, P/S, PEG ratio)
@@ -547,11 +564,13 @@ Early Signal Detection is a **leading indicator**, not a complete investment the
 - Use early signal as **timing tool** within fundamentally sound thesis
 
 ❌ **Bad Practice**:
+
 - Blindly buying every upgrade signal without research
 - Ignoring overvaluation (P/E > 50) because ML says upgrade likely
 - Neglecting company-specific risks (regulatory, competitive, technological)
 
 **Example**:
+
 - Early Signal: AAPL upgrade likely (confidence: 75%)
 - Your Analysis: Strong fundamentals, reasonable P/E of 28, new product cycle, growing services revenue
 - Decision: **Buy** with 3% portfolio allocation
@@ -571,28 +590,30 @@ vs.
 Even high-confidence predictions have ~20-25% failure rate. Diversification is critical:
 
 ✅ **Good Practice**:
+
 - Build portfolios with 5-10 high-confidence signals
 - Allocate 2-5% per position based on confidence tier
 - Spread across different sectors to reduce correlation
 - Expected outcome: 60-75% win rate across portfolio
 
 ❌ **Bad Practice**:
+
 - 30% portfolio allocation to single 75% confidence signal
 - Concentrating in single sector (e.g., all tech stocks)
 - Ignoring position sizing discipline
 
 **Example Portfolio** (Hypothetical):
 
-| Symbol | Signal | Confidence | Allocation | Sector |
-|--------|--------|-----------|-----------|--------|
-| NVDA | Upgrade | 78% | 5% | Technology |
-| MSFT | Upgrade | 73% | 4% | Technology |
-| JPM | Upgrade | 70% | 3% | Financials |
-| UNH | Upgrade | 72% | 4% | Healthcare |
-| XOM | Upgrade | 69% | 3% | Energy |
-| AAPL | Upgrade | 68% | 3% | Technology |
-| **Total** | - | - | **22%** | Diversified |
-| **Cash** | - | - | **78%** | Dry powder |
+| Symbol    | Signal  | Confidence | Allocation | Sector      |
+| --------- | ------- | ---------- | ---------- | ----------- |
+| NVDA      | Upgrade | 78%        | 5%         | Technology  |
+| MSFT      | Upgrade | 73%        | 4%         | Technology  |
+| JPM       | Upgrade | 70%        | 3%         | Financials  |
+| UNH       | Upgrade | 72%        | 4%         | Healthcare  |
+| XOM       | Upgrade | 69%        | 3%         | Energy      |
+| AAPL      | Upgrade | 68%        | 3%         | Technology  |
+| **Total** | -       | -          | **22%**    | Diversified |
+| **Cash**  | -       | -          | **78%**    | Dry powder  |
 
 **Risk Management**: If 4/6 predictions succeed, portfolio gains ~8-12% while controlling downside risk.
 
@@ -605,12 +626,14 @@ Even high-confidence predictions have ~20-25% failure rate. Diversification is c
 Market conditions evolve. A stock with upgrade signal today may show downgrade signal next week:
 
 ✅ **Good Practice**:
+
 - Re-run Early Signal Detection weekly on all holdings
 - Set alerts for confidence changes (e.g., upgrade → downgrade)
 - Document reasoning for continuing to hold despite signal changes
 - Use signal reversals as **risk management trigger**
 
 ❌ **Bad Practice**:
+
 - "Set and forget" based on initial signal
 - Ignoring new downgrade signals on existing positions
 - Emotional attachment to losing positions
@@ -618,15 +641,18 @@ Market conditions evolve. A stock with upgrade signal today may show downgrade s
 **Example Reversal Scenario**:
 
 **Week 1**:
+
 - Signal: TSLA upgrade likely (confidence: 72%)
 - Action: Buy 3% position at $250
 
 **Week 3** (Re-analysis):
+
 - Signal: TSLA downgrade likely (confidence: 68%)
 - Reasoning: Negative momentum developed, earnings miss, volume declining
 - Action: Exit position at $248 (-0.8% loss)
 
 **Week 5**:
+
 - TSLA analyst downgrades announced, stock drops to $230 (-8%)
 - Outcome: Early signal reversal saved 7.2% additional loss
 
@@ -639,17 +665,20 @@ Market conditions evolve. A stock with upgrade signal today may show downgrade s
 Early Signal Detection predicts events **2 weeks ahead**, not long-term performance:
 
 ✅ **Good Practice**:
+
 - Use for short-to-medium term tactical positioning (2-6 weeks)
 - Plan entry/exit timing around 2-week prediction window
 - Combine with longer-term fundamental thesis for extended holds
 - Set realistic price targets based on typical analyst upgrade impact (+3-7%)
 
 ❌ **Bad Practice**:
+
 - Expecting early signals to predict 6-month performance
 - Holding positions indefinitely without re-evaluation
 - Using 2-week tactical signals for retirement account (long-term horizon)
 
 **Timing Strategy**:
+
 - **Day 0**: Early signal received (upgrade likely, 75% confidence)
 - **Day 0-3**: Enter position with 2-3% allocation
 - **Day 7-14**: Monitor for analyst upgrade announcements
@@ -666,28 +695,31 @@ Adjust position sizing and strategy based on confidence tiers:
 
 **Position Sizing by Confidence**:
 
-| Confidence | Position Size | Strategy | Risk Level |
-|-----------|--------------|----------|-----------|
-| **85-100%** | 4-5% | Aggressive | Higher (concentrated) |
-| **75-85%** | 3-4% | Standard | Moderate |
-| **65-75%** | 1-2% | Conservative | Lower (testing) |
-| **<65%** | 0% | No position | None (filtered) |
+| Confidence  | Position Size | Strategy     | Risk Level            |
+| ----------- | ------------- | ------------ | --------------------- |
+| **85-100%** | 4-5%          | Aggressive   | Higher (concentrated) |
+| **75-85%**  | 3-4%          | Standard     | Moderate              |
+| **65-75%**  | 1-2%          | Conservative | Lower (testing)       |
+| **<65%**    | 0%            | No position  | None (filtered)       |
 
 **Example Application**:
 
 **Conservative Trader** (Risk-averse):
+
 - Only act on 75%+ confidence signals
 - Max 3% position size
 - Require fundamental confirmation
 - Expected: Lower win rate (78%), but fewer losses
 
 **Aggressive Trader** (Risk-tolerant):
+
 - Act on 65%+ confidence signals
 - Up to 5% position size on 85%+ signals
 - Faster entries, tighter stops
 - Expected: Higher win rate (73%), more opportunities
 
 **Balanced Trader** (Moderate risk):
+
 - Focus on 70%+ confidence signals
 - 2-4% position size based on tier
 - Combine with technical analysis
@@ -702,6 +734,7 @@ Adjust position sizing and strategy based on confidence tiers:
 Before committing real money, validate your approach with historical data:
 
 ✅ **Good Practice**:
+
 - Paper trade for 4-8 weeks using live Early Signals
 - Track all signals (wins, losses, filtered stocks)
 - Calculate actual win rate vs expected confidence
@@ -710,20 +743,22 @@ Before committing real money, validate your approach with historical data:
 - Adjust strategy based on results
 
 ❌ **Bad Practice**:
+
 - Immediately trading real money on new feature
 - Not tracking performance metrics
 - Emotional decision-making without data
 
 **Example Backtest Log**:
 
-| Date | Symbol | Signal | Confidence | Entry | Exit | Result | Notes |
-|------|--------|--------|-----------|-------|------|--------|-------|
-| 10/01 | NVDA | Upgrade | 78% | $445 | $468 | +5.2% | Analyst upgrade Day 12 |
-| 10/01 | AAPL | Upgrade | 73% | $178 | $174 | -2.2% | Macro selloff, stopped out |
-| 10/02 | MSFT | Upgrade | 70% | $332 | $341 | +2.7% | Analyst upgrade Day 9 |
-| 10/03 | INTC | Downgrade | 71% | Skip | - | N/A | Avoided -8% drop |
+| Date  | Symbol | Signal    | Confidence | Entry | Exit | Result | Notes                      |
+| ----- | ------ | --------- | ---------- | ----- | ---- | ------ | -------------------------- |
+| 10/01 | NVDA   | Upgrade   | 78%        | $445  | $468 | +5.2%  | Analyst upgrade Day 12     |
+| 10/01 | AAPL   | Upgrade   | 73%        | $178  | $174 | -2.2%  | Macro selloff, stopped out |
+| 10/02 | MSFT   | Upgrade   | 70%        | $332  | $341 | +2.7%  | Analyst upgrade Day 9      |
+| 10/03 | INTC   | Downgrade | 71%        | Skip  | -    | N/A    | Avoided -8% drop           |
 
 **Backtest Analysis**:
+
 - Win rate: 66% (2/3 winning trades)
 - Average winner: +4.0%
 - Average loser: -2.2%
@@ -740,12 +775,14 @@ Before committing real money, validate your approach with historical data:
 **The model has excellent discrimination but moderate precision.**
 
 **Performance Metrics**:
+
 - AUC: 0.920 (excellent discriminative ability)
 - Precision: 66.7% (2 out of 3 predictions correct)
 - Recall: 100% (catches ALL analyst upgrades)
 - **Trade-off**: Perfect recall means ~33% false positive rate
 
 **What This Means**:
+
 - You won't miss real analyst upgrade opportunities (100% recall)
 - Approximately 1 in 3 upgrade predictions will be false positives
 - **Diversification is critical** - never rely on a single prediction
@@ -759,18 +796,21 @@ Before committing real money, validate your approach with historical data:
 **Current model relies heavily on sentiment and technical indicators.**
 
 **Feature Importance**:
+
 - Options sentiment: 55.5% (dominant)
 - RSI momentum: 20.7%
 - Reddit sentiment: 11.4%
 - Fundamental features (earnings, revenue): 0% importance (data quality issue)
 
 **Why Fundamentals Show Low Importance**:
+
 - Training data had 92% zeros for earnings_surprise
 - Training data had 85% zeros for revenue_growth_accel
 - Feature extraction needs improvement for fundamental data
 - Model compensates by heavily weighting sentiment/technical signals
 
 **What This Means**:
+
 - Current predictions emphasize market sentiment over fundamentals
 - This is still valuable - options/social sentiment are leading indicators
 - However, model may miss fundamental deterioration signals
@@ -789,6 +829,7 @@ Before committing real money, validate your approach with historical data:
 - Market conditions change; model trained on 2022-2025 data
 
 **What This Means**:
+
 - Diversify across multiple signals to manage risk
 - Use stop-losses to limit downside on incorrect predictions
 - Expect some predictions to fail even at high confidence
@@ -804,6 +845,7 @@ Before committing real money, validate your approach with historical data:
 - Optimal use: 2-6 week tactical positioning
 
 **What This Means**:
+
 - Don't expect early signals to predict quarterly earnings 3 months out
 - Re-run predictions weekly to capture changing conditions
 - Use for timing entries/exits, not long-term investment thesis
@@ -819,6 +861,7 @@ Before committing real money, validate your approach with historical data:
 - Some attractive stocks may not trigger signals
 
 **What This Means**:
+
 - You won't get predictions for every stock you analyze
 - Lack of signal doesn't mean "don't buy" - just means model is uncertain
 - Use traditional analysis for stocks without early signals
@@ -830,6 +873,7 @@ Before committing real money, validate your approach with historical data:
 **The model cannot predict unexpected external shocks.**
 
 Examples of events NOT predictable:
+
 - Sudden regulatory changes (e.g., FDA drug approval/rejection)
 - Merger & acquisition announcements
 - CEO resignations or management changes
@@ -838,6 +882,7 @@ Examples of events NOT predictable:
 - Natural disasters affecting operations
 
 **What This Means**:
+
 - Early signals can be overridden by unexpected news
 - Maintain diversification to protect against black swan events
 - Use stop-losses to limit damage from unforeseen shocks
@@ -849,18 +894,21 @@ Examples of events NOT predictable:
 **The model's accuracy may vary in different market conditions.**
 
 Training data (2023-2025) includes:
+
 - Bull markets and corrections
 - Rate hiking cycles
 - Tech sector volatility
 - Earnings seasons and guidance changes
 
 But may underperform during:
+
 - Prolonged bear markets (>20% decline)
 - Extreme volatility (VIX >40)
 - Market structure changes (regulatory shifts)
 - Economic recessions not in training data
 
 **What This Means**:
+
 - Monitor model performance metrics in real-time
 - Reduce position sizes during extreme volatility
 - Combine early signals with macroeconomic analysis
@@ -905,6 +953,7 @@ But may underperform during:
 - Analyst ratings are opinions, not guarantees of performance
 
 **Example**: A stock may receive predicted analyst upgrade but still decline due to:
+
 - Overall market selloff
 - Sector rotation
 - Profit-taking after previous run-up
@@ -917,12 +966,14 @@ But may underperform during:
 **Accuracy varies by stock characteristics and market conditions.**
 
 Predictions may be more accurate for:
+
 - Large-cap stocks (>$10B market cap) with high analyst coverage
 - Liquid stocks (average volume >1M shares/day)
 - Stocks with consistent historical patterns
 - Normal market volatility (VIX 15-25)
 
 Predictions may be less accurate for:
+
 - Small-cap stocks (<$2B market cap) with low analyst coverage
 - Illiquid stocks (average volume <100K shares/day)
 - Recent IPOs (<2 years public) with limited historical data
@@ -937,12 +988,14 @@ Predictions may be less accurate for:
 **Predictions depend on availability and accuracy of underlying financial data.**
 
 Potential data issues:
+
 - API outages or delays (rare, but possible)
 - Earnings data revisions (historical surprises may be restated)
 - Analyst coverage changes (new/departing analysts affect data)
 - Sentiment data noise (social media sentiment can be manipulated)
 
 **What This Means**:
+
 - Model performance depends on data provider reliability
 - Unusual market conditions may affect data quality
 - VFR uses multiple data sources with fallback mechanisms to minimize risk
@@ -962,6 +1015,7 @@ Potential data issues:
 **Q2: Can I use Early Signal Detection for options trading?**
 
 **A**: Yes, but with caution. Early signals can inform options strategies:
+
 - **Upgrade signals**: Consider bullish call spreads or call calendar spreads with 3-4 week expiration
 - **Downgrade signals**: Consider protective puts or bearish put spreads
 
@@ -976,11 +1030,13 @@ Potential data issues:
 **Scenario**: Early signal says upgrade likely (confidence: 72%), but VFR composite score is 42 (SELL recommendation)
 
 **Interpretation**:
+
 - ML model detects **leading indicators** (momentum building, sentiment shifting)
 - Composite score reflects **current state** (fundamentals weak today)
 - Possible explanation: Stock is bottoming, early signs of recovery not yet in fundamentals
 
 **Action**:
+
 - Review fundamental drivers: Is company improving or deteriorating?
 - Check technical analysis: Confirm momentum shift with volume increase
 - Consider small "test position" (1-2%) to validate thesis
@@ -1007,15 +1063,16 @@ Potential data issues:
 
 **A**: Model v1.0.0 performance on validation data:
 
-| Metric | Value | What It Means |
-|--------|-------|---------------|
-| **AUC** | 0.920 | Excellent ability to distinguish upgrades from non-upgrades |
-| **Accuracy** | 66.7% | Overall correctness rate |
-| **Precision** | 66.7% | When model predicts upgrade, it's right 2/3 of the time |
-| **Recall** | 100% | Model catches ALL analyst upgrades (no missed opportunities) |
-| **F1 Score** | 0.800 | Strong balanced performance |
+| Metric        | Value | What It Means                                                |
+| ------------- | ----- | ------------------------------------------------------------ |
+| **AUC**       | 0.920 | Excellent ability to distinguish upgrades from non-upgrades  |
+| **Accuracy**  | 66.7% | Overall correctness rate                                     |
+| **Precision** | 66.7% | When model predicts upgrade, it's right 2/3 of the time      |
+| **Recall**    | 100%  | Model catches ALL analyst upgrades (no missed opportunities) |
+| **F1 Score**  | 0.800 | Strong balanced performance                                  |
 
 **Important Context**:
+
 - Trained on October 1, 2025 with real financial data
 - Validation performed on hold-out test set (not seen during training)
 - **Perfect recall (100%)** means you won't miss real upgrade opportunities
@@ -1051,18 +1108,21 @@ All data is **real-time production data**, not mock or simulated data.
 **Algorithm**: LightGBM Gradient Boosting (Python implementation)
 
 **Training Data**:
+
 - Real financial data from S&P 100 companies
 - 444 training examples with 13 features each
 - Labels: Analyst rating upgrades (1) vs no upgrade (0)
 - Date range: 2022-2025 (multiple quarters per symbol)
 
 **Model Architecture**:
+
 - LightGBM gradient boosting classifier
 - 13 engineered features across 5 categories (momentum, volume, sentiment, fundamentals, technical)
 - Z-score feature normalization using fitted parameters (mean/std from training data)
 - Early stopping at iteration 6 (prevented overfitting)
 
 **Feature Importance (Actual from v1.0.0)**:
+
 1. **sentiment_options_shift**: 55.5% (dominant predictor - options market sentiment)
 2. **rsi_momentum**: 20.7% (technical indicator strength)
 3. **sentiment_reddit_accel**: 11.4% (social sentiment acceleration)
@@ -1070,6 +1130,7 @@ All data is **real-time production data**, not mock or simulated data.
 5. **price_change_10d**: 2.6% (medium-term price action)
 
 **Validation Performance**:
+
 - AUC: 0.920 (excellent discrimination)
 - Precision: 66.7% (2 out of 3 predictions correct)
 - Recall: 100% (catches ALL analyst upgrades)
@@ -1077,6 +1138,7 @@ All data is **real-time production data**, not mock or simulated data.
 - Early stopping: Iteration 6 (model converged quickly)
 
 **Ongoing Monitoring**:
+
 - Weekly validation against actual analyst rating changes
 - Performance alerts if accuracy drops below 60%
 - Automated retraining triggers when market regime shifts detected
@@ -1089,17 +1151,20 @@ All data is **real-time production data**, not mock or simulated data.
 **A**: The 2-week prediction window was chosen based on empirical analysis:
 
 **Research Findings**:
+
 - Analyst rating changes typically lag market signals by 10-20 days
 - ML features (momentum, sentiment, fundamentals) show strongest predictive power 10-15 days before upgrades
 - Shorter horizons (<1 week): Too noisy, low accuracy
 - Longer horizons (>4 weeks): Feature relationships degrade, accuracy drops
 
 **Optimal Window**:
+
 - 2 weeks (14 days) balances predictive accuracy with actionable timing
 - Allows investors to position before analyst announcements
 - Sufficient time for feature patterns to develop
 
 **Future Enhancements** (Post-MVP):
+
 - Multi-horizon predictions (1-week, 4-week) for different trading strategies
 - Confidence-adjusted horizons (e.g., high confidence = shorter horizon)
 
@@ -1110,17 +1175,20 @@ All data is **real-time production data**, not mock or simulated data.
 **A**: Yes, the current model (v1.0.0) predicts both upgrades and downgrades:
 
 **Upgrade Prediction**:
+
 - Confidence > 65%
 - Predicts analyst rating upgrade within 2 weeks
 - `upgrade_likely = true, downgrade_likely = false`
 
 **Downgrade Prediction**:
+
 - Confidence < 35% (inverted scale)
 - Predicts analyst rating downgrade within 2 weeks
 - `upgrade_likely = false, downgrade_likely = true`
 - Displayed confidence is `1 - probability` (e.g., 30% probability → 70% downgrade confidence)
 
 **Example**:
+
 - Stock XYZ probability: 0.28 (28% upgrade chance)
 - Interpretation: 72% downgrade confidence (1 - 0.28 = 0.72)
 - Signal: Downgrade likely with 72% confidence
@@ -1132,21 +1200,25 @@ All data is **real-time production data**, not mock or simulated data.
 **A**: Early Signal Detection uses intelligent caching to balance speed and freshness:
 
 **Cache Strategy**:
+
 - **TTL (Time-to-Live)**: 5 minutes per prediction
 - **Cache Key**: `symbol:date:model_version` (e.g., `AAPL:2025-10-01:v1.0.0`)
 - **Storage**: Redis for fast access across API servers
 
 **Performance**:
+
 - **Cache Hit**: <100ms latency (prediction retrieved from cache)
 - **Cache Miss**: 1-2s latency (feature extraction + model inference)
 - **Expected Hit Rate**: 85%+ during active trading hours
 
 **Freshness Guarantees**:
+
 - Predictions refresh automatically every 5 minutes during market hours
 - Daily cache key change ensures predictions reflect current date
 - Model version in cache key forces refresh when model is updated
 
 **What This Means**:
+
 - First request for a stock: 1-2s response time (cold cache)
 - Subsequent requests within 5 minutes: <100ms response time (warm cache)
 - After 5 minutes or end of day: Cache expires, fresh prediction generated
@@ -1164,27 +1236,32 @@ All data is **real-time production data**, not mock or simulated data.
 **Decision Framework**:
 
 **Step 1: Assess Signal Strength**
+
 - Confidence > 80%: High urgency, re-evaluate immediately
 - Confidence 65-80%: Moderate urgency, review within 24-48 hours
 - Confidence < 65%: No signal (filtered out)
 
 **Step 2: Review Fundamental Thesis**
+
 - Is the original investment rationale still valid?
 - Have company fundamentals deteriorated (revenue, margins, competitive position)?
 - Are there offsetting positive catalysts (new products, partnerships)?
 
 **Step 3: Check Position Size & Risk**
+
 - Large position (>10% portfolio): Consider reducing to manage risk
 - Moderate position (5-10%): Monitor closely, tighten stop-loss
 - Small position (<5%): May hold through volatility if thesis intact
 
 **Step 4: Make Decision**
+
 - **Exit**: If fundamentals confirm deterioration + high downgrade confidence (>75%)
 - **Reduce**: If mixed signals, reduce position size by 25-50% to manage risk
 - **Hold**: If fundamentals still strong, accept early signal as one data point, but monitor daily
 - **Hedge**: Use protective puts if wanting to maintain exposure but protect downside
 
 **Example**:
+
 - Holding: NFLX, 8% of portfolio
 - Signal: Downgrade likely (confidence: 71%)
 - Fundamentals: Subscriber growth slowing, increased competition, debt levels elevated
@@ -1198,17 +1275,20 @@ All data is **real-time production data**, not mock or simulated data.
 **A**: Not recommended. The model is optimized for a 2-week horizon, not intraday or multi-day swings:
 
 **Why Not Ideal for Day Trading**:
+
 - Predictions target analyst rating changes (2-week events), not daily price movements
 - Features are calculated using daily OHLC data, not intraday data
 - Model not designed to capture intraday momentum or volatility patterns
 - Cache TTL (5 minutes) is too long for high-frequency trading
 
 **Better Use Cases**:
+
 - **Swing Trading** (2-6 weeks): Excellent fit for early signal horizon
 - **Position Trading** (1-3 months): Use early signals for entry timing
 - **Portfolio Rotation** (monthly rebalancing): Identify upgrade/downgrade trends
 
 **If You Want Shorter Horizons**:
+
 - Wait for future model enhancements (1-week predictions planned for post-MVP)
 - Combine early signals with intraday technical analysis (separate tools)
 - Use VFR's real-time sentiment and technical indicators for day trading
@@ -1220,16 +1300,19 @@ All data is **real-time production data**, not mock or simulated data.
 **A**: Early signals can inform stop-loss placement and adjustment:
 
 **Initial Position Entry** (Upgrade Signal):
+
 - Set stop-loss at 5-8% below entry price
 - Tighter stops (5%) for lower confidence signals (65-70%)
 - Wider stops (8%) for higher confidence signals (75%+) to allow for volatility
 
 **Position Monitoring**:
+
 - If signal reverses (upgrade → downgrade): Tighten stop-loss to 3-5% to preserve gains
 - If signal strengthens (confidence increases): Consider trailing stop to lock in profits
 - If no signal change: Maintain original stop-loss discipline
 
 **Example**:
+
 - Entry: AAPL at $178 with upgrade signal (confidence: 73%)
 - Initial stop: $165 (-7.3%)
 - Week 2: Signal reverses to downgrade (confidence: 68%)
@@ -1246,6 +1329,7 @@ All data is **real-time production data**, not mock or simulated data.
 ### Quick Start Checklist
 
 **Before Your First Trade**:
+
 - [ ] Read and understand the [Limitations & Disclaimers](#limitations--disclaimers) section
 - [ ] Paper trade for 4-8 weeks to validate your strategy
 - [ ] Define your risk tolerance and position sizing rules
@@ -1253,6 +1337,7 @@ All data is **real-time production data**, not mock or simulated data.
 - [ ] Combine early signals with fundamental research (never trade signals alone)
 
 **For Each Signal**:
+
 - [ ] Check confidence score (minimum 65% threshold)
 - [ ] Review reasoning explanations (understand what's driving the prediction)
 - [ ] Verify fundamentals support the signal direction
@@ -1261,6 +1346,7 @@ All data is **real-time production data**, not mock or simulated data.
 - [ ] Document entry rationale for future review
 
 **Ongoing Monitoring**:
+
 - [ ] Re-run predictions weekly on all holdings
 - [ ] Track signal changes (upgrade → downgrade reversals)
 - [ ] Monitor model accuracy via VFR admin dashboard (if accessible)
@@ -1285,16 +1371,19 @@ All data is **real-time production data**, not mock or simulated data.
 ### Additional Resources
 
 **Internal Documentation**:
+
 - [Early Signal Detection API Documentation](/docs/api/early-signal-detection.md) - Technical API specifications
 - [ML Training Guide](/docs/ml/training-guide.md) - Model architecture and training procedures
 - [VFR Analysis Engine Architecture](/docs/analysis-engine/vfr-analysis-flow.md) - System architecture overview
 
 **Support**:
+
 - VFR Platform Help Center: [Contact Support]
 - Community Forum: [Early Signal Discussion]
 - Email Support: support@vfr-platform.com
 
 **Model Performance Monitoring**:
+
 - VFR Admin Dashboard: Real-time accuracy metrics, prediction volume, cache hit rates
 - Weekly Performance Reports: Automated validation against actual analyst rating changes
 
@@ -1324,26 +1413,31 @@ All data is **real-time production data**, not mock or simulated data.
 **Planned Enhancements** (Post-v1.0.0):
 
 ### Priority 1: Improve Precision (Target: 75-80%)
+
 - **Fix fundamental feature extraction** (earnings, revenue data currently 85-92% zeros)
 - Improve data collection pipeline for fundamental metrics
 - Rebalance feature importance away from sentiment-only signals
 
 ### Priority 2: Expand Training Data
+
 - Increase from 444 to 1000+ training examples
 - Add more symbols beyond S&P 100 (include mid-cap stocks)
 - Extend historical date range to capture more market cycles
 
 ### Priority 3: Confidence Calibration
+
 - Implement Platt scaling or isotonic regression
 - Provide calibrated confidence buckets (65-75%, 75-85%, 85-100%)
 - Measure expected calibration error (ECE) to validate accuracy claims
 
 ### Priority 4: Multi-Horizon Predictions
+
 - 1-week predictions (for swing traders)
 - 4-week predictions (for position traders)
 - Confidence-adjusted time horizons
 
 ### Priority 5: Downgrade Detection
+
 - Improve downgrade prediction accuracy
 - Separate models for upgrade vs downgrade may improve performance
 

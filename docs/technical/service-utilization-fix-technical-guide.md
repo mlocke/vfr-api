@@ -7,6 +7,7 @@
 ## Executive Technical Summary
 
 ### Core Problem Architecture
+
 The VFR platform exhibits a **dual-layer execution disconnect** where services execute in Layer 2 (AlgorithmEngine + FactorLibrary) but utilization is tracked in Layer 1 (StockSelectionService), creating systematic 0% utilization reporting despite functional service execution.
 
 ```
@@ -24,19 +25,21 @@ CURRENT PROBLEMATIC ARCHITECTURE:
 ```
 
 ### Technical Impact Analysis
-| Service | Current Status | Weight | Root Cause | Implementation Complexity |
-|---------|---------------|--------|------------|-------------------------|
-| **Sentiment Analysis** | ✅ WORKING, misreported 0% | 10% | Reporting issue only | LOW - tracking fix |
-| **Technical Analysis** | 0% utilization | 35% | TechnicalIndicatorService not tracked | MEDIUM - integration |
-| **VWAP Service** | 0% utilization | 10% | VWAPService isolated from FactorLibrary | MEDIUM - service connection |
-| **Fundamental Analysis** | 0% utilization | 25% | Cache inconsistency + data flow | HIGH - architecture fix |
-| **Macroeconomic Analysis** | 0% utilization | 20% | Dynamic import timing issues | LOW - import pattern fix |
+
+| Service                    | Current Status             | Weight | Root Cause                              | Implementation Complexity   |
+| -------------------------- | -------------------------- | ------ | --------------------------------------- | --------------------------- |
+| **Sentiment Analysis**     | ✅ WORKING, misreported 0% | 10%    | Reporting issue only                    | LOW - tracking fix          |
+| **Technical Analysis**     | 0% utilization             | 35%    | TechnicalIndicatorService not tracked   | MEDIUM - integration        |
+| **VWAP Service**           | 0% utilization             | 10%    | VWAPService isolated from FactorLibrary | MEDIUM - service connection |
+| **Fundamental Analysis**   | 0% utilization             | 25%    | Cache inconsistency + data flow         | HIGH - architecture fix     |
+| **Macroeconomic Analysis** | 0% utilization             | 20%    | Dynamic import timing issues            | LOW - import pattern fix    |
 
 ## Technical Architecture Context
 
 ### Service Execution Flow Analysis
 
 #### Current Data Flow (Problematic)
+
 ```typescript
 // Layer 1: StockSelectionService.ts (Lines 1673-1705)
 async analyzeStock(symbol: string): Promise<StockAnalysis> {
@@ -74,6 +77,7 @@ static async calculateMainComposite(symbol: string, sentimentData?: any): Promis
 ```
 
 #### Required Fixed Data Flow
+
 ```typescript
 // Unified tracking with execution visibility
 async analyzeStock(symbol: string): Promise<StockAnalysis> {
@@ -94,13 +98,16 @@ async analyzeStock(symbol: string): Promise<StockAnalysis> {
 #### Critical Service Integration Files
 
 ##### 1. StockSelectionService.ts - Layer 1 Tracking
+
 **Location**: `/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/stock-selection/StockSelectionService.ts`
 **Key Functions**:
+
 - Lines 44-100: Constructor with service dependency injection
 - Lines 1673-1705: `calculateServiceUtilization()` - **BROKEN TRACKING LOGIC**
 - Lines 52-57: Service instance storage (macroeconomicService, sentimentService, vwapService, etc.)
 
 **Technical Constraints**:
+
 ```typescript
 // Current problematic pattern
 private macroeconomicService?: MacroeconomicAnalysisService // Optional injection
@@ -115,6 +122,7 @@ calculateServiceUtilization(services: ServiceMap): UtilizationMetrics {
 ```
 
 **Required Fix Pattern**:
+
 ```typescript
 // Fixed utilization tracking
 async calculateServiceUtilization(symbol: string, executionResult: any): Promise<UtilizationMetrics> {
@@ -134,13 +142,16 @@ async calculateServiceUtilization(symbol: string, executionResult: any): Promise
 ```
 
 ##### 2. AlgorithmEngine.ts - Layer 2 Execution
+
 **Location**: `/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/algorithms/AlgorithmEngine.ts`
 **Key Functions**:
+
 - Lines 446-470: `ensureSentimentData()` - **WORKING PRE-FETCH PATTERN**
 - Lines 54-71: Constructor with service injection
 - Lines 76-150: `executeAlgorithm()` - Main execution orchestration
 
 **Architecture Pattern (Proven Working)**:
+
 ```typescript
 // Lines 446-470: Sentiment pre-fetch pattern (WORKING)
 private async ensureSentimentData(symbol: string): Promise<SentimentData> {
@@ -163,6 +174,7 @@ private async ensureSentimentData(symbol: string): Promise<SentimentData> {
 ```
 
 **Required Extension Pattern**:
+
 ```typescript
 // Apply same pattern to all services
 private async ensureMacroeconomicData(symbol: string): Promise<MacroData> { /* ... */ }
@@ -172,13 +184,16 @@ private async ensureTechnicalData(symbol: string): Promise<TechnicalData> { /* .
 ```
 
 ##### 3. FactorLibrary.ts - Layer 2 Composition
+
 **Location**: `/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/algorithms/FactorLibrary.ts`
 **Key Functions**:
+
 - Lines 1614-1676: `calculateMainComposite()` - **CORE SCORING LOGIC**
 - Lines 65-83: Constructor with service dependencies
 - Lines 88-150: `calculateFactor()` - Individual factor calculation
 
 **Critical Integration Points**:
+
 ```typescript
 // Lines 1614-1676: Main composite calculation
 static async calculateMainComposite(
@@ -225,6 +240,7 @@ static async calculateMainComposite(
 **Issue**: Utilization tracking disconnected from actual execution
 
 **Technical Fix**:
+
 ```typescript
 // Current broken tracking in StockSelectionService.ts
 private calculateServiceUtilization(): UtilizationMetrics {
@@ -248,6 +264,7 @@ private async calculateServiceUtilization(symbol: string, executionResult: Algor
 ```
 
 **Implementation Steps**:
+
 1. Modify `calculateServiceUtilization()` to accept execution result
 2. Check `executionResult.factors` for actual sentiment factor presence
 3. Return real weight percentage instead of instantiation check
@@ -257,6 +274,7 @@ private async calculateServiceUtilization(symbol: string, executionResult: Algor
 
 **Status**: TechnicalIndicatorService execution not propagated to utilization tracking
 **Files**:
+
 - AlgorithmConfigManager.ts (Configuration fix)
 - FactorLibrary.ts (VWAP integration)
 - TechnicalIndicatorService.ts (Execution tracking)
@@ -264,30 +282,30 @@ private async calculateServiceUtilization(symbol: string, executionResult: Algor
 **Root Cause**: Single 'composite' factor masks individual technical indicators
 
 **Technical Fix 1 - Configuration Granularity**:
+
 ```typescript
 // File: AlgorithmConfigManager.ts, Line 604
 // Current (BROKEN)
-weights: [
-  { factor: 'composite', weight: 1.0, enabled: true }
-]
+weights: [{ factor: "composite", weight: 1.0, enabled: true }];
 
 // Fixed (GRANULAR)
 weights: [
-  // Technical Analysis factors (40% total weight)
-  { factor: 'technical_overall_score', weight: 0.25, enabled: true },
-  { factor: 'vwap_deviation', weight: 0.10, enabled: true },      // ← NEW VWAP
-  { factor: 'rsi_14d', weight: 0.05, enabled: true },
+	// Technical Analysis factors (40% total weight)
+	{ factor: "technical_overall_score", weight: 0.25, enabled: true },
+	{ factor: "vwap_deviation", weight: 0.1, enabled: true }, // ← NEW VWAP
+	{ factor: "rsi_14d", weight: 0.05, enabled: true },
 
-  // Fundamental Analysis factors (25% total weight)
-  { factor: 'quality_composite', weight: 0.15, enabled: true },
-  { factor: 'pe_ratio', weight: 0.05, enabled: true },
-  { factor: 'roe', weight: 0.05, enabled: true },
+	// Fundamental Analysis factors (25% total weight)
+	{ factor: "quality_composite", weight: 0.15, enabled: true },
+	{ factor: "pe_ratio", weight: 0.05, enabled: true },
+	{ factor: "roe", weight: 0.05, enabled: true },
 
-  // Other factors...
-]
+	// Other factors...
+];
 ```
 
 **Technical Fix 2 - VWAP Integration**:
+
 ```typescript
 // File: FactorLibrary.ts - Add VWAP to technical calculation
 async calculateTechnicalOverallScore(symbol: string): Promise<number> {
@@ -331,76 +349,79 @@ private async getVWAPData(symbol: string): Promise<VWAPData | null> {
 **Root Cause**: Multiple cache instances + singleton pattern needed
 
 **Technical Architecture Issue**:
+
 ```typescript
 // Current problematic pattern across services
 class ServiceA {
-  constructor() {
-    this.cache = new RedisCache(); // ← Instance 1
-  }
+	constructor() {
+		this.cache = new RedisCache(); // ← Instance 1
+	}
 }
 
 class ServiceB {
-  constructor() {
-    this.cache = new RedisCache(); // ← Instance 2
-  }
+	constructor() {
+		this.cache = new RedisCache(); // ← Instance 2
+	}
 }
 
 // Data stored in Instance 1 not accessible from Instance 2
 ```
 
 **Technical Fix - Singleton Cache Pattern**:
+
 ```typescript
 // File: app/services/cache/CacheService.ts
 export class CacheService {
-  private static instance: CacheService;
-  private redisCache: RedisCache;
-  private memoryCache: InMemoryCache;
+	private static instance: CacheService;
+	private redisCache: RedisCache;
+	private memoryCache: InMemoryCache;
 
-  private constructor() {
-    this.redisCache = new RedisCache();
-    this.memoryCache = new InMemoryCache();
-  }
+	private constructor() {
+		this.redisCache = new RedisCache();
+		this.memoryCache = new InMemoryCache();
+	}
 
-  public static getInstance(): CacheService {
-    if (!CacheService.instance) {
-      CacheService.instance = new CacheService();
-    }
-    return CacheService.instance;
-  }
+	public static getInstance(): CacheService {
+		if (!CacheService.instance) {
+			CacheService.instance = new CacheService();
+		}
+		return CacheService.instance;
+	}
 
-  async get(key: string): Promise<any> {
-    // Try Redis first, fallback to memory
-    try {
-      const data = await this.redisCache.get(key);
-      return data;
-    } catch (error) {
-      return this.memoryCache.get(key);
-    }
-  }
+	async get(key: string): Promise<any> {
+		// Try Redis first, fallback to memory
+		try {
+			const data = await this.redisCache.get(key);
+			return data;
+		} catch (error) {
+			return this.memoryCache.get(key);
+		}
+	}
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {
-    // Store in both caches
-    try {
-      await this.redisCache.set(key, value, ttl);
-    } catch (error) {
-      console.warn('Redis cache failed, using memory fallback');
-    }
-    this.memoryCache.set(key, value, ttl);
-  }
+	async set(key: string, value: any, ttl?: number): Promise<void> {
+		// Store in both caches
+		try {
+			await this.redisCache.set(key, value, ttl);
+		} catch (error) {
+			console.warn("Redis cache failed, using memory fallback");
+		}
+		this.memoryCache.set(key, value, ttl);
+	}
 }
 ```
 
 **Service Integration Pattern**:
+
 ```typescript
 // Apply to all services
-import { CacheService } from '../cache/CacheService';
+import { CacheService } from "../cache/CacheService";
 
 class FundamentalDataService {
-  private cache: CacheService;
+	private cache: CacheService;
 
-  constructor() {
-    this.cache = CacheService.getInstance(); // ← Singleton pattern
-  }
+	constructor() {
+		this.cache = CacheService.getInstance(); // ← Singleton pattern
+	}
 }
 ```
 
@@ -410,14 +431,17 @@ class FundamentalDataService {
 **Root Cause**: Asynchronous import resolution competing with execution
 
 **Technical Issue**:
+
 ```typescript
 // Current problematic pattern in AlgorithmEngine.ts
-const macroData = await import('../financial-data/MacroeconomicAnalysisService')
-  .then(module => module.MacroeconomicAnalysisService.getAnalysis(symbol));
+const macroData = await import("../financial-data/MacroeconomicAnalysisService").then(module =>
+	module.MacroeconomicAnalysisService.getAnalysis(symbol)
+);
 // ↑ Dynamic import creates timing race conditions
 ```
 
 **Technical Fix**:
+
 ```typescript
 // File: AlgorithmEngine.ts - Top of file
 import { MacroeconomicAnalysisService } from '../financial-data/MacroeconomicAnalysisService';
@@ -451,6 +475,7 @@ private async ensureMacroeconomicData(symbol: string): Promise<MacroData> {
 ### Decision Trees for Implementation
 
 #### Service Integration Decision Tree
+
 ```
 Service Implementation → Check Status → Determine Action
 ├── Working Service (Sentiment)
@@ -471,6 +496,7 @@ Service Implementation → Check Status → Determine Action
 ```
 
 #### Troubleshooting Decision Tree
+
 ```
 Utilization Shows 0% → Diagnose Layer → Apply Fix
 ├── Service Instantiated But Not Executed
@@ -496,97 +522,97 @@ Utilization Shows 0% → Diagnose Layer → Apply Fix
 #### Integration Test Patterns
 
 **Test Framework Configuration**:
+
 ```javascript
 // jest.config.js - Memory optimization for real API testing
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  maxWorkers: 1,
-  testTimeout: 300000, // 5 minutes for real API calls
-  setupFilesAfterEnv: ['./jest.setup.js'],
-  globalTeardown: './jest.node-setup.js',
-  collectCoverageFrom: [
-    'app/services/**/*.ts',
-    '!app/services/**/*.test.ts'
-  ],
-  coverageDirectory: 'docs/test-output/coverage',
-  verbose: true,
-  detectLeaks: false, // Disabled for memory optimization
-  forceExit: true
+	preset: "ts-jest",
+	testEnvironment: "node",
+	maxWorkers: 1,
+	testTimeout: 300000, // 5 minutes for real API calls
+	setupFilesAfterEnv: ["./jest.setup.js"],
+	globalTeardown: "./jest.node-setup.js",
+	collectCoverageFrom: ["app/services/**/*.ts", "!app/services/**/*.test.ts"],
+	coverageDirectory: "docs/test-output/coverage",
+	verbose: true,
+	detectLeaks: false, // Disabled for memory optimization
+	forceExit: true,
 };
 ```
 
 **Service Utilization Test Template**:
+
 ```typescript
 // Test pattern for all services
-describe('ServiceUtilizationTracking', () => {
-  let stockSelectionService: StockSelectionService;
-  const TEST_SYMBOL = 'AAPL';
+describe("ServiceUtilizationTracking", () => {
+	let stockSelectionService: StockSelectionService;
+	const TEST_SYMBOL = "AAPL";
 
-  beforeEach(() => {
-    stockSelectionService = new StockSelectionService(
-      /* all service dependencies */
-    );
-  });
+	beforeEach(() => {
+		stockSelectionService = new StockSelectionService();
+		/* all service dependencies */
+	});
 
-  it('should report accurate sentiment utilization', async () => {
-    const result = await stockSelectionService.analyzeStock(TEST_SYMBOL);
+	it("should report accurate sentiment utilization", async () => {
+		const result = await stockSelectionService.analyzeStock(TEST_SYMBOL);
 
-    // Check execution result has sentiment data
-    expect(result.executionResult.factors).toContainEqual(
-      expect.objectContaining({ name: 'sentiment', weight: expect.any(Number) })
-    );
+		// Check execution result has sentiment data
+		expect(result.executionResult.factors).toContainEqual(
+			expect.objectContaining({ name: "sentiment", weight: expect.any(Number) })
+		);
 
-    // Check utilization reporting matches execution
-    const sentimentFactor = result.executionResult.factors.find(f => f.name === 'sentiment');
-    expect(result.utilization.sentiment).toBe(sentimentFactor.weight * 100);
-  });
+		// Check utilization reporting matches execution
+		const sentimentFactor = result.executionResult.factors.find(f => f.name === "sentiment");
+		expect(result.utilization.sentiment).toBe(sentimentFactor.weight * 100);
+	});
 
-  it('should integrate VWAP into technical analysis', async () => {
-    const result = await stockSelectionService.analyzeStock(TEST_SYMBOL);
+	it("should integrate VWAP into technical analysis", async () => {
+		const result = await stockSelectionService.analyzeStock(TEST_SYMBOL);
 
-    // Check technical analysis includes VWAP component
-    const technicalFactor = result.executionResult.factors.find(f => f.name === 'technical');
-    expect(technicalFactor.weight).toBe(35); // 35% total technical weight
-    expect(technicalFactor.components).toContain('vwap'); // VWAP component included
-  });
+		// Check technical analysis includes VWAP component
+		const technicalFactor = result.executionResult.factors.find(f => f.name === "technical");
+		expect(technicalFactor.weight).toBe(35); // 35% total technical weight
+		expect(technicalFactor.components).toContain("vwap"); // VWAP component included
+	});
 
-  // Similar tests for fundamental, macroeconomic services...
+	// Similar tests for fundamental, macroeconomic services...
 });
 ```
 
 **Performance Validation**:
+
 ```typescript
-describe('ServicePerformanceValidation', () => {
-  it('should maintain sub-3-second analysis with all services', async () => {
-    const startTime = Date.now();
-    const result = await stockSelectionService.analyzeStock('MSFT');
-    const endTime = Date.now();
+describe("ServicePerformanceValidation", () => {
+	it("should maintain sub-3-second analysis with all services", async () => {
+		const startTime = Date.now();
+		const result = await stockSelectionService.analyzeStock("MSFT");
+		const endTime = Date.now();
 
-    expect(endTime - startTime).toBeLessThan(3000);
-    expect(result.utilization.total).toBeGreaterThan(0);
-  });
+		expect(endTime - startTime).toBeLessThan(3000);
+		expect(result.utilization.total).toBeGreaterThan(0);
+	});
 
-  it('should handle API rate limits gracefully', async () => {
-    // Test multiple rapid requests to trigger rate limits
-    const promises = Array(10).fill(0).map(() =>
-      stockSelectionService.analyzeStock('TSLA')
-    );
+	it("should handle API rate limits gracefully", async () => {
+		// Test multiple rapid requests to trigger rate limits
+		const promises = Array(10)
+			.fill(0)
+			.map(() => stockSelectionService.analyzeStock("TSLA"));
 
-    const results = await Promise.allSettled(promises);
-    const successful = results.filter(r => r.status === 'fulfilled');
+		const results = await Promise.allSettled(promises);
+		const successful = results.filter(r => r.status === "fulfilled");
 
-    expect(successful.length).toBeGreaterThan(0); // At least some succeed
-    successful.forEach(result => {
-      expect(result.value.utilization.total).toBeGreaterThan(0);
-    });
-  });
+		expect(successful.length).toBeGreaterThan(0); // At least some succeed
+		successful.forEach(result => {
+			expect(result.value.utilization.total).toBeGreaterThan(0);
+		});
+	});
 });
 ```
 
 ### Error Boundaries and Recovery Patterns
 
 #### Service Failure Handling
+
 ```typescript
 // Pattern for all service integrations
 async executeWithResilience<T>(
@@ -614,6 +640,7 @@ async executeWithResilience<T>(
 ```
 
 #### Cache Failure Recovery
+
 ```typescript
 // Cache access with automatic fallback
 async getCachedData(key: string): Promise<any> {
@@ -635,6 +662,7 @@ async getCachedData(key: string): Promise<any> {
 ### Performance Considerations and Monitoring
 
 #### Memory Management for Real API Testing
+
 ```javascript
 // jest.setup.js
 const originalGC = global.gc;
@@ -658,60 +686,66 @@ beforeAll(() => {
 ```
 
 #### Service Performance Metrics
+
 ```typescript
 interface ServiceExecutionMetrics {
-  serviceName: string;
-  executionTime: number;
-  cacheHitRatio: number;
-  successRate: number;
-  utilizationPercentage: number;
-  errorCount: number;
-  lastError?: string;
+	serviceName: string;
+	executionTime: number;
+	cacheHitRatio: number;
+	successRate: number;
+	utilizationPercentage: number;
+	errorCount: number;
+	lastError?: string;
 }
 
 class ServiceMonitor {
-  private metrics: Map<string, ServiceExecutionMetrics> = new Map();
+	private metrics: Map<string, ServiceExecutionMetrics> = new Map();
 
-  recordExecution(serviceName: string, success: boolean, executionTime: number) {
-    const current = this.metrics.get(serviceName) || this.createDefaultMetrics(serviceName);
+	recordExecution(serviceName: string, success: boolean, executionTime: number) {
+		const current = this.metrics.get(serviceName) || this.createDefaultMetrics(serviceName);
 
-    current.executionTime = executionTime;
-    current.successRate = success ?
-      Math.min(current.successRate + 0.1, 1.0) :
-      Math.max(current.successRate - 0.1, 0.0);
+		current.executionTime = executionTime;
+		current.successRate = success
+			? Math.min(current.successRate + 0.1, 1.0)
+			: Math.max(current.successRate - 0.1, 0.0);
 
-    this.metrics.set(serviceName, current);
-  }
+		this.metrics.set(serviceName, current);
+	}
 }
 ```
 
 ## Implementation Timeline and Risk Assessment
 
 ### Phase 1 - Quick Wins (1-2 days, LOW risk)
+
 1. **Sentiment Analysis Reporting** - 2 hours
-   - Risk: Minimal - service already working
-   - Files: StockSelectionService.ts (tracking fix)
-   - Success Criteria: 10% utilization properly displayed
+    - Risk: Minimal - service already working
+    - Files: StockSelectionService.ts (tracking fix)
+    - Success Criteria: 10% utilization properly displayed
 
 2. **Macroeconomic Import Fix** - 4 hours
-   - Risk: Low - well-understood import timing issue
-   - Files: AlgorithmEngine.ts (static import)
-   - Success Criteria: 20% utilization, no import errors
+    - Risk: Low - well-understood import timing issue
+    - Files: AlgorithmEngine.ts (static import)
+    - Success Criteria: 20% utilization, no import errors
 
 ### Phase 2 - Integration Fixes (3-5 days, MEDIUM risk)
+
 3. **Technical Analysis + VWAP** - 6 hours
-   - Risk: Medium - configuration + service integration
-   - Files: AlgorithmConfigManager.ts, FactorLibrary.ts, TechnicalIndicatorService.ts
-   - Success Criteria: 35% technical utilization including VWAP
+    - Risk: Medium - configuration + service integration
+    - Files: AlgorithmConfigManager.ts, FactorLibrary.ts, TechnicalIndicatorService.ts
+    - Success Criteria: 35% technical utilization including VWAP
 
 ### Phase 3 - Architecture Improvements (1-2 weeks, HIGH risk)
+
 4. **Fundamental Analysis Cache Fix** - 8 hours
-   - Risk: High - architecture changes affecting multiple services
-   - Files: CacheService.ts (singleton), all service constructors
-   - Success Criteria: 25% utilization, consistent cache access
+    - Risk: High - architecture changes affecting multiple services
+    - Files: CacheService.ts (singleton), all service constructors
+    - Success Criteria: 25% utilization, consistent cache access
 
 ### Rollback Procedures
+
 Each phase includes specific rollback procedures:
+
 - **Phase 1**: Revert to previous tracking logic
 - **Phase 2**: Disable new configuration, revert to composite factor
 - **Phase 3**: Disable singleton pattern, revert to individual cache instances
@@ -719,15 +753,17 @@ Each phase includes specific rollback procedures:
 ## Success Metrics and Validation
 
 ### Primary Technical Metrics
-| Metric | Current | Target | Validation Method |
-|--------|---------|--------|------------------|
-| **Sentiment Utilization** | 0% (misreported) | 10% | Admin dashboard + test suite |
-| **Technical Utilization** | 0% | 35% (includes VWAP) | Factor weight analysis |
-| **Fundamental Utilization** | 0% | 25% | Cache hit analysis + scoring |
-| **Macroeconomic Utilization** | 0% | 20% | Import success + execution |
-| **Overall System Accuracy** | ~50% (due to missing services) | 100% | Composite scoring validation |
+
+| Metric                        | Current                        | Target              | Validation Method            |
+| ----------------------------- | ------------------------------ | ------------------- | ---------------------------- |
+| **Sentiment Utilization**     | 0% (misreported)               | 10%                 | Admin dashboard + test suite |
+| **Technical Utilization**     | 0%                             | 35% (includes VWAP) | Factor weight analysis       |
+| **Fundamental Utilization**   | 0%                             | 25%                 | Cache hit analysis + scoring |
+| **Macroeconomic Utilization** | 0%                             | 20%                 | Import success + execution   |
+| **Overall System Accuracy**   | ~50% (due to missing services) | 100%                | Composite scoring validation |
 
 ### Validation Commands
+
 ```bash
 # Type safety validation
 npm run type-check

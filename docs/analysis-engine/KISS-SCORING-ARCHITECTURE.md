@@ -48,19 +48,24 @@ The scoring system follows a **strict 4-layer architecture** with clear responsi
 **Responsibility:** Calculate and return composite score in 0-1 scale
 
 ```typescript
-const clampedScore = Math.max(0, Math.min(1, finalScore))
-console.log(`✅ FactorLibrary: Composite score = ${clampedScore.toFixed(4)} (0-1 scale) for ${symbol}`)
+const clampedScore = Math.max(0, Math.min(1, finalScore));
+console.log(
+	`✅ FactorLibrary: Composite score = ${clampedScore.toFixed(4)} (0-1 scale) for ${symbol}`
+);
 
 // 🚨 VALIDATION: Ensure score is in 0-1 range (KISS architecture enforcement)
 if (clampedScore < 0 || clampedScore > 1 || isNaN(clampedScore)) {
-  console.error(`❌ VALIDATION FAILED: Score ${clampedScore} is outside 0-1 range for ${symbol}!`)
-  throw new Error(`FactorLibrary returned invalid score: ${clampedScore} (must be 0-1)`)
+	console.error(
+		`❌ VALIDATION FAILED: Score ${clampedScore} is outside 0-1 range for ${symbol}!`
+	);
+	throw new Error(`FactorLibrary returned invalid score: ${clampedScore} (must be 0-1)`);
 }
 
-return clampedScore
+return clampedScore;
 ```
 
 **Key Features:**
+
 - ✅ Returns 0-1 scale (clamped)
 - ✅ Validation enforced with error throwing
 - ✅ Console tracking: "FactorLibrary: Composite score = X.XXXX (0-1 scale)"
@@ -71,23 +76,28 @@ return clampedScore
 **Responsibility:** Pass through score WITHOUT manipulation
 
 ```typescript
-console.log(`✅ AlgorithmEngine: Passing through score = ${compositeScore.toFixed(4)} (0-1 scale, NO manipulation)`)
+console.log(
+	`✅ AlgorithmEngine: Passing through score = ${compositeScore.toFixed(4)} (0-1 scale, NO manipulation)`
+);
 
 // 🚨 VALIDATION: Verify score is in 0-1 range (KISS architecture enforcement)
 if (compositeScore < 0 || compositeScore > 1) {
-  console.error(`❌ VALIDATION WARNING: Score ${compositeScore} from FactorLibrary is outside 0-1 range for ${symbol}!`)
+	console.error(
+		`❌ VALIDATION WARNING: Score ${compositeScore} from FactorLibrary is outside 0-1 range for ${symbol}!`
+	);
 }
 
 // 🎯 PASS THROUGH ONLY: No score manipulation, maintaining 0-1 scale
 return {
-  symbol,
-  overallScore: compositeScore, // ✅ Direct pass-through from FactorLibrary (0-1 scale)
-  factorScores: componentFactors,
-  // ...
-}
+	symbol,
+	overallScore: compositeScore, // ✅ Direct pass-through from FactorLibrary (0-1 scale)
+	factorScores: componentFactors,
+	// ...
+};
 ```
 
 **Key Features:**
+
 - ✅ NO score calculation or manipulation
 - ✅ Direct pass-through: `overallScore: compositeScore`
 - ✅ Validation with warning (non-blocking)
@@ -99,23 +109,28 @@ return {
 
 ```typescript
 // 🎯 DISPLAY FORMATTING ONLY: Convert 0-1 scale to 0-100 for frontend display
-const overallScoreRaw = selection.score?.overallScore || 0
-const compositeScoreDisplay = overallScoreRaw * 100
+const overallScoreRaw = selection.score?.overallScore || 0;
+const compositeScoreDisplay = overallScoreRaw * 100;
 
 // 🚨 VALIDATION: Verify score is in expected 0-1 range before display formatting
 if (overallScoreRaw < 0 || overallScoreRaw > 1) {
-  console.error(`❌ API VALIDATION FAILED: overallScore ${overallScoreRaw} is outside 0-1 range for ${selection.symbol}!`)
+	console.error(
+		`❌ API VALIDATION FAILED: overallScore ${overallScoreRaw} is outside 0-1 range for ${selection.symbol}!`
+	);
 }
 
-console.log(`✅ API /stocks/analyze: Display score = ${compositeScoreDisplay.toFixed(2)} (formatted from ${overallScoreRaw.toFixed(4)})`)
+console.log(
+	`✅ API /stocks/analyze: Display score = ${compositeScoreDisplay.toFixed(2)} (formatted from ${overallScoreRaw.toFixed(4)})`
+);
 
 return {
-  compositeScore: compositeScoreDisplay, // 0-100 scale for frontend
-  // ...
-}
+	compositeScore: compositeScoreDisplay, // 0-100 scale for frontend
+	// ...
+};
 ```
 
 **Key Features:**
+
 - ✅ ONLY multiplies by 100 for display
 - ✅ NO other score manipulation
 - ✅ Validation before formatting
@@ -128,16 +143,19 @@ return {
 ```typescript
 // 🚨 DEFENSIVE NORMALIZATION: Should not be needed if architecture is correct
 // Scores should ALWAYS arrive in 0-1 scale from FactorLibrary → AlgorithmEngine
-const normalizedScore = score > 1 ? score / 100 : score
+const normalizedScore = score > 1 ? score / 100 : score;
 
 // 🔍 VALIDATION WARNING: Log if normalization was actually needed (indicates architecture violation)
 if (score > 1) {
-  console.warn(`⚠️ RecommendationUtils: Received score ${score} > 1, normalized to ${normalizedScore}. This indicates KISS architecture violation!`)
-  console.warn(`   Expected: 0-1 scale from FactorLibrary → AlgorithmEngine → API`)
+	console.warn(
+		`⚠️ RecommendationUtils: Received score ${score} > 1, normalized to ${normalizedScore}. This indicates KISS architecture violation!`
+	);
+	console.warn(`   Expected: 0-1 scale from FactorLibrary → AlgorithmEngine → API`);
 }
 ```
 
 **Key Features:**
+
 - ✅ Defensive normalization (safety net)
 - ✅ Logs warning if normalization needed (indicates bug)
 - ✅ Should NEVER trigger if architecture is correctly followed
@@ -155,6 +173,7 @@ When analyzing a stock, you'll see this console output sequence:
 ```
 
 ### What Good Output Looks Like:
+
 - ✅ All three layers show the SAME score (in their respective scales)
 - ✅ FactorLibrary: 0.XXXX format
 - ✅ AlgorithmEngine: 0.XXXX format (SAME value)
@@ -162,6 +181,7 @@ When analyzing a stock, you'll see this console output sequence:
 - ✅ NO warnings or validation errors
 
 ### What Bad Output Looks Like (Architecture Violation):
+
 ```
 ❌ VALIDATION FAILED: Score 1.5 is outside 0-1 range for AAPL!
 ⚠️ RecommendationUtils: Received score 65 > 1, normalized to 0.65. This indicates KISS architecture violation!
@@ -172,21 +192,25 @@ When analyzing a stock, you'll see this console output sequence:
 ## Validation Strategy
 
 ### 1. **FactorLibrary Validation** (STRICT - throws error)
+
 - Ensures score ∈ [0, 1]
 - Throws error if violated
 - Prevents invalid scores from propagating
 
 ### 2. **AlgorithmEngine Validation** (WARNING - logs only)
+
 - Verifies score ∈ [0, 1]
 - Logs warning but continues
 - Helps identify upstream bugs
 
 ### 3. **API Validation** (WARNING - logs only)
+
 - Verifies score ∈ [0, 1] before formatting
 - Logs error but continues
 - Helps identify service-layer bugs
 
 ### 4. **RecommendationUtils Validation** (DEFENSIVE)
+
 - Normalizes if score > 1
 - Logs warning if normalization used
 - Safety net for architecture violations
@@ -196,26 +220,31 @@ When analyzing a stock, you'll see this console output sequence:
 ## Architecture Principles Enforced
 
 ### 1. **Single Responsibility**
+
 - FactorLibrary: Calculate
 - AlgorithmEngine: Pass through
 - API: Format for display
 - RecommendationUtils: Generate recommendations
 
 ### 2. **Single Source of Truth**
+
 - FactorLibrary is the ONLY place that calculates composite scores
 - All other layers just pass through or format
 
 ### 3. **Clear Data Flow**
+
 - Score always flows: FactorLibrary → AlgorithmEngine → API
 - NO circular dependencies
 - NO score recalculation at different layers
 
 ### 4. **Explicit Validation**
+
 - Score constraints enforced at each layer
 - Violations logged immediately
 - Clear error messages for debugging
 
 ### 5. **Console Tracking**
+
 - Every layer logs score with emoji prefix
 - Easy to trace score flow through system
 - Immediate visibility of violations
@@ -225,20 +254,22 @@ When analyzing a stock, you'll see this console output sequence:
 ## Common Issues Prevented
 
 ### ❌ **OLD Problem: Multiple Scoring Layers**
+
 ```typescript
 // FactorLibrary
-const score = 0.65 // 0-1 scale
+const score = 0.65; // 0-1 scale
 
 // AlgorithmEngine (BAD - recalculates)
-const adjustedScore = score * 1.2 // Now 0.78
+const adjustedScore = score * 1.2; // Now 0.78
 
 // API (BAD - multiplies again)
-const displayScore = adjustedScore * 100 // Now 78
+const displayScore = adjustedScore * 100; // Now 78
 
 // Result: Score changed from 65 → 78 through multiple manipulations
 ```
 
 ### ✅ **NEW Solution: Pass-Through Architecture**
+
 ```typescript
 // FactorLibrary
 const score = 0.65 // 0-1 scale
@@ -260,6 +291,7 @@ compositeScore: 65 // Just multiply by 100
 ## Testing the Architecture
 
 ### Manual Test
+
 ```bash
 # Test with AAPL
 curl -X POST http://localhost:3000/api/stocks/analyze \
@@ -273,14 +305,15 @@ curl -X POST http://localhost:3000/api/stocks/analyze \
 ```
 
 ### Automated Test
+
 ```typescript
 // Verify score consistency
-const factorScore = 0.65 // From FactorLibrary
-const engineScore = stockScore.overallScore // From AlgorithmEngine
-const apiScore = response.compositeScore / 100 // From API
+const factorScore = 0.65; // From FactorLibrary
+const engineScore = stockScore.overallScore; // From AlgorithmEngine
+const apiScore = response.compositeScore / 100; // From API
 
-expect(engineScore).toBe(factorScore) // Should be EXACTLY equal
-expect(apiScore).toBe(factorScore) // Should be EXACTLY equal
+expect(engineScore).toBe(factorScore); // Should be EXACTLY equal
+expect(apiScore).toBe(factorScore); // Should be EXACTLY equal
 ```
 
 ---
@@ -288,25 +321,25 @@ expect(apiScore).toBe(factorScore) // Should be EXACTLY equal
 ## Files Modified
 
 1. **app/services/algorithms/FactorLibrary.ts**
-   - Added validation at line 2337-2341
-   - Added console tracking at line 2335
+    - Added validation at line 2337-2341
+    - Added console tracking at line 2335
 
 2. **app/services/algorithms/AlgorithmEngine.ts**
-   - Added validation at line 794-797
-   - Added console tracking at line 792
-   - Added pass-through comment at line 983-986
+    - Added validation at line 794-797
+    - Added console tracking at line 792
+    - Added pass-through comment at line 983-986
 
 3. **app/api/stocks/analyze/route.ts**
-   - Added validation at line 270-273
-   - Added console tracking at line 275
-   - Added display formatting comments at line 266-268
+    - Added validation at line 270-273
+    - Added console tracking at line 275
+    - Added display formatting comments at line 266-268
 
 4. **app/services/utils/RecommendationUtils.ts**
-   - Updated comments at line 27-32
-   - Added validation warning at line 38-42
+    - Updated comments at line 27-32
+    - Added validation warning at line 38-42
 
 5. **scripts/validate-phase1-calibration.ts**
-   - Fixed TypeScript compilation error (commented out DataFreshnessType test)
+    - Fixed TypeScript compilation error (commented out DataFreshnessType test)
 
 ---
 
@@ -335,6 +368,7 @@ expect(apiScore).toBe(factorScore) // Should be EXACTLY equal
 ---
 
 **Remember:** If you see a score manipulation anywhere except:
+
 1. FactorLibrary (calculation)
 2. API routes (formatting for display)
 

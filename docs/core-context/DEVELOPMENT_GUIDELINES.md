@@ -9,6 +9,7 @@ This document provides comprehensive development guidelines for the VFR Financia
 ### Prerequisites
 
 #### System Requirements
+
 - **Node.js**: Version 18+ with npm 9+
 - **Redis**: Version 6+ for caching (optional, has in-memory fallback)
 - **PostgreSQL**: Version 12+ for persistent data storage (optional)
@@ -16,6 +17,7 @@ This document provides comprehensive development guidelines for the VFR Financia
 - **Storage**: 10GB free space for dependencies and cache
 
 #### Required Environment Variables
+
 ```bash
 # Core API Keys (Primary Data Sources)
 ALPHA_VANTAGE_API_KEY=your_key_here
@@ -50,6 +52,7 @@ NODE_ENV=development
 ### Initial Setup
 
 #### 1. Environment Configuration
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -64,6 +67,7 @@ cp .env.example .env
 ```
 
 #### 2. Verify Installation
+
 ```bash
 # Type checking
 npm run type-check
@@ -82,6 +86,7 @@ npm run dev:clean
 ### Core Development Commands
 
 #### Essential Commands
+
 ```bash
 # Development Server Management
 npm run dev                 # Start development server (port 3000)
@@ -102,6 +107,7 @@ npm run start             # Start production server
 ```
 
 #### Testing Commands
+
 ```bash
 # Core Testing
 npm test                  # Run all tests with memory optimization
@@ -122,9 +128,11 @@ npm test -- app/services/financial-data/__tests__/VWAPService.test.ts  # Run spe
 ### Development Server Management
 
 #### Clean Development Environment (`npm run dev:clean`)
+
 The `dev:clean` script provides robust development environment management:
 
 **Features**:
+
 - **Process Cleanup**: Kills all Next.js development processes
 - **Port Management**: Ensures port 3000 is available
 - **Cache Cleanup**: Removes .next, node_modules/.cache, tsconfig.tsbuildinfo
@@ -132,6 +140,7 @@ The `dev:clean` script provides robust development environment management:
 - **Health Monitoring**: Verifies server starts successfully
 
 **Usage Scenarios**:
+
 - Port conflicts ("EADDRINUSE" errors)
 - Corrupted development cache
 - Multiple development processes running
@@ -142,13 +151,13 @@ The `dev:clean` script provides robust development environment management:
 
 **Common Issues & Solutions**:
 
-| Issue | Symptoms | Solution |
-|-------|----------|----------|
-| Port Conflicts | "EADDRINUSE: address already in use :::3000" | `npm run dev:clean` |
-| Cache Issues | Outdated components, build errors | `rm -rf .next && npm run dev` |
-| Memory Issues | Slow performance, test failures | `npm run dev:clean && npm test` |
-| Type Errors | TypeScript compilation errors | `npm run type-check` |
-| Package Issues | Module resolution errors | `rm -rf node_modules && npm install` |
+| Issue          | Symptoms                                     | Solution                             |
+| -------------- | -------------------------------------------- | ------------------------------------ |
+| Port Conflicts | "EADDRINUSE: address already in use :::3000" | `npm run dev:clean`                  |
+| Cache Issues   | Outdated components, build errors            | `rm -rf .next && npm run dev`        |
+| Memory Issues  | Slow performance, test failures              | `npm run dev:clean && npm test`      |
+| Type Errors    | TypeScript compilation errors                | `npm run type-check`                 |
+| Package Issues | Module resolution errors                     | `rm -rf node_modules && npm install` |
 
 ---
 
@@ -157,6 +166,7 @@ The `dev:clean` script provides robust development environment management:
 ### Testing Philosophy
 
 #### Test-Driven Development (TDD)
+
 1. **Real Data Only**: All tests use live APIs - no mock data
 2. **Integration Focus**: Comprehensive integration testing with 5-minute timeouts
 3. **Performance Validation**: Memory leak detection and response time testing
@@ -164,28 +174,30 @@ The `dev:clean` script provides robust development environment management:
 5. **Enterprise Reliability**: Circuit breaker patterns and resilience testing
 
 #### Test Architecture
+
 ```typescript
 interface TestingStrategy {
-  framework: 'Jest';
-  preset: 'ts-jest';
-  environment: 'node';
-  realApiTesting: true;
-  memoryOptimization: {
-    heapSize: '4096MB';
-    maxWorkers: 1;
-    runInBand: true;
-    explicitGC: true;
-  };
-  coverage: {
-    threshold: 85;          // Service layer coverage target
-    output: 'docs/test-output/coverage/';
-  };
+	framework: "Jest";
+	preset: "ts-jest";
+	environment: "node";
+	realApiTesting: true;
+	memoryOptimization: {
+		heapSize: "4096MB";
+		maxWorkers: 1;
+		runInBand: true;
+		explicitGC: true;
+	};
+	coverage: {
+		threshold: 85; // Service layer coverage target
+		output: "docs/test-output/coverage/";
+	};
 }
 ```
 
 ### Test Configuration
 
 #### Jest Memory Optimization (`jest.config.js`)
+
 ```javascript
 {
   // Memory Management
@@ -210,6 +222,7 @@ interface TestingStrategy {
 ```
 
 #### Test Execution Patterns
+
 ```bash
 # Memory-Optimized Execution
 node --max-old-space-size=4096 --expose-gc node_modules/.bin/jest --runInBand
@@ -221,6 +234,7 @@ node --trace-gc --expose-gc node_modules/.bin/jest --testPathPattern=performance
 ### Test Suite Organization
 
 #### Current Test Coverage (26 Test Files)
+
 ```
 app/services/financial-data/__tests__/
 ├── VWAPService.test.ts                     # VWAP calculations and analysis
@@ -242,24 +256,28 @@ app/services/technical-analysis/__tests__/
 #### Test Categories
 
 **1. Unit Tests**
+
 - Individual service method testing
 - Input validation and sanitization
 - Error handling verification
 - Performance benchmarking
 
 **2. Integration Tests**
+
 - Real API connectivity testing
 - Multi-service data flow validation
 - Cache integration verification
 - Database interaction testing
 
 **3. Security Tests**
+
 - OWASP Top 10 compliance validation
 - Input injection prevention testing
 - Rate limiting verification
 - Error disclosure prevention
 
 **4. Performance Tests**
+
 - Memory leak detection
 - Response time validation
 - Concurrent request handling
@@ -268,74 +286,75 @@ app/services/technical-analysis/__tests__/
 ### Writing New Tests
 
 #### Test Template Structure
+
 ```typescript
 // app/services/example/__tests__/ExampleService.test.ts
-import { describe, test, expect, beforeAll, afterEach } from '@jest/globals'
-import { ExampleService } from '../ExampleService'
-import { RedisCache } from '../../cache/RedisCache'
+import { describe, test, expect, beforeAll, afterEach } from "@jest/globals";
+import { ExampleService } from "../ExampleService";
+import { RedisCache } from "../../cache/RedisCache";
 
-describe('ExampleService Integration Tests', () => {
-  let service: ExampleService
-  let cache: RedisCache
+describe("ExampleService Integration Tests", () => {
+	let service: ExampleService;
+	let cache: RedisCache;
 
-  beforeAll(async () => {
-    cache = new RedisCache()
-    service = new ExampleService(cache)
-    await service.initialize()
-  })
+	beforeAll(async () => {
+		cache = new RedisCache();
+		service = new ExampleService(cache);
+		await service.initialize();
+	});
 
-  afterEach(async () => {
-    // Cleanup for memory optimization
-    if (global.gc) {
-      global.gc()
-    }
-  })
+	afterEach(async () => {
+		// Cleanup for memory optimization
+		if (global.gc) {
+			global.gc();
+		}
+	});
 
-  describe('Core Functionality', () => {
-    test('should process real API data successfully', async () => {
-      const result = await service.processData('AAPL')
+	describe("Core Functionality", () => {
+		test("should process real API data successfully", async () => {
+			const result = await service.processData("AAPL");
 
-      expect(result).toBeDefined()
-      expect(result.symbol).toBe('AAPL')
-      expect(result.timestamp).toBeGreaterThan(0)
+			expect(result).toBeDefined();
+			expect(result.symbol).toBe("AAPL");
+			expect(result.timestamp).toBeGreaterThan(0);
 
-      // Performance validation
-      const startTime = Date.now()
-      await service.processData('MSFT')
-      const endTime = Date.now()
-      expect(endTime - startTime).toBeLessThan(2000) // <2s response time
-    })
+			// Performance validation
+			const startTime = Date.now();
+			await service.processData("MSFT");
+			const endTime = Date.now();
+			expect(endTime - startTime).toBeLessThan(2000); // <2s response time
+		});
 
-    test('should handle API failures gracefully', async () => {
-      const result = await service.processData('INVALID_SYMBOL')
-      expect(result).toBeNull() // Graceful degradation
-    })
-  })
+		test("should handle API failures gracefully", async () => {
+			const result = await service.processData("INVALID_SYMBOL");
+			expect(result).toBeNull(); // Graceful degradation
+		});
+	});
 
-  describe('Security Compliance', () => {
-    test('should validate input symbols', async () => {
-      const maliciousInput = "'; DROP TABLE users; --"
-      const result = await service.processData(maliciousInput)
-      expect(result).toBeNull() // Rejected malicious input
-    })
-  })
+	describe("Security Compliance", () => {
+		test("should validate input symbols", async () => {
+			const maliciousInput = "'; DROP TABLE users; --";
+			const result = await service.processData(maliciousInput);
+			expect(result).toBeNull(); // Rejected malicious input
+		});
+	});
 
-  describe('Performance Optimization', () => {
-    test('should utilize caching effectively', async () => {
-      // First call - should hit API
-      const start1 = Date.now()
-      await service.processData('AAPL')
-      const apiTime = Date.now() - start1
+	describe("Performance Optimization", () => {
+		test("should utilize caching effectively", async () => {
+			// First call - should hit API
+			const start1 = Date.now();
+			await service.processData("AAPL");
+			const apiTime = Date.now() - start1;
 
-      // Second call - should hit cache
-      const start2 = Date.now()
-      await service.processData('AAPL')
-      const cacheTime = Date.now() - start2
+			// Second call - should hit cache
+			const start2 = Date.now();
+			await service.processData("AAPL");
+			const cacheTime = Date.now() - start2;
 
-      expect(cacheTime).toBeLessThan(apiTime * 0.5) // Cache should be >50% faster
-    })
-  })
-})
+			expect(cacheTime).toBeLessThan(apiTime * 0.5); // Cache should be >50% faster
+		});
+	});
+});
 ```
 
 ---
@@ -345,6 +364,7 @@ describe('ExampleService Integration Tests', () => {
 ### Memory Management
 
 #### Jest Memory Configuration
+
 ```bash
 # Memory allocation for testing
 export NODE_OPTIONS="--max-old-space-size=4096 --expose-gc"
@@ -354,35 +374,38 @@ npm run test:performance:memory
 ```
 
 #### Service Memory Optimization
+
 ```typescript
 interface MemoryOptimization {
-  serviceConfig: {
-    concurrentRequests: 5,      // Limit concurrent API calls
-    memoryThreshold: '100MB',   // Automatic garbage collection trigger
-    cacheSize: '512MB',         // Maximum cache size
-    requestTimeout: 30000       // 30s request timeout
-  },
+	serviceConfig: {
+		concurrentRequests: 5; // Limit concurrent API calls
+		memoryThreshold: "100MB"; // Automatic garbage collection trigger
+		cacheSize: "512MB"; // Maximum cache size
+		requestTimeout: 30000; // 30s request timeout
+	};
 
-  dataProcessing: {
-    streamProcessing: true,     // Stream large XML/JSON files
-    batchSize: 1000,           // Process data in batches
-    cleanup: 'automatic'       // Automatic resource cleanup
-  }
+	dataProcessing: {
+		streamProcessing: true; // Stream large XML/JSON files
+		batchSize: 1000; // Process data in batches
+		cleanup: "automatic"; // Automatic resource cleanup
+	};
 }
 ```
 
 ### Performance Monitoring
 
 #### Response Time Targets
-| Service | Target | Cache Hit |
-|---------|--------|-----------|
-| VWAPService | <200ms | <50ms |
-| SentimentAnalysisService | <1.5s | <300ms |
-| InstitutionalDataService | <3s | <500ms |
-| StockSelectionService | <2s | <800ms |
-| TechnicalIndicatorService | <500ms | <100ms |
+
+| Service                   | Target | Cache Hit |
+| ------------------------- | ------ | --------- |
+| VWAPService               | <200ms | <50ms     |
+| SentimentAnalysisService  | <1.5s  | <300ms    |
+| InstitutionalDataService  | <3s    | <500ms    |
+| StockSelectionService     | <2s    | <800ms    |
+| TechnicalIndicatorService | <500ms | <100ms    |
 
 #### Performance Testing Commands
+
 ```bash
 # Comprehensive performance testing
 npm run test:performance
@@ -404,125 +427,127 @@ npm run test:performance:single
 ### TypeScript Configuration
 
 #### Strict Mode Requirements (`tsconfig.json`)
+
 ```json
 {
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true
-  }
+	"compilerOptions": {
+		"strict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"strictFunctionTypes": true,
+		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true
+	}
 }
 ```
 
 #### Type Safety Patterns
+
 ```typescript
 // Always use explicit types for service interfaces
 interface ServiceResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  timestamp: number;
+	success: boolean;
+	data?: T;
+	error?: string;
+	timestamp: number;
 }
 
 // Use strict input validation
 function validateSymbol(symbol: string): ValidationResult {
-  if (!symbol || typeof symbol !== 'string') {
-    return { isValid: false, error: 'Symbol required' };
-  }
+	if (!symbol || typeof symbol !== "string") {
+		return { isValid: false, error: "Symbol required" };
+	}
 
-  const sanitized = symbol.toUpperCase().trim();
-  if (!/^[A-Z]{1,5}$/.test(sanitized)) {
-    return { isValid: false, error: 'Invalid symbol format' };
-  }
+	const sanitized = symbol.toUpperCase().trim();
+	if (!/^[A-Z]{1,5}$/.test(sanitized)) {
+		return { isValid: false, error: "Invalid symbol format" };
+	}
 
-  return { isValid: true, sanitized };
+	return { isValid: true, sanitized };
 }
 ```
 
 ### Code Style Guidelines
 
 #### ESLint Configuration
+
 ```json
 {
-  "extends": [
-    "next/core-web-vitals",
-    "@typescript-eslint/recommended"
-  ],
-  "rules": {
-    "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/explicit-function-return-type": "warn",
-    "prefer-const": "error",
-    "no-var": "error"
-  }
+	"extends": ["next/core-web-vitals", "@typescript-eslint/recommended"],
+	"rules": {
+		"@typescript-eslint/no-unused-vars": "error",
+		"@typescript-eslint/explicit-function-return-type": "warn",
+		"prefer-const": "error",
+		"no-var": "error"
+	}
 }
 ```
 
 #### Prettier Configuration
+
 ```json
 {
-  "semi": false,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "printWidth": 100
+	"semi": false,
+	"singleQuote": true,
+	"tabWidth": 2,
+	"trailingComma": "es5",
+	"printWidth": 100
 }
 ```
 
 ### Service Development Patterns
 
 #### Service Base Class Pattern
+
 ```typescript
 abstract class BaseService {
-  protected cache: RedisCache;
-  protected errorHandler: ErrorHandler;
-  protected securityValidator: SecurityValidator;
+	protected cache: RedisCache;
+	protected errorHandler: ErrorHandler;
+	protected securityValidator: SecurityValidator;
 
-  constructor(cache: RedisCache) {
-    this.cache = cache;
-    this.errorHandler = ErrorHandler.getInstance();
-    this.securityValidator = SecurityValidator.getInstance();
-  }
+	constructor(cache: RedisCache) {
+		this.cache = cache;
+		this.errorHandler = ErrorHandler.getInstance();
+		this.securityValidator = SecurityValidator.getInstance();
+	}
 
-  protected async validateInput(input: any): Promise<ValidationResult> {
-    return this.securityValidator.validate(input);
-  }
+	protected async validateInput(input: any): Promise<ValidationResult> {
+		return this.securityValidator.validate(input);
+	}
 
-  protected async handleError(error: Error, context: string): Promise<null> {
-    this.errorHandler.logError(error, context);
-    return null; // Graceful degradation
-  }
+	protected async handleError(error: Error, context: string): Promise<null> {
+		this.errorHandler.logError(error, context);
+		return null; // Graceful degradation
+	}
 }
 ```
 
 #### Error Handling Patterns
+
 ```typescript
 // Standard error handling pattern
 async function serviceMethod(input: string): Promise<ServiceResponse | null> {
-  try {
-    // 1. Input validation
-    const validation = await this.validateInput(input);
-    if (!validation.isValid) {
-      return this.handleError(new Error(validation.error), 'serviceMethod');
-    }
+	try {
+		// 1. Input validation
+		const validation = await this.validateInput(input);
+		if (!validation.isValid) {
+			return this.handleError(new Error(validation.error), "serviceMethod");
+		}
 
-    // 2. Business logic
-    const result = await this.processData(validation.sanitized);
+		// 2. Business logic
+		const result = await this.processData(validation.sanitized);
 
-    // 3. Success response
-    return {
-      success: true,
-      data: result,
-      timestamp: Date.now()
-    };
-
-  } catch (error) {
-    // 4. Error handling
-    return this.handleError(error, 'serviceMethod');
-  }
+		// 3. Success response
+		return {
+			success: true,
+			data: result,
+			timestamp: Date.now(),
+		};
+	} catch (error) {
+		// 4. Error handling
+		return this.handleError(error, "serviceMethod");
+	}
 }
 ```
 
@@ -533,50 +558,52 @@ async function serviceMethod(input: string): Promise<ServiceResponse | null> {
 ### Input Validation
 
 #### Symbol Validation Pattern
+
 ```typescript
 class SecurityValidator {
-  validateSymbol(symbol: string): ValidationResult {
-    // 1. Type checking
-    if (!symbol || typeof symbol !== 'string') {
-      return { isValid: false, error: 'Symbol must be a string' };
-    }
+	validateSymbol(symbol: string): ValidationResult {
+		// 1. Type checking
+		if (!symbol || typeof symbol !== "string") {
+			return { isValid: false, error: "Symbol must be a string" };
+		}
 
-    // 2. Format validation
-    const sanitized = symbol.toUpperCase().trim();
-    if (!/^[A-Z]{1,5}$/.test(sanitized)) {
-      return { isValid: false, error: 'Symbol must be 1-5 uppercase letters' };
-    }
+		// 2. Format validation
+		const sanitized = symbol.toUpperCase().trim();
+		if (!/^[A-Z]{1,5}$/.test(sanitized)) {
+			return { isValid: false, error: "Symbol must be 1-5 uppercase letters" };
+		}
 
-    // 3. Injection prevention
-    if (this.containsSQLPatterns(sanitized) || this.containsXSSPatterns(sanitized)) {
-      return { isValid: false, error: 'Invalid characters detected' };
-    }
+		// 3. Injection prevention
+		if (this.containsSQLPatterns(sanitized) || this.containsXSSPatterns(sanitized)) {
+			return { isValid: false, error: "Invalid characters detected" };
+		}
 
-    return { isValid: true, sanitized };
-  }
+		return { isValid: true, sanitized };
+	}
 }
 ```
 
 ### API Security
 
 #### Rate Limiting Implementation
+
 ```typescript
 class RateLimiter {
-  private readonly limits = new Map<string, RateLimit>();
+	private readonly limits = new Map<string, RateLimit>();
 
-  async checkLimit(clientId: string, maxRequests = 100, windowMs = 3600000): Promise<void> {
-    const now = Date.now();
-    const key = `${clientId}:${Math.floor(now / windowMs)}`;
+	async checkLimit(clientId: string, maxRequests = 100, windowMs = 3600000): Promise<void> {
+		const now = Date.now();
+		const key = `${clientId}:${Math.floor(now / windowMs)}`;
 
-    const current = this.limits.get(key) || { count: 0, resetTime: now + windowMs };
+		const current = this.limits.get(key) || { count: 0, resetTime: now + windowMs };
 
-    if (current.count >= maxRequests) {
-      throw new Error(`Rate limit exceeded. Try again in ${current.resetTime - now}ms`);
-    }
+		if (current.count >= maxRequests) {
+			throw new Error(`Rate limit exceeded. Try again in ${current.resetTime - now}ms`);
+		}
 
-    current.count++;
-    this.limits.set(key, current);
-  }
+		current.count++;
+		this.limits.set(key, current);
+	}
 }
 ```
 
@@ -587,8 +614,10 @@ class RateLimiter {
 ### Common Development Issues
 
 #### 1. Port Conflicts
+
 **Symptoms**: "EADDRINUSE: address already in use :::3000"
 **Solutions**:
+
 ```bash
 # Immediate fix
 npm run dev:clean
@@ -602,8 +631,10 @@ pkill -f "next dev"
 ```
 
 #### 2. Memory Issues
+
 **Symptoms**: Slow tests, heap out of memory, process crashes
 **Solutions**:
+
 ```bash
 # Increase Node.js heap size
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -616,16 +647,20 @@ npm run dev:clean
 ```
 
 #### 3. API Rate Limits
+
 **Symptoms**: 429 Too Many Requests, API failures
 **Solutions**:
+
 - Check API key quotas in admin dashboard
 - Implement request queuing
 - Use fallback data sources
 - Enable caching to reduce API calls
 
 #### 4. Live Market Sentiment Showing 0.00%
+
 **Symptoms**: Market sentiment cards display confusing 0.00% values, users unclear about data quality
 **Solutions**: ✅ **RESOLVED** (Commit a381c82)
+
 - Enhanced MarketSentimentService with realistic baseline defaults (52 ± 5 sentiment score)
 - Added confidence scoring system (0.1 for defaults vs 0.8 for real data)
 - Improved UI with "Limited Data" messaging instead of 0.00% display
@@ -634,8 +669,10 @@ npm run dev:clean
 - **Technical Implementation**: Updated MarketSentimentHeatmap.tsx and SectorRotationWheel.tsx with enhanced error states
 
 #### 5. Cache Issues
+
 **Symptoms**: Stale data, inconsistent responses
 **Solutions**:
+
 ```bash
 # Redis cache flush
 redis-cli FLUSHDB
@@ -646,8 +683,10 @@ npm run dev:clean
 ```
 
 #### 5. Test Failures
+
 **Symptoms**: Intermittent test failures, timeout errors
 **Solutions**:
+
 ```bash
 # Single test execution for debugging
 npm test -- --testNamePattern="specific test name"
@@ -662,6 +701,7 @@ npm run test:performance:memory
 ### Debug Tools
 
 #### Development Monitoring
+
 ```bash
 # Real-time server monitoring
 npm run dev:monitor
@@ -674,6 +714,7 @@ npm run test:performance
 ```
 
 #### Log Analysis
+
 ```bash
 # View application logs
 tail -f .next/logs/application.log
@@ -692,86 +733,93 @@ tail -f /var/log/postgresql/postgresql.log
 ### Service Development
 
 #### 1. Always Use Real Data
+
 ```typescript
 // ❌ Don't mock data
-const mockData = { symbol: 'AAPL', price: 150 };
+const mockData = { symbol: "AAPL", price: 150 };
 
 // ✅ Use real APIs
-const realData = await polygonAPI.getStockPrice('AAPL');
+const realData = await polygonAPI.getStockPrice("AAPL");
 ```
 
 #### 2. Implement Graceful Degradation
+
 ```typescript
 // ✅ Proper fallback pattern
 async function getStockData(symbol: string): Promise<StockData | null> {
-  try {
-    // Try primary API
-    return await primaryAPI.getStockData(symbol);
-  } catch (error) {
-    try {
-      // Fallback to secondary API
-      return await secondaryAPI.getStockData(symbol);
-    } catch (fallbackError) {
-      // Graceful degradation
-      return null;
-    }
-  }
+	try {
+		// Try primary API
+		return await primaryAPI.getStockData(symbol);
+	} catch (error) {
+		try {
+			// Fallback to secondary API
+			return await secondaryAPI.getStockData(symbol);
+		} catch (fallbackError) {
+			// Graceful degradation
+			return null;
+		}
+	}
 }
 ```
 
 #### 3. Security-First Development
+
 ```typescript
 // ✅ Always validate inputs
 async function processRequest(input: any): Promise<Response> {
-  const validation = SecurityValidator.validate(input);
-  if (!validation.isValid) {
-    throw new ValidationError(validation.error);
-  }
+	const validation = SecurityValidator.validate(input);
+	if (!validation.isValid) {
+		throw new ValidationError(validation.error);
+	}
 
-  return this.processValidInput(validation.sanitized);
+	return this.processValidInput(validation.sanitized);
 }
 ```
 
 #### 4. Performance Optimization
+
 ```typescript
 // ✅ Use parallel execution
 const [stockData, fundamentals, technicals] = await Promise.allSettled([
-  getStockData(symbol),
-  getFundamentals(symbol),
-  getTechnicalAnalysis(symbol)
+	getStockData(symbol),
+	getFundamentals(symbol),
+	getTechnicalAnalysis(symbol),
 ]);
 ```
 
 ### Testing Best Practices
 
 #### 1. Write Tests Before Implementation (TDD)
+
 ```typescript
 // Write failing test first
-test('should calculate VWAP correctly', async () => {
-  const vwap = await vwapService.calculateVWAP('AAPL');
-  expect(vwap).toBeGreaterThan(0);
+test("should calculate VWAP correctly", async () => {
+	const vwap = await vwapService.calculateVWAP("AAPL");
+	expect(vwap).toBeGreaterThan(0);
 });
 
 // Then implement the service method
 ```
 
 #### 2. Use Real APIs in Tests
+
 ```typescript
 // ✅ Test with real API data
-test('should fetch real market data', async () => {
-  const data = await polygonAPI.getStockPrice('AAPL');
-  expect(data.symbol).toBe('AAPL');
-  expect(data.price).toBeGreaterThan(0);
+test("should fetch real market data", async () => {
+	const data = await polygonAPI.getStockPrice("AAPL");
+	expect(data.symbol).toBe("AAPL");
+	expect(data.price).toBeGreaterThan(0);
 });
 ```
 
 #### 3. Test Security Compliance
+
 ```typescript
 // ✅ Always test input validation
-test('should reject malicious input', async () => {
-  const maliciousInput = "'; DROP TABLE users; --";
-  const result = await service.processInput(maliciousInput);
-  expect(result).toBeNull();
+test("should reject malicious input", async () => {
+	const maliciousInput = "'; DROP TABLE users; --";
+	const result = await service.processInput(maliciousInput);
+	expect(result).toBeNull();
 });
 ```
 

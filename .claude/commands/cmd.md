@@ -1,1 +1,1 @@
-Read code-rules.md. Then $ARGUMENTS and $ARGUMENTS 
+Read code-rules.md. Then $ARGUMENTS and $ARGUMENTS

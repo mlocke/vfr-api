@@ -1,14 +1,14 @@
 {
-  "enabledDataSources": [
-    "sec_edgar",
-    "treasury",
-    "fred",
-    "bls",
-    "eia",
-    "yahoo",
-    "polygon",
-    "twelvedata"
-  ],
-  "timestamp": 1758426513950,
-  "version": "1.0"
+	"enabledDataSources": [
+		"sec_edgar",
+		"treasury",
+		"fred",
+		"bls",
+		"eia",
+		"yahoo",
+		"polygon",
+		"twelvedata"
+	],
+	"timestamp": 1758426513950,
+	"version": "1.0"
 }

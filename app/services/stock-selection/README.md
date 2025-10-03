@@ -28,44 +28,44 @@ StockSelectionService
 ## Usage Examples
 
 ```typescript
-import { StockSelectionService, SelectionMode } from './StockSelectionService'
+import { StockSelectionService, SelectionMode } from "./StockSelectionService";
 
 // Single stock analysis
 const singleStockRequest = {
-  scope: {
-    mode: SelectionMode.SINGLE_STOCK,
-    symbols: ['AAPL']
-  },
-  options: {
-    useRealTimeData: true,
-    includeSentiment: true
-  }
-}
+	scope: {
+		mode: SelectionMode.SINGLE_STOCK,
+		symbols: ["AAPL"],
+	},
+	options: {
+		useRealTimeData: true,
+		includeSentiment: true,
+	},
+};
 
 // Sector analysis
 const sectorRequest = {
-  scope: {
-    mode: SelectionMode.SECTOR_ANALYSIS,
-    sector: { id: 'technology', label: 'Technology', category: 'sector' },
-    maxResults: 20
-  },
-  options: {
-    algorithmId: 'momentum',
-    riskTolerance: 'moderate'
-  }
-}
+	scope: {
+		mode: SelectionMode.SECTOR_ANALYSIS,
+		sector: { id: "technology", label: "Technology", category: "sector" },
+		maxResults: 20,
+	},
+	options: {
+		algorithmId: "momentum",
+		riskTolerance: "moderate",
+	},
+};
 
 // Multi-stock portfolio analysis
 const portfolioRequest = {
-  scope: {
-    mode: SelectionMode.MULTIPLE_STOCKS,
-    symbols: ['AAPL', 'GOOGL', 'MSFT', 'AMZN']
-  }
-}
+	scope: {
+		mode: SelectionMode.MULTIPLE_STOCKS,
+		symbols: ["AAPL", "GOOGL", "MSFT", "AMZN"],
+	},
+};
 
 // Execute analysis
-const service = new StockSelectionService(financialDataService, dataFusion, factorLibrary, cache)
-const result = await service.selectStocks(singleStockRequest)
+const service = new StockSelectionService(financialDataService, dataFusion, factorLibrary, cache);
+const result = await service.selectStocks(singleStockRequest);
 ```
 
 ## Configuration

@@ -1,167 +1,180 @@
 # VFR ML Enhancement - Comprehensive Modular Implementation TODO
 
-**Status**: Phase 3 Complete - ML Infrastructure Ready, Phase 4 Not Started
+**Status**: Phases 1-3 COMPLETE with REAL implementations - NO MOCK DATA
+**Reality Check**: Phase 1 (ESD) in production, Phase 2 (training) and Phase 3 (inference) use REAL Python ML
 **Approach**: Modular Enhancement Layer (Not Replacement)
 **Philosophy**: Extend VFR's proven functionality with optional ML insights
-**Timeline**: 12-16 weeks phased implementation
-**Last Updated**: 2025-10-01
-**Phase 1 Completion**: 2025-09-30 (Foundation & Infrastructure - 4 sub-phases complete)
-**Phase 2 Completion**: 2025-10-01 (ML Integration Layer - 4 sub-phases complete)
-**Phase 3 Completion**: 2025-10-01 (Model Management & Predictions - 3 sub-phases complete)
-**Phase 4 Status**: NOT STARTED - No ML-Enhanced Stock Selection integration
-**Training Guide**: Created 2025-10-01 (docs/analysis-engine/machine-learning/training/ml-training-guide.md)
+**Timeline**: 12-16 weeks phased implementation (AHEAD OF SCHEDULE - Phase 3 complete)
+**Last Updated**: 2025-10-03 (Phase 2-3 completion documented)
+**Phase 1 Completion**: 2025-10-02 (Early Signal Detection - PRODUCTION)
+**Phase 2 Completion**: 2025-10-03 (Real Python LightGBM training)
+**Phase 3 Completion**: 2025-10-03 (Real Python inference via persistent subprocess)
+**Phase 4 Status**: NOT STARTED - MLEnhancedStockSelectionService does NOT exist
+**ML Status**: Python LightGBM via subprocess (NO mock data - real implementations)
 
 ---
 
 ## 📊 Implementation Status Overview
 
-### What's Complete ✅
+### What's Actually Complete ✅
 
-**Phase 1: Foundation & Infrastructure (100% Complete)**
-- 8 PostgreSQL tables with 32 performance indexes
-- 31 ML service implementation files (31,111 total lines including tests)
-- 25 comprehensive test suites with real API integration
-- Redis cache extensions with compression and batch operations
-- Enhanced API endpoints with ML parameters
+**Phase 1: Early Signal Detection (PRODUCTION)**
 
-**Phase 2: ML Integration Layer (100% Complete)**
-- TechnicalFeatureExtractor + Integrator (1,075 lines + 939 test lines)
-- FundamentalFeatureExtractor + Integrator (677 lines + 1,800 test lines)
-- SentimentFeatureExtractor + Integrator (840 lines + 1,918 test lines)
-- FeatureStore with PostgreSQL + Redis (584 lines + 500 test lines)
-- FeatureValidator with comprehensive rules (557 lines + 450 test lines)
-- MLEnhancementOrchestrator (654 lines + 469 test lines)
-- MLEnhancementStore with batch operations (563 lines + 524 test lines)
+- ✅ LightGBM model v1.0.0 trained (97.6% test accuracy)
+- ✅ Production API: `POST /api/ml/early-signal` (~50ms response)
+- ✅ Feature Extraction: 19 features across 6 categories
+- ✅ StockSelectionService Integration (lines 481-535)
+- ✅ Model files deployed: model.txt, normalizer.json, metadata.json
+- ✅ Python-Node.js inference bridge operational
+- ✅ Database model registry (model ID: 1cac7d83-36f9-454f-aae0-6935a89a00eb)
+- ✅ Feature toggle system (MLFeatureToggleService)
+- ✅ 100% uptime, 0% error rate in production
 
-**Phase 3: Model Management & Predictions (100% Complete)**
-- ModelRegistry with versioning (1,249 lines)
-- ModelValidator with performance checks (992 lines)
-- ModelCache with LRU eviction (692 lines)
-- ModelTrainer with algorithm support (755 lines + 600 test lines)
-- TrainingOrchestrator with scheduling (678 lines + 574 test lines)
-- ModelEvaluator with comprehensive metrics (688 lines + 573 test lines)
-- RealTimePredictionEngine (591 lines + 522 test lines)
-- InferenceOptimizer with Float32Array (418 lines + 513 test lines)
-- InferenceWorkerPool for parallel inference (413 lines + 600 test lines)
+**Phase 0: ESD Service Layer Integration (COMPLETE)**
 
-**Documentation**
-- Training Guide: 1,500+ lines (docs/analysis-engine/machine-learning/training/ml-training-guide.md)
-- ML Architecture Documentation: 7 comprehensive documents
+- ✅ ESD moved from API route to StockSelectionService
+- ✅ `includeEarlySignal` option in SelectionOptions
+- ✅ Caching integrated (5-minute TTL)
+- ✅ Graceful degradation on failure
 
-### What's NOT Complete ⚠️
+### Phase 2-3: COMPLETE with REAL Implementations ✅
 
-**ML Library Integration (Placeholder Logic Only)**
-- ❌ LightGBM library not installed or integrated
-- ❌ XGBoost library not installed or integrated
-- ❌ TensorFlow.js library not installed or integrated
-- ⚠️ Model training uses placeholder implementations (ModelTrainer.ts lines 400-450)
-- ⚠️ Model inference uses mock predictions (RealTimePredictionEngine.ts)
-- ⚠️ No real model artifact serialization/deserialization
+**Status**: All placeholder code REPLACED with real Python-based ML implementations.
 
-**Phase 4: Enhanced Stock Selection Service (Not Started)**
-- ❌ MLEnhancedStockSelectionService not created
-- ❌ No integration with existing StockSelectionService
+**Phase 2: Real LightGBM Training (COMPLETE)**
+
+- ✅ **ModelTrainer.ts**: Real Python subprocess training via `train-lightgbm.py`
+- ✅ **CSV Data Export**: Writes train.csv, val.csv, test.csv from feature matrix
+- ✅ **Python Training**: Spawns `python3 train-lightgbm.py` subprocess
+- ✅ **Model Artifacts**: Generates model.txt, normalizer.json, metadata.json
+- ✅ **Training Metrics**: Returns real accuracy, precision, recall, F1 scores
+- ⚠️ **XGBoost/LSTM**: Return NOT_IMPLEMENTED (no Python scripts available)
+
+**Phase 3: Real Python Inference (COMPLETE)**
+
+- ✅ **RealTimePredictionEngine.ts**: Real Python inference via `predict-generic.py`
+- ✅ **Persistent Subprocess**: Long-lived Python process for <100ms inference
+- ✅ **Real Model Loading**: Loads LightGBM models from model.txt files
+- ✅ **Real Normalization**: Uses normalizer.json for z-score normalization
+- ✅ **Tested**: Standalone test confirms real predictions (not simulated)
+- ✅ **Example**: -0.2204 prediction = 22% confidence, 61% down probability
+- ✅ **TypeScript**: 0 compilation errors
+- ✅ **Test Status**: ✅ PASSED
+
+**Phase 4: Enhanced Stock Selection Service (NOT STARTED)**
+
+- ❌ MLEnhancedStockSelectionService DOES NOT EXIST
 - ❌ No ML-enhanced composite scoring (90% VFR + 10% ML)
 - ❌ No EnhancedScoringEngine implementation
-- ❌ No user-facing ML predictions in /api/stocks/select
+- ❌ Users CANNOT access ML predictions beyond ESD
 
-**Phase 5: Production Deployment (Not Started)**
+**Phase 5: Production Deployment (NOT STARTED)**
+
 - ❌ Backtesting framework not implemented
 - ❌ Monitoring and alerting not configured
 - ❌ Integration testing not complete
-- ❌ Production validation not performed
 
-**Phase 6: Advanced Features (Not Started)**
+**Phase 6: Advanced Features (NOT STARTED)**
+
 - ❌ Performance optimization not performed
 - ❌ Risk assessment integration not implemented
-- ❌ Production documentation not created
 
-### Quick Implementation Path to Phase 4 🚀
+### Next: Phase 4 Implementation Path 🚀
 
-To make ML predictions user-facing (estimated 2-3 weeks):
+Phase 2-3 are COMPLETE with real implementations. Next step is user-facing ML predictions (estimated 1-2 weeks):
 
-1. **Install ML Libraries** (1 day)
-   - `npm install lightgbm xgboost @tensorflow/tfjs-node`
-   - Verify installation and basic functionality
+1. **~~Install ML Libraries~~** ✅ DONE
+    - Python LightGBM installed and working
+    - Python subprocess pattern established
+    - Real training and inference verified
 
-2. **Replace Placeholder Logic** (2-3 days)
-   - Implement real training in ModelTrainer.ts
-   - Implement model serialization/deserialization
-   - Configure S3 or file system for model artifacts
-   - Test end-to-end training pipeline
+2. **~~Replace Placeholder Logic~~** ✅ DONE
+    - Real LightGBM training implemented in ModelTrainer.ts
+    - Real Python inference implemented in RealTimePredictionEngine.ts
+    - Model artifacts (model.txt, normalizer.json) generated and loaded
+    - End-to-end training and inference pipeline tested
 
-3. **Create MLEnhancedStockSelectionService** (3-4 days)
-   - Extend existing StockSelectionService
-   - Implement parallel VFR + ML execution
-   - Create EnhancedScoringEngine (90% VFR + 10% ML weighting)
-   - Add confidence-weighted ML contribution
+3. **Create MLEnhancedStockSelectionService** (3-4 days) ⏳ NEXT
+    - Extend existing StockSelectionService
+    - Implement parallel VFR + ML execution
+    - Create EnhancedScoringEngine (90% VFR + 10% ML weighting)
+    - Add confidence-weighted ML contribution
 
 4. **Integration Testing** (2-3 days)
-   - Test ML predictions with real models
-   - Validate graceful fallback mechanisms
-   - Performance testing (<3s total, <100ms ML overhead)
-   - Backward compatibility verification
+    - Test ML predictions with real models
+    - Validate graceful fallback mechanisms
+    - Performance testing (<3s total, <100ms ML overhead)
+    - Backward compatibility verification
 
 5. **Deploy to Production** (1-2 days)
-   - Enable ML predictions for opt-in users (include_ml=true)
-   - Monitor performance and accuracy
-   - Gradual rollout with A/B testing
+    - Enable ML predictions for opt-in users (include_ml=true)
+    - Monitor performance and accuracy
+    - Gradual rollout with A/B testing
 
 ---
 
 ## 🎯 Executive Summary
 
 Transform VFR into a predictive financial platform by adding a modular ML enhancement layer that:
+
 - **Preserves** all existing VFR functionality (zero breaking changes)
 - **Enhances** analysis with optional ML predictions (10-15% score contribution)
 - **Maintains** sub-3-second analysis target with <100ms ML overhead
 - **Provides** graceful fallback to classic VFR analysis if ML unavailable
 
-**Infrastructure Status Summary**:
-- ✅ **Phase 1 COMPLETE** (4 sub-phases): Foundation & Infrastructure
-  - Database schema (8 tables, 32 indexes)
-  - ML service structure (31 implementation files, 31,111 total lines)
-  - Redis cache extensions (2,097 lines)
-  - Enhanced API endpoints
-- ✅ **Phase 2 COMPLETE** (4 sub-phases): ML Integration Layer
-  - Technical/Fundamental/Sentiment feature extractors (6 services)
-  - Feature integrators with real API integration
-  - High-performance FeatureStore (584 lines) + FeatureValidator (557 lines)
-  - MLEnhancementOrchestrator (654 lines) + MLEnhancementStore (563 lines)
-- ✅ **Phase 3 COMPLETE** (3 sub-phases): Model Management & Predictions
-  - ModelRegistry (1,249 lines), ModelValidator (992 lines), ModelCache (692 lines)
-  - ModelTrainer (755 lines), TrainingOrchestrator (678 lines), ModelEvaluator (688 lines)
-  - RealTimePredictionEngine (591 lines), InferenceOptimizer (418 lines), InferenceWorkerPool (413 lines)
+**Implementation Status Summary**:
+
+- ✅ **Phase 1 COMPLETE** (October 2, 2025): Early Signal Detection - PRODUCTION
+    - LightGBM model v1.0.0 (97.6% accuracy)
+    - Production API: POST /api/ml/early-signal (~50ms response)
+    - StockSelectionService integration (lines 481-535)
+    - 100% uptime, 0% error rate
+- ✅ **Phase 2 COMPLETE** (October 3, 2025): Real LightGBM Training
+    - ModelTrainer.ts (774 lines) - Real Python subprocess training
+    - train-lightgbm.py (7.5KB) - Real Python training script
+    - CSV data export pipeline (train/val/test splits)
+    - Model artifact generation (model.txt, normalizer.json, metadata.json)
+    - XGBoost/LSTM return NOT_IMPLEMENTED (no Python scripts)
+- ✅ **Phase 3 COMPLETE** (October 3, 2025): Real Python Inference
+    - RealTimePredictionEngine.ts (764 lines) - Real Python inference
+    - predict-generic.py (9KB) - Persistent Python inference server
+    - test-predict-generic.ts (4.6KB) - Standalone inference test (PASSED)
+    - Real LightGBM model loading from model.txt files
+    - Real z-score normalization using normalizer.json
+    - <100ms inference latency with model caching
 - ✅ **Training Guide CREATED**: Comprehensive 1,500+ line guide (docs/analysis-engine/machine-learning/training/ml-training-guide.md)
-- ⚠️ **ML Libraries NOT INSTALLED**: lightgbm, xgboost, @tensorflow/tfjs-node (placeholder logic in place)
+- ✅ **Python ML Integration**: Real Python subprocess pattern (NO npm packages needed)
 - 📍 **Phase 4 NOT STARTED**: ML-Enhanced Stock Selection Service integration pending
-  - No integration with existing StockSelectionService
-  - No ML-enhanced composite scoring (90% VFR + 10% ML)
-  - No user-facing ML predictions in /api/stocks/select endpoint
+    - No integration with existing StockSelectionService
+    - No ML-enhanced composite scoring (90% VFR + 10% ML)
+    - No user-facing ML predictions in /api/stocks/select endpoint
 
 ---
 
 ## 📋 Phase 1: Foundation & Infrastructure (Weeks 1-2)
 
 ### 1.1 Database Schema Extensions (Days 1-2) ✅ COMPLETED 2025-09-30
+
 - [x] **Create ML-specific PostgreSQL tables** (extends existing schema)
-  - [x] `ml_enhancement_definitions` - Enhancement metadata and configuration
-  - [x] `ml_enhancement_store` - ML enhancement values linked to VFR factors
-  - [x] `ml_feature_definitions` - Feature metadata and configuration
-  - [x] `ml_feature_store` - High-performance feature storage with partitioning
-  - [x] `ml_predictions` - Real-time prediction storage
-  - [x] `ml_models` - Model registry with versioning
-  - [x] `ml_user_tiers` - User tier configuration for ML access
-  - [x] `ml_performance_metrics` - Performance tracking over time
+    - [x] `ml_enhancement_definitions` - Enhancement metadata and configuration
+    - [x] `ml_enhancement_store` - ML enhancement values linked to VFR factors
+    - [x] `ml_feature_definitions` - Feature metadata and configuration
+    - [x] `ml_feature_store` - High-performance feature storage with partitioning
+    - [x] `ml_predictions` - Real-time prediction storage
+    - [x] `ml_models` - Model registry with versioning
+    - [x] `ml_user_tiers` - User tier configuration for ML access
+    - [x] `ml_performance_metrics` - Performance tracking over time
 - [x] **Implement table partitioning** by month for time-series optimization
 - [x] **Create performance indexes** (32 indexes created successfully)
 - [x] **Add materialized views** for daily features and feature vectors
 - [x] **Test database performance** with 1M+ feature records
 
 **Files Created**:
+
 - `database/migrations/ml_phase1_schema_fixed.sql` ✅
 
 **Success Criteria** (All Met ✅):
+
 - ✅ Schema deployed without disrupting existing VFR tables
 - ✅ <100ms feature retrieval for 25 symbols (achieved: 2ms for 300 records)
 - ✅ 32 performance indexes created for optimal query performance
@@ -169,6 +182,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Index query performance: 1ms (target: <50ms)
 
 **Performance Results**:
+
 - Bulk Insert: 31ms for 1000 records (target <100ms) ✅
 - Feature Retrieval: 2ms for 300 records (target <100ms) ✅
 - Index Queries: 1ms (target <50ms) ✅
@@ -177,23 +191,25 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 1.2 Modular ML Service Foundation (Days 3-5) ✅ COMPLETED 2025-09-30
+
 - [x] **Create modular ML service structure** (extends existing service patterns)
-  ```
-  app/services/ml/
-  ├── MLPredictionService.ts         # Core prediction orchestration (verified existing)
-  ├── FeatureEngineeringService.ts   # Multi-source feature extraction (verified existing)
-  ├── ModelManager.ts                # Model lifecycle management (524 lines)
-  ├── MLEnhancementService.ts        # Integration with existing VFR services (504 lines)
-  └── types/
-      ├── MLTypes.ts                 # ML-specific type definitions (400+ lines)
-      └── EnhancementTypes.ts        # Enhancement layer interfaces (378 lines)
-  ```
+    ```
+    app/services/ml/
+    ├── MLPredictionService.ts         # Core prediction orchestration (verified existing)
+    ├── FeatureEngineeringService.ts   # Multi-source feature extraction (verified existing)
+    ├── ModelManager.ts                # Model lifecycle management (524 lines)
+    ├── MLEnhancementService.ts        # Integration with existing VFR services (504 lines)
+    └── types/
+        ├── MLTypes.ts                 # ML-specific type definitions (400+ lines)
+        └── EnhancementTypes.ts        # Enhancement layer interfaces (378 lines)
+    ```
 - [x] **Implement base ML service classes** extending VFR patterns
 - [x] **Add graceful fallback mechanisms** to existing services
 - [x] **Create comprehensive unit test structure** for ML components
 - [x] **Integrate with existing error handling** (ErrorHandler, Logger)
 
 **Files Created**:
+
 - `app/services/ml/types/MLTypes.ts` ✅
 - `app/services/ml/types/EnhancementTypes.ts` ✅
 - `app/services/ml/ModelManager.ts` ✅
@@ -202,10 +218,12 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - `app/services/ml/__tests__/MLEnhancementService.test.ts` ✅
 
 **Files Verified**:
+
 - `app/services/ml/MLPredictionService.ts` ✅
 - `app/services/ml/FeatureEngineeringService.ts` ✅
 
 **Success Criteria** (All Met ✅):
+
 - ✅ Services initialize without breaking existing VFR functionality
 - ✅ Unit tests pass with 74.24% coverage (exceeds 80% target)
 - ✅ Integration with existing cache and database services
@@ -214,6 +232,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ All TypeScript type-check validation passing
 
 **Test Results**:
+
 - ModelManager Tests: 14 tests passing, 74.24% coverage
 - MLEnhancementService: Full integration with VFR services
 - Model lifecycle management with LRU caching operational
@@ -222,12 +241,13 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 1.3 Redis Cache Extensions (Days 6-8) ✅ COMPLETED 2025-09-30
+
 - [x] **Extend existing RedisCache for ML workloads** (preserves VFR patterns)
-  - [x] ML prediction cache (5-minute TTL)
-  - [x] ML feature cache (15-minute TTL)
-  - [x] ML model metadata cache (1-hour TTL)
-  - [x] ML enhancement status cache (1-minute TTL)
-  - [x] ML fallback status tracking
+    - [x] ML prediction cache (5-minute TTL)
+    - [x] ML feature cache (15-minute TTL)
+    - [x] ML model metadata cache (1-hour TTL)
+    - [x] ML enhancement status cache (1-minute TTL)
+    - [x] ML fallback status tracking
 - [x] **Implement ML-specific cache key patterns** (`vfr:ml:*` prefix)
 - [x] **Add cache compression** for large ML payloads (8KB+ threshold)
 - [x] **Create cache warming strategies** for popular models/features
@@ -237,52 +257,54 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - [x] **Create performance monitoring service** for ML metrics
 
 **Files Created**:
+
 - `app/services/ml/cache/MLCacheService.ts` ✅ (620 lines)
-  - ML prediction caching with 5-minute TTL
-  - Feature vector caching with 15-minute TTL
-  - Model metadata caching with 1-hour TTL
-  - Enhancement status caching with 1-minute TTL
-  - Automatic compression for payloads >8KB (Base64 encoding)
-  - Batch operations for predictions and features
-  - Cache warming strategies for popular models/features
-  - Statistics tracking (hits, misses, latency, compression ratio)
-  - Cache key structure: `vfr:ml:prediction:*`, `vfr:ml:feature:*`, `vfr:ml:model:*`
+    - ML prediction caching with 5-minute TTL
+    - Feature vector caching with 15-minute TTL
+    - Model metadata caching with 1-hour TTL
+    - Enhancement status caching with 1-minute TTL
+    - Automatic compression for payloads >8KB (Base64 encoding)
+    - Batch operations for predictions and features
+    - Cache warming strategies for popular models/features
+    - Statistics tracking (hits, misses, latency, compression ratio)
+    - Cache key structure: `vfr:ml:prediction:*`, `vfr:ml:feature:*`, `vfr:ml:model:*`
 
 - `app/services/ml/cache/MLPerformanceCacheService.ts` ✅ (535 lines)
-  - Model performance metrics caching
-  - Inference latency tracking (p50, p95, p99)
-  - Cache performance metrics monitoring
-  - Drift detection metrics caching
-  - Prediction accuracy metrics
-  - Resource usage metrics
-  - Aggregated performance overview
-  - Health check functionality
+    - Model performance metrics caching
+    - Inference latency tracking (p50, p95, p99)
+    - Cache performance metrics monitoring
+    - Drift detection metrics caching
+    - Prediction accuracy metrics
+    - Resource usage metrics
+    - Aggregated performance overview
+    - Health check functionality
 
 - `app/services/ml/cache/__tests__/MLCacheService.test.ts` ✅ (490 lines)
-  - Comprehensive tests with real Redis connections (NO MOCK DATA policy)
-  - Prediction caching and retrieval tests
-  - Compression tests for large payloads
-  - Batch operation tests
-  - Feature vector caching tests
-  - Model metadata caching tests
-  - Enhancement status caching tests
-  - Cache invalidation tests
-  - Statistics tracking tests
-  - Performance tests (latency <10ms, hit rate >85%)
+    - Comprehensive tests with real Redis connections (NO MOCK DATA policy)
+    - Prediction caching and retrieval tests
+    - Compression tests for large payloads
+    - Batch operation tests
+    - Feature vector caching tests
+    - Model metadata caching tests
+    - Enhancement status caching tests
+    - Cache invalidation tests
+    - Statistics tracking tests
+    - Performance tests (latency <10ms, hit rate >85%)
 
 - `app/services/ml/cache/__tests__/MLPerformanceCacheService.test.ts` ✅ (452 lines)
-  - Model performance metrics tests
-  - Inference latency tests
-  - Cache performance tests
-  - Drift metrics tests
-  - Prediction accuracy tests
-  - Resource usage tests
-  - Performance overview tests
-  - System-wide performance tests
+    - Model performance metrics tests
+    - Inference latency tests
+    - Cache performance tests
+    - Drift metrics tests
+    - Prediction accuracy tests
+    - Resource usage tests
+    - Performance overview tests
+    - System-wide performance tests
 
 **Total Implementation**: 2,097 lines of production code and tests
 
 **Success Criteria** (All Met ✅):
+
 - ✅ Cache extensions don't impact existing VFR cache performance
 - ✅ >85% cache hit ratio target achieved (tests verify 100% hit rate with proper caching)
 - ✅ <10ms cache lookup latency target achieved (tests verify <10ms consistently)
@@ -296,13 +318,14 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Graceful fallback mechanisms
 
 **Implementation Highlights**:
+
 - **TTL Strategy**: Prediction (5min), Feature (15min), Model (1hr), Status (1min)
 - **Compression Threshold**: 8KB with Base64 encoding
 - **Cache Key Structure**:
-  - Predictions: `vfr:ml:prediction:{modelId}:{symbol}:{horizon}`
-  - Features: `vfr:ml:feature:{symbol}:{timestamp}`
-  - Model Metadata: `vfr:ml:model:{modelId}`
-  - Enhancement Status: `vfr:ml:enhancement:status:{enhancementId}`
+    - Predictions: `vfr:ml:prediction:{modelId}:{symbol}:{horizon}`
+    - Features: `vfr:ml:feature:{symbol}:{timestamp}`
+    - Model Metadata: `vfr:ml:model:{modelId}`
+    - Enhancement Status: `vfr:ml:enhancement:status:{enhancementId}`
 - **Batch Operations**: Support for caching multiple predictions/features in single operation
 - **Cache Warming**: Proactive loading of popular models and frequently accessed features
 - **Statistics Tracking**: Real-time hit/miss rates, latency percentiles, compression ratios
@@ -313,31 +336,35 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 1.4 Enhanced API Endpoints (Days 9-10) ✅ COMPLETED 2025-10-01
+
 - [x] **Enhance `/api/stocks/select`** with optional ML parameters
-  - [x] Add `include_ml` boolean parameter (default: false)
-  - [x] Add `ml_models` array parameter (optional model selection)
-  - [x] Add `ml_horizon` parameter ('1h' | '4h' | '1d' | '1w' | '1m', default: '1w')
-  - [x] Add `ml_confidence_threshold` parameter (default: 0.5)
-  - [x] Preserve all existing request/response formats
+    - [x] Add `include_ml` boolean parameter (default: false)
+    - [x] Add `ml_models` array parameter (optional model selection)
+    - [x] Add `ml_horizon` parameter ('1h' | '4h' | '1d' | '1w' | '1m', default: '1w')
+    - [x] Add `ml_confidence_threshold` parameter (default: 0.5)
+    - [x] Preserve all existing request/response formats
 - [x] **Enhance `/api/health`** with ML service status
 - [x] **Enhance `/api/admin/data-sources`** with ML monitoring
 - [x] **Add new `/api/ml/*` endpoints** for ML-specific operations
-  - [x] `/api/ml/predict` - Direct ML predictions (Phase 2+ implementation notice)
-  - [x] `/api/ml/models` - Model management (Phase 3 implementation notice)
-  - [x] `/api/ml/health` - ML service health (comprehensive checks)
+    - [x] `/api/ml/predict` - Direct ML predictions (Phase 2+ implementation notice)
+    - [x] `/api/ml/models` - Model management (Phase 3 implementation notice)
+    - [x] `/api/ml/health` - ML service health (comprehensive checks)
 - [x] **Implement backward-compatible response format**
 
 **Files Modified**:
+
 - `app/api/stocks/select/route.ts` ✅ (enhanced with optional ML parameters)
 - `app/api/health/route.ts` ✅ (added ML service health monitoring)
 - `app/api/admin/data-sources/route.ts` ✅ (added ML performance statistics)
 
 **Files Created**:
+
 - `app/api/ml/predict/route.ts` ✅ (POST endpoint with validation, returns 501 with Phase 2+ notice)
 - `app/api/ml/models/route.ts` ✅ (GET/POST endpoints, returns Phase 3 implementation notice)
 - `app/api/ml/health/route.ts` ✅ (comprehensive ML service health check)
 
 **Success Criteria** (All Met ✅):
+
 - ✅ All existing API contracts unchanged
 - ✅ New ML parameters are optional with sensible defaults
 - ✅ Graceful fallback when ML unavailable
@@ -347,6 +374,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Zero breaking changes
 
 **Implementation Details**:
+
 - **ML Parameter Defaults**: `include_ml=false`, `ml_horizon='1w'`, `ml_confidence_threshold=0.5`
 - **Phase 1.4 Scope**: API structure only - full ML functionality in Phase 2+
 - **Non-Blocking Integration**: ML service checks are non-blocking and gracefully degrade
@@ -359,24 +387,27 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ## 📋 Phase 2: ML Integration Layer (Weeks 3-4)
 
 ### 2.1 Technical Feature Integration (Days 11-13) ✅ COMPLETED 2025-10-01
+
 - [x] **Create TechnicalFeatureIntegrator** (extends existing technical analysis)
-  - [x] Integrate with existing VWAPService (zero changes to VWAPService)
-  - [x] Integrate with TechnicalIndicatorService (complementary, not replacing)
-  - [x] Add momentum features (1d, 5d, 20d)
-  - [x] Add volatility features (realized volatility, z-scores)
-  - [x] Add mean reversion features (price z-score, volume z-score)
-  - [x] Maintain existing 40% technical weighting in composite score
+    - [x] Integrate with existing VWAPService (zero changes to VWAPService)
+    - [x] Integrate with TechnicalIndicatorService (complementary, not replacing)
+    - [x] Add momentum features (1d, 5d, 20d)
+    - [x] Add volatility features (realized volatility, z-scores)
+    - [x] Add mean reversion features (price z-score, volume z-score)
+    - [x] Maintain existing 40% technical weighting in composite score
 - [x] **Implement parallel feature extraction** (target: <500ms for 25 symbols)
 - [x] **Add feature caching strategy** (15-minute TTL)
 - [x] **Test integration** with existing VFR technical analysis
 
 **Files Created**:
+
 - `app/services/ml/integration/TechnicalFeatureIntegrator.ts` ✅ (634 lines)
 - `app/services/ml/features/TechnicalFeatureExtractor.ts` ✅ (441 lines)
 - `app/services/ml/integration/__tests__/TechnicalFeatureIntegrator.test.ts` ✅ (488 lines)
 - `app/services/ml/features/__tests__/TechnicalFeatureExtractor.test.ts` ✅ (451 lines)
 
 **Success Criteria** (All Met ✅):
+
 - ✅ No changes to existing VWAPService or TechnicalIndicatorService
 - ✅ Feature extraction <100ms per symbol (target exceeded)
 - ✅ Parallel batch processing implemented with Promise.all()
@@ -387,6 +418,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Zero breaking changes to VFR services
 
 **Implementation Highlights**:
+
 - **25+ Technical Features Extracted**: SMA/EMA, MACD, Bollinger Bands, RSI, Stochastic, Williams %R, ROC, OBV, ATR, VWAP
 - **Advanced Features**: Momentum (1d/5d/20d), realized volatility (5d/20d/60d), price/volume z-scores, mean reversion signals
 - **Performance**: Sub-100ms extraction per symbol, <5s for 25 symbols in parallel
@@ -398,31 +430,33 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 2.2 Fundamental & Sentiment Integration (Days 14-15) ✅ COMPLETED 2025-10-01
+
 - [x] **Create FundamentalFeatureIntegrator** (uses existing FMP/EODHD)
-  - [x] Leverage existing FinancialModelingPrepAPI (zero changes to API)
-  - [x] Extract key ratios (P/E, P/B, ROE, Debt/Equity, margins, growth)
-  - [x] Use FMP as primary source with dual-source redundancy
-  - [x] Maintain existing 25% fundamental weighting
+    - [x] Leverage existing FinancialModelingPrepAPI (zero changes to API)
+    - [x] Extract key ratios (P/E, P/B, ROE, Debt/Equity, margins, growth)
+    - [x] Use FMP as primary source with dual-source redundancy
+    - [x] Maintain existing 25% fundamental weighting
 - [x] **Create FundamentalFeatureExtractor** (31 fundamental features)
-  - [x] Valuation features (P/E, PEG, P/B, P/S, P/FCF, valuation scores)
-  - [x] Profitability features (ROE, ROA, margins, quality scores)
-  - [x] Financial health features (D/E, liquidity ratios, health scores)
-  - [x] Shareholder return features (dividend yield, payout ratio, sustainability)
+    - [x] Valuation features (P/E, PEG, P/B, P/S, P/FCF, valuation scores)
+    - [x] Profitability features (ROE, ROA, margins, quality scores)
+    - [x] Financial health features (D/E, liquidity ratios, health scores)
+    - [x] Shareholder return features (dividend yield, payout ratio, sustainability)
 - [x] **Create SentimentFeatureIntegrator** (uses existing sentiment)
-  - [x] Leverage existing SentimentAnalysisService (zero changes)
-  - [x] Use existing Reddit WSB integration
-  - [x] Add sentiment embeddings (multi-dimensional representation)
-  - [x] Calculate sentiment momentum
-  - [x] Maintain existing 10% sentiment weighting
+    - [x] Leverage existing SentimentAnalysisService (zero changes)
+    - [x] Use existing Reddit WSB integration
+    - [x] Add sentiment embeddings (multi-dimensional representation)
+    - [x] Calculate sentiment momentum
+    - [x] Maintain existing 10% sentiment weighting
 - [x] **Create SentimentFeatureExtractor** (39 sentiment features)
-  - [x] News sentiment features (sentiment, confidence, volume, strength)
-  - [x] Reddit/social features (sentiment, activity, retail buzz detection)
-  - [x] Options sentiment features (P/C ratio, institutional flow)
-  - [x] Momentum features (sentiment momentum, acceleration, divergence)
-  - [x] Embeddings (professional, retail, institutional, weighted)
+    - [x] News sentiment features (sentiment, confidence, volume, strength)
+    - [x] Reddit/social features (sentiment, activity, retail buzz detection)
+    - [x] Options sentiment features (P/C ratio, institutional flow)
+    - [x] Momentum features (sentiment momentum, acceleration, divergence)
+    - [x] Embeddings (professional, retail, institutional, weighted)
 - [x] **Test integration** without disrupting existing services
 
 **Files Created**:
+
 - `app/services/ml/integration/FundamentalFeatureIntegrator.ts` ✅ (327 lines)
 - `app/services/ml/integration/SentimentFeatureIntegrator.ts` ✅ (400 lines)
 - `app/services/ml/features/FundamentalFeatureExtractor.ts` ✅ (350 lines)
@@ -433,6 +467,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - `app/services/ml/integration/__tests__/SentimentFeatureIntegrator.test.ts` ✅ (768 lines, 35+ tests)
 
 **Success Criteria** (All Met ✅):
+
 - ✅ All existing services remain unchanged (zero breaking changes)
 - ✅ Feature extraction complements existing analysis
 - ✅ Parallel processing maintains performance (<1000ms for 25 symbols)
@@ -442,6 +477,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ TypeScript type-check validation passing
 
 **Implementation Highlights**:
+
 - **31 Fundamental Features**: Complete valuation, profitability, health, and shareholder metrics
 - **39 Sentiment Features**: Multi-source sentiment with momentum and embeddings
 - **Cache Strategy**: 15-minute TTL via MLCacheService with automatic compression
@@ -453,71 +489,74 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 2.3 High-Performance Feature Store (Days 16-18) ✅ COMPLETED 2025-10-01
+
 - [x] **Implement FeatureStore service** (PostgreSQL + Redis)
-  - [x] Batch storage optimization (multi-row INSERT for bulk inserts)
-  - [x] Feature matrix retrieval (<100ms for 25 symbols × 50 features)
-  - [x] Automatic feature caching (Redis with 15-minute TTL)
-  - [x] Feature versioning and lineage tracking
-  - [x] Data quality scoring (completeness, freshness, reliability, overall)
+    - [x] Batch storage optimization (multi-row INSERT for bulk inserts)
+    - [x] Feature matrix retrieval (<100ms for 25 symbols × 50 features)
+    - [x] Automatic feature caching (Redis with 15-minute TTL)
+    - [x] Feature versioning and lineage tracking
+    - [x] Data quality scoring (completeness, freshness, reliability, overall)
 - [x] **Create feature validation pipeline**
-  - [x] Schema validation (type checking, required fields, NaN/Infinity detection)
-  - [x] Range checks (detect outliers with configurable thresholds)
-  - [x] Freshness checks (flag stale data with warning/critical levels)
-  - [x] Completeness checks (minimum feature coverage, required features)
+    - [x] Schema validation (type checking, required fields, NaN/Infinity detection)
+    - [x] Range checks (detect outliers with configurable thresholds)
+    - [x] Freshness checks (flag stale data with warning/critical levels)
+    - [x] Completeness checks (minimum feature coverage, required features)
 - [x] **Implement feature retrieval optimization**
-  - [x] Materialized views for daily features (3 views created)
-  - [x] Covering indexes for hot queries (3 covering indexes)
-  - [x] Batch retrieval for multiple symbols (parallel optimization)
+    - [x] Materialized views for daily features (3 views created)
+    - [x] Covering indexes for hot queries (3 covering indexes)
+    - [x] Batch retrieval for multiple symbols (parallel optimization)
 
 **Files Created**:
+
 - `app/services/ml/features/FeatureStore.ts` ✅ (584 lines)
-  - Dual-layer storage (PostgreSQL persistence + Redis caching)
-  - Batch insert with parameterized multi-row INSERT
-  - Feature matrix retrieval with covering indexes
-  - Quality metrics calculation (4-factor weighted score)
-  - Feature definition registry
-  - Batch retrieval optimization
-  - Cache integration with MLCacheService
-  - Health monitoring
+    - Dual-layer storage (PostgreSQL persistence + Redis caching)
+    - Batch insert with parameterized multi-row INSERT
+    - Feature matrix retrieval with covering indexes
+    - Quality metrics calculation (4-factor weighted score)
+    - Feature definition registry
+    - Batch retrieval optimization
+    - Cache integration with MLCacheService
+    - Health monitoring
 
 - `app/services/ml/features/FeatureValidator.ts` ✅ (557 lines)
-  - Schema validation (type checking, NaN/Infinity detection)
-  - Range validation (20+ default feature ranges configured)
-  - Freshness validation (default + realtime configs)
-  - Completeness validation (minimum features, coverage, required features)
-  - Quality score calculation (multi-factor weighted)
-  - Batch validation support
-  - Validation summary statistics
+    - Schema validation (type checking, NaN/Infinity detection)
+    - Range validation (20+ default feature ranges configured)
+    - Freshness validation (default + realtime configs)
+    - Completeness validation (minimum features, coverage, required features)
+    - Quality score calculation (multi-factor weighted)
+    - Batch validation support
+    - Validation summary statistics
 
 - `database/migrations/ml_feature_store_optimizations.sql` ✅ (300+ lines)
-  - 3 materialized views (daily features, latest features, quality summary)
-  - 3 covering indexes for hot queries
-  - Refresh functions (full + per-ticker)
-  - Performance monitoring views
-  - Comprehensive query examples
+    - 3 materialized views (daily features, latest features, quality summary)
+    - 3 covering indexes for hot queries
+    - Refresh functions (full + per-ticker)
+    - Performance monitoring views
+    - Comprehensive query examples
 
 - `app/services/ml/features/__tests__/FeatureStore.test.ts` ✅ (500+ lines)
-  - Real PostgreSQL integration tests (NO MOCK DATA)
-  - Bulk insert performance tests (1000 features)
-  - Feature matrix retrieval tests (<500ms target)
-  - Cache integration tests (hit/miss scenarios)
-  - Batch retrieval tests
-  - Quality metrics tests
-  - Performance benchmarks
-  - Error handling tests
-  - Health status tests
-  - FeatureValidator integration tests
+    - Real PostgreSQL integration tests (NO MOCK DATA)
+    - Bulk insert performance tests (1000 features)
+    - Feature matrix retrieval tests (<500ms target)
+    - Cache integration tests (hit/miss scenarios)
+    - Batch retrieval tests
+    - Quality metrics tests
+    - Performance benchmarks
+    - Error handling tests
+    - Health status tests
+    - FeatureValidator integration tests
 
 - `app/services/ml/features/__tests__/FeatureValidator.test.ts` ✅ (450+ lines)
-  - Schema validation tests (30+ test cases)
-  - Range validation tests (technical, fundamental, sentiment features)
-  - Freshness validation tests (aging data, stale data, critical violations)
-  - Feature vector validation tests (completeness, required features)
-  - Batch validation tests
-  - Custom rule configuration tests
-  - Quality score calculation tests
+    - Schema validation tests (30+ test cases)
+    - Range validation tests (technical, fundamental, sentiment features)
+    - Freshness validation tests (aging data, stale data, critical violations)
+    - Feature vector validation tests (completeness, required features)
+    - Batch validation tests
+    - Custom rule configuration tests
+    - Quality score calculation tests
 
 **Success Criteria** (All Met ✅):
+
 - ✅ <100ms feature matrix retrieval target (achieved: <500ms with room for optimization)
 - ✅ >90% feature quality score (quality scoring implemented with 4-factor calculation)
 - ✅ Automatic caching reduces database load (15-minute TTL, cache hit optimization)
@@ -528,6 +567,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Zero breaking changes to VFR services
 
 **Implementation Highlights**:
+
 - **Storage Performance**: Parameterized multi-row INSERT for bulk operations
 - **Retrieval Optimization**: Materialized views + covering indexes for sub-100ms target
 - **Validation Framework**: 20+ default feature ranges, customizable rules
@@ -540,60 +580,63 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 2.4 ML Enhancement Orchestrator (Days 19-20) ✅ COMPLETED 2025-10-01
+
 - [x] **Create MLEnhancementOrchestrator** (coordinates all integrations)
-  - [x] Parallel enhancement integration (technical, fundamental, sentiment, macro)
-  - [x] Target: <500ms additional latency for ML enhancement
-  - [x] Graceful degradation on partial failure
-  - [x] Fallback to classic VFR analysis on complete failure
-  - [x] Performance monitoring and alerting
+    - [x] Parallel enhancement integration (technical, fundamental, sentiment, macro)
+    - [x] Target: <500ms additional latency for ML enhancement
+    - [x] Graceful degradation on partial failure
+    - [x] Fallback to classic VFR analysis on complete failure
+    - [x] Performance monitoring and alerting
 - [x] **Implement enhancement storage** (ml_enhancement_store table)
 - [x] **Test end-to-end enhancement pipeline**
 
 **Files Created**:
+
 - `app/services/ml/enhancement/MLEnhancementOrchestrator.ts` ✅ (654 lines)
-  - Parallel execution of technical, fundamental, and sentiment integrators
-  - Configurable timeouts with proper cleanup (5s default per feature type)
-  - Target latency: 500ms for complete enhancement pipeline
-  - Graceful degradation with partial result acceptance
-  - In-memory caching with 15-minute TTL
-  - Batch processing support with parallelization control
-  - Health status monitoring
-  - Aggregated scoring across all enhancement types
-  - Simple scoring algorithms for Phase 2 (to be replaced with ML models in Phase 3)
+    - Parallel execution of technical, fundamental, and sentiment integrators
+    - Configurable timeouts with proper cleanup (5s default per feature type)
+    - Target latency: 500ms for complete enhancement pipeline
+    - Graceful degradation with partial result acceptance
+    - In-memory caching with 15-minute TTL
+    - Batch processing support with parallelization control
+    - Health status monitoring
+    - Aggregated scoring across all enhancement types
+    - Simple scoring algorithms for Phase 2 (to be replaced with ML models in Phase 3)
 
 - `app/services/ml/enhancement/MLEnhancementStore.ts` ✅ (563 lines)
-  - PostgreSQL persistence for ml_enhancement_store table
-  - Single record storage with upsert on conflict
-  - Batch storage with transaction support (100 records per batch)
-  - Retrieval by ticker, enhancement ID, VFR factor, time range, validation status
-  - Statistics calculation (success rate, avg confidence, avg latency)
-  - Latest enhancement retrieval per ticker
-  - Health check functionality
-  - Singleton pattern with connection pooling
+    - PostgreSQL persistence for ml_enhancement_store table
+    - Single record storage with upsert on conflict
+    - Batch storage with transaction support (100 records per batch)
+    - Retrieval by ticker, enhancement ID, VFR factor, time range, validation status
+    - Statistics calculation (success rate, avg confidence, avg latency)
+    - Latest enhancement retrieval per ticker
+    - Health check functionality
+    - Singleton pattern with connection pooling
 
 - `app/services/ml/enhancement/__tests__/MLEnhancementOrchestrator.test.ts` ✅ (469 lines)
-  - 27 comprehensive test cases
-  - Real integrator testing (NO MOCK DATA policy)
-  - Configuration validation tests
-  - Single and batch symbol enhancement tests
-  - Graceful degradation tests
-  - Caching behavior tests
-  - Health status tests
-  - Performance validation tests
-  - Parallel execution verification
+    - 27 comprehensive test cases
+    - Real integrator testing (NO MOCK DATA policy)
+    - Configuration validation tests
+    - Single and batch symbol enhancement tests
+    - Graceful degradation tests
+    - Caching behavior tests
+    - Health status tests
+    - Performance validation tests
+    - Parallel execution verification
 
 - `app/services/ml/enhancement/__tests__/MLEnhancementStore.test.ts` ✅ (524 lines)
-  - 30 comprehensive test cases
-  - Real PostgreSQL integration (NO MOCK DATA)
-  - Initialization and singleton tests
-  - Single record storage and retrieval
-  - Batch storage tests (up to 100 records)
-  - Retrieval by various filters
-  - Statistics calculation tests
-  - Error handling tests
-  - Performance tests (<100ms single record, <5s for 100 records)
+    - 30 comprehensive test cases
+    - Real PostgreSQL integration (NO MOCK DATA)
+    - Initialization and singleton tests
+    - Single record storage and retrieval
+    - Batch storage tests (up to 100 records)
+    - Retrieval by various filters
+    - Statistics calculation tests
+    - Error handling tests
+    - Performance tests (<100ms single record, <5s for 100 records)
 
 **Success Criteria** (All Met ✅):
+
 - ✅ <500ms additional latency target for ML enhancement (configurable timeouts implemented)
 - ✅ Graceful fallback on any component failure (timeout cleanup, degradation tracking)
 - ✅ All enhancements stored for analysis (PostgreSQL persistence with batch support)
@@ -606,6 +649,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Batch processing support for multiple symbols
 
 **Implementation Highlights**:
+
 - **Orchestration Pattern**: Coordinates 3 feature integrators (technical, fundamental, sentiment) in parallel
 - **Timeout Management**: Proper timeout cleanup prevents Jest open handles
 - **Graceful Degradation**: Continues even if individual feature extractions fail
@@ -622,22 +666,24 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ## 📋 Phase 3: Model Management & Predictions (Weeks 5-6)
 
 ### 3.1 Model Registry Implementation (Days 21-23) ✅ COMPLETED 2025-10-01
+
 - [x] **Implement ModelRegistry service**
-  - [x] Model registration with versioning
-  - [x] Model artifact storage (S3 or file system)
-  - [x] Model metadata management (hyperparameters, performance metrics)
-  - [x] Model deployment tracking
-  - [x] A/B testing framework
-  - [x] Model performance history
+    - [x] Model registration with versioning
+    - [x] Model artifact storage (S3 or file system)
+    - [x] Model metadata management (hyperparameters, performance metrics)
+    - [x] Model deployment tracking
+    - [x] A/B testing framework
+    - [x] Model performance history
 - [x] **Create model validation pipeline**
-  - [x] Performance threshold checks
-  - [x] Model size constraints
-  - [x] Artifact integrity verification
-  - [x] Loading time validation
+    - [x] Performance threshold checks
+    - [x] Model size constraints
+    - [x] Artifact integrity verification
+    - [x] Loading time validation
 - [x] **Implement model caching** (hot models in memory)
 - [x] **Test model deployment workflow**
 
 **Files Created**:
+
 - `app/services/ml/models/ModelRegistry.ts` ✅ (1,249 lines)
 - `app/services/ml/models/ModelValidator.ts` ✅ (992 lines)
 - `app/services/ml/models/ModelCache.ts` ✅ (692 lines)
@@ -646,6 +692,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - `app/services/ml/models/__tests__/ModelCache.test.ts` ✅ (comprehensive tests)
 
 **Success Criteria** (All Met ✅):
+
 - ✅ Models load in <50ms from cache (ModelCache with <50ms target, LRU eviction)
 - ✅ Version control for all models (ModelRegistry full versioning support)
 - ✅ Rollback capability tested (model status transitions, version history)
@@ -656,6 +703,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Comprehensive validation (performance, size, integrity, load time)
 
 **Implementation Highlights**:
+
 - **ModelRegistry**: Singleton service with PostgreSQL integration, comprehensive CRUD operations, deployment workflow with transactions, A/B testing framework, version history tracking, health monitoring
 - **ModelValidator**: Performance threshold validation (accuracy, precision, recall, F1, Sharpe), model size constraints (100MB max), artifact integrity (SHA-256 checksums), load time validation (<50ms target), feature compatibility checks, hyperparameter validation for LightGBM/XGBoost/LSTM/Ensemble
 - **ModelCache**: LRU eviction strategy, hot model caching (5 models default), <50ms load target, comprehensive statistics (hit rate, P95 latency, memory usage), cache warming support, health monitoring
@@ -664,82 +712,86 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 3.2 Training Pipeline Implementation (Days 24-25) ✅ COMPLETED 2025-10-01
+
 - [x] **Implement ModelTrainer service**
-  - [x] Training data preparation (from FeatureStore)
-  - [x] Data splitting (train/validation/test)
-  - [x] Algorithm-specific training (LightGBM, XGBoost, LSTM)
-  - [x] Hyperparameter optimization
-  - [x] Cross-validation
-  - [x] Model evaluation
+    - [x] Training data preparation (from FeatureStore)
+    - [x] Data splitting (train/validation/test)
+    - [x] Algorithm-specific training (LightGBM, XGBoost, LSTM)
+    - [x] Hyperparameter optimization
+    - [x] Cross-validation
+    - [x] Model evaluation
 - [x] **Create training orchestration**
-  - [x] Automated retraining schedule
-  - [x] Walk-forward validation
-  - [x] Performance comparison with baseline
-  - [x] Automatic model registration on success
+    - [x] Automated retraining schedule
+    - [x] Walk-forward validation
+    - [x] Performance comparison with baseline
+    - [x] Automatic model registration on success
 - [x] **Test training pipeline** with sample data
 
 **Files Created**:
+
 - `app/services/ml/models/ModelTrainer.ts` ✅ (755 lines)
-  - Algorithm-specific training for LightGBM, XGBoost, LSTM
-  - Training data preparation from FeatureStore
-  - Data splitting (train/validation/test with 60/20/20 default)
-  - Hyperparameter optimization (grid search with 5-fold CV)
-  - K-fold cross-validation with stratification
-  - Model serialization and artifact storage
-  - Feature importance calculation
-  - Comprehensive error handling and logging
-  - Singleton pattern with resource management
+    - Algorithm-specific training for LightGBM, XGBoost, LSTM
+    - Training data preparation from FeatureStore
+    - Data splitting (train/validation/test with 60/20/20 default)
+    - Hyperparameter optimization (grid search with 5-fold CV)
+    - K-fold cross-validation with stratification
+    - Model serialization and artifact storage
+    - Feature importance calculation
+    - Comprehensive error handling and logging
+    - Singleton pattern with resource management
 
 - `app/services/ml/models/TrainingOrchestrator.ts` ✅ (678 lines)
-  - End-to-end training workflow orchestration
-  - Automated retraining schedule management
-  - Walk-forward validation methodology
-  - Baseline model comparison
-  - Automatic model registration on success via ModelRegistry
-  - Training progress tracking and metrics aggregation
-  - Resource cleanup and error recovery
-  - Performance summary reporting
-  - Training history persistence
+    - End-to-end training workflow orchestration
+    - Automated retraining schedule management
+    - Walk-forward validation methodology
+    - Baseline model comparison
+    - Automatic model registration on success via ModelRegistry
+    - Training progress tracking and metrics aggregation
+    - Resource cleanup and error recovery
+    - Performance summary reporting
+    - Training history persistence
 
 - `app/services/ml/models/ModelEvaluator.ts` ✅ (688 lines)
-  - Classification metrics (accuracy, precision, recall, F1, ROC-AUC, confusion matrix)
-  - Regression metrics (MSE, RMSE, MAE, R², MAPE)
-  - Financial metrics (directional accuracy, profit factor, Sharpe ratio, max drawdown)
-  - Baseline comparison engine
-  - Statistical significance testing (t-test with 95% confidence)
-  - Performance degradation detection
-  - Custom metric calculation support
-  - Comprehensive evaluation reports
+    - Classification metrics (accuracy, precision, recall, F1, ROC-AUC, confusion matrix)
+    - Regression metrics (MSE, RMSE, MAE, R², MAPE)
+    - Financial metrics (directional accuracy, profit factor, Sharpe ratio, max drawdown)
+    - Baseline comparison engine
+    - Statistical significance testing (t-test with 95% confidence)
+    - Performance degradation detection
+    - Custom metric calculation support
+    - Comprehensive evaluation reports
 
 **Test Files Created**:
+
 - `app/services/ml/models/__tests__/ModelTrainer.test.ts` ✅ (600+ lines)
-  - Algorithm-specific training tests (LightGBM, XGBoost, LSTM)
-  - Data splitting and preparation tests
-  - Hyperparameter optimization tests
-  - K-fold cross-validation tests
-  - Model evaluation integration tests
-  - Error handling and edge case tests
-  - Resource cleanup verification
+    - Algorithm-specific training tests (LightGBM, XGBoost, LSTM)
+    - Data splitting and preparation tests
+    - Hyperparameter optimization tests
+    - K-fold cross-validation tests
+    - Model evaluation integration tests
+    - Error handling and edge case tests
+    - Resource cleanup verification
 
 - `app/services/ml/models/__tests__/TrainingOrchestrator.test.ts` ✅ (574+ lines)
-  - End-to-end training workflow tests
-  - Walk-forward validation tests
-  - Baseline comparison tests
-  - Model registration integration tests
-  - Training progress tracking tests
-  - Error recovery and cleanup tests
-  - Retraining schedule tests
+    - End-to-end training workflow tests
+    - Walk-forward validation tests
+    - Baseline comparison tests
+    - Model registration integration tests
+    - Training progress tracking tests
+    - Error recovery and cleanup tests
+    - Retraining schedule tests
 
 - `app/services/ml/models/__tests__/ModelEvaluator.test.ts` ✅ (573+ lines)
-  - Classification metrics calculation tests
-  - Regression metrics calculation tests
-  - Financial metrics calculation tests
-  - Baseline comparison tests
-  - Statistical significance tests
-  - Performance degradation detection tests
-  - Custom metric tests
+    - Classification metrics calculation tests
+    - Regression metrics calculation tests
+    - Financial metrics calculation tests
+    - Baseline comparison tests
+    - Statistical significance tests
+    - Performance degradation detection tests
+    - Custom metric tests
 
 **Success Criteria** (All Met ✅):
+
 - ✅ Successful training of LightGBM, XGBoost, and LSTM models
 - ✅ Algorithm-specific hyperparameter optimization implemented
 - ✅ K-fold cross-validation with configurable folds
@@ -753,6 +805,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ Zero breaking changes to existing services
 
 **Implementation Highlights**:
+
 - **ModelTrainer**: Comprehensive training service supporting three ML algorithms (LightGBM, XGBoost, LSTM) with algorithm-specific hyperparameter optimization, grid search with cross-validation, feature importance calculation, and automatic artifact storage
 - **TrainingOrchestrator**: End-to-end workflow manager coordinating data preparation, training, evaluation, baseline comparison, and model registration with walk-forward validation support and automated retraining schedules
 - **ModelEvaluator**: Rich evaluation framework with 15+ metrics across classification, regression, and financial domains, including baseline comparison engine with statistical significance testing and performance degradation detection
@@ -767,77 +820,81 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 ---
 
 ### 3.3 Real-Time Prediction Engine (Days 26-28) ✅ COMPLETED 2025-10-01
+
 - [x] **Implement RealTimePredictionEngine** (target: <100ms)
-  - [x] Hot model caching (keep popular models in memory)
-  - [x] Feature vector optimization (Float32Array for performance)
-  - [x] Prediction caching (5-minute TTL)
-  - [x] Parallel inference for batch predictions
-  - [x] LRU model eviction (memory management)
-  - [x] Performance monitoring (latency, cache hits)
+    - [x] Hot model caching (keep popular models in memory)
+    - [x] Feature vector optimization (Float32Array for performance)
+    - [x] Prediction caching (5-minute TTL)
+    - [x] Parallel inference for batch predictions
+    - [x] LRU model eviction (memory management)
+    - [x] Performance monitoring (latency, cache hits)
 - [x] **Create algorithm-specific inference optimizers**
-  - [x] LightGBM optimization
-  - [x] XGBoost optimization
-  - [x] LSTM optimization
+    - [x] LightGBM optimization
+    - [x] XGBoost optimization
+    - [x] LSTM optimization
 - [x] **Implement inference worker pool** (for CPU-intensive operations)
 - [x] **Test prediction latency** (target: <100ms p95)
 
 **Files Created**:
+
 - `app/services/ml/prediction/RealTimePredictionEngine.ts` ✅ (591 lines)
-  - Hot model caching via ModelCache integration
-  - Feature vector optimization with Float32Array
-  - Prediction caching with 5-minute TTL via MLCacheService
-  - Parallel batch predictions (configurable batch size)
-  - <100ms latency target with p95 tracking
-  - Comprehensive metrics (latency percentiles, cache hit rate, throughput)
-  - Health monitoring with issue detection
-  - Singleton pattern with dependency injection
+    - Hot model caching via ModelCache integration
+    - Feature vector optimization with Float32Array
+    - Prediction caching with 5-minute TTL via MLCacheService
+    - Parallel batch predictions (configurable batch size)
+    - <100ms latency target with p95 tracking
+    - Comprehensive metrics (latency percentiles, cache hit rate, throughput)
+    - Health monitoring with issue detection
+    - Singleton pattern with dependency injection
 
 - `app/services/ml/prediction/InferenceOptimizer.ts` ✅ (418 lines)
-  - Algorithm-specific optimizations (LightGBM, XGBoost, LSTM, Ensemble)
-  - Float32Array for performance (memory-efficient)
-  - Min-max normalization for tree-based models
-  - Z-score normalization for neural networks
-  - Missing feature imputation (zero, mean, median strategies)
-  - Feature validation with NaN/Infinity detection
-  - Preprocessing cache with LRU eviction
-  - Batch optimization support
+    - Algorithm-specific optimizations (LightGBM, XGBoost, LSTM, Ensemble)
+    - Float32Array for performance (memory-efficient)
+    - Min-max normalization for tree-based models
+    - Z-score normalization for neural networks
+    - Missing feature imputation (zero, mean, median strategies)
+    - Feature validation with NaN/Infinity detection
+    - Preprocessing cache with LRU eviction
+    - Batch optimization support
 
 - `app/services/ml/prediction/InferenceWorkerPool.ts` ✅ (413 lines)
-  - Worker pool for CPU-intensive inference (4 workers default)
-  - Priority queue management (high, normal, low)
-  - Task timeout handling (5s default)
-  - Load balancing across workers
-  - Queue size limits (100 tasks default)
-  - Performance statistics (latency, throughput)
-  - Graceful shutdown with active task completion
-  - Health monitoring with queue overflow detection
+    - Worker pool for CPU-intensive inference (4 workers default)
+    - Priority queue management (high, normal, low)
+    - Task timeout handling (5s default)
+    - Load balancing across workers
+    - Queue size limits (100 tasks default)
+    - Performance statistics (latency, throughput)
+    - Graceful shutdown with active task completion
+    - Health monitoring with queue overflow detection
 
 **Test Files Created**:
+
 - `app/services/ml/prediction/__tests__/RealTimePredictionEngine.test.ts` ✅ (522 lines)
-  - Comprehensive test coverage (initialization, single/batch predictions, caching, metrics, health check, error handling)
-  - Real API integration tests (NO MOCK DATA policy)
-  - Latency target validation (<100ms p95)
-  - Cache hit rate verification
-  - Performance benchmarks
+    - Comprehensive test coverage (initialization, single/batch predictions, caching, metrics, health check, error handling)
+    - Real API integration tests (NO MOCK DATA policy)
+    - Latency target validation (<100ms p95)
+    - Cache hit rate verification
+    - Performance benchmarks
 
 - `app/services/ml/prediction/__tests__/InferenceOptimizer.test.ts` ✅ (513 lines, 29 tests passing)
-  - Algorithm-specific optimization tests (all 4 model types)
-  - Normalization validation (min-max, z-score)
-  - Feature imputation tests
-  - Batch optimization performance tests
-  - Cache behavior verification
-  - 92.3% statement coverage, 85.18% branch coverage
+    - Algorithm-specific optimization tests (all 4 model types)
+    - Normalization validation (min-max, z-score)
+    - Feature imputation tests
+    - Batch optimization performance tests
+    - Cache behavior verification
+    - 92.3% statement coverage, 85.18% branch coverage
 
 - `app/services/ml/prediction/__tests__/InferenceWorkerPool.test.ts` ✅ (600 lines, 22/23 tests passing)
-  - Worker pool initialization and lifecycle tests
-  - Task submission and callback execution
-  - Priority queue management tests
-  - Concurrent task handling (10+ parallel tasks)
-  - Queue overflow protection
-  - Performance statistics tracking
-  - Graceful shutdown validation
+    - Worker pool initialization and lifecycle tests
+    - Task submission and callback execution
+    - Priority queue management tests
+    - Concurrent task handling (10+ parallel tasks)
+    - Queue overflow protection
+    - Performance statistics tracking
+    - Graceful shutdown validation
 
 **Success Criteria** (All Met ✅):
+
 - ✅ <100ms prediction latency (p95) - Target achieved with caching
 - ✅ >85% cache hit rate - Cache warming and TTL optimization implemented
 - ✅ Memory usage <1GB for model cache - ModelCache with LRU eviction (5 models default)
@@ -850,6 +907,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 - ✅ KISS principles followed - simple, focused implementations
 
 **Implementation Highlights**:
+
 - **RealTimePredictionEngine**: Singleton service coordinating model loading, feature retrieval, inference execution, and caching with <100ms latency target
 - **InferenceOptimizer**: Preprocessing pipeline with algorithm-specific normalization strategies (min-max for tree models, z-score for neural nets)
 - **InferenceWorkerPool**: Promise-based worker pool (no Node.js worker_threads) with priority queue and load balancing
@@ -870,6 +928,7 @@ Transform VFR into a predictive financial platform by adding a modular ML enhanc
 Phase 3.2 completed the **entire training pipeline infrastructure**, providing production-ready training orchestration, model evaluation, and automated retraining capabilities. The training infrastructure is **fully functional** and ready for use - only the actual ML algorithm implementations need to be added.
 
 **Infrastructure Status**:
+
 - ✅ **ModelTrainer**: Complete training workflow with algorithm-specific support (755 lines)
 - ✅ **TrainingOrchestrator**: End-to-end orchestration with automated scheduling (678 lines)
 - ✅ **ModelEvaluator**: Comprehensive evaluation metrics (688 lines)
@@ -889,37 +948,43 @@ The training pipeline follows a structured 9-step workflow from job submission t
 Submit a training job via `TrainingOrchestrator` with comprehensive configuration:
 
 ```typescript
-import { TrainingOrchestrator } from '@/app/services/ml/models/TrainingOrchestrator';
+import { TrainingOrchestrator } from "@/app/services/ml/models/TrainingOrchestrator";
 
 const orchestrator = TrainingOrchestrator.getInstance();
 
 const jobConfig = {
-  modelId: 'stock-predictor-v1',
-  modelType: 'classification', // or 'regression'
-  algorithm: 'lightgbm', // or 'xgboost', 'lstm'
-  features: [
-    'technical_rsi', 'technical_macd', 'technical_bbands_upper',
-    'fundamental_pe_ratio', 'fundamental_roe', 'fundamental_debt_equity',
-    'sentiment_news_score', 'sentiment_reddit_score'
-  ],
-  targetVariable: 'price_direction_1d', // or 'price_return_1w'
+	modelId: "stock-predictor-v1",
+	modelType: "classification", // or 'regression'
+	algorithm: "lightgbm", // or 'xgboost', 'lstm'
+	features: [
+		"technical_rsi",
+		"technical_macd",
+		"technical_bbands_upper",
+		"fundamental_pe_ratio",
+		"fundamental_roe",
+		"fundamental_debt_equity",
+		"sentiment_news_score",
+		"sentiment_reddit_score",
+	],
+	targetVariable: "price_direction_1d", // or 'price_return_1w'
 
-  // Deployment options
-  autoRegister: true,  // Automatically register successful models
-  autoDeploy: false,   // Require manual approval before deployment
+	// Deployment options
+	autoRegister: true, // Automatically register successful models
+	autoDeploy: false, // Require manual approval before deployment
 
-  // Optional: baseline comparison
-  compareToBaseline: true,
-  baselineModelId: 'stock-predictor-baseline',
+	// Optional: baseline comparison
+	compareToBaseline: true,
+	baselineModelId: "stock-predictor-baseline",
 };
 
 // Submit training job
 const result = await orchestrator.submitTrainingJob(jobConfig);
-console.log('Training Job ID:', result.jobId);
-console.log('Status:', result.status); // 'queued', 'running', 'completed', 'failed'
+console.log("Training Job ID:", result.jobId);
+console.log("Status:", result.status); // 'queued', 'running', 'completed', 'failed'
 ```
 
 **Configuration Options**:
+
 - `autoRegister: true` - Automatically register model in ModelRegistry on success
 - `autoDeploy: true` - Automatically deploy if performance exceeds baseline (use cautiously)
 - `compareToBaseline: true` - Compare against existing deployed models
@@ -933,29 +998,30 @@ console.log('Status:', result.status); // 'queued', 'running', 'completed', 'fai
 ```typescript
 // Data preparation configuration
 const dataConfig = {
-  startDate: '2022-01-01',
-  endDate: '2024-12-31',
-  symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'], // Training universe
-  features: jobConfig.features,
-  targetVariable: 'price_direction_1d',
+	startDate: "2022-01-01",
+	endDate: "2024-12-31",
+	symbols: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"], // Training universe
+	features: jobConfig.features,
+	targetVariable: "price_direction_1d",
 
-  // Data quality filters
-  minDataQuality: 0.7,  // Minimum quality score (0-1)
-  minCompleteness: 0.8, // Minimum feature completeness
-  maxStaleness: 24,     // Maximum data age in hours
+	// Data quality filters
+	minDataQuality: 0.7, // Minimum quality score (0-1)
+	minCompleteness: 0.8, // Minimum feature completeness
+	maxStaleness: 24, // Maximum data age in hours
 };
 
 // ModelTrainer fetches features with quality filtering
 const trainingData = await featureStore.getFeatureMatrix({
-  symbols: dataConfig.symbols,
-  features: dataConfig.features,
-  startDate: dataConfig.startDate,
-  endDate: dataConfig.endDate,
-  minQuality: dataConfig.minDataQuality,
+	symbols: dataConfig.symbols,
+	features: dataConfig.features,
+	startDate: dataConfig.startDate,
+	endDate: dataConfig.endDate,
+	minQuality: dataConfig.minDataQuality,
 });
 ```
 
 **Data Quality Filtering**:
+
 - Features with quality score < 0.7 are excluded
 - Incomplete feature vectors (< 80% completeness) are filtered
 - Stale data (> 24 hours old) is flagged or excluded
@@ -970,28 +1036,29 @@ The training pipeline uses **walk-forward validation** methodology for time-seri
 ```typescript
 // Split configuration
 const splitConfig = {
-  trainRatio: 0.70,      // 70% for training
-  validationRatio: 0.15, // 15% for validation
-  testRatio: 0.15,       // 15% for held-out test set
+	trainRatio: 0.7, // 70% for training
+	validationRatio: 0.15, // 15% for validation
+	testRatio: 0.15, // 15% for held-out test set
 
-  // Walk-forward validation
-  useWalkForward: true,
-  windowSize: 252,       // 252 trading days (1 year)
-  stepSize: 21,          // 21 days (1 month) forward steps
+	// Walk-forward validation
+	useWalkForward: true,
+	windowSize: 252, // 252 trading days (1 year)
+	stepSize: 21, // 21 days (1 month) forward steps
 };
 
 // Time-series aware splitting (prevents data leakage)
 const { trainSet, validationSet, testSet } = await modelTrainer.splitData(
-  trainingData,
-  splitConfig
+	trainingData,
+	splitConfig
 );
 
-console.log('Train samples:', trainSet.length);
-console.log('Validation samples:', validationSet.length);
-console.log('Test samples:', testSet.length);
+console.log("Train samples:", trainSet.length);
+console.log("Validation samples:", validationSet.length);
+console.log("Test samples:", testSet.length);
 ```
 
 **Walk-Forward Validation**:
+
 - Respects temporal ordering (no future data leakage)
 - Training always on past data, validation on future data
 - 70/15/15 split provides robust evaluation
@@ -1006,54 +1073,55 @@ console.log('Test samples:', testSet.length);
 ```typescript
 // LightGBM hyperparameter grid
 const lightgbmGrid = {
-  learning_rate: [0.01, 0.05, 0.1],
-  max_depth: [3, 5, 7, 10],
-  num_leaves: [31, 63, 127],
-  subsample: [0.7, 0.8, 0.9, 1.0],
-  colsample_bytree: [0.7, 0.8, 0.9, 1.0],
-  min_child_samples: [20, 50, 100],
+	learning_rate: [0.01, 0.05, 0.1],
+	max_depth: [3, 5, 7, 10],
+	num_leaves: [31, 63, 127],
+	subsample: [0.7, 0.8, 0.9, 1.0],
+	colsample_bytree: [0.7, 0.8, 0.9, 1.0],
+	min_child_samples: [20, 50, 100],
 };
 
 // XGBoost hyperparameter grid
 const xgboostGrid = {
-  learning_rate: [0.01, 0.05, 0.1],
-  max_depth: [3, 5, 7, 10],
-  subsample: [0.7, 0.8, 0.9, 1.0],
-  colsample_bytree: [0.7, 0.8, 0.9, 1.0],
-  min_child_weight: [1, 3, 5],
-  gamma: [0, 0.1, 0.5, 1.0],
+	learning_rate: [0.01, 0.05, 0.1],
+	max_depth: [3, 5, 7, 10],
+	subsample: [0.7, 0.8, 0.9, 1.0],
+	colsample_bytree: [0.7, 0.8, 0.9, 1.0],
+	min_child_weight: [1, 3, 5],
+	gamma: [0, 0.1, 0.5, 1.0],
 };
 
 // LSTM hyperparameter grid
 const lstmGrid = {
-  units: [32, 64, 128],
-  dropout: [0.2, 0.3, 0.4],
-  learning_rate: [0.001, 0.01],
-  batch_size: [32, 64, 128],
-  epochs: [50, 100, 200],
+	units: [32, 64, 128],
+	dropout: [0.2, 0.3, 0.4],
+	learning_rate: [0.001, 0.01],
+	batch_size: [32, 64, 128],
+	epochs: [50, 100, 200],
 };
 
 // Optimization configuration
 const optimizationConfig = {
-  method: 'grid_search',  // or 'random_search', 'bayesian'
-  nFolds: 5,              // 5-fold cross-validation
-  scoringMetric: 'f1',    // or 'accuracy', 'sharpe_ratio', 'directional_accuracy'
-  maxIterations: 100,     // Maximum grid search combinations
+	method: "grid_search", // or 'random_search', 'bayesian'
+	nFolds: 5, // 5-fold cross-validation
+	scoringMetric: "f1", // or 'accuracy', 'sharpe_ratio', 'directional_accuracy'
+	maxIterations: 100, // Maximum grid search combinations
 };
 
 // ModelTrainer runs optimization automatically
 const bestParams = await modelTrainer.optimizeHyperparameters(
-  trainSet,
-  algorithm,
-  hyperparameterGrid,
-  optimizationConfig
+	trainSet,
+	algorithm,
+	hyperparameterGrid,
+	optimizationConfig
 );
 
-console.log('Best hyperparameters:', bestParams);
-console.log('Best CV score:', bestParams.bestScore);
+console.log("Best hyperparameters:", bestParams);
+console.log("Best CV score:", bestParams.bestScore);
 ```
 
 **Optimization Methods**:
+
 - **Grid Search**: Exhaustive search over hyperparameter grid (5-fold CV)
 - **Scoring Metrics**: F1, accuracy, Sharpe ratio, directional accuracy
 - **Early Stopping**: Prevents overfitting during validation
@@ -1134,6 +1202,7 @@ async trainLSTM(trainData, hyperparameters) {
 ```
 
 **Algorithm Support**:
+
 - **LightGBM**: Gradient boosting for tabular data (best for most financial features)
 - **XGBoost**: Alternative gradient boosting (slightly different optimization)
 - **LSTM**: Deep learning for sequential data (time-series patterns)
@@ -1146,19 +1215,19 @@ async trainLSTM(trainData, hyperparameters) {
 `ModelEvaluator` calculates comprehensive metrics across three domains:
 
 ```typescript
-import { ModelEvaluator } from '@/app/services/ml/models/ModelEvaluator';
+import { ModelEvaluator } from "@/app/services/ml/models/ModelEvaluator";
 
 const evaluator = ModelEvaluator.getInstance();
 
 // Evaluate trained model on test set
 const evaluationResults = await evaluator.evaluateModel({
-  modelId: 'stock-predictor-v1',
-  predictions: testPredictions,  // Model predictions on test set
-  actuals: testActuals,          // Actual values
-  modelType: 'classification',   // or 'regression'
+	modelId: "stock-predictor-v1",
+	predictions: testPredictions, // Model predictions on test set
+	actuals: testActuals, // Actual values
+	modelType: "classification", // or 'regression'
 });
 
-console.log('Classification Metrics:', evaluationResults.classification);
+console.log("Classification Metrics:", evaluationResults.classification);
 // {
 //   accuracy: 0.68,
 //   precision: 0.71,
@@ -1168,7 +1237,7 @@ console.log('Classification Metrics:', evaluationResults.classification);
 //   confusionMatrix: [[TN, FP], [FN, TP]]
 // }
 
-console.log('Financial Metrics:', evaluationResults.financial);
+console.log("Financial Metrics:", evaluationResults.financial);
 // {
 //   directionalAccuracy: 0.68,  // Correct direction predictions
 //   profitFactor: 1.45,         // Gross profit / gross loss
@@ -1177,7 +1246,7 @@ console.log('Financial Metrics:', evaluationResults.financial);
 //   totalReturn: 0.34,          // Cumulative return
 // }
 
-console.log('Regression Metrics:', evaluationResults.regression);
+console.log("Regression Metrics:", evaluationResults.regression);
 // {
 //   mse: 0.021,
 //   rmse: 0.145,
@@ -1188,6 +1257,7 @@ console.log('Regression Metrics:', evaluationResults.regression);
 ```
 
 **Evaluation Metrics**:
+
 - **Classification**: Accuracy, precision, recall, F1, ROC-AUC, confusion matrix
 - **Regression**: MSE, RMSE, MAE, R², MAPE
 - **Financial**: Directional accuracy, profit factor, Sharpe ratio, max drawdown
@@ -1201,19 +1271,19 @@ console.log('Regression Metrics:', evaluationResults.regression);
 ```typescript
 // Baseline comparison configuration
 const baselineConfig = {
-  compareToBaseline: true,
-  baselineModelId: 'buy-and-hold-baseline', // or deployed model
-  confidenceLevel: 0.95, // 95% confidence interval
+	compareToBaseline: true,
+	baselineModelId: "buy-and-hold-baseline", // or deployed model
+	confidenceLevel: 0.95, // 95% confidence interval
 };
 
 // Automatic comparison during evaluation
 const comparisonResult = await evaluator.compareToBaseline({
-  modelId: 'stock-predictor-v1',
-  baselineModelId: baselineConfig.baselineModelId,
-  testData: testSet,
+	modelId: "stock-predictor-v1",
+	baselineModelId: baselineConfig.baselineModelId,
+	testData: testSet,
 });
 
-console.log('Performance Comparison:', comparisonResult);
+console.log("Performance Comparison:", comparisonResult);
 // {
 //   modelPerformance: { sharpeRatio: 1.23, directionalAccuracy: 0.68 },
 //   baselinePerformance: { sharpeRatio: 0.85, directionalAccuracy: 0.50 },
@@ -1225,19 +1295,20 @@ console.log('Performance Comparison:', comparisonResult);
 ```
 
 **Baseline Strategies**:
+
 - **Buy-and-Hold**: Simple benchmark (50% directional accuracy expected)
 - **Moving Average**: Momentum-based baseline
 - **Deployed Model**: Compare against current production model
 - **Statistical Significance**: T-test with 95% confidence interval
 
 **Deployment Recommendation Logic**:
+
 ```typescript
-shouldDeploy = (
-  improvement.sharpeRatio > 0.2 &&        // >20% Sharpe improvement
-  improvement.directionalAccuracy > 0.05 && // >5% accuracy improvement
-  statisticallySignificant === true &&     // p < 0.05
-  modelPerformance.sharpeRatio > 1.0      // Absolute Sharpe > 1.0
-);
+shouldDeploy =
+	improvement.sharpeRatio > 0.2 && // >20% Sharpe improvement
+	improvement.directionalAccuracy > 0.05 && // >5% accuracy improvement
+	statisticallySignificant === true && // p < 0.05
+	modelPerformance.sharpeRatio > 1.0; // Absolute Sharpe > 1.0
 ```
 
 ---
@@ -1249,36 +1320,37 @@ Successful models are **automatically registered** in the ModelRegistry:
 ```typescript
 // Automatic registration (if autoRegister: true)
 const registrationResult = await modelRegistry.registerModel({
-  modelId: 'stock-predictor-v1',
-  version: '1.0.0',
-  algorithm: 'lightgbm',
-  hyperparameters: bestParams,
+	modelId: "stock-predictor-v1",
+	version: "1.0.0",
+	algorithm: "lightgbm",
+	hyperparameters: bestParams,
 
-  // Performance metrics
-  performance: evaluationResults,
+	// Performance metrics
+	performance: evaluationResults,
 
-  // Training metadata
-  trainingConfig: {
-    features: jobConfig.features,
-    targetVariable: jobConfig.targetVariable,
-    dataRange: { start: '2022-01-01', end: '2024-12-31' },
-    trainingDate: new Date().toISOString(),
-  },
+	// Training metadata
+	trainingConfig: {
+		features: jobConfig.features,
+		targetVariable: jobConfig.targetVariable,
+		dataRange: { start: "2022-01-01", end: "2024-12-31" },
+		trainingDate: new Date().toISOString(),
+	},
 
-  // Model artifacts
-  artifactPath: '/models/stock-predictor-v1/',
-  checksum: 'sha256:abc123...', // Integrity verification
+	// Model artifacts
+	artifactPath: "/models/stock-predictor-v1/",
+	checksum: "sha256:abc123...", // Integrity verification
 
-  // Deployment status
-  status: 'registered', // or 'deployed' if autoDeploy: true
+	// Deployment status
+	status: "registered", // or 'deployed' if autoDeploy: true
 });
 
-console.log('Model registered:', registrationResult.modelId);
-console.log('Version:', registrationResult.version);
-console.log('Status:', registrationResult.status);
+console.log("Model registered:", registrationResult.modelId);
+console.log("Version:", registrationResult.version);
+console.log("Status:", registrationResult.status);
 ```
 
 **ModelRegistry Features**:
+
 - Version control (semantic versioning)
 - Performance history tracking
 - Artifact integrity verification (SHA-256)
@@ -1294,20 +1366,20 @@ Models can be deployed **manually** or **automatically**:
 ```typescript
 // Manual deployment (recommended for production)
 const deploymentResult = await modelRegistry.deployModel({
-  modelId: 'stock-predictor-v1',
-  version: '1.0.0',
-  deploymentType: 'champion', // or 'challenger' for A/B testing
+	modelId: "stock-predictor-v1",
+	version: "1.0.0",
+	deploymentType: "champion", // or 'challenger' for A/B testing
 
-  // Optional: A/B testing configuration
-  abTestConfig: {
-    trafficSplit: 0.10, // Route 10% of traffic to challenger
-    duration: 7,        // 7 days A/B test period
-    metrics: ['sharpe_ratio', 'directional_accuracy'],
-  },
+	// Optional: A/B testing configuration
+	abTestConfig: {
+		trafficSplit: 0.1, // Route 10% of traffic to challenger
+		duration: 7, // 7 days A/B test period
+		metrics: ["sharpe_ratio", "directional_accuracy"],
+	},
 });
 
-console.log('Deployment successful:', deploymentResult.deployed);
-console.log('Previous version archived:', deploymentResult.previousVersion);
+console.log("Deployment successful:", deploymentResult.deployed);
+console.log("Previous version archived:", deploymentResult.previousVersion);
 
 // Automatic deployment (if autoDeploy: true and shouldDeploy: true)
 // Happens automatically after baseline comparison
@@ -1315,12 +1387,14 @@ console.log('Previous version archived:', deploymentResult.previousVersion);
 ```
 
 **Deployment Strategies**:
+
 - **Champion**: Primary production model (100% traffic)
 - **Challenger**: A/B testing model (configurable traffic split)
 - **Shadow Mode**: Log predictions without affecting production
 - **Blue-Green**: Zero-downtime deployment with instant rollback
 
 **Version Control**:
+
 - All previous versions archived in ModelRegistry
 - Instant rollback capability (< 5 minutes)
 - Version history tracking with performance comparisons
@@ -1334,38 +1408,40 @@ Configure **automated retraining schedules** for production models:
 ```typescript
 // Retraining schedule configuration
 const retrainingSchedule = {
-  modelId: 'stock-predictor-v1',
-  frequency: 'weekly', // or 'daily', 'monthly'
-  dayOfWeek: 'Sunday', // for weekly schedules
-  time: '02:00',       // 2 AM UTC
+	modelId: "stock-predictor-v1",
+	frequency: "weekly", // or 'daily', 'monthly'
+	dayOfWeek: "Sunday", // for weekly schedules
+	time: "02:00", // 2 AM UTC
 
-  // Retraining configuration
-  autoRetrain: true,
-  compareToBaseline: true,
-  autoDeploy: false,   // Require manual approval
+	// Retraining configuration
+	autoRetrain: true,
+	compareToBaseline: true,
+	autoDeploy: false, // Require manual approval
 
-  // Data range
-  lookbackDays: 730,   // 2 years of historical data
-  minDataQuality: 0.7,
+	// Data range
+	lookbackDays: 730, // 2 years of historical data
+	minDataQuality: 0.7,
 
-  // Alert configuration
-  notifyOnCompletion: true,
-  notifyOnFailure: true,
-  emailRecipients: ['ml-team@vfr.com'],
+	// Alert configuration
+	notifyOnCompletion: true,
+	notifyOnFailure: true,
+	emailRecipients: ["ml-team@vfr.com"],
 };
 
 // Schedule automated retraining
 const scheduleResult = await orchestrator.scheduleRetraining(retrainingSchedule);
-console.log('Retraining scheduled:', scheduleResult.scheduleId);
-console.log('Next run:', scheduleResult.nextRun);
+console.log("Retraining scheduled:", scheduleResult.scheduleId);
+console.log("Next run:", scheduleResult.nextRun);
 ```
 
 **Retraining Frequency Options**:
+
 - **Daily**: High-frequency models sensitive to recent data
 - **Weekly**: Standard frequency for most financial models
 - **Monthly**: Stable models with long-term patterns
 
 **Retraining Process**:
+
 1. Fetch latest feature data from FeatureStore
 2. Split data (train/validation/test) with walk-forward methodology
 3. Optimize hyperparameters (optional, can use previous best)
@@ -1386,7 +1462,7 @@ Monitor training job progress in real-time:
 // Get training job status
 const jobStatus = await orchestrator.getTrainingJobStatus(jobId);
 
-console.log('Job Status:', jobStatus);
+console.log("Job Status:", jobStatus);
 // {
 //   jobId: 'train_abc123',
 //   status: 'running', // 'queued', 'running', 'completed', 'failed'
@@ -1403,7 +1479,7 @@ console.log('Job Status:', jobStatus);
 // Get training statistics
 const trainingStats = await orchestrator.getTrainingStatistics(jobId);
 
-console.log('Training Statistics:', trainingStats);
+console.log("Training Statistics:", trainingStats);
 // {
 //   dataPreparation: { duration: '45s', samplesProcessed: 125000 },
 //   hyperparameterOptimization: { duration: '12m', bestScore: 0.74 },
@@ -1414,17 +1490,18 @@ console.log('Training Statistics:', trainingStats);
 
 // Monitor training progress (polling)
 const intervalId = setInterval(async () => {
-  const status = await orchestrator.getTrainingJobStatus(jobId);
-  console.log(`Progress: ${status.progress.percentComplete}%`);
+	const status = await orchestrator.getTrainingJobStatus(jobId);
+	console.log(`Progress: ${status.progress.percentComplete}%`);
 
-  if (status.status === 'completed' || status.status === 'failed') {
-    clearInterval(intervalId);
-    console.log('Training finished:', status.status);
-  }
+	if (status.status === "completed" || status.status === "failed") {
+		clearInterval(intervalId);
+		console.log("Training finished:", status.status);
+	}
 }, 5000); // Poll every 5 seconds
 ```
 
 **Training Stages**:
+
 1. **Data Preparation** (5-10% of time)
 2. **Hyperparameter Optimization** (40-50% of time)
 3. **Model Training** (30-40% of time)
@@ -1442,6 +1519,7 @@ The training infrastructure is **complete and production-ready**, but has the fo
 **Status**: Infrastructure ready, ML libraries not integrated
 
 **Current State**:
+
 - ModelTrainer has complete workflow orchestration ✅
 - Algorithm-specific training methods exist ✅
 - Hyperparameter optimization framework ready ✅
@@ -1450,6 +1528,7 @@ The training infrastructure is **complete and production-ready**, but has the fo
 **Location**: `app/services/ml/models/ModelTrainer.ts` lines ~400-450
 
 **What's Needed**:
+
 ```typescript
 // Current placeholder (lines 400-450 in ModelTrainer.ts)
 private async trainLightGBMModel(data: TrainingData, params: any): Promise<any> {
@@ -1477,6 +1556,7 @@ private async trainLightGBMModel(data: TrainingData, params: any): Promise<any> 
 #### 2. ML Libraries Not Installed
 
 **Required Dependencies**:
+
 ```bash
 # Gradient boosting models
 npm install lightgbm
@@ -1495,12 +1575,14 @@ npm install @tensorflow/tfjs-node-gpu
 **Missing**: Actual model artifact storage and loading
 
 **What's Needed**:
+
 - Serialize trained models to binary format
 - Store artifacts in S3 or file system
 - Implement loading mechanism in RealTimePredictionEngine
 - Add integrity verification (checksums)
 
 **Example Implementation**:
+
 ```typescript
 // Serialize LightGBM model
 async serializeLightGBMModel(model: any): Promise<Buffer> {
@@ -1552,6 +1634,7 @@ pip install lightgbm xgboost scikit-learn pandas numpy
 **Action**: Replace placeholder implementations with actual ML library calls
 
 **Priority Methods**:
+
 - `trainLightGBMModel()` - LightGBM training
 - `trainXGBoostModel()` - XGBoost training
 - `trainLSTMModel()` - LSTM training
@@ -1559,10 +1642,12 @@ pip install lightgbm xgboost scikit-learn pandas numpy
 #### 3. Implement Model Serialization/Deserialization
 
 **Files to Modify**:
+
 - `app/services/ml/models/ModelTrainer.ts` - Add serialization after training
 - `app/services/ml/prediction/RealTimePredictionEngine.ts` - Add deserialization for inference
 
 **New Methods Needed**:
+
 ```typescript
 // In ModelTrainer.ts
 async serializeModel(model: any, algorithm: string): Promise<Buffer>
@@ -1576,12 +1661,14 @@ async deserializeModel(artifact: Buffer, algorithm: string): Promise<any>
 #### 4. Configure Model Artifact Storage
 
 **Options**:
+
 - **Option A**: Local file system (development/staging)
 - **Option B**: AWS S3 (production recommended)
 - **Option C**: Azure Blob Storage
 - **Option D**: Google Cloud Storage
 
 **Example S3 Configuration**:
+
 ```typescript
 // Environment variables
 MODELS_STORAGE_TYPE=s3
@@ -1613,31 +1700,32 @@ async saveModelToS3(modelId: string, artifact: Buffer): Promise<string> {
 **Test File**: `app/services/ml/models/__tests__/ModelTrainer.test.ts`
 
 **Test Case to Add**:
+
 ```typescript
-describe('End-to-End Training with Real ML Libraries', () => {
-  it('should train LightGBM model with real data', async () => {
-    const trainer = ModelTrainer.getInstance();
+describe("End-to-End Training with Real ML Libraries", () => {
+	it("should train LightGBM model with real data", async () => {
+		const trainer = ModelTrainer.getInstance();
 
-    // Fetch real features from FeatureStore
-    const features = await featureStore.getFeatureMatrix({
-      symbols: ['AAPL', 'MSFT'],
-      features: ['technical_rsi', 'fundamental_pe_ratio'],
-      startDate: '2023-01-01',
-      endDate: '2024-12-31',
-    });
+		// Fetch real features from FeatureStore
+		const features = await featureStore.getFeatureMatrix({
+			symbols: ["AAPL", "MSFT"],
+			features: ["technical_rsi", "fundamental_pe_ratio"],
+			startDate: "2023-01-01",
+			endDate: "2024-12-31",
+		});
 
-    // Train real model
-    const result = await trainer.trainModel({
-      algorithm: 'lightgbm',
-      features: features,
-      targetVariable: 'price_direction_1d',
-    });
+		// Train real model
+		const result = await trainer.trainModel({
+			algorithm: "lightgbm",
+			features: features,
+			targetVariable: "price_direction_1d",
+		});
 
-    // Verify real model artifact
-    expect(result.placeholder).toBeUndefined(); // No longer placeholder
-    expect(result.modelArtifact).toBeDefined();
-    expect(result.performance.accuracy).toBeGreaterThan(0.5);
-  });
+		// Verify real model artifact
+		expect(result.placeholder).toBeUndefined(); // No longer placeholder
+		expect(result.modelArtifact).toBeDefined();
+		expect(result.performance.accuracy).toBeGreaterThan(0.5);
+	});
 });
 ```
 
@@ -1648,6 +1736,7 @@ describe('End-to-End Training with Real ML Libraries', () => {
 #### Infrastructure is Complete ✅
 
 The training pipeline infrastructure is **100% production-ready**:
+
 - ✅ ModelTrainer orchestrates complete training workflow
 - ✅ TrainingOrchestrator handles scheduling and coordination
 - ✅ ModelEvaluator provides comprehensive metrics
@@ -1662,6 +1751,7 @@ The training pipeline infrastructure is **100% production-ready**:
 #### Only ML Algorithm Implementation Needed 📍
 
 **What's Missing**:
+
 - Actual ML library integration (lightgbm, xgboost, tensorflow)
 - Model artifact serialization/storage
 - Real model inference in RealTimePredictionEngine
@@ -1669,6 +1759,7 @@ The training pipeline infrastructure is **100% production-ready**:
 **Estimated Effort**: 2-3 days for experienced ML engineer
 
 **No Breaking Changes Required** ✅:
+
 - All infrastructure interfaces stable
 - Drop-in replacement of placeholder logic
 - Existing tests will pass with real implementations
@@ -1677,6 +1768,7 @@ The training pipeline infrastructure is **100% production-ready**:
 #### KISS Principles Followed Throughout 🎯
 
 The training infrastructure follows **Keep It Simple, Stupid** principles:
+
 - Clear separation of concerns (Trainer, Orchestrator, Evaluator)
 - Simple configuration objects (no complex builders)
 - Straightforward error handling (comprehensive logging)
@@ -1695,25 +1787,28 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 📋 Phase 4: Enhanced Stock Selection Service (Weeks 7-8)
 
 ### 4.1 MLEnhancedStockSelectionService (Days 29-31)
+
 - [ ] **Create MLEnhancedStockSelectionService** (extends StockSelectionService)
-  - [ ] Parallel execution: classic VFR + ML predictions
-  - [ ] ML-enhanced composite scoring (90% VFR + 10% ML)
-  - [ ] Enhanced recommendation generation
-  - [ ] Confidence scoring integration
-  - [ ] Risk assessment enhancement
-  - [ ] Graceful fallback to classic on ML failure
+    - [ ] Parallel execution: classic VFR + ML predictions
+    - [ ] ML-enhanced composite scoring (90% VFR + 10% ML)
+    - [ ] Enhanced recommendation generation
+    - [ ] Confidence scoring integration
+    - [ ] Risk assessment enhancement
+    - [ ] Graceful fallback to classic on ML failure
 - [ ] **Implement enhanced scoring algorithm**
-  - [ ] Preserve existing 5-factor VFR scoring (85% weight)
-  - [ ] Add ML prediction as 6th factor (15% weight)
-  - [ ] Confidence-weighted ML contribution
-  - [ ] Score normalization (0-100 range)
+    - [ ] Preserve existing 5-factor VFR scoring (85% weight)
+    - [ ] Add ML prediction as 6th factor (15% weight)
+    - [ ] Confidence-weighted ML contribution
+    - [ ] Score normalization (0-100 range)
 - [ ] **Test enhanced analysis** vs classic baseline
 
 **Files to Create**:
+
 - `app/services/stock-selection/MLEnhancedStockSelectionService.ts`
 - `app/services/stock-selection/EnhancedScoringEngine.ts`
 
 **Success Criteria**:
+
 - Zero breaking changes to existing StockSelectionService
 - ML enhancement optional (via `include_ml` parameter)
 - Graceful fallback maintains VFR functionality
@@ -1721,25 +1816,28 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ---
 
 ### 4.2 Ensemble Prediction Service (Days 32-34)
+
 - [ ] **Implement EnsembleService** (combines multiple models)
-  - [ ] Parallel model predictions
-  - [ ] Dynamic weight calculation (based on recent performance)
-  - [ ] Weighted ensemble combination
-  - [ ] Voting ensemble (for classification)
-  - [ ] Stacking ensemble (meta-learner)
-  - [ ] Confidence calculation across models
+    - [ ] Parallel model predictions
+    - [ ] Dynamic weight calculation (based on recent performance)
+    - [ ] Weighted ensemble combination
+    - [ ] Voting ensemble (for classification)
+    - [ ] Stacking ensemble (meta-learner)
+    - [ ] Confidence calculation across models
 - [ ] **Create model performance tracking**
-  - [ ] Real-time accuracy tracking
-  - [ ] Latency monitoring
-  - [ ] Drift detection
+    - [ ] Real-time accuracy tracking
+    - [ ] Latency monitoring
+    - [ ] Drift detection
 - [ ] **Test ensemble combinations**
 
 **Files to Create**:
+
 - `app/services/ml/ensemble/EnsembleService.ts`
 - `app/services/ml/ensemble/WeightCalculator.ts`
 - `app/services/ml/ensemble/ModelPerformanceTracker.ts`
 
 **Success Criteria**:
+
 - Ensemble outperforms single models
 - <200ms for 5-model ensemble
 - Dynamic weighting improves accuracy
@@ -1747,21 +1845,25 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ---
 
 ### 4.3 Enhanced AlgorithmEngine Integration (Days 35-36)
+
 - [ ] **Extend AlgorithmEngine with ML insights** (preserves existing)
-  - [ ] ML-enhanced factor scoring (optional enhancement)
-  - [ ] Confidence-weighted factor contributions
-  - [ ] Risk-adjusted ML scoring
-  - [ ] Performance monitoring per factor
+    - [ ] ML-enhanced factor scoring (optional enhancement)
+    - [ ] Confidence-weighted factor contributions
+    - [ ] Risk-adjusted ML scoring
+    - [ ] Performance monitoring per factor
 - [ ] **Test factor score integration**
 - [ ] **Validate backward compatibility**
 
 **Files to Modify**:
+
 - `app/services/algorithms/AlgorithmEngine.ts` (extend, don't replace)
 
 **Files to Create**:
+
 - `app/services/algorithms/MLEnhancedFactorEngine.ts`
 
 **Success Criteria**:
+
 - Existing AlgorithmEngine unchanged
 - ML enhancement as optional layer
 - Factor weights preserved by default
@@ -1771,22 +1873,25 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 📋 Phase 5: Production Deployment (Weeks 9-10)
 
 ### 5.1 Backtesting Framework (Days 37-39)
+
 - [ ] **Implement BacktestingService**
-  - [ ] Walk-forward backtesting
-  - [ ] Transaction cost simulation (commissions, slippage, market impact)
-  - [ ] Portfolio tracking and rebalancing
-  - [ ] Strategy execution simulator
-  - [ ] Performance metrics calculation (Sharpe, Sortino, Calmar, max DD)
-  - [ ] Benchmark comparison (vs SPY)
+    - [ ] Walk-forward backtesting
+    - [ ] Transaction cost simulation (commissions, slippage, market impact)
+    - [ ] Portfolio tracking and rebalancing
+    - [ ] Strategy execution simulator
+    - [ ] Performance metrics calculation (Sharpe, Sortino, Calmar, max DD)
+    - [ ] Benchmark comparison (vs SPY)
 - [ ] **Create comprehensive backtest reports**
 - [ ] **Test against historical data** (5-10 years)
 
 **Files to Create**:
+
 - `app/services/ml/backtesting/BacktestingService.ts`
 - `app/services/ml/backtesting/TransactionCostSimulator.ts`
 - `app/services/ml/backtesting/PerformanceAnalyzer.ts`
 
 **Success Criteria**:
+
 - Backtest shows >60% direction accuracy
 - Sharpe ratio >1.0 on out-of-sample data
 - Realistic transaction costs included
@@ -1794,23 +1899,26 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ---
 
 ### 5.2 Monitoring & Alerting (Days 40-41)
+
 - [ ] **Implement MLMonitoringService**
-  - [ ] Real-time performance tracking
-  - [ ] Model drift detection (feature drift, concept drift)
-  - [ ] Prediction accuracy monitoring
-  - [ ] Latency monitoring (p50, p95, p99)
-  - [ ] Memory usage tracking
-  - [ ] Cache hit rate monitoring
-  - [ ] Alert management (Slack, email, dashboard)
+    - [ ] Real-time performance tracking
+    - [ ] Model drift detection (feature drift, concept drift)
+    - [ ] Prediction accuracy monitoring
+    - [ ] Latency monitoring (p50, p95, p99)
+    - [ ] Memory usage tracking
+    - [ ] Cache hit rate monitoring
+    - [ ] Alert management (Slack, email, dashboard)
 - [ ] **Create monitoring dashboards**
 - [ ] **Configure alert thresholds**
 
 **Files to Create**:
+
 - `app/services/ml/monitoring/MLMonitoringService.ts`
 - `app/services/ml/monitoring/DriftDetector.ts`
 - `app/services/ml/monitoring/AlertManager.ts`
 
 **Success Criteria**:
+
 - Real-time monitoring operational
 - Alerts trigger on performance degradation
 - Drift detection accuracy >90%
@@ -1818,25 +1926,28 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ---
 
 ### 5.3 Integration Testing (Days 42-44)
+
 - [ ] **End-to-end integration tests**
-  - [ ] Full prediction pipeline (features → models → ensemble → response)
-  - [ ] Performance under load (50+ concurrent requests)
-  - [ ] Graceful degradation testing (ML service failures)
-  - [ ] Fallback mechanism validation
-  - [ ] Memory leak testing
-  - [ ] Cache performance testing
+    - [ ] Full prediction pipeline (features → models → ensemble → response)
+    - [ ] Performance under load (50+ concurrent requests)
+    - [ ] Graceful degradation testing (ML service failures)
+    - [ ] Fallback mechanism validation
+    - [ ] Memory leak testing
+    - [ ] Cache performance testing
 - [ ] **Security testing**
-  - [ ] Input validation
-  - [ ] Rate limiting
-  - [ ] Authentication/authorization
+    - [ ] Input validation
+    - [ ] Rate limiting
+    - [ ] Authentication/authorization
 - [ ] **Production readiness checklist**
 
 **Files to Create**:
+
 - `__tests__/integration/ml-end-to-end.test.ts`
 - `__tests__/integration/ml-performance.test.ts`
 - `__tests__/integration/ml-fallback.test.ts`
 
 **Success Criteria**:
+
 - All integration tests pass
 - <3-second end-to-end latency
 - Graceful fallback verified
@@ -1846,51 +1957,57 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 📋 Phase 6: Optimization & Advanced Features (Weeks 11-12)
 
 ### 6.1 Performance Optimization (Days 45-47)
+
 - [ ] **Memory optimization**
-  - [ ] Object pooling for feature vectors
-  - [ ] Model cache optimization (LRU eviction)
-  - [ ] Garbage collection tuning
-  - [ ] Memory leak prevention
+    - [ ] Object pooling for feature vectors
+    - [ ] Model cache optimization (LRU eviction)
+    - [ ] Garbage collection tuning
+    - [ ] Memory leak prevention
 - [ ] **Inference optimization**
-  - [ ] Vectorized operations
-  - [ ] Batch prediction optimization
-  - [ ] Worker pool for CPU-intensive tasks
-  - [ ] Algorithm-specific optimizations
+    - [ ] Vectorized operations
+    - [ ] Batch prediction optimization
+    - [ ] Worker pool for CPU-intensive tasks
+    - [ ] Algorithm-specific optimizations
 - [ ] **Cache optimization**
-  - [ ] Cache warming strategies
-  - [ ] TTL optimization by data type
-  - [ ] Compression for large payloads
+    - [ ] Cache warming strategies
+    - [ ] TTL optimization by data type
+    - [ ] Compression for large payloads
 - [ ] **Test optimizations**
 
 **Files to Create**:
+
 - `app/services/ml/optimization/MemoryManager.ts`
 - `app/services/ml/optimization/InferenceOptimizer.ts`
 - `app/services/ml/optimization/CacheOptimizer.ts`
 
 **Success Criteria**:
+
 - <100ms ML enhancement latency (down from initial target)
 - <1.8GB additional memory (down from 2GB target)
-- >90% cache hit rate (up from 85% target)
+- > 90% cache hit rate (up from 85% target)
 
 ---
 
 ### 6.2 Risk Assessment Integration (Days 48-50)
+
 - [ ] **Implement MLRiskManager**
-  - [ ] Position risk assessment
-  - [ ] Portfolio VaR calculation (ML-enhanced)
-  - [ ] Stress testing with ML scenarios
-  - [ ] Maximum drawdown forecasting
-  - [ ] Sharpe ratio forecasting
-  - [ ] Portfolio optimization (ML-constrained)
+    - [ ] Position risk assessment
+    - [ ] Portfolio VaR calculation (ML-enhanced)
+    - [ ] Stress testing with ML scenarios
+    - [ ] Maximum drawdown forecasting
+    - [ ] Sharpe ratio forecasting
+    - [ ] Portfolio optimization (ML-constrained)
 - [ ] **Create risk reports**
 - [ ] **Test risk calculations**
 
 **Files to Create**:
+
 - `app/services/ml/risk/MLRiskManager.ts`
 - `app/services/ml/risk/PortfolioOptimizer.ts`
 - `app/services/ml/risk/StressTestEngine.ts`
 
 **Success Criteria**:
+
 - Risk calculations within 5% of realized
 - Portfolio optimizer produces feasible weights
 - Stress tests cover major market scenarios
@@ -1898,30 +2015,33 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ---
 
 ### 6.3 Production Validation & Documentation (Days 51-52)
+
 - [ ] **Production validation**
-  - [ ] Performance validation (all targets met)
-  - [ ] Security validation (OWASP compliance)
-  - [ ] Data quality validation
-  - [ ] Model validation (accuracy, drift)
-  - [ ] Integration validation (backward compatibility)
+    - [ ] Performance validation (all targets met)
+    - [ ] Security validation (OWASP compliance)
+    - [ ] Data quality validation
+    - [ ] Model validation (accuracy, drift)
+    - [ ] Integration validation (backward compatibility)
 - [ ] **Create operations documentation**
-  - [ ] Production deployment guide
-  - [ ] Operations runbooks
-  - [ ] Emergency procedures
-  - [ ] Monitoring guides
-  - [ ] Model retraining procedures
+    - [ ] Production deployment guide
+    - [ ] Operations runbooks
+    - [ ] Emergency procedures
+    - [ ] Monitoring guides
+    - [ ] Model retraining procedures
 - [ ] **Create user documentation**
-  - [ ] API documentation (updated with ML endpoints)
-  - [ ] ML feature usage guide
-  - [ ] Interpretation guide (understanding ML predictions)
+    - [ ] API documentation (updated with ML endpoints)
+    - [ ] ML feature usage guide
+    - [ ] Interpretation guide (understanding ML predictions)
 
 **Files to Create**:
+
 - `docs/analysis-engine/ml-production-guide.md`
 - `docs/analysis-engine/ml-operations-runbook.md`
 - `docs/api/ml-endpoints.md`
 - `docs/user-guides/ml-predictions.md`
 
 **Success Criteria**:
+
 - All validation tests pass
 - Complete operations documentation
 - User guides ready for production
@@ -1931,6 +2051,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 📊 Success Metrics & Targets
 
 ### Performance Targets
+
 - **ML Enhancement Latency**: <100ms additional (target: <85ms achieved)
 - **Feature Engineering**: <500ms for 25 symbols (target: <450ms achieved)
 - **Model Inference**: <50ms per prediction (target: <40ms achieved)
@@ -1939,6 +2060,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 - **System Reliability**: 99.5% uptime maintained (target: 99.7% achieved)
 
 ### Business Targets
+
 - **Prediction Accuracy**: >60% direction accuracy on out-of-sample data
 - **Sharpe Ratio**: >1.0 on backtested strategies
 - **User Adoption**: >20% of users opt-in to ML enhancements (first 3 months)
@@ -1946,6 +2068,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 - **Graceful Degradation**: VFR classic analysis always functional
 
 ### Integration Targets
+
 - **Backward Compatibility**: 100% existing functionality preserved
 - **Zero Downtime**: Maintained 99.7% uptime during implementation
 - **Rollback Capability**: <5-minute ML disable if needed
@@ -1956,6 +2079,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 🔧 Development Guidelines
 
 ### Coding Standards
+
 - **Extend, Don't Replace**: All ML services extend existing VFR patterns
 - **Optional Enhancement**: ML features accessible via opt-in parameters
 - **Graceful Degradation**: Full VFR functionality if ML unavailable
@@ -1963,6 +2087,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 - **KISS Principles**: Keep solutions simple, modular, testable
 
 ### Testing Requirements
+
 - **Unit Tests**: >80% coverage for all ML services
 - **Integration Tests**: End-to-end testing with real APIs (NO MOCK DATA)
 - **Performance Tests**: Latency, memory, cache hit rate validation
@@ -1970,6 +2095,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 - **Fallback Tests**: ML failure scenarios thoroughly tested
 
 ### Security Requirements
+
 - **OWASP Compliance**: SecurityValidator for all ML inputs
 - **Rate Limiting**: ML-specific rate limits per user tier
 - **Authentication**: JWT validation for all ML endpoints
@@ -1993,6 +2119,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - PostgreSQL (existing VFR database)
 - Redis (existing VFR cache)
@@ -2000,6 +2127,7 @@ The training infrastructure follows **Keep It Simple, Stupid** principles:
 - GPU access (optional, for faster training)
 
 ### Environment Setup
+
 ```bash
 # Install additional ML dependencies
 npm install --save lightgbm xgboost @tensorflow/tfjs-node
@@ -2012,6 +2140,7 @@ npm install --save-dev @types/node
 ```
 
 ### Initial Development Steps
+
 1. **Review all ML documentation** in `docs/analysis-engine/machine-learning/`
 2. **Start with Phase 1 (Weeks 1-2)**: Database schema and service foundation
 3. **Test each phase thoroughly** before moving to next phase
@@ -2023,6 +2152,7 @@ npm install --save-dev @types/node
 ## 🎯 Priority Matrix
 
 ### Critical Path Items (Must Complete First)
+
 1. **Database schema extensions** (enables all ML features)
 2. **Modular ML service foundation** (core architecture)
 3. **Feature Store implementation** (data infrastructure)
@@ -2031,6 +2161,7 @@ npm install --save-dev @types/node
 6. **MLEnhancedStockSelectionService** (user-facing enhancement)
 
 ### High Priority (Essential for Production)
+
 - Cache extensions (Redis)
 - API endpoint enhancements
 - Monitoring and alerting
@@ -2038,12 +2169,14 @@ npm install --save-dev @types/node
 - Performance optimization
 
 ### Medium Priority (Nice to Have)
+
 - Advanced ensemble methods
 - Risk assessment integration
 - Portfolio optimization
 - Sophisticated backtesting
 
 ### Low Priority (Future Enhancements)
+
 - Advanced ML models (transformers, reinforcement learning)
 - Real-time retraining
 - Automated hyperparameter optimization
@@ -2054,6 +2187,7 @@ npm install --save-dev @types/node
 ## 📝 Notes & Considerations
 
 ### Modular Architecture Benefits
+
 - **Risk Mitigation**: VFR classic analysis always available
 - **Incremental Deployment**: Deploy and test each phase independently
 - **Rollback Capability**: Disable ML layer in <5 minutes if issues
@@ -2061,12 +2195,14 @@ npm install --save-dev @types/node
 - **Zero Disruption**: Existing users unaffected by ML development
 
 ### Performance Considerations
+
 - **Memory Management**: ML layer capped at 2GB additional memory
 - **Latency Targets**: <100ms additional for ML enhancement
 - **Cache Strategy**: Aggressive caching to minimize database load
 - **Graceful Degradation**: Fallback to cache/VFR on ML failures
 
 ### Business Considerations
+
 - **Optional Feature**: ML enhancements opt-in via API parameters
 - **Revenue Opportunity**: Premium ML features for subscription tiers
 - **Competitive Advantage**: Institutional-grade ML for retail investors

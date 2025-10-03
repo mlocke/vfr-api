@@ -1,4 +1,5 @@
 ## Merge into main
+
 1. Merges the current branch into the main branch.
 2. Push the changes to the remote repository.
 3. Use a merge commit to preserve the history.

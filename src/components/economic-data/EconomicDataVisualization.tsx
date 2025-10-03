@@ -212,7 +212,7 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 		if (!fredData || !fredData.observations) return [];
 		return fredData.observations.map((obs: any) => ({
 			date: new Date(obs.date),
-			value: parseFloat(obs.value) || 0
+			value: parseFloat(obs.value) || 0,
 		}));
 	};
 
@@ -246,7 +246,10 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 		if (inflationData.length > 0) {
 			series.push({
 				name: "Consumer Price Index",
-				data: inflationData.map((d: any) => ({ ...d, value: ((d.value - 300) / 300) * 100 })), // Normalize for comparison
+				data: inflationData.map((d: any) => ({
+					...d,
+					value: ((d.value - 300) / 300) * 100,
+				})), // Normalize for comparison
 				color: "#0080FF",
 				yAxis: "right" as const,
 			});
@@ -355,7 +358,11 @@ const EconomicDataVisualization: React.FC<EconomicDataVisualizationProps> = ({
 								dashboardData[sectorName as keyof EconomicDashboardData];
 							const indicators = Object.keys(sectorData);
 							const mainIndicator = sectorData[indicators[0]];
-							const config = { color: '#00C853', description: sectorName, glowColor: 'green' as const };
+							const config = {
+								color: "#00C853",
+								description: sectorName,
+								glowColor: "green" as const,
+							};
 
 							return (
 								<MetricCard

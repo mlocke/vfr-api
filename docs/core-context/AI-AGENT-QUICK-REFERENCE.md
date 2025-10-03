@@ -20,6 +20,7 @@ Build failures                    → npm run build                       → Cl
 ## ⚡ INSTANT VALIDATION SEQUENCE
 
 **BEFORE ANY TASK** (30-second validation):
+
 1. `curl localhost:3000/api/health` → Must return 200 OK
 2. `npm run type-check` → Must show 0 errors
 3. Check `/admin` → APIs green/yellow acceptable
@@ -27,6 +28,7 @@ Build failures                    → npm run build                       → Cl
 ## 🎯 DECISION TREES (AI-Optimized)
 
 ### Task Classification → Action Path
+
 ```
 DEVELOPMENT_TASK
 ├── Code_Changes → type-check FIRST → Implement → Test
@@ -50,6 +52,7 @@ ANALYSIS_TASK
 ## 🔧 COMMAND SHORTCUTS
 
 ### Development Workflow
+
 ```bash
 # Clean environment (port conflicts)
 npm run dev:clean
@@ -68,6 +71,7 @@ npm run build
 ```
 
 ### Debugging Commands
+
 ```bash
 # System health
 curl localhost:3000/api/health
@@ -88,6 +92,7 @@ npm run dev:monitor
 ## 🚦 SYSTEM STATE INDICATORS
 
 ### State Recognition (Visual Cues)
+
 ```
 HEALTHY   → /api/health: 200 OK + Admin dashboard: All green
 DEGRADED  → Some APIs yellow/red + Response times 3-10s
@@ -96,6 +101,7 @@ CRITICAL  → Multiple failures + 500 errors + System unresponsive
 ```
 
 ### Auto-Recovery Triggers
+
 ```
 API_Rate_Limit (429)     → FallbackDataService activates automatically
 Redis_Connection_Lost    → In-memory cache fallback activates
@@ -107,18 +113,21 @@ Service_Timeout         → Circuit breaker pattern activates
 ## 📋 IMMEDIATE ACTION CHECKLIST
 
 ### Before Making ANY Code Changes
+
 - [ ] `npm run type-check` returns 0 errors
 - [ ] `/api/health` returns 200 OK
 - [ ] Admin dashboard shows acceptable API status
 - [ ] No port conflicts on 3000
 
 ### Before Running Tests
+
 - [ ] Export NODE_OPTIONS if memory constrained
 - [ ] Verify real API connectivity
 - [ ] Check Redis status (fallback OK if down)
 - [ ] Ensure clean environment (`dev:clean` if needed)
 
 ### Before Deployment/Build
+
 - [ ] All tests pass with real data
 - [ ] TypeScript compilation clean
 - [ ] Performance benchmarks met (<3s analysis)
@@ -127,6 +136,7 @@ Service_Timeout         → Circuit breaker pattern activates
 ## 🎛️ CONFIGURATION MATRIX
 
 ### Memory Settings by Task
+
 ```
 Task_Type              → NODE_OPTIONS                     → Jest_Config
 Development           → --max-old-space-size=4096       → maxWorkers: 1
@@ -136,6 +146,7 @@ Production_Build      → --max-old-space-size=4096       → Standard
 ```
 
 ### API Fallback Priority
+
 ```
 Primary:    Polygon → Alpha Vantage → FMP
 Secondary:  EODHD → TwelveData
@@ -146,6 +157,7 @@ Backup:     Yahoo Finance (emergency only)
 ## 🔍 QUICK DIAGNOSTIC PATTERNS
 
 ### Error Pattern Recognition
+
 ```
 "EADDRINUSE"           → Port conflict → npm run dev:clean
 "heap out of memory"   → Memory issue → Increase NODE_OPTIONS
@@ -156,6 +168,7 @@ Backup:     Yahoo Finance (emergency only)
 ```
 
 ### Service Status Quick Check
+
 ```
 Service_Unresponsive  → /api/health endpoint check
 Data_Quality_Issues   → /admin dashboard review
@@ -167,6 +180,7 @@ Cache_Problems        → Redis connectivity test
 ## 💡 AI AGENT ASSUMPTIONS (Critical)
 
 ### Always True Assumptions
+
 - NO MOCK DATA EVER (real APIs only)
 - TypeScript strict mode required
 - TDD approach with real API testing
@@ -176,6 +190,7 @@ Cache_Problems        → Redis connectivity test
 - Graceful degradation on failures
 
 ### Never Do List
+
 - ❌ Use mock data in tests
 - ❌ Ignore TypeScript errors
 - ❌ Skip security validation
@@ -184,6 +199,7 @@ Cache_Problems        → Redis connectivity test
 - ❌ Use production APIs in tests without rate limiting
 
 ### Always Do List
+
 - ✅ Validate system health before tasks
 - ✅ Use real APIs with proper timeouts
 - ✅ Implement graceful error handling

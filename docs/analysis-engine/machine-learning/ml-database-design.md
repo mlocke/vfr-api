@@ -23,6 +23,7 @@ Data Type           Storage Layer       Performance Target    Retention Policy
 ### Integration with Existing VFR Infrastructure
 
 **Extends Current Architecture**:
+
 - **PostgreSQL**: Primary storage for ML metadata, features, and results
 - **Redis**: High-performance caching for predictions and features
 - **InfluxDB**: Time-series storage for high-frequency market data (optional)
@@ -224,115 +225,115 @@ CREATE INDEX idx_mv_feature_vectors_ticker_time
 ```typescript
 // Redis key patterns for ML enhancements (extends existing VFR patterns)
 interface MLCacheKeys {
-  // Extend existing stock analysis cache
-  enhanced_stock_analysis: `vfr:enhanced:${symbol}:${timestamp}` // 15-minute TTL
-  ml_enhancement_only: `vfr:ml:enhancement:${symbol}:${factor}:${timestamp}` // 5-minute TTL
-  ml_prediction_cache: `vfr:ml:prediction:${symbol}:${model}:${horizon}:${timestamp}` // 5-minute TTL
-  ml_model_cache: `vfr:ml:model:${modelId}` // 1-hour TTL
-  ml_feature_cache: `vfr:ml:features:${symbol}:${timestamp}` // 15-minute TTL
+	// Extend existing stock analysis cache
+	enhanced_stock_analysis: `vfr:enhanced:${symbol}:${timestamp}`; // 15-minute TTL
+	ml_enhancement_only: `vfr:ml:enhancement:${symbol}:${factor}:${timestamp}`; // 5-minute TTL
+	ml_prediction_cache: `vfr:ml:prediction:${symbol}:${model}:${horizon}:${timestamp}`; // 5-minute TTL
+	ml_model_cache: `vfr:ml:model:${modelId}`; // 1-hour TTL
+	ml_feature_cache: `vfr:ml:features:${symbol}:${timestamp}`; // 15-minute TTL
 
-  // Fallback status tracking
-  ml_fallback_status: `vfr:ml:fallback:${service}` // 1-minute TTL
-  ml_health_status: `vfr:ml:health:${timestamp}` // 30-second TTL
+	// Fallback status tracking
+	ml_fallback_status: `vfr:ml:fallback:${service}`; // 1-minute TTL
+	ml_health_status: `vfr:ml:health:${timestamp}`; // 30-second TTL
 }
 
 // ML-enhanced cache service (extends existing RedisCache)
 class MLEnhancedCacheService extends RedisCache {
-  constructor() {
-    super({
-      keyPrefix: 'vfr:', // Maintain existing key prefix
-      defaultTTL: 900,   // 15 minutes (same as existing analysis cache)
-      compression: true  // Enable for larger ML payloads
-    })
-  }
+	constructor() {
+		super({
+			keyPrefix: "vfr:", // Maintain existing key prefix
+			defaultTTL: 900, // 15 minutes (same as existing analysis cache)
+			compression: true, // Enable for larger ML payloads
+		});
+	}
 
-  // Cache enhanced stock analysis (preserves existing format + ML enhancements)
-  async cacheEnhancedAnalysis(
-    symbol: string,
-    analysis: EnhancedStockAnalysis,
-    includeML: boolean = false
-  ): Promise<void> {
-    const cacheKey = includeML
-      ? `enhanced:${symbol}:${Math.floor(Date.now() / 900000)}` // 15-min window
-      : `classic:${symbol}:${Math.floor(Date.now() / 900000)}`  // Use existing pattern
+	// Cache enhanced stock analysis (preserves existing format + ML enhancements)
+	async cacheEnhancedAnalysis(
+		symbol: string,
+		analysis: EnhancedStockAnalysis,
+		includeML: boolean = false
+	): Promise<void> {
+		const cacheKey = includeML
+			? `enhanced:${symbol}:${Math.floor(Date.now() / 900000)}` // 15-min window
+			: `classic:${symbol}:${Math.floor(Date.now() / 900000)}`; // Use existing pattern
 
-    await this.setex(cacheKey, 900, analysis) // 15-minute TTL
-  }
+		await this.setex(cacheKey, 900, analysis); // 15-minute TTL
+	}
 
-  // Get cached analysis with ML fallback logic
-  async getCachedAnalysis(
-    symbol: string,
-    preferML: boolean = false
-  ): Promise<EnhancedStockAnalysis | null> {
-    const timeWindow = Math.floor(Date.now() / 900000)
+	// Get cached analysis with ML fallback logic
+	async getCachedAnalysis(
+		symbol: string,
+		preferML: boolean = false
+	): Promise<EnhancedStockAnalysis | null> {
+		const timeWindow = Math.floor(Date.now() / 900000);
 
-    if (preferML) {
-      // Try ML-enhanced first
-      const enhanced = await this.get(`enhanced:${symbol}:${timeWindow}`)
-      if (enhanced) return enhanced
-    }
+		if (preferML) {
+			// Try ML-enhanced first
+			const enhanced = await this.get(`enhanced:${symbol}:${timeWindow}`);
+			if (enhanced) return enhanced;
+		}
 
-    // Fallback to classic analysis (existing pattern)
-    const classic = await this.get(`classic:${symbol}:${timeWindow}`)
-    return classic
-  }
+		// Fallback to classic analysis (existing pattern)
+		const classic = await this.get(`classic:${symbol}:${timeWindow}`);
+		return classic;
+	}
 
-  // Cache ML-specific predictions (new functionality)
-  async cacheMLPrediction(
-    symbol: string,
-    modelId: string,
-    horizon: string,
-    prediction: MLPrediction
-  ): Promise<void> {
-    const cacheKey = `ml:prediction:${symbol}:${modelId}:${horizon}:${Math.floor(Date.now() / 300000)}`
-    await this.setex(cacheKey, 300, prediction) // 5-minute TTL for predictions
-  }
+	// Cache ML-specific predictions (new functionality)
+	async cacheMLPrediction(
+		symbol: string,
+		modelId: string,
+		horizon: string,
+		prediction: MLPrediction
+	): Promise<void> {
+		const cacheKey = `ml:prediction:${symbol}:${modelId}:${horizon}:${Math.floor(Date.now() / 300000)}`;
+		await this.setex(cacheKey, 300, prediction); // 5-minute TTL for predictions
+	}
 
-  // Track ML service health in cache
-  async setMLHealthStatus(serviceName: string, status: MLHealthStatus): Promise<void> {
-    const cacheKey = `ml:health:${serviceName}`
-    await this.setex(cacheKey, 30, status) // 30-second TTL for health status
-  }
+	// Track ML service health in cache
+	async setMLHealthStatus(serviceName: string, status: MLHealthStatus): Promise<void> {
+		const cacheKey = `ml:health:${serviceName}`;
+		await this.setex(cacheKey, 30, status); // 30-second TTL for health status
+	}
 
-  // Cache fallback status to prevent repeated ML attempts
-  async setFallbackStatus(reason: string, duration: number = 60): Promise<void> {
-    const cacheKey = `ml:fallback:${reason}`
-    await this.setex(cacheKey, duration, {
-      timestamp: Date.now(),
-      reason,
-      fallback_active: true
-    })
-  }
+	// Cache fallback status to prevent repeated ML attempts
+	async setFallbackStatus(reason: string, duration: number = 60): Promise<void> {
+		const cacheKey = `ml:fallback:${reason}`;
+		await this.setex(cacheKey, duration, {
+			timestamp: Date.now(),
+			reason,
+			fallback_active: true,
+		});
+	}
 
-  // Check if we should skip ML and use classic analysis
-  async shouldUseFallback(): Promise<boolean> {
-    const fallbackKeys = await this.keys('ml:fallback:*')
-    return fallbackKeys.length > 0
-  }
+	// Check if we should skip ML and use classic analysis
+	async shouldUseFallback(): Promise<boolean> {
+		const fallbackKeys = await this.keys("ml:fallback:*");
+		return fallbackKeys.length > 0;
+	}
 }
 
 // Performance monitoring cache (tracks ML enhancement performance)
 class MLPerformanceCacheService extends RedisCache {
-  async trackEnhancementLatency(symbol: string, latency: number): Promise<void> {
-    const key = `ml:perf:latency:${symbol}:${new Date().getHours()}`
+	async trackEnhancementLatency(symbol: string, latency: number): Promise<void> {
+		const key = `ml:perf:latency:${symbol}:${new Date().getHours()}`;
 
-    // Store hourly latency stats
-    await this.pipeline([
-      ['lpush', key, latency],
-      ['ltrim', key, 0, 99], // Keep last 100 measurements
-      ['expire', key, 3600]  // 1-hour expiry
-    ])
-  }
+		// Store hourly latency stats
+		await this.pipeline([
+			["lpush", key, latency],
+			["ltrim", key, 0, 99], // Keep last 100 measurements
+			["expire", key, 3600], // 1-hour expiry
+		]);
+	}
 
-  async getAverageLatency(symbol: string): Promise<number> {
-    const key = `ml:perf:latency:${symbol}:${new Date().getHours()}`
-    const latencies = await this.lrange(key, 0, -1)
+	async getAverageLatency(symbol: string): Promise<number> {
+		const key = `ml:perf:latency:${symbol}:${new Date().getHours()}`;
+		const latencies = await this.lrange(key, 0, -1);
 
-    if (latencies.length === 0) return 0
+		if (latencies.length === 0) return 0;
 
-    const sum = latencies.reduce((a, b) => a + parseFloat(b), 0)
-    return sum / latencies.length
-  }
+		const sum = latencies.reduce((a, b) => a + parseFloat(b), 0);
+		return sum / latencies.length;
+	}
 }
 ```
 
@@ -982,119 +983,115 @@ CREATE UNIQUE INDEX idx_mv_model_performance_primary
 // ====================
 
 interface MLRedisCacheSchema {
-  // Prediction cache with 5-minute TTL
-  predictions: {
-    keyPattern: "ml:pred:{model_id}:{ticker}:{horizon}:{timestamp_floor}";
-    ttl: 300; // 5 minutes
-    dataType: "hash";
-    fields: {
-      predicted_value: string;
-      confidence_score: string;
-      probability_up: string;
-      probability_down: string;
-      features_hash: string;
-      created_at: string;
-    };
-  };
+	// Prediction cache with 5-minute TTL
+	predictions: {
+		keyPattern: "ml:pred:{model_id}:{ticker}:{horizon}:{timestamp_floor}";
+		ttl: 300; // 5 minutes
+		dataType: "hash";
+		fields: {
+			predicted_value: string;
+			confidence_score: string;
+			probability_up: string;
+			probability_down: string;
+			features_hash: string;
+			created_at: string;
+		};
+	};
 
-  // Feature cache with variable TTL by type
-  features: {
-    keyPattern: "ml:feat:{ticker}:{feature_type}:{timestamp_floor}";
-    ttl: {
-      technical: 60;     // 1 minute
-      fundamental: 3600; // 1 hour
-      sentiment: 900;    // 15 minutes
-      macro: 1800;       // 30 minutes
-    };
-    dataType: "hash";
-    compression: true;
-  };
+	// Feature cache with variable TTL by type
+	features: {
+		keyPattern: "ml:feat:{ticker}:{feature_type}:{timestamp_floor}";
+		ttl: {
+			technical: 60; // 1 minute
+			fundamental: 3600; // 1 hour
+			sentiment: 900; // 15 minutes
+			macro: 1800; // 30 minutes
+		};
+		dataType: "hash";
+		compression: true;
+	};
 
-  // Model metadata cache with 1-hour TTL
-  models: {
-    keyPattern: "ml:model:{model_id}";
-    ttl: 3600; // 1 hour
-    dataType: "hash";
-    fields: {
-      model_path: string;
-      hyperparameters: string; // JSON
-      feature_names: string;   // JSON array
-      last_updated: string;
-      performance_metrics: string; // JSON
-    };
-  };
+	// Model metadata cache with 1-hour TTL
+	models: {
+		keyPattern: "ml:model:{model_id}";
+		ttl: 3600; // 1 hour
+		dataType: "hash";
+		fields: {
+			model_path: string;
+			hyperparameters: string; // JSON
+			feature_names: string; // JSON array
+			last_updated: string;
+			performance_metrics: string; // JSON
+		};
+	};
 
-  // Feature vectors for batch predictions
-  feature_vectors: {
-    keyPattern: "ml:fvec:{ticker}:{timestamp}";
-    ttl: 900; // 15 minutes
-    dataType: "string";
-    compression: true; // Compress large vectors
-  };
+	// Feature vectors for batch predictions
+	feature_vectors: {
+		keyPattern: "ml:fvec:{ticker}:{timestamp}";
+		ttl: 900; // 15 minutes
+		dataType: "string";
+		compression: true; // Compress large vectors
+	};
 
-  // Model performance metrics
-  performance: {
-    keyPattern: "ml:perf:{model_id}:{date}";
-    ttl: 86400; // 24 hours
-    dataType: "hash";
-    fields: {
-      accuracy: string;
-      mae: string;
-      rmse: string;
-      latency_p95: string;
-      prediction_count: string;
-    };
-  };
+	// Model performance metrics
+	performance: {
+		keyPattern: "ml:perf:{model_id}:{date}";
+		ttl: 86400; // 24 hours
+		dataType: "hash";
+		fields: {
+			accuracy: string;
+			mae: string;
+			rmse: string;
+			latency_p95: string;
+			prediction_count: string;
+		};
+	};
 
-  // Real-time rankings and scores
-  rankings: {
-    keyPattern: "ml:rank:{universe}:{model_id}:{timestamp}";
-    ttl: 300; // 5 minutes
-    dataType: "zset"; // Sorted set for rankings
-  };
+	// Real-time rankings and scores
+	rankings: {
+		keyPattern: "ml:rank:{universe}:{model_id}:{timestamp}";
+		ttl: 300; // 5 minutes
+		dataType: "zset"; // Sorted set for rankings
+	};
 
-  // Cache warming status
-  cache_status: {
-    keyPattern: "ml:status:{service}";
-    ttl: 60; // 1 minute
-    dataType: "string";
-  };
+	// Cache warming status
+	cache_status: {
+		keyPattern: "ml:status:{service}";
+		ttl: 60; // 1 minute
+		dataType: "string";
+	};
 }
 
 // Cache warming and management functions
 class MLCacheManager {
-  constructor(private redis: RedisClient) {}
+	constructor(private redis: RedisClient) {}
 
-  async warmPredictionCache(
-    popularTickers: string[],
-    activeModels: string[]
-  ): Promise<void> {
-    const warmingTasks = []
+	async warmPredictionCache(popularTickers: string[], activeModels: string[]): Promise<void> {
+		const warmingTasks = [];
 
-    for (const ticker of popularTickers) {
-      for (const modelId of activeModels) {
-        warmingTasks.push(
-          this.warmSinglePrediction(ticker, modelId)
-        )
-      }
-    }
+		for (const ticker of popularTickers) {
+			for (const modelId of activeModels) {
+				warmingTasks.push(this.warmSinglePrediction(ticker, modelId));
+			}
+		}
 
-    await Promise.allSettled(warmingTasks)
-  }
+		await Promise.allSettled(warmingTasks);
+	}
 
-  async optimizeCacheUsage(): Promise<void> {
-    // Remove low-hit-rate cache entries
-    const stats = await this.getCacheStatistics()
+	async optimizeCacheUsage(): Promise<void> {
+		// Remove low-hit-rate cache entries
+		const stats = await this.getCacheStatistics();
 
-    for (const [pattern, hitRate] of Object.entries(stats)) {
-      if (hitRate < 0.1) { // Less than 10% hit rate
-        await this.evictLowPerformanceKeys(pattern)
-      }
-    }
+		for (const [pattern, hitRate] of Object.entries(stats)) {
+			if (hitRate < 0.1) {
+				// Less than 10% hit rate
+				await this.evictLowPerformanceKeys(pattern);
+			}
+		}
 
-    // Preload high-demand features
-    await this.preloadHighDemandFeatures()
-  }
+		// Preload high-demand features
+		await this.preloadHighDemandFeatures();
+	}
 }
 ```
 
@@ -1336,87 +1333,90 @@ SELECT cron.schedule('ml-maintenance', '0 2 * * 0', 'SELECT maintain_ml_tables()
 
 // Extend existing HistoricalDataService for ML capabilities
 export class MLDatabaseService extends HistoricalDataService {
-  private featureStorePool: Pool
-  private influxClient?: InfluxDB
+	private featureStorePool: Pool;
+	private influxClient?: InfluxDB;
 
-  constructor() {
-    super()
+	constructor() {
+		super();
 
-    // Dedicated connection pool for ML workloads
-    this.featureStorePool = new Pool({
-      connectionString: process.env.ML_DATABASE_URL || process.env.DATABASE_URL,
-      max: 20, // Higher connection limit for ML operations
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 5000,
-      statement_timeout: 30000, // 30 second timeout for complex queries
-      query_timeout: 30000
-    })
+		// Dedicated connection pool for ML workloads
+		this.featureStorePool = new Pool({
+			connectionString: process.env.ML_DATABASE_URL || process.env.DATABASE_URL,
+			max: 20, // Higher connection limit for ML operations
+			idleTimeoutMillis: 10000,
+			connectionTimeoutMillis: 5000,
+			statement_timeout: 30000, // 30 second timeout for complex queries
+			query_timeout: 30000,
+		});
 
-    // Optional InfluxDB for high-frequency data
-    if (process.env.INFLUXDB_URL) {
-      this.influxClient = new InfluxDB({
-        url: process.env.INFLUXDB_URL,
-        token: process.env.INFLUXDB_TOKEN,
-        org: process.env.INFLUXDB_ORG || 'VFR'
-      })
-    }
-  }
+		// Optional InfluxDB for high-frequency data
+		if (process.env.INFLUXDB_URL) {
+			this.influxClient = new InfluxDB({
+				url: process.env.INFLUXDB_URL,
+				token: process.env.INFLUXDB_TOKEN,
+				org: process.env.INFLUXDB_ORG || "VFR",
+			});
+		}
+	}
 
-  /**
-   * High-performance feature storage with batch operations
-   */
-  async storeFeatureBatch(
-    features: FeatureStorageRequest[]
-  ): Promise<FeatureStorageResult> {
-    if (features.length === 0) return { stored: 0, errors: [] }
+	/**
+	 * High-performance feature storage with batch operations
+	 */
+	async storeFeatureBatch(features: FeatureStorageRequest[]): Promise<FeatureStorageResult> {
+		if (features.length === 0) return { stored: 0, errors: [] };
 
-    const client = await this.featureStorePool.connect()
+		const client = await this.featureStorePool.connect();
 
-    try {
-      await client.query('BEGIN')
+		try {
+			await client.query("BEGIN");
 
-      // Use COPY for maximum performance
-      const copyStream = client.query(copyFrom(
-        'COPY ml_feature_store (ticker, timestamp, feature_id, value, confidence_score, data_quality_score, source_provider) FROM STDIN WITH (FORMAT csv)'
-      ))
+			// Use COPY for maximum performance
+			const copyStream = client.query(
+				copyFrom(
+					"COPY ml_feature_store (ticker, timestamp, feature_id, value, confidence_score, data_quality_score, source_provider) FROM STDIN WITH (FORMAT csv)"
+				)
+			);
 
-      // Convert features to CSV format
-      const csvData = features.map(f =>
-        `${f.ticker},${f.timestamp.toISOString()},${f.featureId},${f.value},${f.confidence},${f.quality},${f.source}`
-      ).join('\n')
+			// Convert features to CSV format
+			const csvData = features
+				.map(
+					f =>
+						`${f.ticker},${f.timestamp.toISOString()},${f.featureId},${f.value},${f.confidence},${f.quality},${f.source}`
+				)
+				.join("\n");
 
-      copyStream.write(csvData)
-      copyStream.end()
+			copyStream.write(csvData);
+			copyStream.end();
 
-      await client.query('COMMIT')
+			await client.query("COMMIT");
 
-      // Update Redis cache for real-time access
-      await this.updateFeatureCache(features)
+			// Update Redis cache for real-time access
+			await this.updateFeatureCache(features);
 
-      return { stored: features.length, errors: [] }
+			return { stored: features.length, errors: [] };
+		} catch (error) {
+			await client.query("ROLLBACK");
+			throw new MLDatabaseError(`Batch feature storage failed: ${error.message}`);
+		} finally {
+			client.release();
+		}
+	}
 
-    } catch (error) {
-      await client.query('ROLLBACK')
-      throw new MLDatabaseError(`Batch feature storage failed: ${error.message}`)
-    } finally {
-      client.release()
-    }
-  }
+	/**
+	 * Optimized feature retrieval for ML predictions
+	 */
+	async getFeatureMatrix(
+		tickers: string[],
+		featureIds: string[],
+		asOfTime?: Date
+	): Promise<FeatureMatrix> {
+		const timestamp = asOfTime || new Date();
 
-  /**
-   * Optimized feature retrieval for ML predictions
-   */
-  async getFeatureMatrix(
-    tickers: string[],
-    featureIds: string[],
-    asOfTime?: Date
-  ): Promise<FeatureMatrix> {
-    const timestamp = asOfTime || new Date()
+		// Use materialized view for recent data
+		const useMatView = timestamp >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    // Use materialized view for recent data
-    const useMatView = timestamp >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-
-    const query = useMatView ? `
+		const query = useMatView
+			? `
       SELECT ticker, feature_id, value, confidence_score
       FROM mv_daily_features mdf
       JOIN ml_feature_definitions fd ON fd.feature_name =
@@ -1425,7 +1425,8 @@ export class MLDatabaseService extends HistoricalDataService {
         AND feature_id = ANY($2)
         AND trade_date = $3::date
         AND rank_latest = 1
-    ` : `
+    `
+			: `
       SELECT DISTINCT ON (ticker, feature_id)
         ticker, feature_id, value, confidence_score
       FROM ml_feature_store
@@ -1434,22 +1435,18 @@ export class MLDatabaseService extends HistoricalDataService {
         AND timestamp <= $3
         AND validation_status = 'valid'
       ORDER BY ticker, feature_id, timestamp DESC
-    `
+    `;
 
-    const result = await this.featureStorePool.query(query, [
-      tickers,
-      featureIds,
-      timestamp
-    ])
+		const result = await this.featureStorePool.query(query, [tickers, featureIds, timestamp]);
 
-    return this.buildFeatureMatrix(result.rows, tickers, featureIds)
-  }
+		return this.buildFeatureMatrix(result.rows, tickers, featureIds);
+	}
 
-  /**
-   * Store ML predictions with performance tracking
-   */
-  async storePrediction(prediction: MLPredictionRecord): Promise<string> {
-    const query = `
+	/**
+	 * Store ML predictions with performance tracking
+	 */
+	async storePrediction(prediction: MLPredictionRecord): Promise<string> {
+		const query = `
       INSERT INTO ml_predictions (
         model_id, ticker, prediction_timestamp, prediction_horizon,
         prediction_type, predicted_value, confidence_score,
@@ -1458,44 +1455,44 @@ export class MLDatabaseService extends HistoricalDataService {
         execution_time_ms, cache_hit, feature_freshness_seconds
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING prediction_id
-    `
+    `;
 
-    const result = await this.featureStorePool.query(query, [
-      prediction.modelId,
-      prediction.ticker,
-      prediction.timestamp,
-      prediction.horizon,
-      prediction.type,
-      prediction.value,
-      prediction.confidence,
-      prediction.probabilityUp,
-      prediction.probabilityDown,
-      prediction.currentPrice,
-      prediction.impliedReturn,
-      prediction.featuresUsed,
-      JSON.stringify(prediction.featureVector),
-      prediction.executionTimeMs,
-      prediction.cacheHit,
-      prediction.featureFreshness
-    ])
+		const result = await this.featureStorePool.query(query, [
+			prediction.modelId,
+			prediction.ticker,
+			prediction.timestamp,
+			prediction.horizon,
+			prediction.type,
+			prediction.value,
+			prediction.confidence,
+			prediction.probabilityUp,
+			prediction.probabilityDown,
+			prediction.currentPrice,
+			prediction.impliedReturn,
+			prediction.featuresUsed,
+			JSON.stringify(prediction.featureVector),
+			prediction.executionTimeMs,
+			prediction.cacheHit,
+			prediction.featureFreshness,
+		]);
 
-    const predictionId = result.rows[0].prediction_id
+		const predictionId = result.rows[0].prediction_id;
 
-    // Cache prediction for fast retrieval
-    await this.cachePrediction(predictionId, prediction)
+		// Cache prediction for fast retrieval
+		await this.cachePrediction(predictionId, prediction);
 
-    return predictionId
-  }
+		return predictionId;
+	}
 
-  /**
-   * Update prediction with actual results for performance tracking
-   */
-  async updatePredictionActual(
-    predictionId: string,
-    actualValue: number,
-    actualTimestamp: Date
-  ): Promise<void> {
-    const query = `
+	/**
+	 * Update prediction with actual results for performance tracking
+	 */
+	async updatePredictionActual(
+		predictionId: string,
+		actualValue: number,
+		actualTimestamp: Date
+	): Promise<void> {
+		const query = `
       UPDATE ml_predictions
       SET
         actual_value = $2,
@@ -1511,104 +1508,102 @@ export class MLDatabaseService extends HistoricalDataService {
           ELSE false
         END
       WHERE prediction_id = $1
-    `
+    `;
 
-    await this.featureStorePool.query(query, [predictionId, actualValue, actualTimestamp])
+		await this.featureStorePool.query(query, [predictionId, actualValue, actualTimestamp]);
 
-    // Trigger model performance recalculation
-    await this.updateModelPerformanceMetrics(predictionId)
-  }
+		// Trigger model performance recalculation
+		await this.updateModelPerformanceMetrics(predictionId);
+	}
 
-  /**
-   * High-performance backtesting data retrieval
-   */
-  async getBacktestingData(
-    experiment: BacktestExperiment
-  ): Promise<BacktestDataset> {
-    // Use parallel queries for different data types
-    const [priceData, features, benchmarkData] = await Promise.all([
-      this.getPriceDataForBacktest(experiment),
-      this.getFeatureDataForBacktest(experiment),
-      this.getBenchmarkDataForBacktest(experiment)
-    ])
+	/**
+	 * High-performance backtesting data retrieval
+	 */
+	async getBacktestingData(experiment: BacktestExperiment): Promise<BacktestDataset> {
+		// Use parallel queries for different data types
+		const [priceData, features, benchmarkData] = await Promise.all([
+			this.getPriceDataForBacktest(experiment),
+			this.getFeatureDataForBacktest(experiment),
+			this.getBenchmarkDataForBacktest(experiment),
+		]);
 
-    return {
-      prices: priceData,
-      features: features,
-      benchmark: benchmarkData,
-      metadata: {
-        startDate: experiment.startDate,
-        endDate: experiment.endDate,
-        tickers: experiment.tickers,
-        totalSamples: priceData.length
-      }
-    }
-  }
+		return {
+			prices: priceData,
+			features: features,
+			benchmark: benchmarkData,
+			metadata: {
+				startDate: experiment.startDate,
+				endDate: experiment.endDate,
+				tickers: experiment.tickers,
+				totalSamples: priceData.length,
+			},
+		};
+	}
 
-  private async updateFeatureCache(features: FeatureStorageRequest[]): Promise<void> {
-    const cacheOps = features.map(f => ({
-      key: `ml:feat:${f.ticker}:${f.featureId}:${Math.floor(f.timestamp.getTime() / 60000)}`,
-      value: {
-        value: f.value,
-        confidence: f.confidence,
-        quality: f.quality,
-        source: f.source,
-        timestamp: f.timestamp.getTime()
-      },
-      ttl: 900 // 15 minutes
-    }))
+	private async updateFeatureCache(features: FeatureStorageRequest[]): Promise<void> {
+		const cacheOps = features.map(f => ({
+			key: `ml:feat:${f.ticker}:${f.featureId}:${Math.floor(f.timestamp.getTime() / 60000)}`,
+			value: {
+				value: f.value,
+				confidence: f.confidence,
+				quality: f.quality,
+				source: f.source,
+				timestamp: f.timestamp.getTime(),
+			},
+			ttl: 900, // 15 minutes
+		}));
 
-    await this.cache.mset(cacheOps)
-  }
+		await this.cache.mset(cacheOps);
+	}
 
-  private buildFeatureMatrix(
-    rows: any[],
-    tickers: string[],
-    featureIds: string[]
-  ): FeatureMatrix {
-    const matrix: FeatureMatrix = {
-      tickers,
-      featureIds,
-      data: new Map(),
-      metadata: {
-        completeness: 0,
-        avgConfidence: 0,
-        avgQuality: 0
-      }
-    }
+	private buildFeatureMatrix(
+		rows: any[],
+		tickers: string[],
+		featureIds: string[]
+	): FeatureMatrix {
+		const matrix: FeatureMatrix = {
+			tickers,
+			featureIds,
+			data: new Map(),
+			metadata: {
+				completeness: 0,
+				avgConfidence: 0,
+				avgQuality: 0,
+			},
+		};
 
-    // Initialize matrix
-    tickers.forEach(ticker => {
-      matrix.data.set(ticker, new Map())
-    })
+		// Initialize matrix
+		tickers.forEach(ticker => {
+			matrix.data.set(ticker, new Map());
+		});
 
-    // Fill matrix with data
-    let totalEntries = 0
-    let totalConfidence = 0
-    let totalQuality = 0
+		// Fill matrix with data
+		let totalEntries = 0;
+		let totalConfidence = 0;
+		let totalQuality = 0;
 
-    rows.forEach(row => {
-      const tickerMap = matrix.data.get(row.ticker)
-      if (tickerMap) {
-        tickerMap.set(row.feature_id, {
-          value: parseFloat(row.value),
-          confidence: parseFloat(row.confidence_score),
-          quality: parseFloat(row.data_quality_score || 1.0)
-        })
-        totalEntries++
-        totalConfidence += parseFloat(row.confidence_score)
-        totalQuality += parseFloat(row.data_quality_score || 1.0)
-      }
-    })
+		rows.forEach(row => {
+			const tickerMap = matrix.data.get(row.ticker);
+			if (tickerMap) {
+				tickerMap.set(row.feature_id, {
+					value: parseFloat(row.value),
+					confidence: parseFloat(row.confidence_score),
+					quality: parseFloat(row.data_quality_score || 1.0),
+				});
+				totalEntries++;
+				totalConfidence += parseFloat(row.confidence_score);
+				totalQuality += parseFloat(row.data_quality_score || 1.0);
+			}
+		});
 
-    // Calculate metadata
-    const expectedEntries = tickers.length * featureIds.length
-    matrix.metadata.completeness = totalEntries / expectedEntries
-    matrix.metadata.avgConfidence = totalEntries > 0 ? totalConfidence / totalEntries : 0
-    matrix.metadata.avgQuality = totalEntries > 0 ? totalQuality / totalEntries : 0
+		// Calculate metadata
+		const expectedEntries = tickers.length * featureIds.length;
+		matrix.metadata.completeness = totalEntries / expectedEntries;
+		matrix.metadata.avgConfidence = totalEntries > 0 ? totalConfidence / totalEntries : 0;
+		matrix.metadata.avgQuality = totalEntries > 0 ? totalQuality / totalEntries : 0;
 
-    return matrix
-  }
+		return matrix;
+	}
 }
 ```
 

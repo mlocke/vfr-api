@@ -4,388 +4,415 @@
  * Provides insights into revenue diversification and growth opportunities
  */
 
-import { RevenueSegmentation, GeographicRevenue, ProductRevenue, SegmentAnalysis } from './types'
-import { createServiceErrorHandler } from '../error-handling'
-import SecurityValidator from '../security/SecurityValidator'
-import { redisCache } from '../cache/RedisCache'
+import { RevenueSegmentation, GeographicRevenue, ProductRevenue, SegmentAnalysis } from "./types";
+import { createServiceErrorHandler } from "../error-handling";
+import SecurityValidator from "../security/SecurityValidator";
+import { redisCache } from "../cache/RedisCache";
 
 export class RevenueSegmentationService {
-  private readonly errorHandler: ReturnType<typeof createServiceErrorHandler>
-  private readonly cacheTTL = 3600000 // 1 hour cache for segmentation data
+	private readonly errorHandler: ReturnType<typeof createServiceErrorHandler>;
+	private readonly cacheTTL = 3600000; // 1 hour cache for segmentation data
 
-  constructor() {
-    this.errorHandler = createServiceErrorHandler('RevenueSegmentationService')
-  }
+	constructor() {
+		this.errorHandler = createServiceErrorHandler("RevenueSegmentationService");
+	}
 
-  /**
-   * Get revenue segmentation data for a symbol and period
-   * @param symbol Stock symbol
-   * @param period Period identifier (e.g., 'Q3-2024', '2024')
-   * @returns Promise<RevenueSegmentation | null>
-   */
-  async getRevenueSegmentation(symbol: string, period: string = 'TTM'): Promise<RevenueSegmentation | null> {
-    try {
-      SecurityValidator.validateSymbol(symbol)
+	/**
+	 * Get revenue segmentation data for a symbol and period
+	 * @param symbol Stock symbol
+	 * @param period Period identifier (e.g., 'Q3-2024', '2024')
+	 * @returns Promise<RevenueSegmentation | null>
+	 */
+	async getRevenueSegmentation(
+		symbol: string,
+		period: string = "TTM"
+	): Promise<RevenueSegmentation | null> {
+		try {
+			SecurityValidator.validateSymbol(symbol);
 
-      const cacheKey = `revenue-segmentation:${symbol.toUpperCase()}:${period}`
-      const cachedData = await redisCache.get<RevenueSegmentation>(cacheKey)
+			const cacheKey = `revenue-segmentation:${symbol.toUpperCase()}:${period}`;
+			const cachedData = await redisCache.get<RevenueSegmentation>(cacheKey);
 
-      if (cachedData) {
-        return cachedData
-      }
+			if (cachedData) {
+				return cachedData;
+			}
 
-      // Mock revenue segmentation data
-      const mockData = this.generateMockSegmentation(symbol, period)
+			// Mock revenue segmentation data
+			const mockData = this.generateMockSegmentation(symbol, period);
 
-      await redisCache.set(cacheKey, mockData, this.cacheTTL)
-      return mockData
+			await redisCache.set(cacheKey, mockData, this.cacheTTL);
+			return mockData;
+		} catch (error) {
+			this.errorHandler.errorHandler.createErrorResponse(error, "getRevenueSegmentation");
+			return null;
+		}
+	}
 
-    } catch (error) {
-      this.errorHandler.errorHandler.createErrorResponse(error, 'getRevenueSegmentation')
-      return null
-    }
-  }
+	/**
+	 * Get segment analysis with insights and risks
+	 * @param symbol Stock symbol
+	 * @returns Promise<SegmentAnalysis>
+	 */
+	async getSegmentAnalysis(symbol: string): Promise<SegmentAnalysis> {
+		try {
+			SecurityValidator.validateSymbol(symbol);
 
-  /**
-   * Get segment analysis with insights and risks
-   * @param symbol Stock symbol
-   * @returns Promise<SegmentAnalysis>
-   */
-  async getSegmentAnalysis(symbol: string): Promise<SegmentAnalysis> {
-    try {
-      SecurityValidator.validateSymbol(symbol)
+			const cacheKey = `segment-analysis:${symbol.toUpperCase()}`;
+			const cachedData = await redisCache.get<SegmentAnalysis>(cacheKey);
 
-      const cacheKey = `segment-analysis:${symbol.toUpperCase()}`
-      const cachedData = await redisCache.get<SegmentAnalysis>(cacheKey)
+			if (cachedData) {
+				return cachedData;
+			}
 
-      if (cachedData) {
-        return cachedData
-      }
+			const segmentation = await this.getRevenueSegmentation(symbol);
 
-      const segmentation = await this.getRevenueSegmentation(symbol)
+			if (!segmentation) {
+				throw new Error(`No segmentation data available for ${symbol}`);
+			}
 
-      if (!segmentation) {
-        throw new Error(`No segmentation data available for ${symbol}`)
-      }
+			const analysis = this.analyzeSegmentation(segmentation);
 
-      const analysis = this.analyzeSegmentation(segmentation)
+			await redisCache.set(cacheKey, analysis, this.cacheTTL);
+			return analysis;
+		} catch (error) {
+			throw this.errorHandler.errorHandler.createErrorResponse(error, "getSegmentAnalysis");
+		}
+	}
 
-      await redisCache.set(cacheKey, analysis, this.cacheTTL)
-      return analysis
+	/**
+	 * Get geographic revenue breakdown
+	 * @param symbol Stock symbol
+	 * @param period Period identifier
+	 * @returns Promise<GeographicRevenue[]>
+	 */
+	async getGeographicRevenue(
+		symbol: string,
+		period: string = "TTM"
+	): Promise<GeographicRevenue[]> {
+		try {
+			SecurityValidator.validateSymbol(symbol);
 
-    } catch (error) {
-      throw this.errorHandler.errorHandler.createErrorResponse(error, 'getSegmentAnalysis')
-    }
-  }
+			const segmentation = await this.getRevenueSegmentation(symbol, period);
+			return segmentation?.geographicSegments || [];
+		} catch (error) {
+			throw this.errorHandler.errorHandler.createErrorResponse(error, "getGeographicRevenue");
+		}
+	}
 
-  /**
-   * Get geographic revenue breakdown
-   * @param symbol Stock symbol
-   * @param period Period identifier
-   * @returns Promise<GeographicRevenue[]>
-   */
-  async getGeographicRevenue(symbol: string, period: string = 'TTM'): Promise<GeographicRevenue[]> {
-    try {
-      SecurityValidator.validateSymbol(symbol)
+	/**
+	 * Get product revenue breakdown
+	 * @param symbol Stock symbol
+	 * @param period Period identifier
+	 * @returns Promise<ProductRevenue[]>
+	 */
+	async getProductRevenue(symbol: string, period: string = "TTM"): Promise<ProductRevenue[]> {
+		try {
+			SecurityValidator.validateSymbol(symbol);
 
-      const segmentation = await this.getRevenueSegmentation(symbol, period)
-      return segmentation?.geographicSegments || []
+			const segmentation = await this.getRevenueSegmentation(symbol, period);
+			return segmentation?.productSegments || [];
+		} catch (error) {
+			throw this.errorHandler.errorHandler.createErrorResponse(error, "getProductRevenue");
+		}
+	}
 
-    } catch (error) {
-      throw this.errorHandler.errorHandler.createErrorResponse(error, 'getGeographicRevenue')
-    }
-  }
+	/**
+	 * Get revenue segmentation for multiple symbols
+	 * @param symbols Array of stock symbols
+	 * @returns Promise<{ symbol: string; segmentation: RevenueSegmentation | null }[]>
+	 */
+	async getRevenueSegmentationBatch(
+		symbols: string[]
+	): Promise<{ symbol: string; segmentation: RevenueSegmentation | null }[]> {
+		try {
+			if (!symbols || symbols.length === 0) {
+				throw new Error("Symbols array is required");
+			}
 
-  /**
-   * Get product revenue breakdown
-   * @param symbol Stock symbol
-   * @param period Period identifier
-   * @returns Promise<ProductRevenue[]>
-   */
-  async getProductRevenue(symbol: string, period: string = 'TTM'): Promise<ProductRevenue[]> {
-    try {
-      SecurityValidator.validateSymbol(symbol)
+			const results = await Promise.allSettled(
+				symbols.map(async symbol => ({
+					symbol: symbol.toUpperCase(),
+					segmentation: await this.getRevenueSegmentation(symbol),
+				}))
+			);
 
-      const segmentation = await this.getRevenueSegmentation(symbol, period)
-      return segmentation?.productSegments || []
+			return results
+				.filter(
+					(
+						result
+					): result is PromiseFulfilledResult<{
+						symbol: string;
+						segmentation: RevenueSegmentation | null;
+					}> => result.status === "fulfilled"
+				)
+				.map(result => result.value);
+		} catch (error) {
+			throw this.errorHandler.errorHandler.createErrorResponse(
+				error,
+				"getRevenueSegmentationBatch"
+			);
+		}
+	}
 
-    } catch (error) {
-      throw this.errorHandler.errorHandler.createErrorResponse(error, 'getProductRevenue')
-    }
-  }
+	/**
+	 * Find companies with similar revenue patterns
+	 * @param symbol Reference stock symbol
+	 * @param threshold Similarity threshold (0-1)
+	 * @returns Promise<string[]>
+	 */
+	async findSimilarRevenuePatterns(symbol: string, threshold: number = 0.8): Promise<string[]> {
+		try {
+			SecurityValidator.validateSymbol(symbol);
 
-  /**
-   * Get revenue segmentation for multiple symbols
-   * @param symbols Array of stock symbols
-   * @returns Promise<{ symbol: string; segmentation: RevenueSegmentation | null }[]>
-   */
-  async getRevenueSegmentationBatch(symbols: string[]): Promise<{ symbol: string; segmentation: RevenueSegmentation | null }[]> {
-    try {
-      if (!symbols || symbols.length === 0) {
-        throw new Error('Symbols array is required')
-      }
+			const referenceAnalysis = await this.getSegmentAnalysis(symbol);
 
-      const results = await Promise.allSettled(
-        symbols.map(async symbol => ({
-          symbol: symbol.toUpperCase(),
-          segmentation: await this.getRevenueSegmentation(symbol)
-        }))
-      )
+			// Mock similar companies - would implement actual pattern matching
+			const similarCompanies = ["MSFT", "GOOGL", "META", "AMZN", "NFLX"]
+				.filter(s => s !== symbol.toUpperCase())
+				.slice(0, 3);
 
-      return results
-        .filter((result): result is PromiseFulfilledResult<{ symbol: string; segmentation: RevenueSegmentation | null }> =>
-          result.status === 'fulfilled'
-        )
-        .map(result => result.value)
+			return similarCompanies;
+		} catch (error) {
+			throw this.errorHandler.errorHandler.createErrorResponse(
+				error,
+				"findSimilarRevenuePatterns"
+			);
+		}
+	}
 
-    } catch (error) {
-      throw this.errorHandler.errorHandler.createErrorResponse(error, 'getRevenueSegmentationBatch')
-    }
-  }
+	/**
+	 * Generate mock revenue segmentation data
+	 * @private
+	 */
+	private generateMockSegmentation(symbol: string, period: string): RevenueSegmentation {
+		const hash = symbol.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+		const totalRevenue = ((hash % 1000) + 500) * 1000000; // $500M-$1.5B base
 
-  /**
-   * Find companies with similar revenue patterns
-   * @param symbol Reference stock symbol
-   * @param threshold Similarity threshold (0-1)
-   * @returns Promise<string[]>
-   */
-  async findSimilarRevenuePatterns(symbol: string, threshold: number = 0.8): Promise<string[]> {
-    try {
-      SecurityValidator.validateSymbol(symbol)
+		// Generate geographic segments
+		const geographicSegments: GeographicRevenue[] = [
+			{
+				region: "North America",
+				revenue: totalRevenue * (0.35 + Math.random() * 0.15), // 35-50%
+				percentage: 0,
+				growthRate: -5 + Math.random() * 20, // -5% to +15%
+				margin: 15 + Math.random() * 10, // 15-25%
+				currency: "USD",
+			},
+			{
+				region: "Europe",
+				revenue: totalRevenue * (0.15 + Math.random() * 0.15), // 15-30%
+				percentage: 0,
+				growthRate: -5 + Math.random() * 25, // -5% to +20%
+				margin: 12 + Math.random() * 8, // 12-20%
+				currency: "EUR",
+			},
+			{
+				region: "Asia Pacific",
+				revenue: totalRevenue * (0.1 + Math.random() * 0.2), // 10-30%
+				percentage: 0,
+				growthRate: 5 + Math.random() * 25, // 5% to +30%
+				margin: 18 + Math.random() * 7, // 18-25%
+				currency: "USD",
+			},
+			{
+				region: "Other",
+				revenue: 0,
+				percentage: 0,
+				growthRate: Math.random() * 20 - 10, // -10% to +10%
+				margin: 10 + Math.random() * 15, // 10-25%
+				currency: "USD",
+			},
+		];
 
-      const referenceAnalysis = await this.getSegmentAnalysis(symbol)
+		// Calculate remaining revenue for "Other" (ensure positive)
+		const allocatedRevenue = geographicSegments
+			.slice(0, 3)
+			.reduce((sum, seg) => sum + seg.revenue, 0);
+		geographicSegments[3].revenue = Math.max(
+			totalRevenue * 0.05,
+			totalRevenue - allocatedRevenue
+		); // At least 5% for "Other"
 
-      // Mock similar companies - would implement actual pattern matching
-      const similarCompanies = ['MSFT', 'GOOGL', 'META', 'AMZN', 'NFLX']
-        .filter(s => s !== symbol.toUpperCase())
-        .slice(0, 3)
+		// Normalize if total exceeds 100%
+		const actualTotal = geographicSegments.reduce((sum, seg) => sum + seg.revenue, 0);
+		if (actualTotal > totalRevenue) {
+			geographicSegments.forEach(seg => {
+				seg.revenue = (seg.revenue / actualTotal) * totalRevenue;
+			});
+		}
 
-      return similarCompanies
+		// Calculate percentages (ensure all are positive)
+		geographicSegments.forEach(seg => {
+			seg.percentage = Math.abs((seg.revenue / totalRevenue) * 100);
+		});
 
-    } catch (error) {
-      throw this.errorHandler.errorHandler.createErrorResponse(error, 'findSimilarRevenuePatterns')
-    }
-  }
+		// Generate product segments
+		const productCategories = this.getProductCategories(symbol);
+		const productSegments: ProductRevenue[] = productCategories.map((category, index) => {
+			const basePercentage = index === 0 ? 0.4 : 0.6 / (productCategories.length - 1);
+			const percentage = basePercentage + (Math.random() - 0.5) * 0.2;
+			const revenue = totalRevenue * Math.max(0.05, percentage);
 
-  /**
-   * Generate mock revenue segmentation data
-   * @private
-   */
-  private generateMockSegmentation(symbol: string, period: string): RevenueSegmentation {
-    const hash = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    const totalRevenue = (hash % 1000 + 500) * 1000000 // $500M-$1.5B base
+			return {
+				product: category.name,
+				revenue,
+				percentage: (revenue / totalRevenue) * 100,
+				growthRate: category.growth + (Math.random() - 0.5) * 10,
+				margin: category.margin + (Math.random() - 0.5) * 5,
+				category: category.type,
+			};
+		});
 
-    // Generate geographic segments
-    const geographicSegments: GeographicRevenue[] = [
-      {
-        region: 'North America',
-        revenue: totalRevenue * (0.35 + Math.random() * 0.15), // 35-50%
-        percentage: 0,
-        growthRate: -5 + Math.random() * 20, // -5% to +15%
-        margin: 15 + Math.random() * 10, // 15-25%
-        currency: 'USD'
-      },
-      {
-        region: 'Europe',
-        revenue: totalRevenue * (0.15 + Math.random() * 0.15), // 15-30%
-        percentage: 0,
-        growthRate: -5 + Math.random() * 25, // -5% to +20%
-        margin: 12 + Math.random() * 8, // 12-20%
-        currency: 'EUR'
-      },
-      {
-        region: 'Asia Pacific',
-        revenue: totalRevenue * (0.10 + Math.random() * 0.20), // 10-30%
-        percentage: 0,
-        growthRate: 5 + Math.random() * 25, // 5% to +30%
-        margin: 18 + Math.random() * 7, // 18-25%
-        currency: 'USD'
-      },
-      {
-        region: 'Other',
-        revenue: 0,
-        percentage: 0,
-        growthRate: Math.random() * 20 - 10, // -10% to +10%
-        margin: 10 + Math.random() * 15, // 10-25%
-        currency: 'USD'
-      }
-    ]
+		// Normalize product percentages
+		const totalProductRevenue = productSegments.reduce((sum, seg) => sum + seg.revenue, 0);
+		productSegments.forEach(seg => {
+			seg.revenue = (seg.revenue / totalProductRevenue) * totalRevenue;
+			seg.percentage = (seg.revenue / totalRevenue) * 100;
+		});
 
-    // Calculate remaining revenue for "Other" (ensure positive)
-    const allocatedRevenue = geographicSegments.slice(0, 3).reduce((sum, seg) => sum + seg.revenue, 0)
-    geographicSegments[3].revenue = Math.max(totalRevenue * 0.05, totalRevenue - allocatedRevenue) // At least 5% for "Other"
+		const segmentAnalysis = this.analyzeSegmentation({
+			symbol: symbol.toUpperCase(),
+			period,
+			totalRevenue,
+			geographicSegments,
+			productSegments,
+			segmentAnalysis: {} as SegmentAnalysis,
+			timestamp: Date.now(),
+			source: "RevenueSegmentationService",
+		});
 
-    // Normalize if total exceeds 100%
-    const actualTotal = geographicSegments.reduce((sum, seg) => sum + seg.revenue, 0)
-    if (actualTotal > totalRevenue) {
-      geographicSegments.forEach(seg => {
-        seg.revenue = (seg.revenue / actualTotal) * totalRevenue
-      })
-    }
+		return {
+			symbol: symbol.toUpperCase(),
+			period,
+			totalRevenue,
+			geographicSegments,
+			productSegments,
+			segmentAnalysis,
+			timestamp: Date.now(),
+			source: "RevenueSegmentationService",
+		};
+	}
 
-    // Calculate percentages (ensure all are positive)
-    geographicSegments.forEach(seg => {
-      seg.percentage = Math.abs((seg.revenue / totalRevenue) * 100)
-    })
+	/**
+	 * Get product categories based on symbol
+	 * @private
+	 */
+	private getProductCategories(
+		symbol: string
+	): Array<{ name: string; type: string; growth: number; margin: number }> {
+		// Mock product categories - would be based on actual company data
+		const techCategories = [
+			{ name: "Cloud Services", type: "Technology", growth: 15, margin: 25 },
+			{ name: "Software Licenses", type: "Technology", growth: 8, margin: 35 },
+			{ name: "Hardware", type: "Technology", growth: 5, margin: 15 },
+			{ name: "Professional Services", type: "Services", growth: 12, margin: 20 },
+		];
 
-    // Generate product segments
-    const productCategories = this.getProductCategories(symbol)
-    const productSegments: ProductRevenue[] = productCategories.map((category, index) => {
-      const basePercentage = index === 0 ? 0.4 : 0.6 / (productCategories.length - 1)
-      const percentage = basePercentage + (Math.random() - 0.5) * 0.2
-      const revenue = totalRevenue * Math.max(0.05, percentage)
+		const retailCategories = [
+			{ name: "Consumer Electronics", type: "Retail", growth: 10, margin: 12 },
+			{ name: "Home & Garden", type: "Retail", growth: 6, margin: 15 },
+			{ name: "Fashion & Apparel", type: "Retail", growth: 8, margin: 18 },
+			{ name: "Books & Media", type: "Retail", growth: 3, margin: 10 },
+		];
 
-      return {
-        product: category.name,
-        revenue,
-        percentage: (revenue / totalRevenue) * 100,
-        growthRate: category.growth + (Math.random() - 0.5) * 10,
-        margin: category.margin + (Math.random() - 0.5) * 5,
-        category: category.type
-      }
-    })
+		// Simple heuristic based on symbol
+		const isTech = ["AAPL", "MSFT", "GOOGL", "META", "AMZN", "NFLX"].includes(
+			symbol.toUpperCase()
+		);
+		return isTech ? techCategories : retailCategories;
+	}
 
-    // Normalize product percentages
-    const totalProductRevenue = productSegments.reduce((sum, seg) => sum + seg.revenue, 0)
-    productSegments.forEach(seg => {
-      seg.revenue = (seg.revenue / totalProductRevenue) * totalRevenue
-      seg.percentage = (seg.revenue / totalRevenue) * 100
-    })
+	/**
+	 * Analyze revenue segmentation
+	 * @private
+	 */
+	private analyzeSegmentation(segmentation: RevenueSegmentation): SegmentAnalysis {
+		const { geographicSegments, productSegments } = segmentation;
 
-    const segmentAnalysis = this.analyzeSegmentation({
-      symbol: symbol.toUpperCase(),
-      period,
-      totalRevenue,
-      geographicSegments,
-      productSegments,
-      segmentAnalysis: {} as SegmentAnalysis,
-      timestamp: Date.now(),
-      source: 'RevenueSegmentationService'
-    })
+		// Calculate diversification score (0-10, higher is more diversified)
+		const geoHerfindahl = geographicSegments.reduce(
+			(sum, seg) => sum + Math.pow(seg.percentage / 100, 2),
+			0
+		);
+		const productHerfindahl = productSegments.reduce(
+			(sum, seg) => sum + Math.pow(seg.percentage / 100, 2),
+			0
+		);
+		const diversificationScore = Math.max(0, 10 - (geoHerfindahl + productHerfindahl) * 5);
 
-    return {
-      symbol: symbol.toUpperCase(),
-      period,
-      totalRevenue,
-      geographicSegments,
-      productSegments,
-      segmentAnalysis,
-      timestamp: Date.now(),
-      source: 'RevenueSegmentationService'
-    }
-  }
+		// Assess geographic risk
+		const highRiskRegions = ["Asia Pacific", "Other"];
+		const highRiskExposure = geographicSegments
+			.filter(seg => highRiskRegions.includes(seg.region))
+			.reduce((sum, seg) => sum + seg.percentage, 0);
 
-  /**
-   * Get product categories based on symbol
-   * @private
-   */
-  private getProductCategories(symbol: string): Array<{ name: string; type: string; growth: number; margin: number }> {
-    // Mock product categories - would be based on actual company data
-    const techCategories = [
-      { name: 'Cloud Services', type: 'Technology', growth: 15, margin: 25 },
-      { name: 'Software Licenses', type: 'Technology', growth: 8, margin: 35 },
-      { name: 'Hardware', type: 'Technology', growth: 5, margin: 15 },
-      { name: 'Professional Services', type: 'Services', growth: 12, margin: 20 }
-    ]
+		const geographicRisk: "LOW" | "MEDIUM" | "HIGH" =
+			highRiskExposure > 50 ? "HIGH" : highRiskExposure > 30 ? "MEDIUM" : "LOW";
 
-    const retailCategories = [
-      { name: 'Consumer Electronics', type: 'Retail', growth: 10, margin: 12 },
-      { name: 'Home & Garden', type: 'Retail', growth: 6, margin: 15 },
-      { name: 'Fashion & Apparel', type: 'Retail', growth: 8, margin: 18 },
-      { name: 'Books & Media', type: 'Retail', growth: 3, margin: 10 }
-    ]
+		// Calculate product concentration (0-1, higher is more concentrated)
+		const maxProductPercentage = Math.max(...productSegments.map(seg => seg.percentage));
+		const productConcentration = maxProductPercentage / 100;
 
-    // Simple heuristic based on symbol
-    const isTech = ['AAPL', 'MSFT', 'GOOGL', 'META', 'AMZN', 'NFLX'].includes(symbol.toUpperCase())
-    return isTech ? techCategories : retailCategories
-  }
+		// Identify growth segments
+		const growthSegments = [
+			...geographicSegments.filter(seg => seg.growthRate > 10).map(seg => seg.region),
+			...productSegments.filter(seg => seg.growthRate > 10).map(seg => seg.product),
+		];
 
-  /**
-   * Analyze revenue segmentation
-   * @private
-   */
-  private analyzeSegmentation(segmentation: RevenueSegmentation): SegmentAnalysis {
-    const { geographicSegments, productSegments } = segmentation
+		// Identify risk segments
+		const riskSegments = [
+			...geographicSegments.filter(seg => seg.growthRate < -2).map(seg => seg.region),
+			...productSegments.filter(seg => seg.growthRate < -2).map(seg => seg.product),
+		];
 
-    // Calculate diversification score (0-10, higher is more diversified)
-    const geoHerfindahl = geographicSegments.reduce((sum, seg) => sum + Math.pow(seg.percentage / 100, 2), 0)
-    const productHerfindahl = productSegments.reduce((sum, seg) => sum + Math.pow(seg.percentage / 100, 2), 0)
-    const diversificationScore = Math.max(0, 10 - (geoHerfindahl + productHerfindahl) * 5)
+		// Generate opportunities
+		const opportunities: string[] = [];
+		if (growthSegments.length > 0) {
+			opportunities.push(`Capitalize on growth in: ${growthSegments.slice(0, 2).join(", ")}`);
+		}
+		if (diversificationScore < 6) {
+			opportunities.push("Diversify revenue base to reduce concentration risk");
+		}
 
-    // Assess geographic risk
-    const highRiskRegions = ['Asia Pacific', 'Other']
-    const highRiskExposure = geographicSegments
-      .filter(seg => highRiskRegions.includes(seg.region))
-      .reduce((sum, seg) => sum + seg.percentage, 0)
+		// Generate key insights
+		const keyInsights: string[] = [
+			`Revenue is ${diversificationScore > 7 ? "well-diversified" : diversificationScore > 4 ? "moderately diversified" : "concentrated"}`,
+			`Geographic risk level: ${geographicRisk}`,
+			`Product concentration: ${(productConcentration * 100).toFixed(1)}%`,
+		];
 
-    const geographicRisk: 'LOW' | 'MEDIUM' | 'HIGH' =
-      highRiskExposure > 50 ? 'HIGH' :
-      highRiskExposure > 30 ? 'MEDIUM' : 'LOW'
+		if (growthSegments.length > 0) {
+			keyInsights.push(`Strong growth in: ${growthSegments.join(", ")}`);
+		}
 
-    // Calculate product concentration (0-1, higher is more concentrated)
-    const maxProductPercentage = Math.max(...productSegments.map(seg => seg.percentage))
-    const productConcentration = maxProductPercentage / 100
+		return {
+			symbol: segmentation.symbol,
+			diversificationScore,
+			geographicRisk,
+			productConcentration,
+			growthSegments,
+			riskSegments,
+			opportunities,
+			keyInsights,
+			confidence: 0.8,
+		};
+	}
 
-    // Identify growth segments
-    const growthSegments = [
-      ...geographicSegments.filter(seg => seg.growthRate > 10).map(seg => seg.region),
-      ...productSegments.filter(seg => seg.growthRate > 10).map(seg => seg.product)
-    ]
-
-    // Identify risk segments
-    const riskSegments = [
-      ...geographicSegments.filter(seg => seg.growthRate < -2).map(seg => seg.region),
-      ...productSegments.filter(seg => seg.growthRate < -2).map(seg => seg.product)
-    ]
-
-    // Generate opportunities
-    const opportunities: string[] = []
-    if (growthSegments.length > 0) {
-      opportunities.push(`Capitalize on growth in: ${growthSegments.slice(0, 2).join(', ')}`)
-    }
-    if (diversificationScore < 6) {
-      opportunities.push('Diversify revenue base to reduce concentration risk')
-    }
-
-    // Generate key insights
-    const keyInsights: string[] = [
-      `Revenue is ${diversificationScore > 7 ? 'well-diversified' : diversificationScore > 4 ? 'moderately diversified' : 'concentrated'}`,
-      `Geographic risk level: ${geographicRisk}`,
-      `Product concentration: ${(productConcentration * 100).toFixed(1)}%`
-    ]
-
-    if (growthSegments.length > 0) {
-      keyInsights.push(`Strong growth in: ${growthSegments.join(', ')}`)
-    }
-
-    return {
-      symbol: segmentation.symbol,
-      diversificationScore,
-      geographicRisk,
-      productConcentration,
-      growthSegments,
-      riskSegments,
-      opportunities,
-      keyInsights,
-      confidence: 0.8
-    }
-  }
-
-  /**
-   * Health check for the service
-   * @returns Promise<boolean>
-   */
-  async healthCheck(): Promise<boolean> {
-    try {
-      await this.getRevenueSegmentation('AAPL')
-      return true
-    } catch (error) {
-      this.errorHandler.errorHandler.createErrorResponse(error, 'healthCheck')
-      return false
-    }
-  }
+	/**
+	 * Health check for the service
+	 * @returns Promise<boolean>
+	 */
+	async healthCheck(): Promise<boolean> {
+		try {
+			await this.getRevenueSegmentation("AAPL");
+			return true;
+		} catch (error) {
+			this.errorHandler.errorHandler.createErrorResponse(error, "healthCheck");
+			return false;
+		}
+	}
 }
 
 // Export singleton instance
-export const revenueSegmentationService = new RevenueSegmentationService()
-export default revenueSegmentationService
+export const revenueSegmentationService = new RevenueSegmentationService();
+export default revenueSegmentationService;

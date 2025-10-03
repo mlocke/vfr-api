@@ -1,224 +1,206 @@
 {
-  "composite": {
-    "id": "composite",
-    "name": "Composite Multi-Factor Strategy",
-    "description": "Balanced approach combining momentum, value, quality, and growth factors",
-    "type": "COMPOSITE",
-    "enabled": true,
-    "selectionCriteria": "SCORE_BASED",
-    "universe": {
-      "maxPositions": 50,
-      "marketCapMin": 100000000,
-      "sectors": [],
-      "exchanges": [
-        "NYSE",
-        "NASDAQ"
-      ],
-      "excludeSymbols": []
-    },
-    "weights": [
-      {
-        "factor": "momentum_3m",
-        "weight": 0.25,
-        "enabled": true
-      },
-      {
-        "factor": "quality_composite",
-        "weight": 0.25,
-        "enabled": true
-      },
-      {
-        "factor": "value_composite",
-        "weight": 0.2,
-        "enabled": true
-      },
-      {
-        "factor": "revenue_growth",
-        "weight": 0.15,
-        "enabled": true
-      },
-      {
-        "factor": "volatility_30d",
-        "weight": 0.15,
-        "enabled": true
-      }
-    ],
-    "selection": {
-      "topN": 25,
-      "rebalanceFrequency": 604800,
-      "minHoldingPeriod": 259200,
-      "threshold": 0.7
-    },
-    "risk": {
-      "maxSectorWeight": 0.25,
-      "maxSinglePosition": 0.08,
-      "maxTurnover": 1,
-      "riskModel": "factor_based"
-    },
-    "dataFusion": {
-      "minQualityScore": 0.75,
-      "requiredSources": [
-        "polygon",
-        "yahoo"
-      ],
-      "conflictResolution": "highest_quality",
-      "cacheTTL": 1800
-    },
-    "metadata": {
-      "createdAt": 1757987225265,
-      "updatedAt": 1757987225265,
-      "createdBy": "system_init",
-      "version": 1,
-      "backtestedFrom": 1726451225265,
-      "backtestedTo": 1755395225265
-    }
-  },
-  "quality": {
-    "id": "quality",
-    "name": "Quality-Focused Strategy",
-    "description": "Conservative strategy focusing on high-quality companies with strong fundamentals",
-    "type": "QUALITY",
-    "enabled": true,
-    "selectionCriteria": "SCORE_BASED",
-    "universe": {
-      "maxPositions": 30,
-      "marketCapMin": 1000000000,
-      "sectors": [],
-      "exchanges": [
-        "NYSE",
-        "NASDAQ"
-      ],
-      "excludeSymbols": []
-    },
-    "weights": [
-      {
-        "factor": "quality_composite",
-        "weight": 0.4,
-        "enabled": true
-      },
-      {
-        "factor": "roe",
-        "weight": 0.2,
-        "enabled": true
-      },
-      {
-        "factor": "debt_equity",
-        "weight": 0.15,
-        "enabled": true
-      },
-      {
-        "factor": "current_ratio",
-        "weight": 0.15,
-        "enabled": true
-      },
-      {
-        "factor": "dividend_yield",
-        "weight": 0.1,
-        "enabled": true
-      }
-    ],
-    "selection": {
-      "topN": 20,
-      "rebalanceFrequency": 2592000,
-      "minHoldingPeriod": 604800,
-      "threshold": 0.8
-    },
-    "risk": {
-      "maxSectorWeight": 0.3,
-      "maxSinglePosition": 0.1,
-      "maxTurnover": 0.5,
-      "riskModel": "conservative"
-    },
-    "dataFusion": {
-      "minQualityScore": 0.8,
-      "requiredSources": [
-        "polygon",
-        "alpha_vantage"
-      ],
-      "conflictResolution": "highest_quality",
-      "cacheTTL": 3600
-    },
-    "metadata": {
-      "createdAt": 1757987225265,
-      "updatedAt": 1757987225265,
-      "createdBy": "system_init",
-      "version": 1,
-      "backtestedFrom": 1726451225265,
-      "backtestedTo": 1755395225265
-    }
-  },
-  "momentum": {
-    "id": "momentum",
-    "name": "Momentum Strategy",
-    "description": "Aggressive momentum-based strategy for trending stocks",
-    "type": "MOMENTUM",
-    "enabled": true,
-    "selectionCriteria": "QUANTILE_BASED",
-    "universe": {
-      "maxPositions": 40,
-      "marketCapMin": 500000000,
-      "sectors": [],
-      "exchanges": [
-        "NYSE",
-        "NASDAQ"
-      ],
-      "excludeSymbols": []
-    },
-    "weights": [
-      {
-        "factor": "momentum_3m",
-        "weight": 0.3,
-        "enabled": true
-      },
-      {
-        "factor": "momentum_1m",
-        "weight": 0.25,
-        "enabled": true
-      },
-      {
-        "factor": "rsi_14d",
-        "weight": 0.2,
-        "enabled": true
-      },
-      {
-        "factor": "revenue_growth",
-        "weight": 0.15,
-        "enabled": true
-      },
-      {
-        "factor": "macd_signal",
-        "weight": 0.1,
-        "enabled": true
-      }
-    ],
-    "selection": {
-      "quantile": 0.2,
-      "rebalanceFrequency": 86400,
-      "minHoldingPeriod": 172800,
-      "threshold": 0.6
-    },
-    "risk": {
-      "maxSectorWeight": 0.4,
-      "maxSinglePosition": 0.06,
-      "maxTurnover": 1.5,
-      "riskModel": "aggressive"
-    },
-    "dataFusion": {
-      "minQualityScore": 0.7,
-      "requiredSources": [
-        "polygon",
-        "yahoo"
-      ],
-      "conflictResolution": "latest",
-      "cacheTTL": 900
-    },
-    "metadata": {
-      "createdAt": 1757987225265,
-      "updatedAt": 1757987225265,
-      "createdBy": "system_init",
-      "version": 1,
-      "backtestedFrom": 1726451225265,
-      "backtestedTo": 1755395225265
-    }
-  }
+	"composite": {
+		"id": "composite",
+		"name": "Composite Multi-Factor Strategy",
+		"description": "Balanced approach combining momentum, value, quality, and growth factors",
+		"type": "COMPOSITE",
+		"enabled": true,
+		"selectionCriteria": "SCORE_BASED",
+		"universe": {
+			"maxPositions": 50,
+			"marketCapMin": 100000000,
+			"sectors": [],
+			"exchanges": ["NYSE", "NASDAQ"],
+			"excludeSymbols": []
+		},
+		"weights": [
+			{
+				"factor": "momentum_3m",
+				"weight": 0.25,
+				"enabled": true
+			},
+			{
+				"factor": "quality_composite",
+				"weight": 0.25,
+				"enabled": true
+			},
+			{
+				"factor": "value_composite",
+				"weight": 0.2,
+				"enabled": true
+			},
+			{
+				"factor": "revenue_growth",
+				"weight": 0.15,
+				"enabled": true
+			},
+			{
+				"factor": "volatility_30d",
+				"weight": 0.15,
+				"enabled": true
+			}
+		],
+		"selection": {
+			"topN": 25,
+			"rebalanceFrequency": 604800,
+			"minHoldingPeriod": 259200,
+			"threshold": 0.7
+		},
+		"risk": {
+			"maxSectorWeight": 0.25,
+			"maxSinglePosition": 0.08,
+			"maxTurnover": 1,
+			"riskModel": "factor_based"
+		},
+		"dataFusion": {
+			"minQualityScore": 0.75,
+			"requiredSources": ["polygon", "yahoo"],
+			"conflictResolution": "highest_quality",
+			"cacheTTL": 1800
+		},
+		"metadata": {
+			"createdAt": 1757987225265,
+			"updatedAt": 1757987225265,
+			"createdBy": "system_init",
+			"version": 1,
+			"backtestedFrom": 1726451225265,
+			"backtestedTo": 1755395225265
+		}
+	},
+	"quality": {
+		"id": "quality",
+		"name": "Quality-Focused Strategy",
+		"description": "Conservative strategy focusing on high-quality companies with strong fundamentals",
+		"type": "QUALITY",
+		"enabled": true,
+		"selectionCriteria": "SCORE_BASED",
+		"universe": {
+			"maxPositions": 30,
+			"marketCapMin": 1000000000,
+			"sectors": [],
+			"exchanges": ["NYSE", "NASDAQ"],
+			"excludeSymbols": []
+		},
+		"weights": [
+			{
+				"factor": "quality_composite",
+				"weight": 0.4,
+				"enabled": true
+			},
+			{
+				"factor": "roe",
+				"weight": 0.2,
+				"enabled": true
+			},
+			{
+				"factor": "debt_equity",
+				"weight": 0.15,
+				"enabled": true
+			},
+			{
+				"factor": "current_ratio",
+				"weight": 0.15,
+				"enabled": true
+			},
+			{
+				"factor": "dividend_yield",
+				"weight": 0.1,
+				"enabled": true
+			}
+		],
+		"selection": {
+			"topN": 20,
+			"rebalanceFrequency": 2592000,
+			"minHoldingPeriod": 604800,
+			"threshold": 0.8
+		},
+		"risk": {
+			"maxSectorWeight": 0.3,
+			"maxSinglePosition": 0.1,
+			"maxTurnover": 0.5,
+			"riskModel": "conservative"
+		},
+		"dataFusion": {
+			"minQualityScore": 0.8,
+			"requiredSources": ["polygon", "alpha_vantage"],
+			"conflictResolution": "highest_quality",
+			"cacheTTL": 3600
+		},
+		"metadata": {
+			"createdAt": 1757987225265,
+			"updatedAt": 1757987225265,
+			"createdBy": "system_init",
+			"version": 1,
+			"backtestedFrom": 1726451225265,
+			"backtestedTo": 1755395225265
+		}
+	},
+	"momentum": {
+		"id": "momentum",
+		"name": "Momentum Strategy",
+		"description": "Aggressive momentum-based strategy for trending stocks",
+		"type": "MOMENTUM",
+		"enabled": true,
+		"selectionCriteria": "QUANTILE_BASED",
+		"universe": {
+			"maxPositions": 40,
+			"marketCapMin": 500000000,
+			"sectors": [],
+			"exchanges": ["NYSE", "NASDAQ"],
+			"excludeSymbols": []
+		},
+		"weights": [
+			{
+				"factor": "momentum_3m",
+				"weight": 0.3,
+				"enabled": true
+			},
+			{
+				"factor": "momentum_1m",
+				"weight": 0.25,
+				"enabled": true
+			},
+			{
+				"factor": "rsi_14d",
+				"weight": 0.2,
+				"enabled": true
+			},
+			{
+				"factor": "revenue_growth",
+				"weight": 0.15,
+				"enabled": true
+			},
+			{
+				"factor": "macd_signal",
+				"weight": 0.1,
+				"enabled": true
+			}
+		],
+		"selection": {
+			"quantile": 0.2,
+			"rebalanceFrequency": 86400,
+			"minHoldingPeriod": 172800,
+			"threshold": 0.6
+		},
+		"risk": {
+			"maxSectorWeight": 0.4,
+			"maxSinglePosition": 0.06,
+			"maxTurnover": 1.5,
+			"riskModel": "aggressive"
+		},
+		"dataFusion": {
+			"minQualityScore": 0.7,
+			"requiredSources": ["polygon", "yahoo"],
+			"conflictResolution": "latest",
+			"cacheTTL": 900
+		},
+		"metadata": {
+			"createdAt": 1757987225265,
+			"updatedAt": 1757987225265,
+			"createdBy": "system_init",
+			"version": 1,
+			"backtestedFrom": 1726451225265,
+			"backtestedTo": 1755395225265
+		}
+	}
 }

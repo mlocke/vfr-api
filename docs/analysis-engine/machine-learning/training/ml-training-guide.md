@@ -33,6 +33,7 @@
 The VFR ML Enhancement Layer provides a **production-ready model training infrastructure** that orchestrates the complete machine learning lifecycle from data preparation through deployment. The system is **fully functional** with comprehensive training orchestration, automated scheduling, model evaluation, and deployment workflows.
 
 **Current Status**:
+
 - ✅ **100% Infrastructure Complete**: All training services implemented and tested
 - ✅ **90.45% Test Coverage**: 1,747 test lines across 29 passing tests
 - ✅ **Production Ready**: Full orchestration, evaluation, and deployment capabilities
@@ -53,14 +54,14 @@ The training system provides:
 
 ### Architecture Components
 
-| Component | Status | Lines | Purpose |
-|-----------|--------|-------|---------|
-| **ModelTrainer** | ✅ Complete | 755 | Training workflow orchestration |
-| **TrainingOrchestrator** | ✅ Complete | 678 | Job scheduling and coordination |
-| **ModelEvaluator** | ✅ Complete | 688 | Comprehensive metrics calculation |
-| **ModelRegistry** | ✅ Complete | 1,249 | Version control and deployment |
-| **ModelValidator** | ✅ Complete | 992 | Pre-deployment validation |
-| **ModelCache** | ✅ Complete | 692 | Hot model caching (< 50ms load) |
+| Component                | Status      | Lines | Purpose                           |
+| ------------------------ | ----------- | ----- | --------------------------------- |
+| **ModelTrainer**         | ✅ Complete | 755   | Training workflow orchestration   |
+| **TrainingOrchestrator** | ✅ Complete | 678   | Job scheduling and coordination   |
+| **ModelEvaluator**       | ✅ Complete | 688   | Comprehensive metrics calculation |
+| **ModelRegistry**        | ✅ Complete | 1,249 | Version control and deployment    |
+| **ModelValidator**       | ✅ Complete | 992   | Pre-deployment validation         |
+| **ModelCache**           | ✅ Complete | 692   | Hot model caching (< 50ms load)   |
 
 **Total**: 5,054 lines of production-ready infrastructure
 
@@ -201,14 +202,14 @@ Job Queue ─────▶ TrainingOrchestrator
 
 ### Integration Points
 
-| Component | Integration | Purpose |
-|-----------|-------------|---------|
-| **FeatureStore** | Data Source | Retrieves 100+ features per symbol with quality filtering |
-| **ModelRegistry** | Model Management | Version control, deployment, A/B testing |
-| **ModelCache** | Performance | <50ms hot model loading with LRU eviction |
-| **MLCacheService** | Caching | Feature caching (15min TTL), prediction caching (5min TTL) |
-| **PostgreSQL** | Persistence | Training metadata, model registry, performance history |
-| **Redis** | Cache Layer | Feature cache, prediction cache, performance metrics |
+| Component          | Integration      | Purpose                                                    |
+| ------------------ | ---------------- | ---------------------------------------------------------- |
+| **FeatureStore**   | Data Source      | Retrieves 100+ features per symbol with quality filtering  |
+| **ModelRegistry**  | Model Management | Version control, deployment, A/B testing                   |
+| **ModelCache**     | Performance      | <50ms hot model loading with LRU eviction                  |
+| **MLCacheService** | Caching          | Feature caching (15min TTL), prediction caching (5min TTL) |
+| **PostgreSQL**     | Persistence      | Training metadata, model registry, performance history     |
+| **Redis**          | Cache Layer      | Feature cache, prediction cache, performance metrics       |
 
 ---
 
@@ -234,61 +235,61 @@ echo $REDIS_URL
 ### Basic Training Job
 
 ```typescript
-import { TrainingOrchestrator } from '@/app/services/ml/models/TrainingOrchestrator';
-import { ModelType, ModelObjective } from '@/app/services/ml/models/ModelRegistry';
+import { TrainingOrchestrator } from "@/app/services/ml/models/TrainingOrchestrator";
+import { ModelType, ModelObjective } from "@/app/services/ml/models/ModelRegistry";
 
 // 1. Get orchestrator instance
 const orchestrator = TrainingOrchestrator.getInstance();
 
 // 2. Configure training job
 const jobConfig = {
-  jobId: `train_${Date.now()}`,
-  modelName: 'stock_direction_predictor',
-  modelVersion: '1.0.0',
-  modelType: ModelType.LIGHTGBM,
-  objective: ModelObjective.DIRECTION_CLASSIFICATION,
-  targetVariable: 'price_direction_1d',
-  predictionHorizon: '1d',
+	jobId: `train_${Date.now()}`,
+	modelName: "stock_direction_predictor",
+	modelVersion: "1.0.0",
+	modelType: ModelType.LIGHTGBM,
+	objective: ModelObjective.DIRECTION_CLASSIFICATION,
+	targetVariable: "price_direction_1d",
+	predictionHorizon: "1d",
 
-  // Data configuration
-  dataConfig: {
-    symbols: ['AAPL', 'MSFT', 'GOOGL'],
-    startDate: new Date('2022-01-01'),
-    endDate: new Date('2024-12-31'),
-    targetVariable: 'price_direction_1d',
-    predictionHorizon: '1d',
-    minQuality: 0.7
-  },
+	// Data configuration
+	dataConfig: {
+		symbols: ["AAPL", "MSFT", "GOOGL"],
+		startDate: new Date("2022-01-01"),
+		endDate: new Date("2024-12-31"),
+		targetVariable: "price_direction_1d",
+		predictionHorizon: "1d",
+		minQuality: 0.7,
+	},
 
-  // Training configuration
-  trainingConfig: {
-    modelType: ModelType.LIGHTGBM,
-    objective: ModelObjective.DIRECTION_CLASSIFICATION,
-    targetVariable: 'price_direction_1d',
-    predictionHorizon: '1d',
-    hyperparameters: {
-      learning_rate: 0.1,
-      max_depth: 8,
-      num_leaves: 31
-    },
-    trainTestSplit: 0.7,
-    validationSplit: 0.15,
-    cvFolds: 5
-  },
+	// Training configuration
+	trainingConfig: {
+		modelType: ModelType.LIGHTGBM,
+		objective: ModelObjective.DIRECTION_CLASSIFICATION,
+		targetVariable: "price_direction_1d",
+		predictionHorizon: "1d",
+		hyperparameters: {
+			learning_rate: 0.1,
+			max_depth: 8,
+			num_leaves: 31,
+		},
+		trainTestSplit: 0.7,
+		validationSplit: 0.15,
+		cvFolds: 5,
+	},
 
-  // Deployment options
-  autoRegister: true,  // Register on success
-  autoDeploy: false,   // Require manual approval
-  priority: 'normal'
+	// Deployment options
+	autoRegister: true, // Register on success
+	autoDeploy: false, // Require manual approval
+	priority: "normal",
 };
 
 // 3. Submit training job
 const result = await orchestrator.submitTrainingJob(jobConfig);
-console.log('Training Job ID:', result.data); // Job ID string
+console.log("Training Job ID:", result.data); // Job ID string
 
 // 4. Monitor progress
 const status = await orchestrator.getJobStatus(result.data);
-console.log('Status:', status);
+console.log("Status:", status);
 // {
 //   jobId: 'train_1234567890',
 //   status: 'running',
@@ -340,67 +341,68 @@ The training pipeline executes 9 sequential steps from job submission to deploym
 **Code Example**:
 
 ```typescript
-import { TrainingOrchestrator } from '@/app/services/ml/models/TrainingOrchestrator';
-import { ModelType, ModelObjective } from '@/app/services/ml/models/ModelRegistry';
+import { TrainingOrchestrator } from "@/app/services/ml/models/TrainingOrchestrator";
+import { ModelType, ModelObjective } from "@/app/services/ml/models/ModelRegistry";
 
 const orchestrator = TrainingOrchestrator.getInstance();
 
 const jobConfig: TrainingJobConfig = {
-  jobId: 'stock-predictor-v1',
-  modelName: 'stock_direction_predictor',
-  modelVersion: '1.0.0',
-  modelType: ModelType.LIGHTGBM,
-  objective: ModelObjective.DIRECTION_CLASSIFICATION,
-  targetVariable: 'price_direction_1d',
-  predictionHorizon: '1d',
+	jobId: "stock-predictor-v1",
+	modelName: "stock_direction_predictor",
+	modelVersion: "1.0.0",
+	modelType: ModelType.LIGHTGBM,
+	objective: ModelObjective.DIRECTION_CLASSIFICATION,
+	targetVariable: "price_direction_1d",
+	predictionHorizon: "1d",
 
-  dataConfig: {
-    symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'],
-    startDate: new Date('2022-01-01'),
-    endDate: new Date('2024-12-31'),
-    targetVariable: 'price_direction_1d',
-    predictionHorizon: '1d',
-    minQuality: 0.7
-  },
+	dataConfig: {
+		symbols: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"],
+		startDate: new Date("2022-01-01"),
+		endDate: new Date("2024-12-31"),
+		targetVariable: "price_direction_1d",
+		predictionHorizon: "1d",
+		minQuality: 0.7,
+	},
 
-  trainingConfig: {
-    modelType: ModelType.LIGHTGBM,
-    objective: ModelObjective.DIRECTION_CLASSIFICATION,
-    targetVariable: 'price_direction_1d',
-    predictionHorizon: '1d',
-    hyperparameters: {
-      learning_rate: 0.1,
-      max_depth: 8,
-      num_leaves: 31,
-      subsample: 0.8
-    },
-    trainTestSplit: 0.7,
-    validationSplit: 0.15,
-    cvFolds: 5
-  },
+	trainingConfig: {
+		modelType: ModelType.LIGHTGBM,
+		objective: ModelObjective.DIRECTION_CLASSIFICATION,
+		targetVariable: "price_direction_1d",
+		predictionHorizon: "1d",
+		hyperparameters: {
+			learning_rate: 0.1,
+			max_depth: 8,
+			num_leaves: 31,
+			subsample: 0.8,
+		},
+		trainTestSplit: 0.7,
+		validationSplit: 0.15,
+		cvFolds: 5,
+	},
 
-  autoRegister: true,  // Auto-register on success
-  autoDeploy: false,   // Manual deployment approval
-  priority: 'high',
-  createdAt: Date.now()
+	autoRegister: true, // Auto-register on success
+	autoDeploy: false, // Manual deployment approval
+	priority: "high",
+	createdAt: Date.now(),
 };
 
 // Submit job
 const result = await orchestrator.submitTrainingJob(jobConfig);
-console.log('Training Job ID:', result.data);
-console.log('Initial Status:', result.metadata);
+console.log("Training Job ID:", result.data);
+console.log("Initial Status:", result.metadata);
 ```
 
 **Configuration Options**:
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `autoRegister` | boolean | Auto-register successful models | `true` |
-| `autoDeploy` | boolean | Auto-deploy if exceeds baseline | `false` |
-| `priority` | string | Job priority (`low`, `normal`, `high`) | `normal` |
-| `maxConcurrentJobs` | number | Max parallel training jobs | `2` |
+| Parameter           | Type    | Description                            | Default  |
+| ------------------- | ------- | -------------------------------------- | -------- |
+| `autoRegister`      | boolean | Auto-register successful models        | `true`   |
+| `autoDeploy`        | boolean | Auto-deploy if exceeds baseline        | `false`  |
+| `priority`          | string  | Job priority (`low`, `normal`, `high`) | `normal` |
+| `maxConcurrentJobs` | number  | Max parallel training jobs             | `2`      |
 
 **Success Criteria**:
+
 - ✅ Job ID returned
 - ✅ Job status set to `'queued'`
 - ✅ Job configuration validated
@@ -408,11 +410,11 @@ console.log('Initial Status:', result.metadata);
 
 **Common Errors**:
 
-| Error | Cause | Solution |
-|-------|-------|----------|
+| Error                | Cause                   | Solution                                   |
+| -------------------- | ----------------------- | ------------------------------------------ |
 | `INVALID_PARAMETERS` | Missing required fields | Check `jobId`, `modelName`, `modelVersion` |
-| `QUEUE_FULL` | Too many queued jobs | Wait or increase queue size |
-| `DUPLICATE_JOB_ID` | Job ID already exists | Use unique job ID |
+| `QUEUE_FULL`         | Too many queued jobs    | Wait or increase queue size                |
+| `DUPLICATE_JOB_ID`   | Job ID already exists   | Use unique job ID                          |
 
 ---
 
@@ -425,30 +427,30 @@ console.log('Initial Status:', result.metadata);
 **Code Example**:
 
 ```typescript
-import { ModelTrainer } from '@/app/services/ml/models/ModelTrainer';
-import { FeatureStore } from '@/app/services/ml/features/FeatureStore';
+import { ModelTrainer } from "@/app/services/ml/models/ModelTrainer";
+import { FeatureStore } from "@/app/services/ml/features/FeatureStore";
 
 const trainer = ModelTrainer.getInstance();
 
 // Data configuration
 const dataConfig: TrainingDataConfig = {
-  symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'],
-  startDate: new Date('2022-01-01'),
-  endDate: new Date('2024-12-31'),
-  targetVariable: 'price_direction_1d',
-  predictionHorizon: '1d',
-  minQuality: 0.7  // Only features with quality >= 0.7
+	symbols: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"],
+	startDate: new Date("2022-01-01"),
+	endDate: new Date("2024-12-31"),
+	targetVariable: "price_direction_1d",
+	predictionHorizon: "1d",
+	minQuality: 0.7, // Only features with quality >= 0.7
 };
 
 // Prepare training data
 const result = await trainer.prepareTrainingData(dataConfig);
 
 if (result.success && result.data) {
-  const dataset = result.data;
-  console.log('Features shape:', dataset.features.length, 'x', dataset.featureNames.length);
-  console.log('Labels:', dataset.labels.length);
-  console.log('Symbols:', dataset.symbols.length);
-  console.log('Feature names:', dataset.featureNames);
+	const dataset = result.data;
+	console.log("Features shape:", dataset.features.length, "x", dataset.featureNames.length);
+	console.log("Labels:", dataset.labels.length);
+	console.log("Symbols:", dataset.symbols.length);
+	console.log("Feature names:", dataset.featureNames);
 }
 ```
 
@@ -500,6 +502,7 @@ qualityScore = (
 ```
 
 **Success Criteria**:
+
 - ✅ Feature matrix retrieved
 - ✅ Quality filtering applied
 - ✅ No NaN/Infinity values
@@ -518,22 +521,22 @@ qualityScore = (
 ```typescript
 // Split configuration
 const splitConfig = {
-  trainRatio: 0.70,      // 70% training
-  validationRatio: 0.15, // 15% validation
-  testRatio: 0.15,       // 15% test
+	trainRatio: 0.7, // 70% training
+	validationRatio: 0.15, // 15% validation
+	testRatio: 0.15, // 15% test
 
-  // Walk-forward parameters
-  useWalkForward: true,
-  windowSize: 252,       // 252 trading days (1 year)
-  stepSize: 21          // 21 days forward
+	// Walk-forward parameters
+	useWalkForward: true,
+	windowSize: 252, // 252 trading days (1 year)
+	stepSize: 21, // 21 days forward
 };
 
 // Perform split
 const split = await trainer.splitData(dataset, splitConfig);
 
-console.log('Train set:', split.train.features.length, 'samples');
-console.log('Validation set:', split.validation.features.length, 'samples');
-console.log('Test set:', split.test.features.length, 'samples');
+console.log("Train set:", split.train.features.length, "samples");
+console.log("Validation set:", split.validation.features.length, "samples");
+console.log("Test set:", split.test.features.length, "samples");
 ```
 
 **Walk-Forward Validation**:
@@ -557,6 +560,7 @@ Prevents data leakage: Training always on past data only
 ```
 
 **Success Criteria**:
+
 - ✅ Temporal ordering preserved
 - ✅ No data leakage (test dates > validation > train)
 - ✅ Minimum samples per set (train: 100+, val/test: 20+)
@@ -575,35 +579,35 @@ Prevents data leakage: Training always on past data only
 ```typescript
 // LightGBM hyperparameter grid
 const lightgbmGrid: HyperparameterGrid = {
-  learning_rate: [0.01, 0.05, 0.1],
-  max_depth: [3, 5, 7, 10],
-  num_leaves: [31, 63, 127],
-  subsample: [0.7, 0.8, 0.9, 1.0],
-  colsample_bytree: [0.7, 0.8, 0.9, 1.0],
-  min_child_samples: [20, 50, 100]
+	learning_rate: [0.01, 0.05, 0.1],
+	max_depth: [3, 5, 7, 10],
+	num_leaves: [31, 63, 127],
+	subsample: [0.7, 0.8, 0.9, 1.0],
+	colsample_bytree: [0.7, 0.8, 0.9, 1.0],
+	min_child_samples: [20, 50, 100],
 };
 
 // Optimization configuration
 const optimizationConfig = {
-  method: 'grid_search',      // or 'random_search'
-  nFolds: 5,                  // 5-fold cross-validation
-  scoringMetric: 'f1',        // or 'accuracy', 'sharpe_ratio'
-  maxIterations: 100,         // Max combinations to try
-  earlyStoppingRounds: 10     // Stop if no improvement
+	method: "grid_search", // or 'random_search'
+	nFolds: 5, // 5-fold cross-validation
+	scoringMetric: "f1", // or 'accuracy', 'sharpe_ratio'
+	maxIterations: 100, // Max combinations to try
+	earlyStoppingRounds: 10, // Stop if no improvement
 };
 
 // Run optimization
 const optimization = await trainer.optimizeHyperparameters(
-  split.train,
-  ModelType.LIGHTGBM,
-  lightgbmGrid,
-  optimizationConfig
+	split.train,
+	ModelType.LIGHTGBM,
+	lightgbmGrid,
+	optimizationConfig
 );
 
-console.log('Best parameters:', optimization.bestParams);
-console.log('Best CV score:', optimization.bestScore);
-console.log('Total combinations tested:', optimization.allResults.length);
-console.log('Optimization duration:', optimization.optimizationDuration, 'ms');
+console.log("Best parameters:", optimization.bestParams);
+console.log("Best CV score:", optimization.bestScore);
+console.log("Total combinations tested:", optimization.allResults.length);
+console.log("Optimization duration:", optimization.optimizationDuration, "ms");
 ```
 
 **Expected Output**:
@@ -631,13 +635,14 @@ console.log('Optimization duration:', optimization.optimizationDuration, 'ms');
 
 **Optimization Methods**:
 
-| Method | Description | Use Case |
-|--------|-------------|----------|
-| `grid_search` | Exhaustive search | Small parameter space (<100 combinations) |
-| `random_search` | Random sampling | Large parameter space (>100 combinations) |
-| `bayesian` | Bayesian optimization | Very large space, limited compute |
+| Method          | Description           | Use Case                                  |
+| --------------- | --------------------- | ----------------------------------------- |
+| `grid_search`   | Exhaustive search     | Small parameter space (<100 combinations) |
+| `random_search` | Random sampling       | Large parameter space (>100 combinations) |
+| `bayesian`      | Bayesian optimization | Very large space, limited compute         |
 
 **Success Criteria**:
+
 - ✅ Best parameters identified
 - ✅ Cross-validation score > baseline
 - ✅ No overfitting (train vs validation gap < 10%)
@@ -707,6 +712,7 @@ private async trainLightGBMModel(
 **Algorithm-Specific Training**:
 
 **LightGBM** (Recommended for financial features):
+
 ```typescript
 // Install
 npm install lightgbm
@@ -727,6 +733,7 @@ const model = await lgb.train({
 ```
 
 **XGBoost** (Alternative gradient boosting):
+
 ```typescript
 // Install
 npm install xgboost
@@ -745,6 +752,7 @@ const model = await xgb.train({
 ```
 
 **LSTM** (Deep learning for sequences):
+
 ```typescript
 // Install
 npm install @tensorflow/tfjs-node
@@ -782,6 +790,7 @@ await model.fit(trainData, trainLabels, {
 ```
 
 **Success Criteria**:
+
 - ✅ Model trained successfully
 - ✅ Training metrics logged
 - ✅ Feature importance calculated
@@ -798,7 +807,7 @@ await model.fit(trainData, trainLabels, {
 **Code Example**:
 
 ```typescript
-import { ModelEvaluator } from '@/app/services/ml/models/ModelEvaluator';
+import { ModelEvaluator } from "@/app/services/ml/models/ModelEvaluator";
 
 const evaluator = ModelEvaluator.getInstance();
 
@@ -808,21 +817,22 @@ const testActuals = testSet.labels;
 
 // Evaluate model
 const evaluation = await evaluator.evaluateModel({
-  predictions: testPredictions,
-  actuals: testActuals,
-  modelType: 'classification',
-  includeConfusionMatrix: true,
-  includeROC: true
+	predictions: testPredictions,
+	actuals: testActuals,
+	modelType: "classification",
+	includeConfusionMatrix: true,
+	includeROC: true,
 });
 
-console.log('Classification Metrics:', evaluation.classification);
-console.log('Financial Metrics:', evaluation.financial);
-console.log('Regression Metrics:', evaluation.regression);
+console.log("Classification Metrics:", evaluation.classification);
+console.log("Financial Metrics:", evaluation.financial);
+console.log("Regression Metrics:", evaluation.regression);
 ```
 
 **Evaluation Metrics**:
 
 **Classification Metrics**:
+
 ```typescript
 {
   accuracy: 0.68,          // Correct predictions / total
@@ -838,6 +848,7 @@ console.log('Regression Metrics:', evaluation.regression);
 ```
 
 **Financial Metrics** (Most Important for Trading):
+
 ```typescript
 {
   directionalAccuracy: 0.68,    // Correct direction predictions
@@ -852,6 +863,7 @@ console.log('Regression Metrics:', evaluation.regression);
 ```
 
 **Regression Metrics**:
+
 ```typescript
 {
   mse: 0.021,              // Mean squared error
@@ -863,6 +875,7 @@ console.log('Regression Metrics:', evaluation.regression);
 ```
 
 **Success Criteria**:
+
 - ✅ Accuracy > 0.55 (better than random)
 - ✅ Sharpe ratio > 1.0 (good risk-adjusted returns)
 - ✅ Max drawdown < 0.25 (acceptable risk)
@@ -881,23 +894,23 @@ console.log('Regression Metrics:', evaluation.regression);
 ```typescript
 // Baseline comparison configuration
 const baselineConfig = {
-  baselineModelId: 'buy-and-hold-baseline',
-  confidenceLevel: 0.95,  // 95% confidence interval
-  minimumImprovement: {
-    sharpeRatio: 0.2,           // +20% improvement required
-    directionalAccuracy: 0.05    // +5% improvement required
-  }
+	baselineModelId: "buy-and-hold-baseline",
+	confidenceLevel: 0.95, // 95% confidence interval
+	minimumImprovement: {
+		sharpeRatio: 0.2, // +20% improvement required
+		directionalAccuracy: 0.05, // +5% improvement required
+	},
 };
 
 // Compare to baseline
 const comparison = await evaluator.compareToBaseline({
-  modelId: 'stock-predictor-v1',
-  baselineModelId: baselineConfig.baselineModelId,
-  testData: testSet,
-  confidenceLevel: baselineConfig.confidenceLevel
+	modelId: "stock-predictor-v1",
+	baselineModelId: baselineConfig.baselineModelId,
+	testData: testSet,
+	confidenceLevel: baselineConfig.confidenceLevel,
 });
 
-console.log('Comparison Result:', comparison);
+console.log("Comparison Result:", comparison);
 ```
 
 **Expected Output**:
@@ -937,24 +950,24 @@ console.log('Comparison Result:', comparison);
 
 ```typescript
 // Decision criteria
-shouldDeploy = (
-  improvement.sharpeRatio > 0.2 &&               // >20% Sharpe improvement
-  improvement.directionalAccuracy > 0.05 &&      // >5% accuracy improvement
-  statisticalSignificance.significant === true && // p < 0.05
-  modelPerformance.sharpeRatio > 1.0 &&          // Absolute Sharpe > 1.0
-  modelPerformance.maxDrawdown > -0.25           // Max drawdown acceptable
-);
+shouldDeploy =
+	improvement.sharpeRatio > 0.2 && // >20% Sharpe improvement
+	improvement.directionalAccuracy > 0.05 && // >5% accuracy improvement
+	statisticalSignificance.significant === true && // p < 0.05
+	modelPerformance.sharpeRatio > 1.0 && // Absolute Sharpe > 1.0
+	modelPerformance.maxDrawdown > -0.25; // Max drawdown acceptable
 ```
 
 **Baseline Strategies**:
 
-| Baseline | Description | Expected Performance |
-|----------|-------------|---------------------|
-| **Buy-and-Hold** | Hold position regardless | 50% directional accuracy |
-| **Moving Average** | SMA crossover strategy | 52-55% directional accuracy |
-| **Current Model** | Deployed production model | Varies (target to beat) |
+| Baseline           | Description               | Expected Performance        |
+| ------------------ | ------------------------- | --------------------------- |
+| **Buy-and-Hold**   | Hold position regardless  | 50% directional accuracy    |
+| **Moving Average** | SMA crossover strategy    | 52-55% directional accuracy |
+| **Current Model**  | Deployed production model | Varies (target to beat)     |
 
 **Success Criteria**:
+
 - ✅ Statistical significance achieved (p < 0.05)
 - ✅ Sharpe ratio improvement > 20%
 - ✅ Directional accuracy improvement > 5%
@@ -962,11 +975,10 @@ shouldDeploy = (
 
 ---
 
-*[Document continues with Steps 8-9, Configuration Reference, Automated Retraining, etc. - truncated for length]*
+_[Document continues with Steps 8-9, Configuration Reference, Automated Retraining, etc. - truncated for length]_
 
 ---
 
 **Document Status**: Section 1-7 Complete
 **Remaining Sections**: 8-14 (to be continued)
 **Total Lines**: ~1,500+ when complete
-

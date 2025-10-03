@@ -69,44 +69,49 @@ DATABASE_URL=postgresql://postgres:dev_password_123@localhost:5432/vfr_api
 ### Security Configuration
 
 1. **Change Default Passwords**
-   ```sql
-   -- Change application role password
-   ALTER ROLE vfr_app_role PASSWORD 'your_secure_password_here';
 
-   -- Change read-only role password
-   ALTER ROLE vfr_read_role PASSWORD 'your_read_password_here';
+    ```sql
+    -- Change application role password
+    ALTER ROLE vfr_app_role PASSWORD 'your_secure_password_here';
 
-   -- Change default admin user password
-   UPDATE users SET password_hash = crypt('your_admin_password', gen_salt('bf', 12))
-   WHERE email = 'admin@veritak.com';
-   ```
+    -- Change read-only role password
+    ALTER ROLE vfr_read_role PASSWORD 'your_read_password_here';
+
+    -- Change default admin user password
+    UPDATE users SET password_hash = crypt('your_admin_password', gen_salt('bf', 12))
+    WHERE email = 'admin@veritak.com';
+    ```
 
 2. **Update Environment Variables**
-   ```env
-   # Update .env with new passwords
-   DATABASE_URL=postgresql://vfr_app_role:your_secure_password_here@localhost:5432/vfr_api
-   ```
+    ```env
+    # Update .env with new passwords
+    DATABASE_URL=postgresql://vfr_app_role:your_secure_password_here@localhost:5432/vfr_api
+    ```
 
 ### Database Schema Overview
 
 The database includes optimized tables for:
 
 #### Core Financial Data
+
 - **securities_master**: Securities reference data with exchange, sector, market cap
 - **market_data**: High-frequency OHLCV data with multiple timeframes
 - **fundamental_data**: Income statement, balance sheet, cash flow data
 - **economic_indicators**: FRED, BLS, and other economic data sources
 
 #### User Management
+
 - **users**: User accounts with role-based access control
 - **user_sessions**: JWT token management and session tracking
 
 #### Algorithm Integration
+
 - **algorithm_configurations**: Stock selection algorithm settings
 - **stock_scores**: Multi-factor scoring results
 - **selection_results**: Algorithm execution results and performance tracking
 
 #### Performance & Monitoring
+
 - **app_cache**: Application-level caching for Redis fallback
 - **api_usage**: Rate limiting and usage analytics
 - **audit_log**: Comprehensive audit trail for compliance
@@ -114,12 +119,14 @@ The database includes optimized tables for:
 ### Performance Optimization
 
 #### Indexing Strategy
+
 - **B-tree indexes**: Primary keys, foreign keys, common WHERE clauses
 - **GIN indexes**: JSON/JSONB columns for flexible queries
 - **Composite indexes**: Multi-column queries (symbol + timestamp)
 - **Partial indexes**: Filtered indexes for active records only
 
 #### Memory Configuration
+
 ```sql
 -- Current settings for 8GB RAM system
 shared_buffers = '2GB'
@@ -129,6 +136,7 @@ effective_cache_size = '6GB'
 ```
 
 #### Query Optimization Features
+
 - **Materialized views**: Pre-calculated common queries
 - **Continuous aggregates**: Real-time time-series aggregations (with TimescaleDB)
 - **Partition pruning**: Date-based partitioning for large tables
@@ -137,6 +145,7 @@ effective_cache_size = '6GB'
 ### High-Frequency Data Considerations
 
 #### Time-Series Optimization
+
 ```sql
 -- If using TimescaleDB
 SELECT create_hypertable('market_data', 'timestamp', chunk_time_interval => INTERVAL '1 day');
@@ -144,6 +153,7 @@ SELECT add_retention_policy('market_data', INTERVAL '2 years');
 ```
 
 #### Data Quality Management
+
 - **Source tracking**: Every record includes data_source field
 - **Quality scoring**: Data quality metrics (0.0-1.0 scale)
 - **Conflict resolution**: Multi-source data fusion capabilities
@@ -152,6 +162,7 @@ SELECT add_retention_policy('market_data', INTERVAL '2 years');
 ### Connection Management
 
 #### Connection Pooling (Recommended)
+
 ```bash
 # Install PgBouncer for production
 sudo apt-get install pgbouncer
@@ -172,6 +183,7 @@ max_db_connections = 100
 ```
 
 #### Application Connection String
+
 ```env
 # Direct connection
 DATABASE_URL=postgresql://vfr_app_role:password@localhost:5432/vfr_api
@@ -183,6 +195,7 @@ DATABASE_URL=postgresql://vfr_app_role:password@localhost:6432/vfr_api
 ### Backup and Recovery
 
 #### Automated Backup Script
+
 ```bash
 #!/bin/bash
 # backup-vfr-api.sh
@@ -207,6 +220,7 @@ echo "Backup completed: vfr_api_$DATE.sql.gz"
 ```
 
 #### Point-in-Time Recovery Setup
+
 ```bash
 # Enable WAL archiving in postgresql.conf
 archive_mode = on
@@ -217,6 +231,7 @@ wal_level = replica
 ### Monitoring and Maintenance
 
 #### Essential Monitoring Queries
+
 ```sql
 -- Active connections
 SELECT count(*) as active_connections
@@ -248,6 +263,7 @@ LIMIT 10;
 ```
 
 #### Automated Maintenance
+
 ```sql
 -- Set up automated maintenance
 SELECT cron.schedule('vfr-maintenance', '0 2 * * *', 'SELECT maintenance_cleanup();');
@@ -256,12 +272,14 @@ SELECT cron.schedule('vfr-maintenance', '0 2 * * *', 'SELECT maintenance_cleanup
 ### Development vs Production
 
 #### Development Environment
+
 - Relaxed security settings
 - Verbose logging enabled
 - Local connections only
 - Smaller memory allocation
 
 #### Production Checklist
+
 - [ ] Enable SSL/TLS encryption
 - [ ] Configure firewall rules
 - [ ] Set up connection pooling
@@ -278,52 +296,56 @@ SELECT cron.schedule('vfr-maintenance', '0 2 * * *', 'SELECT maintenance_cleanup
 #### Common Issues
 
 1. **Connection Refused**
-   ```bash
-   # Check PostgreSQL status
-   sudo systemctl status postgresql
 
-   # Check port binding
-   sudo netstat -tlnp | grep 5432
-   ```
+    ```bash
+    # Check PostgreSQL status
+    sudo systemctl status postgresql
+
+    # Check port binding
+    sudo netstat -tlnp | grep 5432
+    ```
 
 2. **Out of Memory Errors**
-   ```sql
-   -- Check current memory usage
-   SELECT name, setting FROM pg_settings WHERE name LIKE '%mem%';
 
-   -- Adjust work_mem for specific session
-   SET work_mem = '256MB';
-   ```
+    ```sql
+    -- Check current memory usage
+    SELECT name, setting FROM pg_settings WHERE name LIKE '%mem%';
+
+    -- Adjust work_mem for specific session
+    SET work_mem = '256MB';
+    ```
 
 3. **Slow Query Performance**
-   ```sql
-   -- Analyze query performance
-   EXPLAIN (ANALYZE, BUFFERS) SELECT ...;
 
-   -- Update table statistics
-   ANALYZE table_name;
-   ```
+    ```sql
+    -- Analyze query performance
+    EXPLAIN (ANALYZE, BUFFERS) SELECT ...;
+
+    -- Update table statistics
+    ANALYZE table_name;
+    ```
 
 #### Performance Tuning
 
 1. **Index Analysis**
-   ```sql
-   -- Find unused indexes
-   SELECT schemaname, tablename, indexname, idx_scan
-   FROM pg_stat_user_indexes
-   WHERE idx_scan = 0;
 
-   -- Find missing indexes
-   SELECT * FROM pg_stat_user_tables WHERE seq_scan > 1000;
-   ```
+    ```sql
+    -- Find unused indexes
+    SELECT schemaname, tablename, indexname, idx_scan
+    FROM pg_stat_user_indexes
+    WHERE idx_scan = 0;
+
+    -- Find missing indexes
+    SELECT * FROM pg_stat_user_tables WHERE seq_scan > 1000;
+    ```
 
 2. **Memory Optimization**
-   ```sql
-   -- Check buffer hit ratio (should be >95%)
-   SELECT
-       round(100.0 * sum(blks_hit) / (sum(blks_hit) + sum(blks_read)), 2) as hit_ratio
-   FROM pg_stat_database;
-   ```
+    ```sql
+    -- Check buffer hit ratio (should be >95%)
+    SELECT
+        round(100.0 * sum(blks_hit) / (sum(blks_hit) + sum(blks_read)), 2) as hit_ratio
+    FROM pg_stat_database;
+    ```
 
 ### Integration with VFR API
 
