@@ -13,25 +13,59 @@ from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, reca
 from datetime import datetime
 
 FEATURE_NAMES = [
+    # Price momentum features (3)
     'price_change_5d',
     'price_change_10d',
     'price_change_20d',
+
+    # Volume features (2)
     'volume_ratio',
     'volume_trend',
+
+    # Sentiment features (3)
     'sentiment_news_delta',
     'sentiment_reddit_accel',
     'sentiment_options_shift',
+
+    # Social sentiment features (6)
     'social_stocktwits_24h_change',
     'social_stocktwits_hourly_momentum',
     'social_stocktwits_7d_trend',
     'social_twitter_24h_change',
     'social_twitter_hourly_momentum',
     'social_twitter_7d_trend',
+
+    # Fundamental features (3)
     'earnings_surprise',
     'revenue_growth_accel',
     'analyst_coverage_change',
+
+    # Technical features (2)
     'rsi_momentum',
-    'macd_histogram_trend'
+    'macd_histogram_trend',
+
+    # NEW: Government macro indicators (5)
+    'fed_rate_change_30d',
+    'unemployment_rate_change',
+    'cpi_inflation_rate',
+    'gdp_growth_rate',
+    'treasury_yield_10y',
+
+    # NEW: SEC filing indicators (3)
+    'sec_insider_buying_ratio',
+    'sec_institutional_ownership_change',
+    'sec_8k_filing_count_30d',
+
+    # NEW: FMP premium metrics (4)
+    'analyst_price_target_change',
+    'earnings_whisper_vs_estimate',
+    'short_interest_change',
+    'institutional_ownership_momentum',
+
+    # NEW: EODHD market data (3)
+    'options_put_call_ratio_change',
+    'dividend_yield_change',
+    'market_beta_30d'
 ]
 
 def load_data():

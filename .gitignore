@@ -64,3 +64,14 @@ logs/
 # Analysis results - generated data files
 public/analysis-results/
 *.tsbuildinfo
+
+# ML Training artifacts
+data/training/checkpoint_*.csv
+data/training/dataset-*.csv
+
+# Documentation files (developer notes)
+CLAUDE.md
+**/CLAUDE.md
+
+# Playwright MCP
+.playwright-mcp/
