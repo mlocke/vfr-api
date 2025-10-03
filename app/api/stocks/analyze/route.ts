@@ -213,6 +213,8 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
   const toggleService = MLFeatureToggleService.getInstance()
   const esdEnabled = await toggleService.isEarlySignalEnabled()
 
+  console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}`)
+
   return {
     scope,
     options: {
@@ -222,7 +224,7 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
       includeNews: true,
       includeEarlySignal: esdEnabled,
       riskTolerance: 'moderate',
-      timeout: config?.timeout || 60000 // Increased to 60s for comprehensive analysis with timeout protection
+      timeout: config?.timeout || 120000 // Increased to 120s for comprehensive analysis with ESD (Python model loading + feature extraction)
     },
     requestId: `admin_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
@@ -288,7 +290,8 @@ function convertToAdminResponse(response: any): any {
       rationale: selection.rationale,
       strengths: selection.strengths,
       risks: selection.risks,
-      insights: selection.insights
+      insights: selection.insights,
+      early_signal: selection.early_signal
     }
   }) || []
 
