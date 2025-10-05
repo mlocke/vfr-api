@@ -9,6 +9,8 @@ export interface AnalysisRequest {
 	symbols?: string[];
 	sector?: string;
 	limit?: number;
+	include_ml?: boolean; // Enable ML predictions
+	ml_horizon?: "1h" | "4h" | "1d" | "1w" | "1m";
 }
 
 export interface AnalysisResponse {

@@ -46,6 +46,23 @@ interface StockRecommendationCardProps {
 			prediction_timestamp: number;
 			model_version: string;
 		};
+		mlPrediction?: {
+			symbol: string;
+			modelId: string;
+			modelType: string;
+			horizon: string;
+			prediction: number;
+			confidence: number;
+			direction: "UP" | "DOWN" | "NEUTRAL";
+			probability?: {
+				up: number;
+				down: number;
+				neutral: number;
+			};
+			latencyMs: number;
+			fromCache: boolean;
+			timestamp: number;
+		};
 	};
 }
 
@@ -431,6 +448,375 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 					))}
 				</div>
 			</div>
+
+			{/* ML Price Prediction Section */}
+			{stock.mlPrediction && (
+				<>
+					<div
+						onClick={() => toggleSection("ml_prediction")}
+						style={{
+							background: "rgba(139, 92, 246, 0.1)",
+							border: "1px solid rgba(139, 92, 246, 0.3)",
+							borderRadius: "12px",
+							padding: "1rem",
+							marginBottom: "0.75rem",
+							cursor: "pointer",
+							transition: "all 0.3s ease",
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+						}}
+					>
+						<div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+							<span style={{ fontSize: "1.5rem" }}>
+								{stock.mlPrediction.direction === "UP"
+									? "📈"
+									: stock.mlPrediction.direction === "DOWN"
+										? "📉"
+										: "➡️"}
+							</span>
+							<div>
+								<span
+									style={{
+										fontSize: "0.9rem",
+										fontWeight: "600",
+										color: "rgba(139, 92, 246, 0.9)",
+									}}
+								>
+									ML Price Prediction
+								</span>
+								<div
+									style={{
+										fontSize: "0.75rem",
+										color: "rgba(255,255,255,0.6)",
+										marginTop: "0.25rem",
+									}}
+								>
+									{stock.mlPrediction.direction} trend expected (
+									{stock.mlPrediction.horizon})
+								</div>
+							</div>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.75rem",
+							}}
+						>
+							<div
+								style={{
+									background:
+										stock.mlPrediction.direction === "UP"
+											? "rgba(34, 197, 94, 0.2)"
+											: stock.mlPrediction.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.2)"
+												: "rgba(251, 191, 36, 0.2)",
+									border: `1px solid ${
+										stock.mlPrediction.direction === "UP"
+											? "rgba(34, 197, 94, 0.4)"
+											: stock.mlPrediction.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.4)"
+												: "rgba(251, 191, 36, 0.4)"
+									}`,
+									color:
+										stock.mlPrediction.direction === "UP"
+											? "rgba(34, 197, 94, 0.9)"
+											: stock.mlPrediction.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.9)"
+												: "rgba(251, 191, 36, 0.9)",
+									padding: "0.5rem 1rem",
+									borderRadius: "8px",
+									fontSize: "1rem",
+									fontWeight: "700",
+								}}
+							>
+								{stock.mlPrediction.direction}
+							</div>
+							<span style={{ fontSize: "1.2rem", color: "rgba(139, 92, 246, 0.6)" }}>
+								{expandedSection === "ml_prediction" ? "−" : "+"}
+							</span>
+						</div>
+					</div>
+
+					{expandedSection === "ml_prediction" && (
+						<div
+							style={{
+								background: "rgba(139, 92, 246, 0.05)",
+								borderRadius: "8px",
+								padding: "1rem",
+								marginBottom: "0.75rem",
+							}}
+						>
+							{/* Confidence Display */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(139, 92, 246, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Prediction Confidence
+								</h5>
+								<div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+									<div
+										style={{
+											flex: 1,
+											background: "rgba(255,255,255,0.1)",
+											borderRadius: "20px",
+											height: "8px",
+											overflow: "hidden",
+										}}
+									>
+										<div
+											style={{
+												background:
+													"linear-gradient(90deg, rgba(139,92,246,0.8), rgba(168,85,247,0.8))",
+												height: "100%",
+												width: `${stock.mlPrediction.confidence * 100}%`,
+												borderRadius: "20px",
+											}}
+										/>
+									</div>
+									<span
+										style={{
+											fontSize: "1.2rem",
+											fontWeight: "700",
+											color: "rgba(139,92,246,0.9)",
+										}}
+									>
+										{(stock.mlPrediction.confidence * 100).toFixed(1)}%
+									</span>
+								</div>
+							</div>
+
+							{/* Probability Breakdown */}
+							{stock.mlPrediction.probability && (
+								<div style={{ marginBottom: "1rem" }}>
+									<h5
+										style={{
+											color: "rgba(139, 92, 246, 0.9)",
+											fontSize: "0.85rem",
+											margin: "0 0 0.5rem 0",
+										}}
+									>
+										Direction Probabilities
+									</h5>
+									<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+										{/* UP Probability */}
+										<div>
+											<div
+												style={{
+													display: "flex",
+													justifyContent: "space-between",
+													fontSize: "0.8rem",
+													marginBottom: "0.25rem",
+												}}
+											>
+												<span style={{ color: "rgba(34, 197, 94, 0.9)" }}>
+													📈 Upward
+												</span>
+												<span style={{ color: "rgba(255,255,255,0.8)" }}>
+													{(stock.mlPrediction.probability.up * 100).toFixed(1)}%
+												</span>
+											</div>
+											<div
+												style={{
+													background: "rgba(255,255,255,0.1)",
+													borderRadius: "4px",
+													height: "6px",
+													overflow: "hidden",
+												}}
+											>
+												<div
+													style={{
+														background: "rgba(34, 197, 94, 0.8)",
+														height: "100%",
+														width: `${stock.mlPrediction.probability.up * 100}%`,
+														borderRadius: "4px",
+													}}
+												/>
+											</div>
+										</div>
+
+										{/* NEUTRAL Probability */}
+										<div>
+											<div
+												style={{
+													display: "flex",
+													justifyContent: "space-between",
+													fontSize: "0.8rem",
+													marginBottom: "0.25rem",
+												}}
+											>
+												<span style={{ color: "rgba(251, 191, 36, 0.9)" }}>
+													➡️ Neutral
+												</span>
+												<span style={{ color: "rgba(255,255,255,0.8)" }}>
+													{(stock.mlPrediction.probability.neutral * 100).toFixed(
+														1
+													)}
+													%
+												</span>
+											</div>
+											<div
+												style={{
+													background: "rgba(255,255,255,0.1)",
+													borderRadius: "4px",
+													height: "6px",
+													overflow: "hidden",
+												}}
+											>
+												<div
+													style={{
+														background: "rgba(251, 191, 36, 0.8)",
+														height: "100%",
+														width: `${stock.mlPrediction.probability.neutral * 100}%`,
+														borderRadius: "4px",
+													}}
+												/>
+											</div>
+										</div>
+
+										{/* DOWN Probability */}
+										<div>
+											<div
+												style={{
+													display: "flex",
+													justifyContent: "space-between",
+													fontSize: "0.8rem",
+													marginBottom: "0.25rem",
+												}}
+											>
+												<span style={{ color: "rgba(239, 68, 68, 0.9)" }}>
+													📉 Downward
+												</span>
+												<span style={{ color: "rgba(255,255,255,0.8)" }}>
+													{(stock.mlPrediction.probability.down * 100).toFixed(1)}
+													%
+												</span>
+											</div>
+											<div
+												style={{
+													background: "rgba(255,255,255,0.1)",
+													borderRadius: "4px",
+													height: "6px",
+													overflow: "hidden",
+												}}
+											>
+												<div
+													style={{
+														background: "rgba(239, 68, 68, 0.8)",
+														height: "100%",
+														width: `${stock.mlPrediction.probability.down * 100}%`,
+														borderRadius: "4px",
+													}}
+												/>
+											</div>
+										</div>
+									</div>
+								</div>
+							)}
+
+							{/* Prediction Details */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(139, 92, 246, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Prediction Details
+								</h5>
+								<div
+									style={{
+										display: "grid",
+										gridTemplateColumns: "1fr 1fr",
+										gap: "0.5rem",
+										fontSize: "0.8rem",
+									}}
+								>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Time Horizon:</span>
+										<span
+											style={{
+												color: "rgba(255,255,255,0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											{stock.mlPrediction.horizon.toUpperCase()}
+										</span>
+									</div>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Model Type:</span>
+										<span
+											style={{
+												color: "rgba(255,255,255,0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											{stock.mlPrediction.modelType}
+										</span>
+									</div>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Predicted Value:</span>
+										<span
+											style={{
+												color: "rgba(255,255,255,0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											{stock.mlPrediction.prediction.toFixed(4)}
+										</span>
+									</div>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Data Source:</span>
+										<span
+											style={{
+												color: stock.mlPrediction.fromCache
+													? "rgba(251, 191, 36, 0.9)"
+													: "rgba(34, 197, 94, 0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											{stock.mlPrediction.fromCache ? "Cached" : "Live"}
+										</span>
+									</div>
+								</div>
+							</div>
+
+							{/* Model Metadata Footer */}
+							<div
+								style={{
+									marginTop: "1rem",
+									paddingTop: "0.75rem",
+									borderTop: "1px solid rgba(255,255,255,0.1)",
+									fontSize: "0.75rem",
+									color: "rgba(255,255,255,0.5)",
+									display: "flex",
+									justifyContent: "space-between",
+									flexWrap: "wrap",
+									gap: "0.5rem",
+								}}
+							>
+								<span>Model: {stock.mlPrediction.modelId}</span>
+								<span>
+									Predicted: {new Date(stock.mlPrediction.timestamp).toLocaleString()}
+								</span>
+								{stock.mlPrediction.latencyMs && (
+									<span>Latency: {stock.mlPrediction.latencyMs}ms</span>
+								)}
+							</div>
+						</div>
+					)}
+				</>
+			)}
 
 			{/* Quick Insights */}
 			{stock.insights?.positive && stock.insights.positive.length > 0 && (

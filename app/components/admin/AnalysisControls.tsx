@@ -15,6 +15,8 @@ export default function AnalysisControls({ onRunAnalysis, isRunning }: AnalysisC
 	const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
 	const [selectedSector, setSelectedSector] = useState<SectorOption | null>(null);
 	const [limit, setLimit] = useState(10);
+	const [includeML, setIncludeML] = useState(true); // Enable ML predictions by default
+	const [mlHorizon, setMLHorizon] = useState<"1h" | "4h" | "1d" | "1w" | "1m">("1w");
 
 	const handleSubmit = () => {
 		if (isRunning) return;
@@ -22,6 +24,8 @@ export default function AnalysisControls({ onRunAnalysis, isRunning }: AnalysisC
 		const request: AnalysisRequest = {
 			mode,
 			limit,
+			include_ml: includeML,
+			ml_horizon: mlHorizon,
 		};
 
 		if (mode === "single" && selectedSymbols.length > 0) {
@@ -196,6 +200,104 @@ export default function AnalysisControls({ onRunAnalysis, isRunning }: AnalysisC
 					/>
 				</div>
 			)}
+
+			{/* ML Prediction Settings */}
+			<div
+				style={{
+					marginBottom: "1.5rem",
+					padding: "1rem",
+					background: "rgba(139, 92, 246, 0.1)",
+					border: "1px solid rgba(139, 92, 246, 0.3)",
+					borderRadius: "12px",
+				}}
+			>
+				<div style={{ marginBottom: "1rem" }}>
+					<label
+						style={{
+							fontSize: "1rem",
+							fontWeight: "600",
+							color: "rgba(139, 92, 246, 0.9)",
+							marginBottom: "0.75rem",
+							display: "flex",
+							alignItems: "center",
+							gap: "0.5rem",
+						}}
+					>
+						<span style={{ fontSize: "1.2rem" }}>🤖</span>
+						ML Predictions
+					</label>
+					<div
+						style={{
+							display: "flex",
+							alignItems: "center",
+							gap: "0.5rem",
+							marginBottom: "0.75rem",
+						}}
+					>
+						<input
+							type="checkbox"
+							checked={includeML}
+							onChange={e => setIncludeML(e.target.checked)}
+							style={{
+								width: "18px",
+								height: "18px",
+								accentColor: "rgba(139, 92, 246, 0.8)",
+								cursor: "pointer",
+							}}
+						/>
+						<span style={{ fontSize: "0.9rem", color: "rgba(255, 255, 255, 0.9)" }}>
+							Enable ML price predictions
+						</span>
+					</div>
+				</div>
+
+				{includeML && (
+					<div>
+						<label
+							style={{
+								fontSize: "0.9rem",
+								fontWeight: "500",
+								color: "rgba(255, 255, 255, 0.8)",
+								marginBottom: "0.5rem",
+								display: "block",
+							}}
+						>
+							Prediction Horizon
+						</label>
+						<select
+							value={mlHorizon}
+							onChange={e => setMLHorizon(e.target.value as any)}
+							style={{
+								width: "100%",
+								padding: "0.5rem",
+								background: "rgba(255, 255, 255, 0.1)",
+								border: "1px solid rgba(139, 92, 246, 0.4)",
+								borderRadius: "6px",
+								color: "white",
+								fontSize: "0.9rem",
+								outline: "none",
+								cursor: "pointer",
+							}}
+						>
+							<option value="1h" style={{ backgroundColor: "#1a1a1a" }}>
+								1 Hour
+							</option>
+							<option value="4h" style={{ backgroundColor: "#1a1a1a" }}>
+								4 Hours
+							</option>
+							<option value="1d" style={{ backgroundColor: "#1a1a1a" }}>
+								1 Day
+							</option>
+							<option value="1w" style={{ backgroundColor: "#1a1a1a" }}>
+								1 Week
+							</option>
+							<option value="1m" style={{ backgroundColor: "#1a1a1a" }}>
+								1 Month
+							</option>
+						</select>
+					</div>
+				)}
+			</div>
 
 			{/* Run Analysis Button */}
 			<button

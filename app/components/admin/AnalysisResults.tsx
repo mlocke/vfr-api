@@ -286,6 +286,7 @@ Components: ${Object.keys(service.components).length} components`;
 											},
 											reasoning: stock.reasoning || stock.rationale,
 											early_signal: stock.early_signal,
+											mlPrediction: stock.mlPrediction,
 										}}
 									/>
 								))}

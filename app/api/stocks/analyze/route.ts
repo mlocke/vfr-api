@@ -323,6 +323,7 @@ function convertToAdminResponse(response: any): any {
 				risks: selection.risks,
 				insights: selection.insights,
 				early_signal: selection.early_signal,
+				mlPrediction: selection.mlPrediction, // Phase 4.1: Include ML predictions in API response
 			};
 		}) || [];
 
