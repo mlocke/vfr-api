@@ -68,10 +68,26 @@ public/analysis-results/
 # ML Training artifacts
 data/training/checkpoint_*.csv
 data/training/dataset-*.csv
+data/training/test-fix*.csv
+data/cache/
+data/symbols/
+
+# Backup files
+*.backup
+*.backup2
+*.backup3
+*.backup4
+*.backup5
 
 # Documentation files (developer notes)
 CLAUDE.md
 **/CLAUDE.md
+
+# Diagnostic and temporary docs
+*-DIAGNOSTIC.md
+*-report.md
+*-summary.md
+*-TODO.md
 
 # Playwright MCP
 .playwright-mcp/

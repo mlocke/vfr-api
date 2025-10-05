@@ -348,6 +348,113 @@ export class BLSAPI implements FinancialDataProvider {
 		}
 	}
 
+	/**
+	 * Get observation at a specific date for historical feature extraction
+	 * BLS data is monthly, so this returns the observation for the month containing the target date
+	 *
+	 * @param seriesId BLS series ID (e.g., 'LNS14000000' for unemployment)
+	 * @param date Target date for observation
+	 * @returns Observation for the month containing the target date, or null if not found
+	 */
+	async getObservationAtDate(seriesId: string, date: Date): Promise<BLSDataPoint | null> {
+		if (!this.apiKey) {
+			const error = new Error("BLS API key not configured");
+			console.warn(error.message);
+			if (this.throwErrors) throw error;
+			return null;
+		}
+
+		try {
+			const targetYear = date.getFullYear();
+			const targetMonth = date.getMonth() + 1; // JavaScript months are 0-indexed, BLS uses 1-12
+			const yearMonth = `${targetYear}-${targetMonth.toString().padStart(2, '0')}`;
+
+			console.log(`🔍 Getting BLS observation for ${seriesId} at ${date.toISOString().split('T')[0]}...`);
+
+			// Check monthly cache first
+			const monthlyCacheKey = `bls:monthly:${seriesId}:${yearMonth}`;
+			const cached = await this.cache.get<BLSDataPoint>(monthlyCacheKey);
+			if (cached) {
+				console.log(`📦 BLS cache HIT for ${seriesId} (TTL: 43200s)`);
+				return cached;
+			}
+
+			console.log(`🔄 BLS cache MISS for ${seriesId} - fetching from API`);
+
+			// Request data for the target year and previous year to ensure we have the data
+			const response = await this.makeRequest("/timeseries/data/", {
+				seriesid: [seriesId],
+				startyear: (targetYear - 1).toString(),
+				endyear: targetYear.toString(),
+				registrationkey: this.apiKey,
+			});
+
+			if (!response.success || !response.data?.Results?.series?.[0]?.data) {
+				console.warn(`⚠️ No BLS data found for ${seriesId} at ${date.toISOString().split('T')[0]}`);
+				return null;
+			}
+
+			const series = response.data.Results.series[0];
+			const allData = series.data as BLSDataPoint[];
+
+			// Find the observation for the target year and month
+			// BLS uses period format like 'M01', 'M02', etc. for monthly data
+			const targetPeriod = `M${targetMonth.toString().padStart(2, '0')}`;
+			const observation = allData.find(
+				(dataPoint) =>
+					dataPoint.year === targetYear.toString() &&
+					dataPoint.period === targetPeriod
+			);
+
+			if (!observation) {
+				// If exact month not found, find the most recent month before the target
+				const pastObservations = allData.filter((dataPoint) => {
+					const obsYear = parseInt(dataPoint.year);
+					const obsMonth = parseInt(dataPoint.period.substring(1));
+					const obsDate = new Date(obsYear, obsMonth - 1, 1);
+					return obsDate <= date;
+				});
+
+				if (pastObservations.length > 0) {
+					// Sort by date descending and take the most recent
+					pastObservations.sort((a, b) => {
+						const dateA = this.parseDate(a.year, a.period);
+						const dateB = this.parseDate(b.year, b.period);
+						return dateB.getTime() - dateA.getTime();
+					});
+					const closestObs = pastObservations[0];
+
+					// Cache it
+					await this.cache.set(monthlyCacheKey, closestObs, 43200, {
+						source: 'bls',
+						version: '1.0.0'
+					});
+					console.log(`💾 Cached BLS data for ${seriesId} (TTL: 43200s)`);
+
+					console.log(`✅ Found closest BLS observation for ${seriesId} at ${date.toISOString().split('T')[0]}:`, closestObs);
+					return closestObs;
+				}
+
+				console.warn(`⚠️ No BLS observation found for ${seriesId} at or before ${date.toISOString().split('T')[0]}`);
+				return null;
+			}
+
+			// Cache the exact match
+			await this.cache.set(monthlyCacheKey, observation, 43200, {
+				source: 'bls',
+				version: '1.0.0'
+			});
+			console.log(`💾 Cached BLS data for ${seriesId} (TTL: 43200s)`);
+
+			console.log(`✅ Found BLS observation for ${seriesId} at ${date.toISOString().split('T')[0]}:`, observation);
+			return observation;
+		} catch (error) {
+			console.error(`BLS getObservationAtDate error for ${seriesId}:`, error);
+			if (this.throwErrors) throw error;
+			return null;
+		}
+	}
+
 	async getSeriesData(
 		seriesId: string,
 		startYear?: number,

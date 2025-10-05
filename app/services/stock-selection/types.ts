@@ -135,6 +135,9 @@ export interface EnhancedStockResult {
 
 	// ML Early Signal Detection (NEW - Phase 4)
 	early_signal?: EarlySignalPrediction;
+
+	// ML Predictions (Phase 4.1)
+	mlPrediction?: import("../ml/prediction/RealTimePredictionEngine").PredictionResult;
 }
 
 /**

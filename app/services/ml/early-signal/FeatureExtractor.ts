@@ -15,30 +15,68 @@ import { FinancialDataService } from "../../financial-data/FinancialDataService"
 import { FinancialModelingPrepAPI } from "../../financial-data/FinancialModelingPrepAPI";
 import { SentimentAnalysisService } from "../../financial-data/SentimentAnalysisService";
 import { TechnicalIndicatorService } from "../../technical-analysis/TechnicalIndicatorService";
+import { MacroeconomicAnalysisService } from "../../financial-data/MacroeconomicAnalysisService";
 import { RedisCache } from "../../cache/RedisCache";
-import type { FeatureVector, OHLC, SentimentData, FundamentalsData, TechnicalData } from "./types";
+import type {
+	FeatureVector,
+	OHLC,
+	SentimentData,
+	FundamentalsData,
+	TechnicalData,
+	MacroeconomicData,
+	SECFilingData,
+	PremiumFeaturesData,
+	AdditionalMarketData
+} from "./types";
 
 export class EarlySignalFeatureExtractor {
 	private financialDataService: FinancialDataService;
 	private fmpAPI: FinancialModelingPrepAPI;
 	private sentimentService: SentimentAnalysisService;
 	private technicalService: TechnicalIndicatorService;
+	private macroService: MacroeconomicAnalysisService;
 	private cache: RedisCache;
+	private ohlcvCache?: any; // Optional OHLCV cache for training
+	private incomeStatementCache?: any; // Optional income statement cache for training
+	private analystRatingsCache?: any; // Optional analyst ratings cache for training
+	private secFilingsCache?: any; // Optional SEC filings cache for training
+	private optionsDataCache?: any; // Optional options data cache for training
+	private macroeconomicDataCache?: any; // Optional macroeconomic data cache for training
+	private retryHandler?: any; // Optional retry handler for training
 
-	constructor() {
+	constructor(options?: {
+		ohlcvCache?: any;
+		incomeStatementCache?: any;
+		analystRatingsCache?: any;
+		secFilingsCache?: any;
+		optionsDataCache?: any;
+		macroeconomicDataCache?: any;
+		retryHandler?: any
+	}) {
 		this.financialDataService = new FinancialDataService();
 		this.fmpAPI = new FinancialModelingPrepAPI();
 		this.cache = new RedisCache();
 		this.sentimentService = new SentimentAnalysisService(this.cache);
 		this.technicalService = new TechnicalIndicatorService(this.cache);
+		this.macroService = new MacroeconomicAnalysisService();
+		this.ohlcvCache = options?.ohlcvCache;
+		this.incomeStatementCache = options?.incomeStatementCache;
+		this.analystRatingsCache = options?.analystRatingsCache;
+		this.secFilingsCache = options?.secFilingsCache;
+		this.optionsDataCache = options?.optionsDataCache;
+		this.macroeconomicDataCache = options?.macroeconomicDataCache;
+		this.retryHandler = options?.retryHandler;
 	}
 
 	/**
-	 * Extract all 13 features for ML model prediction
+	 * Extract all 34 features for ML model prediction
 	 * @param symbol Stock symbol (e.g., 'TSLA')
 	 * @param asOfDate Historical date for feature extraction (default: today)
 	 * @param useHistoricalMode For historical training data, skip live sentiment (we can't get historical sentiment)
-	 * @returns Feature vector with 13 numeric features
+	 * @returns Feature vector with 34 numeric features
+	 *
+	 * Note: Macro features are time-aligned with stock analysis window (20 days matching price_change_20d)
+	 * This ensures macro changes correlate with stock-specific timing, not calendar-based periods
 	 */
 	async extractFeatures(
 		symbol: string,
@@ -52,11 +90,15 @@ export class EarlySignalFeatureExtractor {
 			// Parallel data collection (leverage existing VFR services)
 			// For historical training data: skip live sentiment since APIs only return current sentiment
 			// This is correct - we use neutral (0) sentiment for historical data since we can't time-travel
-			const [historicalData, sentimentData, fundamentals, technicals] = await Promise.all([
+			const [historicalData, sentimentData, fundamentals, technicals, macroData, secData, premiumData, marketData] = await Promise.all([
 				this.getHistoricalData(symbol, date, 50), // 50 days for 20d momentum
 				useHistoricalMode ? Promise.resolve(null) : this.getSentimentData(symbol, date),
 				this.getFundamentalsData(symbol, date),
 				this.getTechnicalData(symbol, date),
+				this.getMacroeconomicData(date),
+				this.getSECFilingData(symbol, date),
+				this.getPremiumFeaturesData(symbol, date),
+				this.getAdditionalMarketData(symbol, date),
 			]);
 
 			const features: FeatureVector = {
@@ -91,6 +133,29 @@ export class EarlySignalFeatureExtractor {
 				// Technical features (2)
 				rsi_momentum: technicals?.rsiMomentum || 0,
 				macd_histogram_trend: technicals?.macdHistogramTrend || 0,
+
+				// Government/Macro features (5) - Time-aligned with 20-day stock analysis window
+				fed_rate_change_30d: macroData?.fedRateChange20d || 0,
+				unemployment_rate_change: macroData?.unemploymentRateChange || 0,
+				cpi_inflation_rate: macroData?.cpiInflationRate || 0,
+				gdp_growth_rate: macroData?.gdpGrowthRate || 0,
+				treasury_yield_10y: macroData?.treasuryYieldChange || 0,
+
+				// SEC filing features (3)
+				sec_insider_buying_ratio: secData?.insiderBuyingRatio || 0,
+				sec_institutional_ownership_change: secData?.institutionalOwnershipChange || 0,
+				sec_8k_filing_count_30d: secData?.form8kFilingCount30d || 0,
+
+				// FMP Premium features (4)
+				analyst_price_target_change: premiumData?.analystPriceTargetChange || 0,
+				earnings_whisper_vs_estimate: premiumData?.earningsWhisperVsEstimate || 0,
+				short_interest_change: premiumData?.shortInterestChange || 0,
+				institutional_ownership_momentum: premiumData?.institutionalOwnershipMomentum || 0,
+
+				// Additional market features (3)
+				options_put_call_ratio_change: marketData?.optionsPutCallRatioChange || 0,
+				dividend_yield_change: marketData?.dividendYieldChange || 0,
+				market_beta_30d: marketData?.marketBeta30d || 0,
 			};
 
 			const duration = Date.now() - startTime;
@@ -109,16 +174,39 @@ export class EarlySignalFeatureExtractor {
 	 */
 	private async getHistoricalData(symbol: string, asOfDate: Date, days: number): Promise<OHLC[]> {
 		try {
-			const historicalData = await this.financialDataService.getHistoricalOHLC(
-				symbol,
-				days,
-				asOfDate
-			);
+			// SKIP future dates - data doesn't exist yet
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			if (asOfDate >= today) {
+				return [];
+			}
+
+			let historicalData: any[];
+
+			// Use OHLCV cache if available (training mode)
+			if (this.ohlcvCache && this.retryHandler) {
+				const endDate = asOfDate;
+				const startDate = new Date(asOfDate);
+				startDate.setDate(startDate.getDate() - days);
+
+				historicalData = await this.ohlcvCache.getOHLCV(
+					symbol,
+					startDate,
+					endDate,
+					() => this.financialDataService.getHistoricalOHLC(symbol, days, asOfDate),
+					this.retryHandler
+				);
+			} else {
+				// No cache - fetch directly (production mode)
+				historicalData = await this.financialDataService.getHistoricalOHLC(
+					symbol,
+					days,
+					asOfDate
+				);
+			}
 
 			if (!historicalData || historicalData.length === 0) {
-				console.warn(
-					`No historical data available for ${symbol} as of ${asOfDate.toISOString().split("T")[0]}`
-				);
+				// Silently return empty - no console spam
 				return [];
 			}
 
@@ -440,7 +528,16 @@ export class EarlySignalFeatureExtractor {
 		asOfDate: Date
 	): Promise<number> {
 		try {
-			const incomeStatements = await fmpAPI.getIncomeStatement(symbol, "quarterly", 40); // Get 10 years (40 quarters) of data
+			// Use cache if available, otherwise fetch directly
+			const incomeStatements = this.incomeStatementCache && this.retryHandler
+				? await this.incomeStatementCache.getIncomeStatements(
+					symbol,
+					"quarterly",
+					40,
+					() => fmpAPI.getIncomeStatement(symbol, "quarterly", 40),
+					this.retryHandler
+				)
+				: await fmpAPI.getIncomeStatement(symbol, "quarterly", 40); // Get 10 years (40 quarters) of data
 
 			if (!incomeStatements || incomeStatements.length < 4) {
 				console.warn(
@@ -536,7 +633,14 @@ export class EarlySignalFeatureExtractor {
 		asOfDate: Date
 	): Promise<number> {
 		try {
-			const currentRatings = await fmpAPI.getAnalystRatings(symbol);
+			// Use cache if available, otherwise fetch directly
+			const currentRatings = this.analystRatingsCache && this.retryHandler
+				? await this.analystRatingsCache.getAnalystRatings(
+					symbol,
+					() => fmpAPI.getAnalystRatings(symbol),
+					this.retryHandler
+				)
+				: await fmpAPI.getAnalystRatings(symbol);
 
 			if (!currentRatings || !currentRatings.totalAnalysts) {
 				return 0;
@@ -685,6 +789,378 @@ export class EarlySignalFeatureExtractor {
 	}
 
 	/**
+	 * Get macroeconomic data features
+	 *
+	 * Absolute Level Approach:
+	 * Uses absolute macro indicator levels at the prediction date, not short-term changes.
+	 * This provides natural variance over time (e.g., Fed rate 0.08% → 5.5% over 2022-2023)
+	 * and avoids API rate limits from fetching multiple timepoints.
+	 *
+	 * Example: "When analyzing AAPL, Fed rate was 4.5%, unemployment was 3.7%"
+	 * This captures the macro environment context better than short-term changes that are often zero.
+	 */
+	private async getMacroeconomicData(asOfDate: Date): Promise<MacroeconomicData | null> {
+		try {
+			// SKIP future dates - data doesn't exist yet
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			if (asOfDate >= today) {
+				return null;
+			}
+
+			// Access FREDAPI and BLSAPI instances through the macro service
+			const fredAPI = (this.macroService as any).fredAPI;
+			const blsAPI = (this.macroService as any).blsAPI;
+
+			console.log(`🔍 Extracting macro levels for date: ${asOfDate.toISOString().split('T')[0]}`);
+
+			// Use cache if available, otherwise fetch from APIs
+			let fedRate, unemployment, cpi, gdp, treasuryYield;
+
+			if (this.macroeconomicDataCache && this.retryHandler) {
+				const cachedData = await this.macroeconomicDataCache.getMacroeconomicData(
+					asOfDate,
+					async () => {
+						const [fr, unemp, cpiData, gdpData, ty] = await Promise.all([
+							this.fmpAPI.getFederalFundsRateAtDate(asOfDate),
+							blsAPI.getObservationAtDate('LNS14000000', asOfDate),
+							fredAPI.getObservationAtDate('CPIAUCSL', asOfDate),
+							fredAPI.getObservationAtDate('GDPC1', asOfDate),
+							fredAPI.getObservationAtDate('DGS10', asOfDate)
+						]);
+						return {
+							fedRate: fr,
+							unemployment: unemp,
+							cpi: cpiData,
+							gdp: gdpData,
+							treasuryYield: ty
+						};
+					},
+					this.retryHandler
+				);
+
+				fedRate = cachedData.fedRate;
+				unemployment = cachedData.unemployment;
+				cpi = cachedData.cpi;
+				gdp = cachedData.gdp;
+				treasuryYield = cachedData.treasuryYield;
+			} else {
+				// Fetch current macro indicator levels (single API call per indicator)
+				// Use FMP for Fed rate to avoid FRED rate limits, keep FRED for other indicators
+				[fedRate, unemployment, cpi, gdp, treasuryYield] = await Promise.all([
+					this.fmpAPI.getFederalFundsRateAtDate(asOfDate),
+					blsAPI.getObservationAtDate('LNS14000000', asOfDate),
+					fredAPI.getObservationAtDate('CPIAUCSL', asOfDate),
+					fredAPI.getObservationAtDate('GDPC1', asOfDate),
+					fredAPI.getObservationAtDate('DGS10', asOfDate)
+				]);
+			}
+
+			// Extract absolute values (levels, not changes)
+
+			// 1. Fed Rate Level (%)
+			let fedRateLevel = 0;
+			if (fedRate?.value) {
+				const rate = parseFloat(fedRate.value);
+				if (!isNaN(rate)) {
+					fedRateLevel = rate;
+				}
+			}
+
+			// 2. Unemployment Rate Level (%)
+			let unemploymentRateLevel = 0;
+			if (unemployment?.value) {
+				const rate = parseFloat(unemployment.value);
+				if (!isNaN(rate)) {
+					unemploymentRateLevel = rate;
+				}
+			}
+
+			// 3. CPI Level (index value)
+			let cpiLevel = 0;
+			if (cpi?.value) {
+				const level = parseFloat(cpi.value);
+				if (!isNaN(level)) {
+					cpiLevel = level;
+				}
+			}
+
+			// 4. GDP Level (billions of dollars)
+			let gdpLevel = 0;
+			if (gdp?.value) {
+				const level = parseFloat(gdp.value);
+				if (!isNaN(level)) {
+					gdpLevel = level;
+				}
+			}
+
+			// 5. Treasury Yield Level (%)
+			let treasuryYieldLevel = 0;
+			if (treasuryYield?.value) {
+				const yield_ = parseFloat(treasuryYield.value);
+				if (!isNaN(yield_)) {
+					treasuryYieldLevel = yield_;
+				}
+			}
+
+			console.log(`✅ Macro levels extracted for ${asOfDate.toISOString().split('T')[0]}:`, {
+				fedRateLevel,
+				unemploymentRateLevel,
+				cpiLevel,
+				gdpLevel,
+				treasuryYieldLevel
+			});
+
+			return {
+				fedRateChange20d: fedRateLevel,  // Using fed rate level, not change
+				unemploymentRateChange: unemploymentRateLevel,  // Using unemployment level, not change
+				cpiInflationRate: cpiLevel,  // Using CPI level, not inflation rate
+				gdpGrowthRate: gdpLevel,  // Using GDP level, not growth rate
+				treasuryYieldChange: treasuryYieldLevel,  // Using treasury yield level, not change
+			};
+		} catch (error) {
+			console.error('Failed to get macroeconomic data:', error);
+			// Return zeros on error for graceful degradation
+			return {
+				fedRateChange20d: 0,
+				unemploymentRateChange: 0,
+				cpiInflationRate: 0,
+				gdpGrowthRate: 0,
+				treasuryYieldChange: 0,
+			};
+		}
+	}
+
+	/**
+	 * Get SEC filing data features
+	 */
+	private async getSECFilingData(symbol: string, asOfDate: Date): Promise<SECFilingData | null> {
+		try {
+			// Get insider trading data with caching
+			const insiderData = this.secFilingsCache && this.retryHandler
+				? await this.secFilingsCache.getInsiderTrading(
+					symbol,
+					100,
+					() => this.fmpAPI.getInsiderTrading(symbol, 100),
+					this.retryHandler
+				)
+				: await this.fmpAPI.getInsiderTrading(symbol, 100);
+
+			// Calculate insider buying ratio (buys vs total transactions)
+			let buyCount = 0;
+			let totalCount = 0;
+			if (insiderData && insiderData.insiderTransactions) {
+				insiderData.insiderTransactions.forEach((trade: any) => {
+					const tradeDate = new Date(trade.filingDate);
+					if (tradeDate <= asOfDate) {
+						totalCount++;
+						if (trade.transactionType === 'BUY') {
+							buyCount++;
+						}
+					}
+				});
+			}
+			const insiderBuyingRatio = totalCount > 0 ? buyCount / totalCount : 0;
+
+			// Get institutional ownership data with caching
+			const institutionalOwnership = this.secFilingsCache && this.retryHandler
+				? await this.secFilingsCache.getInstitutionalOwnership(
+					symbol,
+					() => this.fmpAPI.getInstitutionalOwnership(symbol),
+					this.retryHandler
+				)
+				: await this.fmpAPI.getInstitutionalOwnership(symbol);
+
+			let institutionalOwnershipChange = 0;
+			if (institutionalOwnership && institutionalOwnership.institutionalHolders) {
+				const holders = institutionalOwnership.institutionalHolders;
+				if (holders.length >= 2) {
+					const recent = holders[0]?.marketValue || 0;
+					const previous = holders[1]?.marketValue || 0;
+					if (previous > 0) {
+						institutionalOwnershipChange = ((recent - previous) / previous) * 100;
+					}
+				}
+			}
+
+			// Count 8-K filings in last 30 days
+			// Note: FMP API doesn't have a direct getSECFilings method, use placeholder
+			const form8kCount = 0; // TODO: Implement when SEC filings API is available
+
+			return {
+				symbol,
+				insiderBuyingRatio,
+				institutionalOwnershipChange,
+				form8kFilingCount30d: form8kCount,
+			};
+		} catch (error) {
+			console.error(`Failed to get SEC filing data for ${symbol}:`, error);
+			return null;
+		}
+	}
+
+	/**
+	 * Get premium features data
+	 */
+	private async getPremiumFeaturesData(symbol: string, asOfDate: Date): Promise<PremiumFeaturesData | null> {
+		try {
+			// Get analyst price targets with caching
+			const priceTarget = this.optionsDataCache && this.retryHandler
+				? await this.optionsDataCache.getPriceTargets(
+					symbol,
+					() => this.fmpAPI.getPriceTargets(symbol),
+					this.retryHandler
+				)
+				: await this.fmpAPI.getPriceTargets(symbol);
+
+			let analystPriceTargetChange = 0;
+			if (priceTarget && priceTarget.targetConsensus && priceTarget.targetMedian) {
+				const recent = priceTarget.targetConsensus;
+				const previous = priceTarget.targetMedian;
+				if (previous > 0) {
+					analystPriceTargetChange = ((recent - previous) / previous) * 100;
+				}
+			}
+
+			// Get earnings calendar for whisper numbers
+			// Note: Earnings calendar API not available, use earnings surprises instead
+			const earnings = await this.fmpAPI.getEarningsSurprises(symbol, 4);
+			let earningsWhisperVsEstimate = 0;
+			if (earnings && earnings.length > 0) {
+				const latestEarnings = earnings[0];
+				const estimate = latestEarnings.estimatedEarning || 0;
+				const actual = latestEarnings.actualEarningResult || estimate;
+				if (estimate !== 0) {
+					earningsWhisperVsEstimate = ((actual - estimate) / Math.abs(estimate)) * 100;
+				}
+			}
+
+			// Get short interest data - placeholder (API method not available)
+			const shortInterestChange = 0; // TODO: Implement when short interest API is available
+
+			// Calculate institutional ownership momentum (3-quarter trend)
+			// Use cache if available, otherwise fetch directly
+			const institutionalOwnership = this.secFilingsCache && this.retryHandler
+				? await this.secFilingsCache.getInstitutionalOwnership(
+					symbol,
+					() => this.fmpAPI.getInstitutionalOwnership(symbol),
+					this.retryHandler
+				)
+				: await this.fmpAPI.getInstitutionalOwnership(symbol);
+
+			let institutionalOwnershipMomentum = 0;
+			if (institutionalOwnership && institutionalOwnership.institutionalHolders) {
+				const holders = institutionalOwnership.institutionalHolders;
+				if (holders.length >= 3) {
+					const values = holders.slice(0, 3).map((d: any) => d.marketValue || 0);
+					institutionalOwnershipMomentum = this.linearRegressionSlope(values);
+				}
+			}
+
+			return {
+				symbol,
+				analystPriceTargetChange,
+				earningsWhisperVsEstimate,
+				shortInterestChange,
+				institutionalOwnershipMomentum,
+			};
+		} catch (error) {
+			console.error(`Failed to get premium features data for ${symbol}:`, error);
+			return null;
+		}
+	}
+
+	/**
+	 * Get additional market data features
+	 */
+	private async getAdditionalMarketData(symbol: string, asOfDate: Date): Promise<AdditionalMarketData | null> {
+		try {
+			// Get options data for put/call ratio - placeholder
+			// Note: Options chain API not directly available in FMP, requires EODHD
+			const optionsPutCallRatioChange = 0; // TODO: Implement with EODHD options API
+
+			// Get dividend data with caching
+			const dividendHistory = this.optionsDataCache && this.retryHandler
+				? await this.optionsDataCache.getDividendData(
+					symbol,
+					() => this.fmpAPI.getDividendData(symbol),
+					this.retryHandler
+				)
+				: await this.fmpAPI.getDividendData(symbol);
+
+			let dividendYieldChange = 0;
+			if (dividendHistory && dividendHistory.length >= 2) {
+				const recentYield = dividendHistory[0]?.adjDividend || 0;
+				const previousYield = dividendHistory[1]?.adjDividend || 0;
+				if (previousYield > 0) {
+					dividendYieldChange = ((recentYield - previousYield) / previousYield) * 100;
+				}
+			}
+
+			// Calculate 30-day beta
+			const historicalData = await this.getHistoricalData(symbol, asOfDate, 30);
+			const spyData = await this.getHistoricalData('SPY', asOfDate, 30);
+			let marketBeta30d = 1.0; // Default beta
+			if (historicalData.length >= 30 && spyData.length >= 30) {
+				const stockReturns = this.calculateReturns(historicalData);
+				const marketReturns = this.calculateReturns(spyData);
+				marketBeta30d = this.calculateBeta(stockReturns, marketReturns);
+			}
+
+			return {
+				symbol,
+				optionsPutCallRatioChange,
+				dividendYieldChange,
+				marketBeta30d,
+			};
+		} catch (error) {
+			console.error(`Failed to get additional market data for ${symbol}:`, error);
+			return null;
+		}
+	}
+
+	/**
+	 * Calculate returns from OHLC data
+	 */
+	private calculateReturns(data: OHLC[]): number[] {
+		const returns: number[] = [];
+		for (let i = 1; i < data.length; i++) {
+			const ret = (data[i].close - data[i - 1].close) / data[i - 1].close;
+			returns.push(ret);
+		}
+		return returns;
+	}
+
+	/**
+	 * Calculate beta (stock vs market)
+	 */
+	private calculateBeta(stockReturns: number[], marketReturns: number[]): number {
+		if (stockReturns.length !== marketReturns.length || stockReturns.length === 0) {
+			return 1.0;
+		}
+
+		const n = stockReturns.length;
+		const meanStock = stockReturns.reduce((a, b) => a + b, 0) / n;
+		const meanMarket = marketReturns.reduce((a, b) => a + b, 0) / n;
+
+		let covariance = 0;
+		let marketVariance = 0;
+
+		for (let i = 0; i < n; i++) {
+			const stockDiff = stockReturns[i] - meanStock;
+			const marketDiff = marketReturns[i] - meanMarket;
+			covariance += stockDiff * marketDiff;
+			marketVariance += marketDiff * marketDiff;
+		}
+
+		if (marketVariance === 0) {
+			return 1.0;
+		}
+
+		return covariance / marketVariance;
+	}
+
+	/**
 	 * Return neutral feature vector (all zeros)
 	 */
 	private getNeutralFeatures(): FeatureVector {
@@ -708,6 +1184,21 @@ export class EarlySignalFeatureExtractor {
 			analyst_coverage_change: 0,
 			rsi_momentum: 0,
 			macd_histogram_trend: 0,
+			fed_rate_change_30d: 0,
+			unemployment_rate_change: 0,
+			cpi_inflation_rate: 0,
+			gdp_growth_rate: 0,
+			treasury_yield_10y: 0,
+			sec_insider_buying_ratio: 0,
+			sec_institutional_ownership_change: 0,
+			sec_8k_filing_count_30d: 0,
+			analyst_price_target_change: 0,
+			earnings_whisper_vs_estimate: 0,
+			short_interest_change: 0,
+			institutional_ownership_momentum: 0,
+			options_put_call_ratio_change: 0,
+			dividend_yield_change: 0,
+			market_beta_30d: 1.0,
 		};
 	}
 }

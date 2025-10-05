@@ -37,6 +37,29 @@ export interface FeatureVector {
 	// Technical features (2)
 	rsi_momentum: number;
 	macd_histogram_trend: number;
+
+	// Government/Macro features (5)
+	fed_rate_change_30d: number;
+	unemployment_rate_change: number;
+	cpi_inflation_rate: number;
+	gdp_growth_rate: number;
+	treasury_yield_10y: number;
+
+	// SEC filing features (3)
+	sec_insider_buying_ratio: number;
+	sec_institutional_ownership_change: number;
+	sec_8k_filing_count_30d: number;
+
+	// FMP Premium features (4)
+	analyst_price_target_change: number;
+	earnings_whisper_vs_estimate: number;
+	short_interest_change: number;
+	institutional_ownership_momentum: number;
+
+	// Additional market features (3)
+	options_put_call_ratio_change: number;
+	dividend_yield_change: number;
+	market_beta_30d: number;
 }
 
 export interface TrainingExample {
@@ -117,4 +140,47 @@ export interface TechnicalData {
 	symbol: string;
 	rsiMomentum: number | null;
 	macdHistogramTrend: number | null;
+}
+
+/**
+ * Macroeconomic data for feature extraction
+ * Time-aligned with 20-day stock analysis window (matching price_change_20d)
+ */
+export interface MacroeconomicData {
+	fedRateChange20d: number | null;
+	unemploymentRateChange: number | null;
+	cpiInflationRate: number | null;
+	gdpGrowthRate: number | null;
+	treasuryYieldChange: number | null;
+}
+
+/**
+ * SEC filing data
+ */
+export interface SECFilingData {
+	symbol: string;
+	insiderBuyingRatio: number | null;
+	institutionalOwnershipChange: number | null;
+	form8kFilingCount30d: number | null;
+}
+
+/**
+ * Premium features data
+ */
+export interface PremiumFeaturesData {
+	symbol: string;
+	analystPriceTargetChange: number | null;
+	earningsWhisperVsEstimate: number | null;
+	shortInterestChange: number | null;
+	institutionalOwnershipMomentum: number | null;
+}
+
+/**
+ * Additional market data
+ */
+export interface AdditionalMarketData {
+	symbol: string;
+	optionsPutCallRatioChange: number | null;
+	dividendYieldChange: number | null;
+	marketBeta30d: number | null;
 }

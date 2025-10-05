@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Split the new 100-example dataset into train/val/test"""
+"""Split the new dataset into train/val/test"""
 
 import pandas as pd
 
 # Load dataset
-df = pd.read_csv('data/training/dataset-full-combined.csv')
+df = pd.read_csv('data/training/early-signal-v2-fixed-macro.csv')
 print(f"Total examples: {len(df)}")
 
 # Shuffle for random split

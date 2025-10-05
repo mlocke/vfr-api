@@ -96,27 +96,52 @@ export class EarlySignalService {
 			// Extract features (Python script handles normalization)
 			const features = await this.featureExtractor.extractFeatures(symbol);
 
-			// Convert FeatureVector to ordered array for Python
+			// Convert FeatureVector to ordered array for Python (34 features)
 			const featureArray = [
+				// Momentum (3)
 				features.price_change_5d,
 				features.price_change_10d,
 				features.price_change_20d,
+				// Volume (2)
 				features.volume_ratio,
 				features.volume_trend,
+				// Sentiment (3)
 				features.sentiment_news_delta,
 				features.sentiment_reddit_accel,
 				features.sentiment_options_shift,
+				// Social (6)
 				features.social_stocktwits_24h_change,
 				features.social_stocktwits_hourly_momentum,
 				features.social_stocktwits_7d_trend,
 				features.social_twitter_24h_change,
 				features.social_twitter_hourly_momentum,
 				features.social_twitter_7d_trend,
+				// Fundamentals (3)
 				features.earnings_surprise,
 				features.revenue_growth_accel,
 				features.analyst_coverage_change,
+				// Technical (2)
 				features.rsi_momentum,
 				features.macd_histogram_trend,
+				// Government/Macro (5)
+				features.fed_rate_change_30d,
+				features.unemployment_rate_change,
+				features.cpi_inflation_rate,
+				features.gdp_growth_rate,
+				features.treasury_yield_10y,
+				// SEC (3)
+				features.sec_insider_buying_ratio,
+				features.sec_institutional_ownership_change,
+				features.sec_8k_filing_count_30d,
+				// Premium (4)
+				features.analyst_price_target_change,
+				features.earnings_whisper_vs_estimate,
+				features.short_interest_change,
+				features.institutional_ownership_momentum,
+				// Market (3)
+				features.options_put_call_ratio_change,
+				features.dividend_yield_change,
+				features.market_beta_30d,
 			];
 
 			// Make prediction with raw features (Python normalizes them)

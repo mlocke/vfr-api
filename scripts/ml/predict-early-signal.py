@@ -30,18 +30,36 @@ class PredictionServer:
 
             # Extract mean and std from params structure
             params = normalizer_data['params']
+            # 34 features - must match EarlySignalService.ts featureArray (lines 100-145)
             feature_names = [
+                # Momentum (3)
                 'price_change_5d', 'price_change_10d', 'price_change_20d',
+                # Volume (2)
                 'volume_ratio', 'volume_trend',
+                # Sentiment (3)
                 'sentiment_news_delta', 'sentiment_reddit_accel', 'sentiment_options_shift',
+                # Social (6)
                 'social_stocktwits_24h_change', 'social_stocktwits_hourly_momentum',
                 'social_stocktwits_7d_trend', 'social_twitter_24h_change',
                 'social_twitter_hourly_momentum', 'social_twitter_7d_trend',
+                # Fundamentals (3)
                 'earnings_surprise', 'revenue_growth_accel', 'analyst_coverage_change',
-                'rsi_momentum', 'macd_histogram_trend'
+                # Technical (2)
+                'rsi_momentum', 'macd_histogram_trend',
+                # Government/Macro (5)
+                'fed_rate_change_30d', 'unemployment_rate_change', 'cpi_inflation_rate',
+                'gdp_growth_rate', 'treasury_yield_10y',
+                # SEC (3)
+                'sec_insider_buying_ratio', 'sec_institutional_ownership_change',
+                'sec_8k_filing_count_30d',
+                # Premium (4)
+                'analyst_price_target_change', 'earnings_whisper_vs_estimate',
+                'short_interest_change', 'institutional_ownership_momentum',
+                # Market (3)
+                'options_put_call_ratio_change', 'dividend_yield_change', 'market_beta_30d'
             ]
 
-            # Pre-convert to numpy arrays (19 features in order)
+            # Pre-convert to numpy arrays (34 features in order)
             self.mean = np.array([params[fname]['mean'] for fname in feature_names])
             self.std = np.array([params[fname]['stdDev'] for fname in feature_names])
 
@@ -84,10 +102,10 @@ class PredictionServer:
                 request = json.loads(line.strip())
                 features = request.get('features')
 
-                if not features or len(features) != 19:
+                if not features or len(features) != 34:
                     response = {
                         'success': False,
-                        'error': f'Expected 19 features, got {len(features) if features else 0}'
+                        'error': f'Expected 34 features, got {len(features) if features else 0}'
                     }
                 else:
                     # Make prediction

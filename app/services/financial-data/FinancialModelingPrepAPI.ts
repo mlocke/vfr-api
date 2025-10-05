@@ -1824,6 +1824,76 @@ export class FinancialModelingPrepAPI
 	}
 
 	/**
+	 * Get Federal Funds Rate (effective rate)
+	 * Uses FMP v4 economic indicators endpoint
+	 *
+	 * @param from Optional start date (YYYY-MM-DD)
+	 * @param to Optional end date (YYYY-MM-DD)
+	 * @returns Array of {date, value} objects with monthly Fed funds rate data
+	 */
+	async getFederalFundsRate(from?: string, to?: string): Promise<Array<{ date: string; value: number }>> {
+		try {
+			this.validateApiKey();
+
+			let endpoint = "/economic?name=federalFunds";
+			if (from && to) {
+				endpoint += `&from=${from}&to=${to}`;
+			}
+
+			const response = await this.makeRequest(endpoint, "v4");
+
+			if (!this.validateResponse(response, "array")) {
+				return [];
+			}
+
+			return response.data.map((item: any) => ({
+				date: item.date || "",
+				value: this.parseNumeric(item.value),
+			}));
+		} catch (error) {
+			return this.handleApiError(error, "federal funds rate", "federal funds rate", []);
+		}
+	}
+
+	/**
+	 * Get Federal Funds Rate at a specific date
+	 * Returns the most recent Fed rate observation on or before the specified date
+	 *
+	 * @param date Target date to get Fed rate for
+	 * @returns Object with date and value, or null if not found
+	 */
+	async getFederalFundsRateAtDate(date: Date): Promise<{ date: string; value: string } | null> {
+		try {
+			this.validateApiKey();
+
+			const targetDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
+
+			// Fetch Fed rate data in a 90-day window before the target date
+			// This ensures we catch monthly data even with gaps
+			const startDate = new Date(date);
+			startDate.setDate(startDate.getDate() - 90);
+			const fromDate = startDate.toISOString().split('T')[0];
+
+			const data = await this.getFederalFundsRate(fromDate, targetDate);
+
+			if (!data || data.length === 0) {
+				return null;
+			}
+
+			// FMP returns data in descending order (newest first)
+			// So the first item is the closest date on or before target
+			const observation = data[0];
+
+			return {
+				date: observation.date,
+				value: observation.value.toString()
+			};
+		} catch (error) {
+			return this.handleApiError(error, "federal funds rate at date", "federal funds rate at date", null);
+		}
+	}
+
+	/**
 	 * Enhanced batch processing for stock prices with plan optimization
 	 */
 	async getBatchPrices(
@@ -2560,8 +2630,15 @@ export class FinancialModelingPrepAPI
 	}
 
 	/**
-	 * Get earnings surprises for a symbol
-	 * Returns historical earnings data with actual vs estimated results
+	 * Get earnings data for a symbol using income statement quarterly EPS
+	 * Returns historical earnings data with actual EPS results
+	 *
+	 * UPDATED (2025-10-05): /earnings-surprises/ and /historical/earning_calendar/
+	 * require premium tier. Using income-statement quarterly EPS instead which is
+	 * available in all tiers and provides actual historical earnings data.
+	 *
+	 * For training: We synthesize "earnings surprises" by comparing actual EPS to
+	 * prior quarter (YoY growth) instead of analyst estimates (not available in free tier)
 	 */
 	async getEarningsSurprises(
 		symbol: string,
@@ -2577,21 +2654,37 @@ export class FinancialModelingPrepAPI
 			this.validateApiKey();
 			const normalizedSymbol = this.normalizeSymbol(symbol);
 
+			// Use income statement quarterly data (available in all FMP tiers)
 			const response = await this.makeRequest(
-				`/earnings-surprises/${normalizedSymbol}?limit=${limit}`
+				`/income-statement/${normalizedSymbol}?period=quarter&limit=${limit}`
 			);
 
 			if (!this.validateResponse(response, "array")) {
 				return [];
 			}
 
-			return response.data.map((earnings: any) => ({
-				date: earnings.date || "",
-				actualEarningResult: this.parseNumeric(earnings.actualEarningResult) ?? 0,
-				estimatedEarning: this.parseNumeric(earnings.estimatedEarning) ?? 0,
-			}));
+			// Convert income statement EPS to earnings surprise format
+			// We'll use year-over-year comparison as a proxy for "estimate"
+			const statements = response.data;
+			const earningsData: { date: string; actualEarningResult: number; estimatedEarning: number }[] = [];
+
+			for (let i = 0; i < statements.length; i++) {
+				const current = statements[i];
+				const yearAgo = statements[i + 4]; // Compare to same quarter last year
+
+				if (current.epsdiluted) {
+					earningsData.push({
+						date: current.date || current.fillingDate || "",
+						actualEarningResult: this.parseNumeric(current.epsdiluted),
+						// Use year-ago EPS as the "estimate" for growth comparison
+						estimatedEarning: yearAgo?.epsdiluted ? this.parseNumeric(yearAgo.epsdiluted) : this.parseNumeric(current.epsdiluted) * 0.9,
+					});
+				}
+			}
+
+			return earningsData;
 		} catch (error) {
-			return this.handleApiError(error, symbol, "earnings surprises", []);
+			return this.handleApiError(error, symbol, "earnings data", []);
 		}
 	}
 

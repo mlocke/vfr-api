@@ -197,6 +197,7 @@ export class RealTimePredictionEngine {
 
 		try {
 			if (!this.initialized) {
+				this.logger.info("RealTimePredictionEngine not initialized, initializing now");
 				await this.initialize();
 			}
 
@@ -207,10 +208,18 @@ export class RealTimePredictionEngine {
 				confidenceThreshold = 0.5,
 			} = request;
 
+			this.logger.debug(`[predict] Starting prediction for ${symbol}`, {
+				modelId,
+				horizon,
+				confidenceThreshold,
+			});
+
 			// Check cache first (if enabled)
 			if (this.config.enableCaching) {
+				this.logger.debug(`[predict] Checking cache for ${symbol}`);
 				const cached = await this.getCachedPrediction(symbol, modelId, horizon);
 				if (cached) {
+					this.logger.info(`[predict] Cache hit for ${symbol}`);
 					this.statistics.cacheHits++;
 					this.trackLatency(Date.now() - startTime);
 					return {
@@ -222,12 +231,17 @@ export class RealTimePredictionEngine {
 						},
 					};
 				}
+				this.logger.debug(`[predict] Cache miss for ${symbol}`);
 				this.statistics.cacheMisses++;
 			}
 
 			// Get model (from cache or registry)
+			this.logger.debug(`[predict] Fetching model (modelId: ${modelId || "default"}, horizon: ${horizon})`);
 			const modelResult = await this.getModel(modelId, horizon);
 			if (!modelResult.success || !modelResult.data) {
+				this.logger.error(`[predict] Model not found: ${modelId || "default"}`, {
+					modelResult,
+				});
 				const errorHandler = ErrorHandler.getInstance();
 				const errorResponse = errorHandler.createErrorResponse(
 					new Error(`Model not found: ${modelId || "default"}`),
@@ -240,10 +254,13 @@ export class RealTimePredictionEngine {
 			}
 
 			const model = modelResult.data;
+			this.logger.info(`[predict] Using model: ${model.modelName} v${model.modelVersion} (${model.modelId})`);
 
 			// Get feature vector (provided or fetch from FeatureStore)
+			this.logger.debug(`[predict] Fetching feature vector for ${symbol}`);
 			const featureVector = request.features || (await this.getFeatureVector(symbol));
 			if (!featureVector) {
+				this.logger.error(`[predict] Feature vector not found for ${symbol}`);
 				const errorHandler = ErrorHandler.getInstance();
 				const errorResponse = errorHandler.createErrorResponse(
 					new Error(`Feature vector not found for symbol: ${symbol}`),
@@ -254,9 +271,17 @@ export class RealTimePredictionEngine {
 					error: errorResponse.error,
 				};
 			}
+			this.logger.debug(`[predict] Feature vector obtained for ${symbol}`, {
+				featureCount: Object.keys(featureVector.features).length,
+			});
 
 			// Perform inference
+			this.logger.debug(`[predict] Running inference for ${symbol}`);
 			const prediction = await this.runInference(model, featureVector);
+			this.logger.info(`[predict] Inference complete for ${symbol}`, {
+				prediction: prediction.value,
+				confidence: prediction.confidence,
+			});
 
 			// Build result
 			const result: PredictionResult = {
@@ -492,15 +517,31 @@ export class RealTimePredictionEngine {
 	): Promise<MLServiceResponse<ModelMetadata>> {
 		try {
 			if (modelId) {
+				this.logger.debug(`[getModel] Fetching specific model by ID: ${modelId}`);
 				return await this.modelRegistry.getModel(modelId);
 			}
 
 			// Get default deployed model for horizon
+			this.logger.debug(`[getModel] Fetching deployed models for horizon: ${horizon}`);
 			const deployed = await this.modelRegistry.getDeployedModels();
+
+			this.logger.debug(`[getModel] Deployed models result:`, {
+				success: deployed.success,
+				count: deployed.data?.length || 0,
+				models: deployed.data?.map(m => ({
+					id: m.modelId,
+					name: m.modelName,
+					version: m.modelVersion,
+					horizon: m.predictionHorizon,
+					status: m.status,
+				})),
+			});
+
 			if (deployed.success && deployed.data && deployed.data.length > 0) {
 				// Find best match for horizon
 				const match = deployed.data.find(m => m.predictionHorizon === horizon);
 				if (match) {
+					this.logger.info(`[getModel] Found model matching horizon ${horizon}: ${match.modelName} v${match.modelVersion}`);
 					return {
 						success: true,
 						data: match,
@@ -511,6 +552,7 @@ export class RealTimePredictionEngine {
 					};
 				}
 				// Fallback to first deployed model
+				this.logger.warn(`[getModel] No exact horizon match, using first deployed model: ${deployed.data[0].modelName}`);
 				return {
 					success: true,
 					data: deployed.data[0],
@@ -521,6 +563,7 @@ export class RealTimePredictionEngine {
 				};
 			}
 
+			this.logger.error(`[getModel] No deployed models available`);
 			const errorHandler = ErrorHandler.getInstance();
 			const errorResponse = errorHandler.createErrorResponse(
 				new Error("No deployed models available"),
@@ -531,6 +574,7 @@ export class RealTimePredictionEngine {
 				error: errorResponse.error,
 			};
 		} catch (error) {
+			this.logger.error(`[getModel] Error fetching model:`, error);
 			const errorHandler = ErrorHandler.getInstance();
 			const errorResponse = errorHandler.createErrorResponse(error, "ModelRegistry");
 			return {

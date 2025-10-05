@@ -523,6 +523,82 @@ export class FREDAPI implements FinancialDataProvider {
 	}
 
 	/**
+	 * Get observation at a specific date for historical feature extraction
+	 * FRED data is typically monthly or quarterly, so this returns the most recent observation
+	 * before or on the specified date.
+	 *
+	 * @param seriesId FRED series ID (e.g., 'DGS10', 'FEDFUNDS')
+	 * @param date Target date for observation
+	 * @returns Observation closest to the specified date, or null if not found
+	 */
+	async getObservationAtDate(seriesId: string, date: Date): Promise<FREDObservation | null> {
+		try {
+			const dateStr = date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+			const yearMonth = dateStr.substring(0, 7); // YYYY-MM for monthly caching
+
+			console.log(`🔍 Getting observation for ${seriesId} at date ${dateStr}...`);
+
+			// Check monthly cache first (most FRED data is monthly/quarterly)
+			const monthlyCacheKey = `fred:monthly:${seriesId}:${yearMonth}`;
+			const cached = await this.cache.get<FREDObservation>(monthlyCacheKey);
+			if (cached) {
+				console.log(`📦 FRED monthly cache HIT for ${seriesId} ${yearMonth}`);
+				return cached;
+			}
+
+			console.log(`🔄 FRED monthly cache MISS for ${seriesId} ${yearMonth} - fetching from API`);
+
+			// Request observations in a window around the target date
+			// Go back 90 days to ensure we catch monthly/quarterly data
+			const startDate = new Date(date);
+			startDate.setDate(startDate.getDate() - 90);
+			const startDateStr = startDate.toISOString().split('T')[0];
+
+			const response = await this.makeRequest("series/observations", {
+				series_id: seriesId,
+				observation_start: startDateStr,
+				observation_end: dateStr,
+				sort_order: "desc", // Most recent first
+				limit: "1", // We only need the most recent observation before/on target date
+			});
+
+			if (!response.success) {
+				console.error(`❌ Request failed for ${seriesId} at ${dateStr}:`, response.error);
+				return null;
+			}
+
+			if (!response.data?.observations?.length) {
+				console.warn(`⚠️ No observations found for ${seriesId} at ${dateStr}`);
+				return null;
+			}
+
+			const observations = response.data.observations as FREDObservation[];
+			// Filter out missing values (marked as '.')
+			const validObservations = observations.filter(obs => obs.value !== '.');
+
+			if (validObservations.length === 0) {
+				console.warn(`⚠️ No valid observations found for ${seriesId} at ${dateStr}`);
+				return null;
+			}
+
+			const observation = validObservations[0];
+
+			// Cache by month for 12 hours (FRED data doesn't change frequently)
+			await this.cache.set(monthlyCacheKey, observation, 43200, {
+				source: 'fred',
+				version: '1.0.0'
+			});
+			console.log(`💾 Cached FRED monthly data for ${seriesId} ${yearMonth} (TTL: 12h)`);
+
+			console.log(`✅ Found observation for ${seriesId} at ${dateStr}:`, observation);
+			return observation;
+		} catch (error) {
+			console.error(`Failed to get observation for ${seriesId} at date:`, error);
+			return null;
+		}
+	}
+
+	/**
 	 * Get series information
 	 */
 	private async getSeriesInfo(seriesId: string): Promise<FREDSeries | null> {

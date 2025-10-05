@@ -1,12 +1,140 @@
 {
-	"mean": [
-		0.003747782864572389, 0.005356041457915451, 0.0016122689072358008, 1.0314516373806168,
-		307451.60504329065, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.313143876711207, 0.9398316507040159,
-		13.994047619047619, -5.4489540092069175, -0.2978097617286752
-	],
-	"std": [
-		0.04215751744012525, 0.06801910352355553, 0.09356337538209408, 0.2590788625469927,
-		2709487.6006982108, 1, 1, 1, 1, 1, 1, 1, 1, 1, 92.8097641264295, 65.65057998796595,
-		2.9529989272600847, 13.127052655956417, 1.8206404589334853
-	]
+  "params": {
+    "price_change_5d": {
+      "mean": 0.0037477828645723957,
+      "stdDev": 0.042157517440125254
+    },
+    "price_change_10d": {
+      "mean": 0.00535604145791545,
+      "stdDev": 0.06801910352355553
+    },
+    "price_change_20d": {
+      "mean": 0.0016122689072358002,
+      "stdDev": 0.09356337538209407
+    },
+    "volume_ratio": {
+      "mean": 1.0314516373806184,
+      "stdDev": 0.25907886254699264
+    },
+    "volume_trend": {
+      "mean": 307451.60504329,
+      "stdDev": 2709487.6006982108
+    },
+    "sentiment_news_delta": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "sentiment_reddit_accel": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "sentiment_options_shift": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_stocktwits_24h_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_stocktwits_hourly_momentum": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_stocktwits_7d_trend": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_twitter_24h_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_twitter_hourly_momentum": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "social_twitter_7d_trend": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "earnings_surprise": {
+      "mean": 5.3131438767112105,
+      "stdDev": 92.80976412642951
+    },
+    "revenue_growth_accel": {
+      "mean": 0.9398316507040152,
+      "stdDev": 65.65057998796597
+    },
+    "analyst_coverage_change": {
+      "mean": 13.994047619047619,
+      "stdDev": 2.9529989272600647
+    },
+    "rsi_momentum": {
+      "mean": -5.4489540092069095,
+      "stdDev": 13.127052655956435
+    },
+    "macd_histogram_trend": {
+      "mean": -0.29780976172867485,
+      "stdDev": 1.8206404589334855
+    },
+    "fed_rate_change_30d": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "unemployment_rate_change": {
+      "mean": 0.01321428571428573,
+      "stdDev": 0.09247471616204994
+    },
+    "cpi_inflation_rate": {
+      "mean": 0.022473305923883843,
+      "stdDev": 0.09038380710870667
+    },
+    "gdp_growth_rate": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "treasury_yield_10y": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "sec_insider_buying_ratio": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "sec_institutional_ownership_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "sec_8k_filing_count_30d": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "analyst_price_target_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "earnings_whisper_vs_estimate": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "short_interest_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "institutional_ownership_momentum": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "options_put_call_ratio_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "dividend_yield_change": {
+      "mean": 0,
+      "stdDev": 1
+    },
+    "market_beta_30d": {
+      "mean": 0,
+      "stdDev": 1
+    }
+  }
 }

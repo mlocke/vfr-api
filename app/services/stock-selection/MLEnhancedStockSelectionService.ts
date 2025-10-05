@@ -24,7 +24,7 @@ import { StockSelectionService } from "./StockSelectionService";
 import { SelectionRequest, SelectionResponse, EnhancedStockResult } from "./types";
 import { EnhancedScoringEngine, EnhancedScoreResult } from "./EnhancedScoringEngine";
 import { RealTimePredictionEngine, PredictionResult } from "../ml/prediction/RealTimePredictionEngine";
-import { MLPredictionHorizon } from "../ml/types/MLTypes";
+import { MLPredictionHorizon, MLFeatureVector } from "../ml/types/MLTypes";
 import { Logger } from "../error-handling/Logger";
 import { ErrorHandler } from "../error-handling/ErrorHandler";
 import { FinancialDataService } from "../financial-data/FinancialDataService";
@@ -41,6 +41,7 @@ import { InstitutionalDataService } from "../financial-data/InstitutionalDataSer
 import { OptionsDataService } from "../financial-data/OptionsDataService";
 import { MLPredictionService } from "../ml/prediction/MLPredictionService";
 import { StockScore } from "../algorithms/types";
+import { EarlySignalFeatureExtractor } from "../ml/early-signal/FeatureExtractor";
 
 // ===== ML Enhancement Options =====
 
@@ -73,6 +74,7 @@ export interface MLEnhancementMetadata {
 export class MLEnhancedStockSelectionService extends StockSelectionService {
 	private mlPredictionEngine: RealTimePredictionEngine;
 	private enhancedScoringEngine: EnhancedScoringEngine;
+	private featureExtractor: EarlySignalFeatureExtractor;
 	private mlLogger: Logger;
 	private mlErrorHandler: ErrorHandler;
 
@@ -112,6 +114,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		this.mlLogger = Logger.getInstance("MLEnhancedStockSelectionService");
 		this.mlErrorHandler = ErrorHandler.getInstance();
 		this.mlPredictionEngine = RealTimePredictionEngine.getInstance();
+		this.featureExtractor = new EarlySignalFeatureExtractor();
 		this.enhancedScoringEngine = new EnhancedScoringEngine({
 			vfrWeight: 0.85, // 85% VFR
 			mlWeight: 0.15, // 15% ML
@@ -234,7 +237,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			ml_horizon: options?.ml_horizon ?? MLPredictionHorizon.ONE_WEEK,
 			ml_confidence_threshold: options?.ml_confidence_threshold ?? 0.5,
 			ml_weight: options?.ml_weight ?? 0.15,
-			ml_timeout: options?.ml_timeout ?? 100,
+			ml_timeout: options?.ml_timeout ?? 5000, // Increased from 100ms to 5000ms to allow Python server initialization
 		};
 	}
 
@@ -274,27 +277,72 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		const predictions = new Map<string, PredictionResult>();
 
 		try {
-			// Batch predict with timeout
-			const batchResult = await Promise.race([
-				this.mlPredictionEngine.predictBatch({
-					symbols,
-					horizon: options.ml_horizon,
-					confidenceThreshold: options.ml_confidence_threshold,
-				}),
+			// Extract features for all symbols
+			this.mlLogger.debug(`Extracting features for ${symbols.length} symbols`);
+			const featureExtractionStart = Date.now();
+
+			const featurePromises = symbols.map(async (symbol) => {
+				try {
+					const features = await this.featureExtractor.extractFeatures(symbol);
+					return { symbol, features };
+				} catch (error) {
+					this.mlLogger.warn(`Feature extraction failed for ${symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+					return null;
+				}
+			});
+
+			const featureResults = await Promise.all(featurePromises);
+			const featureExtractionTime = Date.now() - featureExtractionStart;
+			this.mlLogger.debug(`Feature extraction completed in ${featureExtractionTime}ms`);
+
+			// Convert to MLFeatureVector format and make predictions
+			const predictionPromises = featureResults
+				.filter((result): result is { symbol: string; features: any } => result !== null)
+				.map(async ({ symbol, features }) => {
+					try {
+						// Convert FeatureVector to MLFeatureVector format
+						const mlFeatureVector: MLFeatureVector = {
+							symbol,
+							features: features as Record<string, number>,
+							featureNames: Object.keys(features),
+							timestamp: Date.now(),
+							completeness: 1.0,
+							qualityScore: 1.0,
+						};
+
+						// Make prediction with features
+						const result = await this.mlPredictionEngine.predict({
+							symbol,
+							horizon: options.ml_horizon,
+							confidenceThreshold: options.ml_confidence_threshold,
+							features: mlFeatureVector,
+						});
+
+						if (result.success && result.data) {
+							return { symbol, prediction: result.data };
+						}
+						return null;
+					} catch (error) {
+						this.mlLogger.warn(`Prediction failed for ${symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						return null;
+					}
+				});
+
+			const predictionResults = await Promise.race([
+				Promise.all(predictionPromises),
 				this.createTimeoutPromise(options.ml_timeout || 100),
 			]);
 
-			if (batchResult && batchResult.success && batchResult.data) {
-				// Convert array to map
-				for (const prediction of batchResult.data.predictions) {
-					predictions.set(prediction.symbol, prediction);
+			if (predictionResults && Array.isArray(predictionResults)) {
+				for (const result of predictionResults) {
+					if (result) {
+						predictions.set(result.symbol, result.prediction);
+					}
 				}
 
-				this.mlLogger.debug(
-					`Fetched ${predictions.size}/${symbols.length} ML predictions (${batchResult.data.totalLatencyMs}ms)`
-				);
+				this.mlLogger.debug(`Fetched ${predictions.size}/${symbols.length} ML predictions`);
 			} else {
-				this.mlLogger.warn("ML prediction batch failed or timeout");
+				this.mlLogger.warn("ML prediction timeout");
 			}
 		} catch (error) {
 			this.mlLogger.warn(
@@ -411,6 +459,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			score: enhancedStockScore,
 			reasoning: enhancedReasoning,
 			confidence: Math.max(stock.confidence, mlPrediction.confidence), // Use higher confidence
+			mlPrediction, // Attach ML prediction for serialization
 		};
 	}
 

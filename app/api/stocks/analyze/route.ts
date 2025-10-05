@@ -44,6 +44,7 @@ const RequestSchema = z.object({
 	ml_horizon: z.enum(["1h", "4h", "1d", "1w", "1m"]).optional().default("1w"),
 	ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5),
 	ml_weight: z.number().min(0).max(1).optional().default(0.15),
+	ml_timeout: z.number().min(100).max(30000).optional().default(5000), // Allow Python server initialization time
 });
 
 // Initialize services (lazy initialization for optimal performance)
@@ -174,7 +175,7 @@ async function getStockSelectionService(): Promise<MLEnhancedStockSelectionServi
  * Convert admin dashboard request format to SelectionRequest (Phase 4.1 - ML support added)
  */
 async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
-	const { mode, symbols, sector, limit, config, include_ml, ml_horizon, ml_confidence_threshold, ml_weight } = body;
+	const { mode, symbols, sector, limit, config, include_ml, ml_horizon, ml_confidence_threshold, ml_weight, ml_timeout } = body;
 
 	// Handle test format where symbol is in config
 	const symbolToUse = config?.symbol || symbols?.[0];
@@ -244,6 +245,7 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			ml_horizon,
 			ml_confidence_threshold,
 			ml_weight,
+			ml_timeout,
 		},
 		requestId: `admin_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 	};
@@ -324,31 +326,35 @@ function convertToAdminResponse(response: any): any {
 			};
 		}) || [];
 
+	const metadata = {
+		mode: response.metadata?.analysisMode || "single",
+		count: stocks.length,
+		timestamp: response.timestamp || Date.now(),
+		sources: response.metadata?.dataSourcesUsed || ["comprehensive"],
+		technicalAnalysisEnabled: true,
+		fundamentalDataEnabled: true,
+		analystDataEnabled: true,
+		sentimentAnalysisEnabled:
+			!!response.metadata?.analysisInputServices?.sentimentAnalysis?.enabled,
+		macroeconomicAnalysisEnabled:
+			!!response.metadata?.analysisInputServices?.macroeconomicAnalysis?.enabled,
+		esgAnalysisEnabled:
+			!!response.metadata?.analysisInputServices?.esgAnalysis?.enabled,
+		shortInterestAnalysisEnabled:
+			!!response.metadata?.analysisInputServices?.shortInterestAnalysis?.enabled,
+		extendedMarketDataEnabled:
+			!!response.metadata?.analysisInputServices?.extendedMarketData?.enabled,
+		// CRITICAL: Include the full analysisInputServices metadata
+		analysisInputServices: response.metadata?.analysisInputServices || {},
+		// Phase 4.1: Include ML enhancement metadata from service response
+		...(response.metadata?.mlEnhancement && { mlEnhancement: response.metadata.mlEnhancement }),
+	};
+
 	return {
 		success: response.success,
 		data: {
 			stocks,
-			metadata: {
-				mode: response.metadata?.analysisMode || "single",
-				count: stocks.length,
-				timestamp: response.timestamp || Date.now(),
-				sources: response.metadata?.dataSourcesUsed || ["comprehensive"],
-				technicalAnalysisEnabled: true,
-				fundamentalDataEnabled: true,
-				analystDataEnabled: true,
-				sentimentAnalysisEnabled:
-					!!response.metadata?.analysisInputServices?.sentimentAnalysis?.enabled,
-				macroeconomicAnalysisEnabled:
-					!!response.metadata?.analysisInputServices?.macroeconomicAnalysis?.enabled,
-				esgAnalysisEnabled:
-					!!response.metadata?.analysisInputServices?.esgAnalysis?.enabled,
-				shortInterestAnalysisEnabled:
-					!!response.metadata?.analysisInputServices?.shortInterestAnalysis?.enabled,
-				extendedMarketDataEnabled:
-					!!response.metadata?.analysisInputServices?.extendedMarketData?.enabled,
-				// CRITICAL: Include the full analysisInputServices metadata
-				analysisInputServices: response.metadata?.analysisInputServices || {},
-			},
+			metadata,
 		},
 		error: response.errors?.join(", ") || undefined,
 	};
