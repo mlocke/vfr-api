@@ -1,0 +1,3951 @@
+🔗 Initializing Redis connection to localhost:6379
+🚀 Multi-Source ML Dataset Generator
+================================================================================
+Data Sources:
+  ✓ FMP (Financial Modeling Prep)
+  ✓ EODHD (End of Day Historical Data)
+  ✓ FRED (Federal Reserve Economic Data)
+  ✓ SEC EDGAR (Government Filings)
+  ✓ BLS (Bureau of Labor Statistics)
+================================================================================
+
+📅 Sampling mode: monthly
+   → Sampling 15th of each month (25 samples expected)
+
+🔍 Fetching top 1000 stocks by market cap from FMP...
+✅ Redis connected successfully
+🚀 Redis ready for operations
+✓ Found 939 stocks
+
+📦 Dataset 1: Premium Multi-Source Dataset
+
+================================================================================
+📊 Generating Dataset: premium-multi-source
+   Symbols: 939
+   Date range: 2023-01-01 to 2024-12-31
+   Sampling mode: monthly
+   Sample dates: 24 (15th of each month)
+   Expected examples: ~22536
+================================================================================
+
+📋 Total (symbol, date) pairs to process: 22536
+
+
+🔄 Batch 1/2254 (pairs 1-10)
+[1/22536] (0.0%) ANGIV @ 2023-01-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[2/22536] (0.0%) ANGIV @ 2023-02-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[3/22536] (0.0%) ANGIV @ 2023-03-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[4/22536] (0.0%) ANGIV @ 2023-04-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[5/22536] (0.0%) ANGIV @ 2023-05-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[6/22536] (0.0%) ANGIV @ 2023-06-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[7/22536] (0.0%) ANGIV @ 2023-07-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[8/22536] (0.0%) ANGIV @ 2023-08-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[9/22536] (0.0%) ANGIV @ 2023-09-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[10/22536] (0.0%) ANGIV @ 2023-10-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for FEDFUNDS - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for DGS10 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🔄 FRED cache MISS for GDPC1 - fetching from API
+🌐 FRED API URL: https://api.stlouisfed.org/fred/series/observations?series_id=GDPC1&api_key=e093a281de7f0d224ed51ad0842fc393&file_type=json&limit=1&sort_order=desc
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+💾 Cached FRED data for DGS10 (TTL: 1800s)
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for FEDFUNDS (TTL: 1800s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached FRED data for GDPC1 (TTL: 43200s)
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+🔄 BLS cache MISS for CUUR0000SA0 - fetching from API
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:26.612Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:26.634Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+💾 Cached BLS data for CUUR0000SA0 (TTL: 43200s)
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:26.659Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:26.661Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:26.664Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:26.681Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:26.687Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:26.737Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.509Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.810Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+
+🔄 Batch 2/2254 (pairs 11-20)
+[11/22536] (0.0%) ANGIV @ 2023-11-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[12/22536] (0.1%) ANGIV @ 2023-12-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[13/22536] (0.1%) ANGIV @ 2024-01-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[14/22536] (0.1%) ANGIV @ 2024-02-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[15/22536] (0.1%) ANGIV @ 2024-03-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[16/22536] (0.1%) ANGIV @ 2024-04-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[17/22536] (0.1%) ANGIV @ 2024-05-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[18/22536] (0.1%) ANGIV @ 2024-06-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[19/22536] (0.1%) ANGIV @ 2024-07-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[20/22536] (0.1%) ANGIV @ 2024-08-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:28.946Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.952Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.959Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.960Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.960Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.961Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.963Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.963Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.974Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:28.992Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+
+🔄 Batch 3/2254 (pairs 21-30)
+[21/22536] (0.1%) ANGIV @ 2024-09-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[22/22536] (0.1%) ANGIV @ 2024-10-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[23/22536] (0.1%) ANGIV @ 2024-11-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[24/22536] (0.1%) ANGIV @ 2024-12-15
+  [ANGIV] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for ANGIV
+🦄 Attempting UnicornBay enhanced put/call ratio for ANGIV
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for ANGIV
+🦄 EODHD UnicornBay: Fetching enhanced options chain for ANGIV
+🦄 EODHD UnicornBay: Constructed URL for ANGIV: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=ANGIV&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[25/22536] (0.1%) LTM @ 2023-01-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[26/22536] (0.1%) LTM @ 2023-02-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[27/22536] (0.1%) LTM @ 2023-03-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[28/22536] (0.1%) LTM @ 2023-04-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[29/22536] (0.1%) LTM @ 2023-05-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[30/22536] (0.1%) LTM @ 2023-06-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for ANGIV: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 0,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for ANGIV: { contractsType: 'object', contractsLength: 0, firstContract: 'none' }
+⚠️ EODHD UnicornBay: No contracts in response for ANGIV
+🦄 EODHD UnicornBay: Full response: {
+  "meta": {
+    "offset": 0,
+    "limit": 200,
+    "total": 0,
+    "fields": []
+  },
+  "data": [],
+  "links": {
+    "next": null
+  }
+}
+⚠️ EODHD UnicornBay: No options chain data for put/call ratio calculation
+⚠️ UnicornBay data unavailable for ANGIV, skipping options data (standard endpoint requires higher tier)
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:29.144Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:29.181Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.182Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.182Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.185Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.188Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.188Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.577Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:29.696Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+  [ANGIV] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:30.702Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+
+🔄 Batch 4/2254 (pairs 31-40)
+[31/22536] (0.1%) LTM @ 2023-07-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[32/22536] (0.1%) LTM @ 2023-08-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[33/22536] (0.1%) LTM @ 2023-09-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[34/22536] (0.2%) LTM @ 2023-10-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[35/22536] (0.2%) LTM @ 2023-11-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[36/22536] (0.2%) LTM @ 2023-12-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[37/22536] (0.2%) LTM @ 2024-01-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[38/22536] (0.2%) LTM @ 2024-02-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[39/22536] (0.2%) LTM @ 2024-03-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[40/22536] (0.2%) LTM @ 2024-04-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:30.859Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:30.863Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:30.863Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:30.885Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:30.886Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:30.888Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:30.891Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:30.910Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:30.915Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.185Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+
+🔄 Batch 5/2254 (pairs 41-50)
+[41/22536] (0.2%) LTM @ 2024-05-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[42/22536] (0.2%) LTM @ 2024-06-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[43/22536] (0.2%) LTM @ 2024-07-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[44/22536] (0.2%) LTM @ 2024-08-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[45/22536] (0.2%) LTM @ 2024-09-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[46/22536] (0.2%) LTM @ 2024-10-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[47/22536] (0.2%) LTM @ 2024-11-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[48/22536] (0.2%) LTM @ 2024-12-15
+  [LTM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for LTM
+🦄 Attempting UnicornBay enhanced put/call ratio for LTM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for LTM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for LTM
+🦄 EODHD UnicornBay: Constructed URL for LTM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=LTM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[49/22536] (0.2%) TSM @ 2023-01-15
+  [TSM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for TSM
+🦄 Attempting UnicornBay enhanced put/call ratio for TSM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for TSM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for TSM
+🦄 EODHD UnicornBay: Constructed URL for TSM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=TSM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+[50/22536] (0.2%) TSM @ 2023-02-15
+  [TSM] Collecting from multiple sources...
+📊 EODHD API: Fetching put/call ratio for TSM
+🦄 Attempting UnicornBay enhanced put/call ratio for TSM
+📊 EODHD UnicornBay: Fetching enhanced put/call ratio for TSM
+🦄 EODHD UnicornBay: Fetching enhanced options chain for TSM
+🦄 EODHD UnicornBay: Constructed URL for TSM: https://eodhd.com/api/mp/unicornbay/options/contracts?filter%5Bunderlying_symbol%5D=TSM&filter%5Bexp_date_from%5D=2025-10-05&page%5Blimit%5D=200&sort=exp_date&api_token=68cf08e135b402.52970225
+🔍 Getting latest observation for FEDFUNDS...
+🔍 Getting latest observation for DGS10...
+🔍 Getting latest observation for GDPC1...
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📦 FRED cache HIT for FEDFUNDS (TTL: 1800s)
+📦 FRED cache HIT for DGS10 (TTL: 1800s)
+📦 FRED cache HIT for GDPC1 (TTL: 43200s)
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📊 Response for FEDFUNDS: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for FEDFUNDS: {
+  realtime_start: '2025-10-01',
+  realtime_end: '2025-10-01',
+  date: '2025-09-01',
+  value: '4.22'
+}
+📊 Response for DGS10: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for DGS10: {
+  realtime_start: '2025-10-03',
+  realtime_end: '2025-10-03',
+  date: '2025-10-02',
+  value: '4.1'
+}
+📊 Response for GDPC1: {
+  success: true,
+  hasData: true,
+  hasObservations: true,
+  observationsLength: 1,
+  error: undefined
+}
+✅ Found observation for GDPC1: {
+  realtime_start: '2025-09-30',
+  realtime_end: '2025-09-30',
+  date: '2025-04-01',
+  value: '23770.976'
+}
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+📦 BLS cache HIT for LNS14000000 (TTL: 43200s)
+📦 BLS cache HIT for CUUR0000SA0 (TTL: 43200s)
+[2025-10-05T17:24:31.214Z] DEBUG [api.financial-modeling-prep] Starting API call: getFundamentalRatios
+Metadata: {
+  "timeout": 15000,
+  "retries": 2
+}
+[2025-10-05T17:24:31.215Z] DEBUG [api.financial-modeling-prep] Starting API call: getFundamentalRatios
+Metadata: {
+  "timeout": 15000,
+  "retries": 2
+}
+  [LTM] FMP error: Cannot read properties of undefined (reading 'close')
+[2025-10-05T17:24:31.216Z] DEBUG [api.financial-modeling-prep] Starting API call: getFundamentalRatios
+Metadata: {
+  "timeout": 15000,
+  "retries": 2
+}
+  [LTM] FMP error: Cannot read properties of undefined (reading 'close')
+[2025-10-05T17:24:31.249Z] WARN [api.financial-modeling-prep] Invalid ratios response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "TSM"
+}
+[2025-10-05T17:24:31.249Z] WARN [api.financial-modeling-prep] Invalid metrics response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "TSM"
+}
+[2025-10-05T17:24:31.250Z] DEBUG [api.financial-modeling-prep] Performance: getFundamentalRatios completed in 34ms
+Metadata: {
+  "type": "performance",
+  "operation": "getFundamentalRatios",
+  "duration": 34,
+  "attempts": 1
+}
+[2025-10-05T17:24:31.251Z] WARN [api.financial-modeling-prep] Invalid ratios response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "LTM"
+}
+[2025-10-05T17:24:31.251Z] WARN [api.financial-modeling-prep] Invalid metrics response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "LTM"
+}
+[2025-10-05T17:24:31.251Z] DEBUG [api.financial-modeling-prep] Performance: getFundamentalRatios completed in 36ms
+Metadata: {
+  "type": "performance",
+  "operation": "getFundamentalRatios",
+  "duration": 36,
+  "attempts": 1
+}
+[2025-10-05T17:24:31.253Z] WARN [api.financial-modeling-prep] Invalid ratios response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "LTM"
+}
+[2025-10-05T17:24:31.253Z] WARN [api.financial-modeling-prep] Invalid metrics response structure
+Metadata: {
+  "errors": [
+    "Invalid response data structure"
+  ],
+  "symbol": "LTM"
+}
+[2025-10-05T17:24:31.253Z] DEBUG [api.financial-modeling-prep] Performance: getFundamentalRatios completed in 39ms
+Metadata: {
+  "type": "performance",
+  "operation": "getFundamentalRatios",
+  "duration": 39,
+  "attempts": 1
+}
+[2025-10-05T17:24:31.279Z] INFO [api.financial-modeling-prep] Got analyst consensus from FMP v4 API for TSM
+Metadata: {
+  "consensus": "Buy",
+  "strongBuy": 0,
+  "buy": 16,
+  "hold": 6,
+  "sell": 0,
+  "strongSell": 0
+}
+[2025-10-05T17:24:31.282Z] INFO [api.financial-modeling-prep] Got analyst consensus from FMP v4 API for LTM
+Metadata: {
+  "consensus": "Hold",
+  "strongBuy": 0,
+  "buy": 3,
+  "hold": 10,
+  "sell": 3,
+  "strongSell": 0
+}
+[2025-10-05T17:24:31.282Z] INFO [api.financial-modeling-prep] Got analyst consensus from FMP v4 API for LTM
+Metadata: {
+  "consensus": "Hold",
+  "strongBuy": 0,
+  "buy": 3,
+  "hold": 10,
+  "sell": 3,
+  "strongSell": 0
+}
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from FMP+EODHD+GOV
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from EODHD+GOV
+[2025-10-05T17:24:31.341Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.345Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+🦄 EODHD UnicornBay: Response structure for LTM: {
+  hasContracts: false,
+  contractCount: 0,
+  hasData: true,
+  dataLength: 72,
+  dataKeys: [ 'meta', 'data', 'links' ]
+}
+🦄 EODHD UnicornBay: Contracts debug for LTM: {
+  contractsType: 'object',
+  contractsLength: 72,
+  firstContract: [ 'id', 'type', 'attributes' ]
+}
+🦄 EODHD UnicornBay: Filtered 72 total to 72 current contracts for LTM
+✅ EODHD UnicornBay: Retrieved 36 calls, 36 puts for LTM
+✅ Using UnicornBay enhanced put/call ratio for LTM
+  [LTM] ✓ Collected from FMP+EODHD+GOV
+[2025-10-05T17:24:31.354Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.355Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.361Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.368Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.374Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+[2025-10-05T17:24:31.381Z] DEBUG [api.financial-modeling-prep] FMP returned empty array response
+❌ EODHD API: Request failed (attempt 1): DOMException [AbortError]: This operation was aborted
+    at node:internal/deps/undici/undici:15845:13
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at runNextTicks (node:internal/process/task_queues:69:3)
+    at listOnTimeout (node:internal/timers:569:9)
+    at process.processTimers (node:internal/timers:543:7)
+    at async EODHDAPI.makeRequest (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:390:21)
+    at async EODHDAPI.getUnicornBayOptionsChain (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:487:21)
+    at async EODHDAPI.getUnicornBayPutCallRatio (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:694:25)
+    at async EODHDAPI.getPutCallRatio (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:814:27)
+    at async MultiSourceDataCollector.collectEODHDFeatures (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/scripts/ml/generate-multi-source-datasets.ts:386:25)
+🔄 EODHD API: Retrying in 1000ms...
+❌ EODHD API: Request failed (attempt 1): DOMException [AbortError]: This operation was aborted
+    at node:internal/deps/undici/undici:15845:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async EODHDAPI.makeRequest (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:390:21)
+    at async EODHDAPI.getUnicornBayOptionsChain (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:487:21)
+    at async EODHDAPI.getUnicornBayPutCallRatio (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:694:25)
+    at async EODHDAPI.getPutCallRatio (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/app/services/financial-data/EODHDAPI.ts:814:27)
+    at async MultiSourceDataCollector.collectEODHDFeatures (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/scripts/ml/generate-multi-source-datasets.ts:386:25)
+    at async Promise.all (index 1)
+    at async MultiSourceDataCollector.collectEnhancedFeatures (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/scripts/ml/generate-multi-source-datasets.ts:229:42)
+    at async <anonymous> (/Users/michaellocke/WebstormProjects/Home/public/vfr-api/scripts/ml/generate-multi-source-datasets.ts:742:24)
+🔄 EODHD API: Retrying in 1000ms...

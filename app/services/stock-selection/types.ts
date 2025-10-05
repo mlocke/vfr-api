@@ -44,6 +44,7 @@ export interface SelectionOptions {
 	includeSentiment?: boolean; // Include sentiment analysis
 	includeNews?: boolean; // Include news impact analysis
 	includeEarlySignal?: boolean; // Include Early Signal Detection (ML analyst rating predictions)
+	includePricePrediction?: boolean; // Include Price Prediction (ML price movement predictions)
 	riskTolerance?: "conservative" | "moderate" | "aggressive";
 
 	// Data preferences
@@ -138,6 +139,9 @@ export interface EnhancedStockResult {
 
 	// ML Predictions (Phase 4.1)
 	mlPrediction?: import("../ml/prediction/RealTimePredictionEngine").PredictionResult;
+
+	// Price Prediction (Phase 4.2)
+	price_prediction?: import("../ml/price-prediction/PricePredictionService").PricePrediction;
 }
 
 /**

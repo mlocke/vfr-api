@@ -452,11 +452,48 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 			{/* ML Price Prediction Section */}
 			{stock.mlPrediction && (
 				<>
+					{/* Show warning banner if confidence is too low */}
+					{stock.mlPrediction.confidence < 0.4 && (
+						<div
+							style={{
+								background: "rgba(251, 191, 36, 0.1)",
+								border: "1px solid rgba(251, 191, 36, 0.3)",
+								borderRadius: "12px",
+								padding: "1rem",
+								marginTop: "1rem",
+								marginBottom: "0.75rem",
+								display: "flex",
+								alignItems: "flex-start",
+								gap: "0.75rem",
+							}}
+						>
+							<span style={{ fontSize: "1.5rem" }}>⚠️</span>
+							<div style={{ flex: 1 }}>
+								<div style={{ color: "rgba(251, 191, 36, 0.9)", fontWeight: "600", marginBottom: "0.5rem", fontSize: "0.95rem" }}>
+									Price Prediction Model Training in Progress
+								</div>
+								<div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", lineHeight: "1.5" }}>
+									The dedicated price prediction model is being trained on a larger dataset.
+									Current confidence ({(stock.mlPrediction.confidence * 100).toFixed(1)}%) is below production threshold (40%).
+									<br />
+									<strong style={{ color: "rgba(255,255,255,0.9)" }}>Note:</strong> The prediction below uses an analyst upgrade model, not a price movement model.
+									A new price prediction model (v1.0.0) with 43 price-relevant features is in development.
+									<br />
+									<span style={{ color: "rgba(251, 191, 36, 0.9)", fontWeight: "600" }}>ETA: 2-3 days for production model (target: 55-65% accuracy)</span>
+								</div>
+							</div>
+						</div>
+					)}
+
 					<div
 						onClick={() => toggleSection("ml_prediction")}
 						style={{
-							background: "rgba(139, 92, 246, 0.1)",
-							border: "1px solid rgba(139, 92, 246, 0.3)",
+							background: stock.mlPrediction.confidence < 0.4
+								? "rgba(251, 191, 36, 0.05)"
+								: "rgba(139, 92, 246, 0.1)",
+							border: stock.mlPrediction.confidence < 0.4
+								? "1px solid rgba(251, 191, 36, 0.2)"
+								: "1px solid rgba(139, 92, 246, 0.3)",
 							borderRadius: "12px",
 							padding: "1rem",
 							marginBottom: "0.75rem",

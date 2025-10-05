@@ -51,6 +51,12 @@ export class MLFeatureToggleService {
 			description: "ML-powered analyst rating upgrade predictions (2-week horizon)",
 			defaultState: true, // Production-ready model (v1.0.0, 97.6% accuracy, deployed Oct 2, 2025)
 		},
+		PRICE_PREDICTION: {
+			id: "price_prediction",
+			name: "Price Prediction",
+			description: "ML-powered price movement predictions (1-week horizon)",
+			defaultState: true, // Production-ready model (v1.1.0, 46% accuracy, deployed Oct 5, 2025)
+		},
 	};
 
 	// Cache keys
@@ -117,53 +123,52 @@ export class MLFeatureToggleService {
 			// Wait for Redis to be ready before attempting to initialize features
 			await this.waitForRedis();
 
-			// Initialize Early Signal Detection feature
-			const esdKey = this.getFeatureKey(
-				MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id
-			);
-			const existingStatus = await this.cache.get(esdKey);
+			// Initialize all features
+			for (const feature of Object.values(MLFeatureToggleService.FEATURES)) {
+				const key = this.getFeatureKey(feature.id);
+				const existingStatus = await this.cache.get(key);
 
-			if (!existingStatus) {
-				const initialStatus: MLFeatureStatus = {
-					featureId: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id,
-					featureName: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.name,
-					enabled: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.defaultState,
-					lastModified: Date.now(),
-					description: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.description,
-				};
+				if (!existingStatus) {
+					const initialStatus: MLFeatureStatus = {
+						featureId: feature.id,
+						featureName: feature.name,
+						enabled: feature.defaultState,
+						lastModified: Date.now(),
+						description: feature.description,
+					};
 
-				await this.cache.set(
-					esdKey,
-					JSON.stringify(initialStatus),
-					MLFeatureToggleService.CACHE_TTL
-				);
-				this.inMemoryFallback.set(esdKey, initialStatus);
+					await this.cache.set(
+						key,
+						JSON.stringify(initialStatus),
+						MLFeatureToggleService.CACHE_TTL
+					);
+					this.inMemoryFallback.set(key, initialStatus);
 
-				console.log(
-					`✅ Initialized ML feature: ${initialStatus.featureName} (default: ${initialStatus.enabled ? "enabled" : "disabled"})`
-				);
-			} else {
-				// Load existing status into memory fallback
-				const status = JSON.parse(existingStatus);
-				this.inMemoryFallback.set(esdKey, status);
-				console.log(
-					`✅ Loaded ML feature: ${status.featureName} (current: ${status.enabled ? "enabled" : "disabled"})`
-				);
+					console.log(
+						`✅ Initialized ML feature: ${initialStatus.featureName} (default: ${initialStatus.enabled ? "enabled" : "disabled"})`
+					);
+				} else {
+					// Load existing status into memory fallback
+					const status = JSON.parse(existingStatus);
+					this.inMemoryFallback.set(key, status);
+					console.log(
+						`✅ Loaded ML feature: ${status.featureName} (current: ${status.enabled ? "enabled" : "disabled"})`
+					);
+				}
 			}
 		} catch (error) {
 			console.error("Failed to initialize ML features:", error);
 			// Use in-memory fallback if Redis fails
-			const fallbackStatus: MLFeatureStatus = {
-				featureId: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id,
-				featureName: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.name,
-				enabled: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.defaultState,
-				lastModified: Date.now(),
-				description: MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.description,
-			};
-			this.inMemoryFallback.set(
-				this.getFeatureKey(MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id),
-				fallbackStatus
-			);
+			for (const feature of Object.values(MLFeatureToggleService.FEATURES)) {
+				const fallbackStatus: MLFeatureStatus = {
+					featureId: feature.id,
+					featureName: feature.name,
+					enabled: feature.defaultState,
+					lastModified: Date.now(),
+					description: feature.description,
+				};
+				this.inMemoryFallback.set(this.getFeatureKey(feature.id), fallbackStatus);
+			}
 		}
 	}
 
@@ -210,6 +215,41 @@ export class MLFeatureToggleService {
 		await this.ensureInitialized();
 		await this.setFeatureEnabled(
 			MLFeatureToggleService.FEATURES.EARLY_SIGNAL_DETECTION.id,
+			enabled,
+			userId,
+			reason
+		);
+	}
+
+	/**
+	 * Check if Price Prediction is enabled
+	 * This is used by the stock selection API for price movement predictions
+	 */
+	public async isPricePredictionEnabled(): Promise<boolean> {
+		try {
+			await this.ensureInitialized();
+			const status = await this.getFeatureStatus(
+				MLFeatureToggleService.FEATURES.PRICE_PREDICTION.id
+			);
+			return status.enabled;
+		} catch (error) {
+			console.error("Failed to check Price Prediction status:", error);
+			// Fail safe: return false if unable to determine status
+			return false;
+		}
+	}
+
+	/**
+	 * Enable or disable Price Prediction
+	 */
+	public async setPricePredictionEnabled(
+		enabled: boolean,
+		userId?: string,
+		reason?: string
+	): Promise<void> {
+		await this.ensureInitialized();
+		await this.setFeatureEnabled(
+			MLFeatureToggleService.FEATURES.PRICE_PREDICTION.id,
 			enabled,
 			userId,
 			reason

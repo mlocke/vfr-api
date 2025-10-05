@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
 import MLMonitoringPanel from "../components/admin/MLMonitoringPanel";
+import MLFeatureTogglePanel from "../components/admin/MLFeatureTogglePanel";
 
 // Data source configuration interface
 interface DataSourceConfig {
@@ -1639,6 +1640,9 @@ export default function AdminDashboard() {
 								)}
 							</div>
 						</div>
+
+						{/* ML Feature Toggle Section */}
+						<MLFeatureTogglePanel />
 
 						{/* ML Monitoring Section */}
 						<MLMonitoringPanel />

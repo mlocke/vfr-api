@@ -42,6 +42,7 @@ import { OptionsDataService } from "../financial-data/OptionsDataService";
 import { MLPredictionService } from "../ml/prediction/MLPredictionService";
 import { EarlySignalService } from "../ml/early-signal/EarlySignalService";
 import { EarlySignalPrediction } from "../ml/early-signal/types";
+import { PricePredictionService, PricePrediction } from "../ml/price-prediction/PricePredictionService";
 import ErrorHandler from "../error-handling/ErrorHandler";
 
 /**
@@ -583,6 +584,45 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 			console.log(`⏭️ ESD skipped for ${symbol} (feature not enabled in request options)`);
 		}
 
+		// Price Prediction - ML price movement predictions
+		let pricePrediction: PricePrediction | undefined;
+		console.log(
+			`🔍 Price Prediction Check for ${symbol}: includePricePrediction=${request.options?.includePricePrediction}`
+		);
+		if (request.options?.includePricePrediction) {
+			try {
+				console.log(`🚀 Starting Price Prediction for ${symbol}...`);
+				const priceService = new PricePredictionService();
+				const prediction = await priceService.predictPriceMovement(
+					symbol,
+					additionalData.sector || "Unknown"
+				);
+				console.log(`📊 Price Prediction raw result for ${symbol}:`, prediction);
+				pricePrediction = prediction || undefined;
+				if (pricePrediction) {
+					console.log(
+						`🎯 Price Prediction completed for ${symbol}: ${pricePrediction.prediction} (${(pricePrediction.confidence * 100).toFixed(1)}% confidence)`
+					);
+					// Add price prediction insights to primary factors
+					primaryFactors.push(
+						`ML predicts ${pricePrediction.prediction} movement (${(pricePrediction.confidence * 100).toFixed(0)}% confidence)`
+					);
+					// Add top reasoning if available
+					if (pricePrediction.reasoning && pricePrediction.reasoning.length > 0) {
+						pricePrediction.reasoning.slice(0, 2).forEach(reason => {
+							primaryFactors.push(reason);
+						});
+					}
+				} else {
+					console.warn(`⚠️ Price Prediction returned null/undefined for ${symbol}`);
+				}
+			} catch (error) {
+				console.error(`❌ Price Prediction failed for ${symbol}:`, error);
+			}
+		} else {
+			console.log(`⏭️ Price Prediction skipped for ${symbol} (feature not enabled in request options)`);
+		}
+
 		// 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration
 		const scoreBasedAction = getRecommendation(
 			adjustedScore.overallScore,
@@ -637,6 +677,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
 			// ML Early Signal Detection
 			early_signal: earlySignalPrediction,
+
+			// ML Price Prediction
+			price_prediction: pricePrediction,
 		};
 	}
 
