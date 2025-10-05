@@ -12,7 +12,7 @@ async function testMLEnhancementViaAPI() {
 	// Test 1: Classic Analysis (No ML)
 	console.log("=== Test 1: Classic VFR Analysis (include_ml=false) ===");
 	try {
-		const response = await fetch(`${baseUrl}/api/stocks/select`, {
+		const response = await fetch(`${baseUrl}/api/stocks/analyze`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -42,7 +42,7 @@ async function testMLEnhancementViaAPI() {
 	// Test 2: ML-Enhanced Analysis
 	console.log("=== Test 2: ML-Enhanced Analysis (include_ml=true) ===");
 	try {
-		const response = await fetch(`${baseUrl}/api/stocks/select`, {
+		const response = await fetch(`${baseUrl}/api/stocks/analyze`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -94,7 +94,7 @@ async function testMLEnhancementViaAPI() {
 	// Test 4: Multiple Stocks
 	console.log("=== Test 4: Multiple Stocks Analysis ===");
 	try {
-		const response = await fetch(`${baseUrl}/api/stocks/select`, {
+		const response = await fetch(`${baseUrl}/api/stocks/analyze`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({

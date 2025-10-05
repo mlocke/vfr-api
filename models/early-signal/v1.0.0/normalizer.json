@@ -1,140 +1,74 @@
 {
-  "params": {
-    "price_change_5d": {
-      "mean": 0.0037477828645723957,
-      "stdDev": 0.042157517440125254
-    },
-    "price_change_10d": {
-      "mean": 0.00535604145791545,
-      "stdDev": 0.06801910352355553
-    },
-    "price_change_20d": {
-      "mean": 0.0016122689072358002,
-      "stdDev": 0.09356337538209407
-    },
-    "volume_ratio": {
-      "mean": 1.0314516373806184,
-      "stdDev": 0.25907886254699264
-    },
-    "volume_trend": {
-      "mean": 307451.60504329,
-      "stdDev": 2709487.6006982108
-    },
-    "sentiment_news_delta": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "sentiment_reddit_accel": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "sentiment_options_shift": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_stocktwits_24h_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_stocktwits_hourly_momentum": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_stocktwits_7d_trend": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_twitter_24h_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_twitter_hourly_momentum": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "social_twitter_7d_trend": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "earnings_surprise": {
-      "mean": 5.3131438767112105,
-      "stdDev": 92.80976412642951
-    },
-    "revenue_growth_accel": {
-      "mean": 0.9398316507040152,
-      "stdDev": 65.65057998796597
-    },
-    "analyst_coverage_change": {
-      "mean": 13.994047619047619,
-      "stdDev": 2.9529989272600647
-    },
-    "rsi_momentum": {
-      "mean": -5.4489540092069095,
-      "stdDev": 13.127052655956435
-    },
-    "macd_histogram_trend": {
-      "mean": -0.29780976172867485,
-      "stdDev": 1.8206404589334855
-    },
-    "fed_rate_change_30d": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "unemployment_rate_change": {
-      "mean": 0.01321428571428573,
-      "stdDev": 0.09247471616204994
-    },
-    "cpi_inflation_rate": {
-      "mean": 0.022473305923883843,
-      "stdDev": 0.09038380710870667
-    },
-    "gdp_growth_rate": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "treasury_yield_10y": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "sec_insider_buying_ratio": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "sec_institutional_ownership_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "sec_8k_filing_count_30d": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "analyst_price_target_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "earnings_whisper_vs_estimate": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "short_interest_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "institutional_ownership_momentum": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "options_put_call_ratio_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "dividend_yield_change": {
-      "mean": 0,
-      "stdDev": 1
-    },
-    "market_beta_30d": {
-      "mean": 0,
-      "stdDev": 1
-    }
-  }
+  "mean": [
+    0.0073396795820056164,
+    0.010240063288665542,
+    0.005588649812897554,
+    1.0406231890911133,
+    250459.20588133897,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    7.8850225654622195,
+    -2.422293446675618,
+    14.118316268486916,
+    -5.680151732429968,
+    -0.3480496969072295,
+    0.0,
+    0.011035267349260525,
+    0.022689895221735184,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "std": [
+    0.04584982137241337,
+    0.07140085057335176,
+    0.09423698831719572,
+    0.26141667807659474,
+    2604849.802521347,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    58.78413195704636,
+    45.85954333134348,
+    2.664752251113595,
+    13.244217153441221,
+    1.846129141234584,
+    1.0,
+    0.09927471856406929,
+    0.09406536695696939,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ]
 }

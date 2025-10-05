@@ -17,7 +17,7 @@ console.log("=".repeat(80));
 
 // Test direct API call
 async function testDirectAPICall() {
-	console.log("\n📡 Testing Direct API Call to /api/stocks/select...\n");
+	console.log("\n📡 Testing Direct API Call to /api/stocks/analyze...\n");
 
 	const requestData = {
 		scope: {
@@ -39,7 +39,7 @@ async function testDirectAPICall() {
 	console.log("\n" + "-".repeat(80) + "\n");
 
 	try {
-		const response = await fetch("http://localhost:3000/api/stocks/select", {
+		const response = await fetch("http://localhost:3000/api/stocks/analyze", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -164,7 +164,7 @@ async function checkServiceHealth() {
 	console.log("\n🏥 Checking Service Health...\n");
 
 	try {
-		const response = await fetch("http://localhost:3000/api/stocks/select");
+		const response = await fetch("http://localhost:3000/api/stocks/analyze");
 		const health = await response.json();
 
 		console.log("Service Status:", health.status);

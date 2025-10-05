@@ -144,7 +144,7 @@ export function useStockSelection(config: UseStockSelectionConfig = {}): UseStoc
 			}));
 
 			try {
-				const response = await fetch(`${STOCK_SELECTION_API_BASE}/select`, {
+				const response = await fetch(`${STOCK_SELECTION_API_BASE}/analyze`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",

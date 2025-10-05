@@ -42,6 +42,7 @@ import { OptionsDataService } from "../financial-data/OptionsDataService";
 import { MLPredictionService } from "../ml/prediction/MLPredictionService";
 import { StockScore } from "../algorithms/types";
 import { EarlySignalFeatureExtractor } from "../ml/early-signal/FeatureExtractor";
+import { PredictionLogger } from "../ml/prediction/PredictionLogger";
 
 // ===== ML Enhancement Options =====
 
@@ -75,6 +76,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 	private mlPredictionEngine: RealTimePredictionEngine;
 	private enhancedScoringEngine: EnhancedScoringEngine;
 	private featureExtractor: EarlySignalFeatureExtractor;
+	private predictionLogger: PredictionLogger;
 	private mlLogger: Logger;
 	private mlErrorHandler: ErrorHandler;
 
@@ -115,6 +117,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		this.mlErrorHandler = ErrorHandler.getInstance();
 		this.mlPredictionEngine = RealTimePredictionEngine.getInstance();
 		this.featureExtractor = new EarlySignalFeatureExtractor();
+		this.predictionLogger = PredictionLogger.getInstance();
 		this.enhancedScoringEngine = new EnhancedScoringEngine({
 			vfrWeight: 0.85, // 85% VFR
 			mlWeight: 0.15, // 15% ML
@@ -123,7 +126,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			normalizeToHundred: false, // Keep 0-1 scale for consistency
 		});
 
-		this.mlLogger.info("MLEnhancedStockSelectionService initialized");
+		this.mlLogger.info("MLEnhancedStockSelectionService initialized with prediction logging");
 	}
 
 	/**
@@ -432,6 +435,9 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			mlPrediction
 		);
 
+		// Log prediction to database for outcome tracking (async, don't wait)
+		this.logPredictionAsync(stock, mlPrediction, enhancedScore.finalScore);
+
 		// Update stock score with ML-enhanced composite score
 		const enhancedStockScore: StockScore = {
 			...stock.score,
@@ -461,6 +467,39 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			confidence: Math.max(stock.confidence, mlPrediction.confidence), // Use higher confidence
 			mlPrediction, // Attach ML prediction for serialization
 		};
+	}
+
+	/**
+	 * Log prediction to database (async, fire-and-forget)
+	 */
+	private logPredictionAsync(
+		stock: EnhancedStockResult,
+		prediction: PredictionResult,
+		enhancedScore: number
+	): void {
+		// Get current price from stock context
+		const currentPrice = stock.context?.currentPrice || 0;
+
+		// Convert prediction to log entry
+		const logEntry = this.predictionLogger.convertPredictionToLogEntry(
+			stock.symbol,
+			prediction,
+			{
+				currentPrice,
+				baseVfrScore: stock.score.overallScore,
+				enhancedScore,
+				executionTimeMs: prediction.latency,
+				cacheHit: false,
+				tierUsed: 'free'
+			}
+		);
+
+		// Log async (don't wait)
+		this.predictionLogger.logPrediction(logEntry).catch(error => {
+			this.mlLogger.warn(
+				`Failed to log prediction for ${stock.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`
+			);
+		});
 	}
 
 	/**

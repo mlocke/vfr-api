@@ -9,7 +9,7 @@ async function testEarningsAPI() {
 
 	for (const symbol of symbols) {
 		try {
-			const earnings = await fmp.getEarningsSurprises(symbol, 5);
+			const earnings = await fmp.getEarningsSurprises(symbol, 60);
 			console.log(`${symbol}: ${earnings.length} earnings records`);
 			if (earnings.length > 0) {
 				console.log(`  Sample: ${JSON.stringify(earnings[0])}`);

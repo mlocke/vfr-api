@@ -169,7 +169,7 @@ NODE_ENV=development
 | Endpoint                  | Method | Purpose                                            |
 | ------------------------- | ------ | -------------------------------------------------- |
 | `/api/health`             | GET    | System status                                      |
-| `/api/stocks/select`      | POST   | Stock analysis                                     |
+| `/api/stocks/analyze`     | POST   | Comprehensive stock analysis (MLEnhancedStockSelectionService) |
 | `/api/ml/early-signal`    | POST   | ML-powered analyst rating predictions (PRODUCTION) |
 | `/api/user_auth`          | POST   | JWT authentication                                 |
 | `/api/admin/data-sources` | GET    | API monitoring                                     |

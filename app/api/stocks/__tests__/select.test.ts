@@ -1,6 +1,7 @@
 /**
- * Enhanced Stock Selection API Comprehensive Tests
- * Tests for the enhanced stock selection endpoint with fundamental data, analyst ratings, and composite scoring
+ * Enhanced Stock Analysis API Comprehensive Tests
+ * Tests for the enhanced stock analysis endpoint with fundamental data, analyst ratings, and composite scoring
+ * Updated to use /api/stocks/analyze (MLEnhancedStockSelectionService) instead of deprecated /select
  *
  * Following VFR testing philosophy:
  * - Always use real APIs, never mock data
@@ -11,7 +12,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { POST, GET } from "../select/route";
+import { POST, GET } from "../analyze/route";
 
 // Test data - using real stock symbols for authentic testing
 const TEST_SYMBOLS = {
@@ -25,7 +26,7 @@ const TEST_SECTORS = ["Technology", "Healthcare", "Financial Services", "Consume
 
 // Helper to create test requests
 function createRequest(body: any): NextRequest {
-	return new NextRequest("http://localhost:3000/api/stocks/select", {
+	return new NextRequest("http://localhost:3000/api/stocks/analyze", {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -38,7 +39,7 @@ async function parseResponse(response: Response) {
 	return JSON.parse(text);
 }
 
-describe("Enhanced Stock Selection API", () => {
+describe("Enhanced Stock Analysis API (/api/stocks/analyze)", () => {
 	beforeEach(() => {
 		// Clear any cached data to ensure fresh test runs
 		jest.clearAllMocks();
