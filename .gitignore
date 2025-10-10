@@ -72,6 +72,17 @@ data/training/test-fix*.csv
 data/cache/
 data/symbols/
 
+# Large training datasets (>50MB)
+data/training/polygon_news_combined_2023-2025.csv
+data/training/polygon_news_with_sentiment.csv
+data/training/polygon_news_2023.csv
+data/training/polygon_news_2024.csv
+data/training/polygon_news_2025.csv
+data/training/*_checkpoint_*.csv
+data/training/combined-*.csv
+data/training/polygon-*.csv
+data/training/sentiment-fusion-*.csv
+
 # ML Model files (large binary files)
 models/**/*.safetensors
 models/**/*.pt
