@@ -181,12 +181,12 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 				transform: "translate(-50%, -50%)",
 				width: "600px",
 				maxWidth: "90vw",
-				maxHeight: "80vh",
+				maxHeight: "90vh",
 				background: "rgba(17, 24, 39, 0.98)",
 				backdropFilter: "blur(20px)",
 				border: "2px solid rgba(99, 102, 241, 0.4)",
 				borderRadius: "20px",
-				padding: "2rem",
+				padding: "1.5rem",
 				boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.2)",
 				zIndex: 9999,
 				overflow: "hidden",
@@ -195,10 +195,10 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			}}
 		>
 			{/* Header */}
-			<div style={{ marginBottom: "2rem", textAlign: "center" }}>
+			<div style={{ marginBottom: "1.5rem", textAlign: "center" }}>
 				<h2
 					style={{
-						fontSize: "1.75rem",
+						fontSize: "1.5rem",
 						fontWeight: "700",
 						color: "white",
 						marginBottom: "0.5rem",
@@ -226,7 +226,7 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			</div>
 
 			{/* Progress Bar */}
-			<div style={{ marginBottom: "2rem" }}>
+			<div style={{ marginBottom: "1.5rem" }}>
 				<div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.75rem" }}>
 					<span style={{ fontSize: "0.9rem", fontWeight: "600", color: "white" }}>
 						{currentProgress}%
@@ -270,8 +270,8 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 					background: "rgba(99, 102, 241, 0.1)",
 					border: "1px solid rgba(99, 102, 241, 0.3)",
 					borderRadius: "12px",
-					padding: "1rem",
-					marginBottom: "1.5rem",
+					padding: "0.75rem",
+					marginBottom: "1rem",
 				}}
 			>
 				<div
@@ -306,13 +306,13 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			</div>
 
 			{/* Parallel Services Progress */}
-			<div style={{ marginBottom: "1.5rem" }}>
+			<div style={{ marginBottom: "1rem" }}>
 				<h4
 					style={{
-						fontSize: "0.9rem",
+						fontSize: "0.85rem",
 						fontWeight: "600",
 						color: "rgba(255, 255, 255, 0.9)",
-						marginBottom: "0.75rem",
+						marginBottom: "0.5rem",
 						textTransform: "uppercase",
 						letterSpacing: "0.05em",
 					}}
@@ -322,8 +322,8 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 				<div
 					style={{
 						display: "grid",
-						gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-						gap: "0.5rem",
+						gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+						gap: "0.4rem",
 					}}
 				>
 					{PARALLEL_SERVICES.map((service) => {
@@ -354,16 +354,16 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 								style={{
 									background: colors.bg,
 									border: `1px solid ${colors.border}`,
-									borderRadius: "8px",
-									padding: "0.5rem",
+									borderRadius: "6px",
+									padding: "0.4rem",
 									display: "flex",
 									flexDirection: "column",
 									alignItems: "center",
-									gap: "0.25rem",
+									gap: "0.2rem",
 									transition: "all 0.3s ease",
 								}}
 							>
-								<div style={{ fontSize: "1.25rem" }}>
+								<div style={{ fontSize: "1rem" }}>
 									{status === "in_progress" ? (
 										<span style={{ display: "inline-block", animation: "spin 2s linear infinite" }}>
 											{service.icon}
@@ -374,7 +374,7 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 								</div>
 								<div
 									style={{
-										fontSize: "0.75rem",
+										fontSize: "0.7rem",
 										fontWeight: "600",
 										color: "white",
 										textAlign: "center",
@@ -382,7 +382,7 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 								>
 									{service.name}
 								</div>
-								<div style={{ fontSize: "0.7rem", color: colors.text }}>
+								<div style={{ fontSize: "0.65rem", color: colors.text }}>
 									{statusIcons[status]}
 								</div>
 							</div>
@@ -396,7 +396,8 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 				style={{
 					flex: 1,
 					overflowY: "auto",
-					maxHeight: "300px",
+					minHeight: "400px",
+					maxHeight: "500px",
 					marginBottom: "1rem",
 				}}
 			>
