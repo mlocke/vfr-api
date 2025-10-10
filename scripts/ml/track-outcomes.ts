@@ -184,8 +184,8 @@ class OutcomeTracker {
                 ticker: prediction.ticker,
                 initial_price: prediction.current_price,
                 final_price,
-                market_return: marketReturn,
-                sector_return: null // Could fetch sector ETF return here
+                market_return: marketReturn ?? undefined,
+                sector_return: undefined // Could fetch sector ETF return here
             };
         } catch (error) {
             console.error(

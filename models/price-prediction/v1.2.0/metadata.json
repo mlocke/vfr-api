@@ -1,0 +1,332 @@
+{
+  "version": "1.2.0",
+  "model_type": "price_prediction",
+  "algorithm": "LightGBM Multi-Class Classifier",
+  "objective": "multiclass",
+  "num_classes": 3,
+  "class_labels": [
+    "DOWN",
+    "NEUTRAL",
+    "UP"
+  ],
+  "trained_at": "2025-10-09T11:26:30.414975",
+  "num_features": 48,
+  "feature_names": [
+    "volume_ratio_5d",
+    "volume_spike",
+    "volume_trend_10d",
+    "relative_volume",
+    "volume_acceleration",
+    "dark_pool_ratio",
+    "rsi_14",
+    "macd_signal",
+    "macd_histogram",
+    "bollinger_position",
+    "stochastic_k",
+    "adx_14",
+    "atr_14",
+    "ema_20_distance",
+    "sma_50_distance",
+    "williams_r",
+    "price_momentum_5d",
+    "price_momentum_10d",
+    "price_momentum_20d",
+    "price_acceleration",
+    "gap_percent",
+    "intraday_volatility",
+    "overnight_return",
+    "week_high_distance",
+    "put_call_ratio",
+    "put_call_ratio_change",
+    "unusual_options_activity",
+    "options_iv_rank",
+    "gamma_exposure",
+    "max_pain_distance",
+    "options_volume_ratio",
+    "institutional_net_flow",
+    "block_trade_volume",
+    "insider_buying_ratio",
+    "ownership_change_30d",
+    "news_sentiment_delta",
+    "social_momentum",
+    "analyst_target_distance",
+    "earnings_surprise_impact",
+    "sector_momentum_5d",
+    "spy_momentum_5d",
+    "vix_level",
+    "correlation_to_spy_20d",
+    "news_sentiment_24h",
+    "news_sentiment_7d",
+    "news_sentiment_30d",
+    "news_sentiment_momentum",
+    "news_volume_24h"
+  ],
+  "improvements_over_v1_1_0": [
+    "Added 5 FinBERT-based news sentiment features",
+    "news_sentiment_24h: 24-hour sentiment average",
+    "news_sentiment_7d: 7-day sentiment average",
+    "news_sentiment_30d: 30-day sentiment average",
+    "news_sentiment_momentum: Sentiment trend direction",
+    "news_volume_24h: News article volume"
+  ],
+  "metrics": {
+    "accuracy": 0.5866666666666667,
+    "confusion_matrix": [
+      [
+        27,
+        13,
+        7
+      ],
+      [
+        14,
+        18,
+        14
+      ],
+      [
+        5,
+        9,
+        43
+      ]
+    ],
+    "feature_importance": [
+      {
+        "feature": "atr_14",
+        "importance": 1306
+      },
+      {
+        "feature": "price_momentum_20d",
+        "importance": 1038
+      },
+      {
+        "feature": "sma_50_distance",
+        "importance": 1022
+      },
+      {
+        "feature": "news_sentiment_momentum",
+        "importance": 1021
+      },
+      {
+        "feature": "macd_signal",
+        "importance": 959
+      },
+      {
+        "feature": "volume_acceleration",
+        "importance": 909
+      },
+      {
+        "feature": "volume_trend_10d",
+        "importance": 873
+      },
+      {
+        "feature": "week_high_distance",
+        "importance": 867
+      },
+      {
+        "feature": "price_momentum_5d",
+        "importance": 866
+      },
+      {
+        "feature": "intraday_volatility",
+        "importance": 853
+      },
+      {
+        "feature": "price_acceleration",
+        "importance": 840
+      },
+      {
+        "feature": "relative_volume",
+        "importance": 772
+      },
+      {
+        "feature": "volume_ratio_5d",
+        "importance": 765
+      },
+      {
+        "feature": "price_momentum_10d",
+        "importance": 743
+      },
+      {
+        "feature": "gap_percent",
+        "importance": 738
+      },
+      {
+        "feature": "rsi_14",
+        "importance": 684
+      },
+      {
+        "feature": "stochastic_k",
+        "importance": 644
+      },
+      {
+        "feature": "news_sentiment_24h",
+        "importance": 584
+      },
+      {
+        "feature": "ema_20_distance",
+        "importance": 532
+      },
+      {
+        "feature": "news_sentiment_7d",
+        "importance": 504
+      },
+      {
+        "feature": "bollinger_position",
+        "importance": 459
+      },
+      {
+        "feature": "macd_histogram",
+        "importance": 183
+      },
+      {
+        "feature": "overnight_return",
+        "importance": 166
+      },
+      {
+        "feature": "news_volume_24h",
+        "importance": 139
+      },
+      {
+        "feature": "williams_r",
+        "importance": 129
+      },
+      {
+        "feature": "news_sentiment_30d",
+        "importance": 75
+      },
+      {
+        "feature": "volume_spike",
+        "importance": 0
+      },
+      {
+        "feature": "put_call_ratio_change",
+        "importance": 0
+      },
+      {
+        "feature": "dark_pool_ratio",
+        "importance": 0
+      },
+      {
+        "feature": "adx_14",
+        "importance": 0
+      },
+      {
+        "feature": "correlation_to_spy_20d",
+        "importance": 0
+      },
+      {
+        "feature": "vix_level",
+        "importance": 0
+      },
+      {
+        "feature": "spy_momentum_5d",
+        "importance": 0
+      },
+      {
+        "feature": "sector_momentum_5d",
+        "importance": 0
+      },
+      {
+        "feature": "earnings_surprise_impact",
+        "importance": 0
+      },
+      {
+        "feature": "analyst_target_distance",
+        "importance": 0
+      },
+      {
+        "feature": "social_momentum",
+        "importance": 0
+      },
+      {
+        "feature": "news_sentiment_delta",
+        "importance": 0
+      },
+      {
+        "feature": "ownership_change_30d",
+        "importance": 0
+      },
+      {
+        "feature": "insider_buying_ratio",
+        "importance": 0
+      },
+      {
+        "feature": "block_trade_volume",
+        "importance": 0
+      },
+      {
+        "feature": "institutional_net_flow",
+        "importance": 0
+      },
+      {
+        "feature": "options_volume_ratio",
+        "importance": 0
+      },
+      {
+        "feature": "max_pain_distance",
+        "importance": 0
+      },
+      {
+        "feature": "gamma_exposure",
+        "importance": 0
+      },
+      {
+        "feature": "options_iv_rank",
+        "importance": 0
+      },
+      {
+        "feature": "unusual_options_activity",
+        "importance": 0
+      },
+      {
+        "feature": "put_call_ratio",
+        "importance": 0
+      }
+    ],
+    "classification_report": {
+      "DOWN": {
+        "precision": 0.5869565217391305,
+        "recall": 0.574468085106383,
+        "f1-score": 0.5806451612903226,
+        "support": 47.0
+      },
+      "NEUTRAL": {
+        "precision": 0.45,
+        "recall": 0.391304347826087,
+        "f1-score": 0.4186046511627907,
+        "support": 46.0
+      },
+      "UP": {
+        "precision": 0.671875,
+        "recall": 0.7543859649122807,
+        "f1-score": 0.7107438016528925,
+        "support": 57.0
+      },
+      "accuracy": 0.5866666666666667,
+      "macro avg": {
+        "precision": 0.5696105072463769,
+        "recall": 0.5733861326149169,
+        "f1-score": 0.5699978713686686,
+        "support": 150.0
+      },
+      "weighted avg": {
+        "precision": 0.5772255434782608,
+        "recall": 0.5866666666666667,
+        "f1-score": 0.5803902215223228,
+        "support": 150.0
+      }
+    }
+  },
+  "hyperparameters": {
+    "objective": "multiclass",
+    "num_class": 3,
+    "learning_rate": 0.05,
+    "n_estimators": 300,
+    "max_depth": 8,
+    "num_leaves": 31,
+    "min_child_samples": 20,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 0.1
+  }
+}

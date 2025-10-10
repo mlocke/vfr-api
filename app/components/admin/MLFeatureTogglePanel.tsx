@@ -153,6 +153,8 @@ export default function MLFeatureTogglePanel() {
 				return "🔔";
 			case "price_prediction":
 				return "📈";
+			case "sentiment_fusion":
+				return "🧠";
 			default:
 				return "🤖";
 		}

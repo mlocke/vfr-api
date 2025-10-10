@@ -1,0 +1,28 @@
+{
+  "comparison_date": "2025-10-09T16:57:50.959514",
+  "models": {
+    "finbert_enhanced": {
+      "version": "v1.3.0",
+      "features": 46,
+      "val_accuracy": 0.46153846153846156,
+      "test_accuracy": 0.39819004524886875,
+      "test_f1_weighted": 0.38379761207301316,
+      "generalization_gap": 0.06334841628959281
+    },
+    "baseline": {
+      "version": "v1.2.0-baseline",
+      "features": 43,
+      "val_accuracy": 0.43891402714932126,
+      "test_accuracy": 0.43891402714932126,
+      "test_f1_weighted": 0.4168458753635744,
+      "generalization_gap": 0.0
+    }
+  },
+  "finbert_contribution": {
+    "validation_improvement": 0.022624434389140302,
+    "validation_improvement_pct": 5.154639175257739,
+    "test_improvement": -0.04072398190045251,
+    "test_improvement_pct": -9.278350515463922
+  },
+  "recommendation": "baseline"
+}

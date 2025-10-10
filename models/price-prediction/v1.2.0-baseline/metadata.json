@@ -1,0 +1,115 @@
+{
+  "model_name": "LightGBM_Price_Prediction_Baseline",
+  "version": "v1.2.0-baseline",
+  "description": "Baseline model with 43 price features only (NO FinBERT)",
+  "training_date": "2025-10-09T16:55:28.603056",
+  "num_train_examples": 1030,
+  "num_val_examples": 221,
+  "num_features": 43,
+  "excluded_features": [
+    "finbert_positive",
+    "finbert_neutral",
+    "finbert_negative"
+  ],
+  "hyperparameters": {
+    "learning_rate": 0.05,
+    "max_depth": 8,
+    "n_estimators": 300,
+    "num_leaves": 31,
+    "min_child_samples": 20,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 0.1
+  },
+  "validation_metrics": {
+    "accuracy": 0.43891402714932126
+  },
+  "label_mapping": {
+    "0": "DOWN",
+    "1": "NEUTRAL",
+    "2": "UP"
+  },
+  "feature_importance": [
+    {
+      "feature": "intraday_volatility",
+      "importance": 1335
+    },
+    {
+      "feature": "gap_percent",
+      "importance": 1280
+    },
+    {
+      "feature": "week_high_distance",
+      "importance": 1249
+    },
+    {
+      "feature": "volume_trend_10d",
+      "importance": 1180
+    },
+    {
+      "feature": "atr_14",
+      "importance": 1120
+    },
+    {
+      "feature": "price_acceleration",
+      "importance": 1095
+    },
+    {
+      "feature": "volume_ratio_5d",
+      "importance": 1044
+    },
+    {
+      "feature": "rsi_14",
+      "importance": 1029
+    },
+    {
+      "feature": "relative_volume",
+      "importance": 1028
+    },
+    {
+      "feature": "price_momentum_20d",
+      "importance": 983
+    },
+    {
+      "feature": "sma_50_distance",
+      "importance": 972
+    },
+    {
+      "feature": "macd_signal",
+      "importance": 953
+    },
+    {
+      "feature": "price_momentum_5d",
+      "importance": 902
+    },
+    {
+      "feature": "volume_acceleration",
+      "importance": 855
+    },
+    {
+      "feature": "stochastic_k",
+      "importance": 854
+    },
+    {
+      "feature": "ema_20_distance",
+      "importance": 793
+    },
+    {
+      "feature": "price_momentum_10d",
+      "importance": 761
+    },
+    {
+      "feature": "bollinger_position",
+      "importance": 754
+    },
+    {
+      "feature": "overnight_return",
+      "importance": 259
+    },
+    {
+      "feature": "williams_r",
+      "importance": 181
+    }
+  ]
+}

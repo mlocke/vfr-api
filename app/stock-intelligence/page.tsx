@@ -50,13 +50,21 @@ export default function StockIntelligencePage() {
 
 		try {
 			// Build request using the SAME format as working admin
-			let request: AnalysisRequest = { mode: "single", limit: 10 };
+			// Enable ML predictions by default (1-week horizon)
+			let request: AnalysisRequest = {
+				mode: "single",
+				limit: 10,
+				include_ml: true,
+				ml_horizon: "1w"
+			};
 
 			if (analysisType === "sector" && selectedSector) {
 				request = {
 					mode: "sector",
 					sector: selectedSector.id,
 					limit: 20,
+					include_ml: true,
+					ml_horizon: "1w"
 				};
 			} else if (analysisType === "tickers" && selectedSymbols.length > 0) {
 				if (selectedSymbols.length === 1) {
@@ -64,12 +72,16 @@ export default function StockIntelligencePage() {
 						mode: "single",
 						symbols: selectedSymbols,
 						limit: 1,
+						include_ml: true,
+						ml_horizon: "1w"
 					};
 				} else {
 					request = {
 						mode: "multiple",
 						symbols: selectedSymbols,
 						limit: selectedSymbols.length,
+						include_ml: true,
+						ml_horizon: "1w"
 					};
 				}
 			}

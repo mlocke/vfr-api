@@ -122,6 +122,7 @@ export class AlgorithmEngine {
 	): Promise<SelectionResult> {
 		const executionId = `${config.id}_${context.runId}`;
 		const startTime = Date.now();
+		const progressTracker = (context as any).progressTracker;
 
 		try {
 			// Register execution
@@ -137,21 +138,28 @@ export class AlgorithmEngine {
 			console.log(`Algorithm ${config.name}: Evaluating ${universe.length} stocks`);
 
 			// Step 2: Fetch and fuse market data for all stocks
+			progressTracker?.startStage("market_data", `Fetching market data for ${universe.length} stocks...`);
 			const marketData = await this.fetchMarketData(universe, config);
 			console.log(`Fetched market data for ${marketData.size} stocks`);
+			progressTracker?.completeStage("market_data");
 
 			// Step 3: Fetch and fuse fundamental data if required
+			progressTracker?.startStage("fundamentals", `Gathering fundamental data for ${universe.length} stocks...`);
 			const fundamentalData = await this.fetchFundamentalData(universe, config);
 			console.log(`Fetched fundamental data for ${fundamentalData.size} stocks`);
+			progressTracker?.completeStage("fundamentals");
 
-			// Step 4: Calculate factor scores for each stock
+			// Step 4: Calculate factor scores for each stock (includes all sub-stages)
+			progressTracker?.startStage("technical", "Analyzing technical indicators...");
 			const stockScores = await this.calculateStockScores(
 				universe,
 				marketData,
 				fundamentalData,
-				config
+				config,
+				progressTracker
 			);
 			console.log(`Calculated scores for ${stockScores.length} stocks`);
+			progressTracker?.completeStage("technical");
 
 			// Step 5: Apply selection criteria
 			const selections = await this.applySelectionCriteria(stockScores, config, context);
@@ -505,7 +513,8 @@ export class AlgorithmEngine {
 		symbols: string[],
 		marketData: Map<string, MarketDataPoint>,
 		fundamentalData: Map<string, FundamentalDataPoint>,
-		config: AlgorithmConfiguration
+		config: AlgorithmConfiguration,
+		progressTracker?: any
 	): Promise<StockScore[]> {
 		const stockScores: StockScore[] = [];
 
@@ -533,7 +542,8 @@ export class AlgorithmEngine {
 					symbol,
 					market,
 					config,
-					fundamental
+					fundamental,
+					progressTracker
 				);
 
 				if (score) {
@@ -559,7 +569,8 @@ export class AlgorithmEngine {
 		symbol: string,
 		marketData: MarketDataPoint,
 		config: AlgorithmConfiguration,
-		fundamentalData?: FundamentalDataPoint
+		fundamentalData?: FundamentalDataPoint,
+		progressTracker?: any
 	): Promise<StockScore | null> {
 		console.log(
 			`Starting score calculation for ${symbol}, weights count: ${config.weights?.length || 0}`
@@ -573,6 +584,7 @@ export class AlgorithmEngine {
 
 			try {
 				// 🆕 PRE-FETCH ANALYST DATA for sentiment calculation (before sentiment fetch)
+				progressTracker?.startStage("analyst", `Collecting analyst ratings for ${symbol}...`);
 				let analystData: any | undefined;
 				try {
 					const analystRatings =
@@ -594,93 +606,278 @@ export class AlgorithmEngine {
 							`📊 Analyst data pre-fetched for sentiment: ${analystRatings.consensus} (${analystRatings.totalAnalysts} analysts, ${analystRatings.sentimentScore}/5)`
 						);
 					}
+					progressTracker?.completeStage("analyst");
 				} catch (analystError) {
 					console.warn(`Failed to fetch analyst data for ${symbol}:`, analystError);
 					analystData = undefined;
+					progressTracker?.completeStage("analyst", "Skipping analyst data (unavailable)");
 				}
 
-				// 🆕 PRE-FETCH SENTIMENT DATA for composite algorithm (with 15s timeout)
-				let sentimentScore: number | undefined;
-				try {
-					console.log(`📰 Pre-fetching sentiment data for ${symbol}...`);
-					const timeoutHandler = TimeoutHandler.getInstance();
-					const sentimentResult = await timeoutHandler.withTimeout(
-						this.sentimentService.getSentimentIndicators(symbol, analystData),
-						15000 // 15s timeout for Reddit parallel processing
-					);
-					sentimentScore = sentimentResult ? sentimentResult.aggregatedScore : undefined;
-					console.log(`📰 Sentiment pre-fetched for ${symbol}: ${sentimentScore}`);
-				} catch (sentimentError) {
-					console.warn(`Failed to fetch sentiment for ${symbol}:`, sentimentError);
-					sentimentScore = undefined; // Will use fallback in FactorLibrary
-				}
+				// 🚀 PARALLEL DATA FETCHING - Fetch ALL remaining data sources IN PARALLEL
+				console.log(`🚀 Fetching ${symbol} data from 7 sources in parallel...`);
+				progressTracker?.enableParallelMode(); // Enable parallel stage tracking
+				const parallelStartTime = Date.now();
 
-				// 🆕 PRE-FETCH VWAP DATA for composite algorithm
-				let vwapAnalysis: any | undefined;
-				if (this.vwapService) {
-					try {
-						console.log(`📊 Pre-fetching VWAP analysis for ${symbol}...`);
-						vwapAnalysis = await this.vwapService.getVWAPAnalysis(symbol);
-						console.log(
-							`📊 VWAP pre-fetched for ${symbol}: ${vwapAnalysis ? "success" : "no data"}`
-						);
-					} catch (vwapError) {
-						console.warn(`Failed to fetch VWAP for ${symbol}:`, vwapError);
-						vwapAnalysis = undefined;
-					}
-				}
+				const [
+					sentimentResult,
+					vwapResult,
+					macroResult,
+					esgResult,
+					shortInterestResult,
+					extendedMarketResult,
+					optionsResult,
+				] = await Promise.allSettled([
+					// Sentiment (depends on analyst data, which we just fetched)
+					(async () => {
+						progressTracker?.startStage("sentiment", `Analyzing market sentiment for ${symbol}...`);
+						try {
+							console.log(`📰 Pre-fetching sentiment data for ${symbol}...`);
+							const timeoutHandler = TimeoutHandler.getInstance();
+							const sentimentResult = await timeoutHandler.withTimeout(
+								this.sentimentService.getSentimentIndicators(symbol, analystData),
+								15000 // 15s timeout for Reddit parallel processing
+							);
+							const score = sentimentResult ? sentimentResult.aggregatedScore : undefined;
+							console.log(`📰 Sentiment pre-fetched for ${symbol}: ${score}`);
+							progressTracker?.completeStage("sentiment");
+							return score;
+						} catch (error) {
+							console.warn(`Failed to fetch sentiment for ${symbol}:`, error);
+							progressTracker?.completeStage("sentiment", "Sentiment analysis completed with fallback");
+							return undefined;
+						}
+					})(),
 
-				// 🆕 PRE-FETCH MACROECONOMIC CONTEXT for composite algorithm (with 10s timeout)
-				let macroeconomicContext: any | undefined;
-				if (this.macroeconomicService && marketData.sector) {
-					try {
-						console.log(
-							`🌍 Pre-fetching macroeconomic context for ${symbol} (${marketData.sector})...`
-						);
-						const timeoutHandler = TimeoutHandler.getInstance();
-						const macroImpact = await timeoutHandler.withTimeout(
-							this.macroeconomicService.analyzeStockMacroImpact(
+					// VWAP
+					(async () => {
+						progressTracker?.startStage("vwap", `Calculating VWAP for ${symbol}...`);
+						if (!this.vwapService) {
+							progressTracker?.completeStage("vwap", "VWAP service unavailable");
+							return undefined;
+						}
+						try {
+							console.log(`📊 Pre-fetching VWAP analysis for ${symbol}...`);
+							const vwap = await this.vwapService.getVWAPAnalysis(symbol);
+							console.log(`📊 VWAP pre-fetched for ${symbol}: ${vwap ? "success" : "no data"}`);
+							progressTracker?.completeStage("vwap");
+							return vwap;
+						} catch (error) {
+							console.warn(`Failed to fetch VWAP for ${symbol}:`, error);
+							progressTracker?.completeStage("vwap", "VWAP analysis skipped");
+							return undefined;
+						}
+					})(),
+
+					// Macroeconomic
+					(async () => {
+						progressTracker?.startStage("macro", `Evaluating macroeconomic factors for ${symbol}...`);
+						if (!this.macroeconomicService || !marketData.sector) {
+							progressTracker?.completeStage("macro", "Macroeconomic service unavailable");
+							return undefined;
+						}
+						try {
+							console.log(`🌍 Pre-fetching macroeconomic context for ${symbol} (${marketData.sector})...`);
+							const timeoutHandler = TimeoutHandler.getInstance();
+							const macro = await timeoutHandler.withTimeout(
+								this.macroeconomicService.analyzeStockMacroImpact(
+									symbol,
+									marketData.sector,
+									marketData.price
+								),
+								10000 // 10s timeout for government APIs
+							);
+							console.log(`🌍 Macro context pre-fetched for ${symbol}: ${macro ? "success" : "no data"}`);
+							progressTracker?.completeStage("macro");
+							return macro;
+						} catch (error) {
+							console.warn(`Failed to fetch macro context for ${symbol}:`, error);
+							progressTracker?.completeStage("macro", "Macroeconomic analysis skipped");
+							return undefined;
+						}
+					})(),
+
+					// ESG
+					(async () => {
+						progressTracker?.startStage("esg", `Assessing ESG metrics for ${symbol}...`);
+						try {
+							console.log(`🌱 Pre-fetching ESG data for ${symbol} (${marketData.sector})...`);
+							const timeoutHandler = TimeoutHandler.getInstance();
+							const { ESGDataService } = await import("../financial-data/ESGDataService");
+							const esgService = new ESGDataService();
+							const esgImpact = await timeoutHandler.withTimeout(
+								esgService.getESGImpactForStock(
+									symbol,
+									marketData.sector || "unknown",
+									0.5
+								),
+								8000 // 8s timeout for ESG provider APIs
+							);
+							const score = esgImpact ? esgImpact.esgScore / 100 : undefined; // Convert to 0-1 scale
+							console.log(`🌱 ESG pre-fetched for ${symbol}: ${score ? score.toFixed(3) : "no data"}`);
+							progressTracker?.completeStage("esg");
+							return score;
+						} catch (error) {
+							console.warn(`Failed to fetch ESG for ${symbol}:`, error);
+							progressTracker?.completeStage("esg", "ESG data unavailable");
+							return undefined;
+						}
+					})(),
+
+					// Short Interest
+					(async () => {
+						progressTracker?.startStage("short_interest", `Checking short interest for ${symbol}...`);
+						try {
+							console.log(`📊 Pre-fetching short interest data for ${symbol} (${marketData.sector})...`);
+							const { ShortInterestService } = await import("../financial-data/ShortInterestService");
+							const shortInterestService = new ShortInterestService();
+							const data = await shortInterestService.getShortInterestImpactForStock(
 								symbol,
-								marketData.sector,
-								marketData.price
-							),
-							10000 // 10s timeout for government APIs
-						);
-						macroeconomicContext = macroImpact;
-						console.log(
-							`🌍 Macro context pre-fetched for ${symbol}: ${macroImpact ? "success" : "no data"}`
-						);
-					} catch (macroError) {
-						console.warn(`Failed to fetch macro context for ${symbol}:`, macroError);
-						macroeconomicContext = undefined;
-					}
-				}
+								marketData.sector || "unknown",
+								0.5
+							);
+							console.log(`📊 Short interest pre-fetched for ${symbol}: ${data ? `score ${data.score?.toFixed(3)}, impact ${data.impact}` : "no data"}`);
+							progressTracker?.completeStage("short_interest");
+							return data;
+						} catch (error) {
+							console.warn(`Failed to fetch short interest for ${symbol}:`, error);
+							progressTracker?.completeStage("short_interest", "Short interest unavailable");
+							return undefined;
+						}
+					})(),
 
-				// 🆕 PRE-FETCH ESG DATA for composite algorithm (with 8s timeout)
-				let esgScore: number | undefined;
-				try {
-					console.log(`🌱 Pre-fetching ESG data for ${symbol} (${marketData.sector})...`);
-					const timeoutHandler = TimeoutHandler.getInstance();
-					const { ESGDataService } = await import("../financial-data/ESGDataService");
-					const esgService = new ESGDataService();
-					const esgImpact = await timeoutHandler.withTimeout(
-						esgService.getESGImpactForStock(
-							symbol,
-							marketData.sector || "unknown",
-							0.5
-						),
-						8000 // 8s timeout for ESG provider APIs
-					);
-					esgScore = esgImpact ? esgImpact.esgScore / 100 : undefined; // Convert to 0-1 scale
-					console.log(
-						`🌱 ESG pre-fetched for ${symbol}: ${esgScore ? esgScore.toFixed(3) : "no data"}`
-					);
-				} catch (esgError) {
-					console.warn(`Failed to fetch ESG for ${symbol}:`, esgError);
-					esgScore = undefined; // Will use fallback in FactorLibrary
-				}
+					// Extended Market
+					(async () => {
+						progressTracker?.startStage("extended_hours", `Getting extended hours data for ${symbol}...`);
+						try {
+							console.log(`🕒 Pre-fetching extended market data for ${symbol}...`);
+							const { ExtendedMarketDataService } = await import("../financial-data/ExtendedMarketDataService");
+							const { FinancialModelingPrepAPI } = await import("../financial-data/FinancialModelingPrepAPI");
+							const fmpAPI = new FinancialModelingPrepAPI();
+							const redisCache = new RedisCache();
+							const service = new ExtendedMarketDataService(fmpAPI, redisCache);
+							const data = await service.getExtendedMarketData(symbol);
+							console.log(`🕒 Extended market data pre-fetched for ${symbol}: ${data ? `${data.extendedHours?.marketStatus || "N/A"}` : "no data"}`);
+							progressTracker?.completeStage("extended_hours");
+							return data;
+						} catch (error) {
+							console.warn(`Failed to fetch extended market data for ${symbol}:`, error);
+							progressTracker?.completeStage("extended_hours", "Extended hours unavailable");
+							return undefined;
+						}
+					})(),
 
-				// 🆕 PRE-FETCH INSTITUTIONAL DATA for composite algorithm (with 10s timeout)
+					// Options (slowest - ~38 seconds)
+					(async () => {
+						progressTracker?.startStage("options", `Analyzing options data for ${symbol} (this may take up to 40s)...`);
+						try {
+							console.log(`📊 Pre-fetching options data for ${symbol}...`);
+							progressTracker?.updateStage("options", `Fetching options chain for ${symbol}...`);
+							const { OptionsDataService } = await import("../financial-data/OptionsDataService");
+							const optionsService = new OptionsDataService();
+
+							progressTracker?.updateStage("options", `Computing options metrics for ${symbol}...`);
+							const [optionsAnalysis, optionsChain] = await Promise.allSettled([
+								optionsService.getOptionsAnalysis(symbol),
+								optionsService.getOptionsChain(symbol),
+							]);
+
+							const analysis = optionsAnalysis.status === "fulfilled" ? optionsAnalysis.value : null;
+							const chain = optionsChain.status === "fulfilled" ? optionsChain.value : null;
+
+							if (analysis && analysis.currentRatio) {
+								// Calculate enhanced options metrics from chain data
+								let impliedVolatilityPercentile: number | undefined;
+								let volumeDivergence: number | undefined;
+								let maxPainCalculation: number | undefined;
+								let averageGreeks: { delta: number; gamma: number; theta: number; vega: number } | undefined;
+
+								if (chain) {
+									// Calculate IV percentile from historical data (approximate)
+									const currentIV = chain.calls
+										.concat(chain.puts)
+										.filter(c => c.impliedVolatility && c.impliedVolatility > 0)
+										.reduce((sum, c, _, arr) => sum + c.impliedVolatility! / arr.length, 0);
+
+									// Estimate IV percentile (simplified calculation)
+									impliedVolatilityPercentile = Math.min(95, Math.max(5, currentIV * 200)); // Rough estimate
+
+									// Calculate volume divergence (options volume vs stock volume if available)
+									const totalOptionsVolume = chain.calls
+										.concat(chain.puts)
+										.reduce((sum, c) => sum + (c.volume || 0), 0);
+									if (marketData.volume > 0) {
+										volumeDivergence = totalOptionsVolume / marketData.volume;
+									}
+
+									// Extract max pain from chain summary if available
+									if ((chain as any).summary?.maxPain) {
+										maxPainCalculation = (chain as any).summary.maxPain;
+									}
+
+									// Calculate average Greeks from active contracts
+									const activeContracts = chain.calls
+										.concat(chain.puts)
+										.filter(c => (c.volume || 0) > 0 && c.delta !== undefined);
+
+									if (activeContracts.length > 0) {
+										averageGreeks = {
+											delta: activeContracts.reduce((sum, c) => sum + (c.delta || 0), 0) / activeContracts.length,
+											gamma: activeContracts.reduce((sum, c) => sum + (c.gamma || 0), 0) / activeContracts.length,
+											theta: activeContracts.reduce((sum, c) => sum + (c.theta || 0), 0) / activeContracts.length,
+											vega: activeContracts.reduce((sum, c) => sum + (c.vega || 0), 0) / activeContracts.length,
+										};
+									}
+								}
+
+								// Map OptionsAnalysis to enhanced OptionsDataPoint structure
+								const optionsData: OptionsDataPoint = {
+									putCallRatio: analysis.currentRatio.volumeRatio,
+									impliedVolatilityPercentile,
+									optionsFlow: {
+										sentiment: analysis.sentiment === "greed" ? 0.7 : analysis.sentiment === "fear" ? -0.7 : 0,
+										volume: analysis.currentRatio.totalCallVolume + analysis.currentRatio.totalPutVolume,
+										openInterest: analysis.currentRatio.totalCallOpenInterest + analysis.currentRatio.totalPutOpenInterest,
+									},
+									greeks: averageGreeks,
+									volumeDivergence,
+									maxPain: maxPainCalculation,
+								};
+
+								console.log(`📊 Enhanced options data pre-fetched for ${symbol}:`);
+								console.log(`   P/C Ratio: ${optionsData.putCallRatio?.toFixed(2) || "N/A"}`);
+								console.log(`   IV Percentile: ${optionsData.impliedVolatilityPercentile?.toFixed(1) || "N/A"}%`);
+								console.log(`   Volume Divergence: ${optionsData.volumeDivergence?.toFixed(2) || "N/A"}`);
+								console.log(`   Max Pain: $${optionsData.maxPain?.toFixed(2) || "N/A"}`);
+								console.log(`   Sentiment: ${analysis.sentiment}`);
+								progressTracker?.completeStage("options");
+								return optionsData;
+							} else {
+								console.log(`📊 No options data available for ${symbol}`);
+								progressTracker?.completeStage("options", "Options data unavailable");
+								return undefined;
+							}
+						} catch (error) {
+							console.warn(`Failed to fetch options data for ${symbol}:`, error);
+							progressTracker?.completeStage("options", "Options analysis failed");
+							return undefined;
+						}
+					})(),
+				]);
+
+				progressTracker?.disableParallelMode(); // Disable parallel mode after all services complete
+				const parallelDuration = Date.now() - parallelStartTime;
+				console.log(`🚀 Parallel data fetch completed in ${parallelDuration}ms (estimated sequential: ~${parallelDuration * 2}ms)`);
+
+				// Extract results from Promise.allSettled
+				const sentimentScore = sentimentResult.status === "fulfilled" ? sentimentResult.value : undefined;
+				const vwapAnalysis = vwapResult.status === "fulfilled" ? vwapResult.value : undefined;
+				const macroeconomicContext = macroResult.status === "fulfilled" ? macroResult.value : undefined;
+				const esgScore = esgResult.status === "fulfilled" ? esgResult.value : undefined;
+				const shortInterestData = shortInterestResult.status === "fulfilled" ? shortInterestResult.value : undefined;
+				const extendedMarketData = extendedMarketResult.status === "fulfilled" ? extendedMarketResult.value : undefined;
+				const optionsData = optionsResult.status === "fulfilled" ? optionsResult.value : undefined;
+
+				// Institutional data (not in parallel for now - rarely used)
 				let institutionalData: any | undefined;
 				if (this.institutionalService) {
 					try {
@@ -695,196 +892,9 @@ export class AlgorithmEngine {
 							`🏢 Institutional data pre-fetched for ${symbol}: ${institutionalIntelligence ? `sentiment ${institutionalIntelligence.weightedSentiment}, score ${institutionalIntelligence.compositeScore.toFixed(2)}` : "no data"}`
 						);
 					} catch (institutionalError) {
-						console.warn(
-							`Failed to fetch institutional data for ${symbol}:`,
-							institutionalError
-						);
-						institutionalData = undefined; // Will use fallback in FactorLibrary
+						console.warn(`Failed to fetch institutional data for ${symbol}:`, institutionalError);
+						institutionalData = undefined;
 					}
-				}
-
-				// 🆕 PRE-FETCH SHORT INTEREST DATA for composite algorithm
-				let shortInterestData: any | undefined;
-				try {
-					console.log(
-						`📊 Pre-fetching short interest data for ${symbol} (${marketData.sector})...`
-					);
-					const { ShortInterestService } = await import(
-						"../financial-data/ShortInterestService"
-					);
-					const shortInterestService = new ShortInterestService();
-					const shortInterestImpact =
-						await shortInterestService.getShortInterestImpactForStock(
-							symbol,
-							marketData.sector || "unknown",
-							0.5
-						);
-					shortInterestData = shortInterestImpact;
-					console.log(
-						`📊 Short interest pre-fetched for ${symbol}: ${shortInterestImpact ? `score ${shortInterestImpact.score?.toFixed(3)}, impact ${shortInterestImpact.impact}` : "no data"}`
-					);
-				} catch (shortInterestError) {
-					console.warn(
-						`Failed to fetch short interest for ${symbol}:`,
-						shortInterestError
-					);
-					shortInterestData = undefined; // Will use fallback in FactorLibrary
-				}
-
-				// 🆕 PRE-FETCH EXTENDED MARKET DATA for composite algorithm
-				let extendedMarketData: any | undefined;
-				try {
-					console.log(`🕒 Pre-fetching extended market data for ${symbol}...`);
-					const { ExtendedMarketDataService } = await import(
-						"../financial-data/ExtendedMarketDataService"
-					);
-					const { FinancialModelingPrepAPI } = await import(
-						"../financial-data/FinancialModelingPrepAPI"
-					);
-					const fmpAPI = new FinancialModelingPrepAPI();
-					const redisCache = new RedisCache();
-					const extendedMarketService = new ExtendedMarketDataService(fmpAPI, redisCache);
-					const extendedData = await extendedMarketService.getExtendedMarketData(symbol);
-					extendedMarketData = extendedData;
-					console.log(
-						`🕒 Extended market data pre-fetched for ${symbol}: ${extendedData ? `extended hours data ${extendedData.extendedHours?.marketStatus || "N/A"}, liquidity ${extendedData.liquidityMetrics?.liquidityScore || "N/A"}` : "no data"}`
-					);
-				} catch (extendedMarketError) {
-					console.warn(
-						`Failed to fetch extended market data for ${symbol}:`,
-						extendedMarketError
-					);
-					extendedMarketData = undefined; // Will use fallback in FactorLibrary
-				}
-
-				// 🆕 PRE-FETCH OPTIONS DATA for composite algorithm
-				let optionsData: OptionsDataPoint | undefined;
-				try {
-					console.log(`📊 Pre-fetching options data for ${symbol}...`);
-					const { OptionsDataService } = await import(
-						"../financial-data/OptionsDataService"
-					);
-					const optionsService = new OptionsDataService();
-
-					// Fetch both analysis and chain data for comprehensive metrics
-					const [optionsAnalysis, optionsChain] = await Promise.allSettled([
-						optionsService.getOptionsAnalysis(symbol),
-						optionsService.getOptionsChain(symbol),
-					]);
-
-					const analysis =
-						optionsAnalysis.status === "fulfilled" ? optionsAnalysis.value : null;
-					const chain = optionsChain.status === "fulfilled" ? optionsChain.value : null;
-
-					if (analysis && analysis.currentRatio) {
-						// Calculate enhanced options metrics from chain data
-						let impliedVolatilityPercentile: number | undefined;
-						let volumeDivergence: number | undefined;
-						let maxPainCalculation: number | undefined;
-						let averageGreeks:
-							| { delta: number; gamma: number; theta: number; vega: number }
-							| undefined;
-
-						if (chain) {
-							// Calculate IV percentile from historical data (approximate)
-							const currentIV = chain.calls
-								.concat(chain.puts)
-								.filter(c => c.impliedVolatility && c.impliedVolatility > 0)
-								.reduce(
-									(sum, c, _, arr) => sum + c.impliedVolatility! / arr.length,
-									0
-								);
-
-							// Estimate IV percentile (simplified calculation)
-							impliedVolatilityPercentile = Math.min(
-								95,
-								Math.max(5, currentIV * 200)
-							); // Rough estimate
-
-							// Calculate volume divergence (options volume vs stock volume if available)
-							const totalOptionsVolume = chain.calls
-								.concat(chain.puts)
-								.reduce((sum, c) => sum + (c.volume || 0), 0);
-							if (marketData.volume > 0) {
-								volumeDivergence = totalOptionsVolume / marketData.volume;
-							}
-
-							// Extract max pain from chain summary if available
-							if ((chain as any).summary?.maxPain) {
-								maxPainCalculation = (chain as any).summary.maxPain;
-							}
-
-							// Calculate average Greeks from active contracts
-							const activeContracts = chain.calls
-								.concat(chain.puts)
-								.filter(c => (c.volume || 0) > 0 && c.delta !== undefined);
-
-							if (activeContracts.length > 0) {
-								averageGreeks = {
-									delta:
-										activeContracts.reduce(
-											(sum, c) => sum + (c.delta || 0),
-											0
-										) / activeContracts.length,
-									gamma:
-										activeContracts.reduce(
-											(sum, c) => sum + (c.gamma || 0),
-											0
-										) / activeContracts.length,
-									theta:
-										activeContracts.reduce(
-											(sum, c) => sum + (c.theta || 0),
-											0
-										) / activeContracts.length,
-									vega:
-										activeContracts.reduce((sum, c) => sum + (c.vega || 0), 0) /
-										activeContracts.length,
-								};
-							}
-						}
-
-						// Map OptionsAnalysis to enhanced OptionsDataPoint structure
-						optionsData = {
-							putCallRatio: analysis.currentRatio.volumeRatio,
-							impliedVolatilityPercentile,
-							optionsFlow: {
-								sentiment:
-									analysis.sentiment === "greed"
-										? 0.7
-										: analysis.sentiment === "fear"
-											? -0.7
-											: 0,
-								volume:
-									analysis.currentRatio.totalCallVolume +
-									analysis.currentRatio.totalPutVolume,
-								openInterest:
-									analysis.currentRatio.totalCallOpenInterest +
-									analysis.currentRatio.totalPutOpenInterest,
-							},
-							greeks: averageGreeks,
-							volumeDivergence,
-							maxPain: maxPainCalculation,
-						};
-
-						console.log(`📊 Enhanced options data pre-fetched for ${symbol}:`);
-						console.log(
-							`   P/C Ratio: ${optionsData.putCallRatio?.toFixed(2) || "N/A"}`
-						);
-						console.log(
-							`   IV Percentile: ${optionsData.impliedVolatilityPercentile?.toFixed(1) || "N/A"}%`
-						);
-						console.log(
-							`   Volume Divergence: ${optionsData.volumeDivergence?.toFixed(2) || "N/A"}`
-						);
-						console.log(`   Max Pain: $${optionsData.maxPain?.toFixed(2) || "N/A"}`);
-						console.log(`   Sentiment: ${analysis.sentiment}`);
-					} else {
-						optionsData = undefined;
-						console.log(`📊 No options data available for ${symbol}`);
-					}
-				} catch (optionsError) {
-					console.warn(`Failed to fetch options data for ${symbol}:`, optionsError);
-					optionsData = undefined; // Will use fallback in FactorLibrary
 				}
 
 				// Analyst data already fetched earlier for sentiment calculation (line 554-576)

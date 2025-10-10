@@ -1,0 +1,362 @@
+[
+  {
+    "category": "Directory & Search",
+    "endpoint": "/api/v3/stock/list",
+    "description": "GET list of stock symbols",
+    "status": 200,
+    "ok": true,
+    "bytes": 16318273,
+    "error": ""
+  },
+  {
+    "category": "Directory & Search",
+    "endpoint": "/api/v3/financial-statement-symbol-lists",
+    "description": "Symbols with fundamentals coverage",
+    "status": 200,
+    "ok": true,
+    "bytes": 841817,
+    "error": ""
+  },
+  {
+    "category": "Directory & Search",
+    "endpoint": "/api/v3/symbol/available-indexes",
+    "description": "Available stock indices",
+    "status": 200,
+    "ok": true,
+    "bytes": 32747,
+    "error": ""
+  },
+  {
+    "category": "Company / Profile",
+    "endpoint": "/api/v3/profile/AAPL",
+    "description": "Company profile (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 2702,
+    "error": ""
+  },
+  {
+    "category": "Company / Profile",
+    "endpoint": "/api/v3/quote-short/AAPL",
+    "description": "Quote (short) (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 79,
+    "error": ""
+  },
+  {
+    "category": "Company / Profile",
+    "endpoint": "/api/v3/quote/AAPL",
+    "description": "Quote (full) (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 612,
+    "error": ""
+  },
+  {
+    "category": "Company / Profile",
+    "endpoint": "/api/v3/stock/peers?symbol=AAPL",
+    "description": "Peers (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "category": "Company / Profile",
+    "endpoint": "/api/v3/stock/price-change/AAPL",
+    "description": "Price change metrics (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/income-statement/AAPL?period=annual&limit=5",
+    "description": "Income statement (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 7436,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/balance-sheet-statement/AAPL?period=annual&limit=5",
+    "description": "Balance sheet (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 10532,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/cash-flow-statement/AAPL?period=annual&limit=5",
+    "description": "Cash flow (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 8437,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/key-metrics/AAPL?period=annual&limit=5",
+    "description": "Key metrics (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 12709,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/ratios/AAPL?period=annual&limit=5",
+    "description": "Financial ratios (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 13114,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/enterprise-values/AAPL?period=annual&limit=5",
+    "description": "Enterprise values (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 1397,
+    "error": ""
+  },
+  {
+    "category": "Fundamentals",
+    "endpoint": "/api/v3/financial-growth/AAPL?period=annual&limit=5",
+    "description": "Financial growth (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 9416,
+    "error": ""
+  },
+  {
+    "category": "Historical Prices & Charts",
+    "endpoint": "/api/v3/historical-price-full/AAPL?serietype=line&timeseries=100",
+    "description": "EOD historical price (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 6330,
+    "error": ""
+  },
+  {
+    "category": "Historical Prices & Charts",
+    "endpoint": "/api/v3/historical-price-full/stock_dividend/AAPL?timeseries=50",
+    "description": "Dividends (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 20563,
+    "error": ""
+  },
+  {
+    "category": "Historical Prices & Charts",
+    "endpoint": "/api/v3/historical-price-full/stock_split/AAPL?timeseries=50",
+    "description": "Splits (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 630,
+    "error": ""
+  },
+  {
+    "category": "Historical Prices & Charts",
+    "endpoint": "/api/v3/historical-chart/1min/AAPL?timeseries=60",
+    "description": "Intraday 1min (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 154175,
+    "error": ""
+  },
+  {
+    "category": "Historical Prices & Charts",
+    "endpoint": "/api/v3/historical-chart/5min/AAPL?timeseries=60",
+    "description": "Intraday 5min (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 109994,
+    "error": ""
+  },
+  {
+    "category": "Calendars & Events",
+    "endpoint": "/api/v3/earning_calendar?from=2024-01-01&to=2024-12-31&symbol=AAPL",
+    "description": "Earnings calendar (AAPL, 2024)",
+    "status": 200,
+    "ok": true,
+    "bytes": 10081210,
+    "error": ""
+  },
+  {
+    "category": "Calendars & Events",
+    "endpoint": "/api/v3/ipo_calendar?from=2024-01-01&to=2024-12-31",
+    "description": "IPO calendar 2024",
+    "status": 200,
+    "ok": true,
+    "bytes": 81050,
+    "error": ""
+  },
+  {
+    "category": "Calendars & Events",
+    "endpoint": "/api/v3/economic_calendar?from=2024-01-01&to=2024-01-10",
+    "description": "Economic calendar (sample range)",
+    "status": 200,
+    "ok": true,
+    "bytes": 196178,
+    "error": ""
+  },
+  {
+    "category": "News & Transcripts",
+    "endpoint": "/api/v4/general_news?page=0",
+    "description": "General market news (page 0)",
+    "status": 200,
+    "ok": true,
+    "bytes": 11782,
+    "error": ""
+  },
+  {
+    "category": "News & Transcripts",
+    "endpoint": "/api/v4/earning_call_transcript?symbol=AAPL&year=2024&quarter=1",
+    "description": "Earnings call transcript (AAPL 2024 Q1)",
+    "status": 200,
+    "ok": true,
+    "bytes": 4162,
+    "error": ""
+  },
+  {
+    "category": "Ownership & Filings",
+    "endpoint": "/api/v4/insider-trading?symbol=AAPL",
+    "description": "Insider trading (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 58688,
+    "error": ""
+  },
+  {
+    "category": "Ownership & Filings",
+    "endpoint": "/api/v3/sec_filings/AAPL?limit=30",
+    "description": "SEC filings (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 11571,
+    "error": ""
+  },
+  {
+    "category": "ETFs / Index / Funds",
+    "endpoint": "/api/v3/etf/list",
+    "description": "ETF list",
+    "status": 200,
+    "ok": true,
+    "bytes": 2710310,
+    "error": ""
+  },
+  {
+    "category": "ETFs / Index / Funds",
+    "endpoint": "/api/v3/etf-holder/SPY",
+    "description": "ETF holders (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 116948,
+    "error": ""
+  },
+  {
+    "category": "ETFs / Index / Funds",
+    "endpoint": "/api/v3/etf-sector-weightings/SPY",
+    "description": "ETF sector weights (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 798,
+    "error": ""
+  },
+  {
+    "category": "ETFs / Index / Funds",
+    "endpoint": "/api/v3/etf-country-weightings/SPY",
+    "description": "ETF country weights (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 554,
+    "error": ""
+  },
+  {
+    "category": "ETFs / Index / Funds",
+    "endpoint": "/api/v3/historical-price-full/SPY?serietype=line&timeseries=50",
+    "description": "EOD historical price (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 3187,
+    "error": ""
+  },
+  {
+    "category": "Forex / Crypto / Commodities",
+    "endpoint": "/api/v3/forex",
+    "description": "Forex pairs list",
+    "status": 200,
+    "ok": true,
+    "bytes": 333949,
+    "error": ""
+  },
+  {
+    "category": "Forex / Crypto / Commodities",
+    "endpoint": "/api/v3/quote/EURUSD",
+    "description": "Forex quote (EURUSD)",
+    "status": 200,
+    "ok": true,
+    "bytes": 567,
+    "error": ""
+  },
+  {
+    "category": "Forex / Crypto / Commodities",
+    "endpoint": "/api/v3/cryptocurrencies",
+    "description": "Cryptocurrencies list",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "category": "Forex / Crypto / Commodities",
+    "endpoint": "/api/v3/quote/BTCUSD",
+    "description": "Crypto quote (BTCUSD)",
+    "status": 200,
+    "ok": true,
+    "bytes": 617,
+    "error": ""
+  },
+  {
+    "category": "Forex / Crypto / Commodities",
+    "endpoint": "/api/v3/quotes/commodity",
+    "description": "Commodity quotes",
+    "status": 200,
+    "ok": true,
+    "bytes": 22302,
+    "error": ""
+  },
+  {
+    "category": "Screener & Bulk-ish",
+    "endpoint": "/api/v3/stock-screener?marketCapMoreThan=2000000000&betaLessThan=1.5&limit=50",
+    "description": "Stock screener (filters)",
+    "status": 200,
+    "ok": true,
+    "bytes": 22007,
+    "error": ""
+  },
+  {
+    "category": "Screener & Bulk-ish",
+    "endpoint": "/api/v3/rating/AAPL",
+    "description": "Company rating (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 629,
+    "error": ""
+  },
+  {
+    "category": "Screener & Bulk-ish",
+    "endpoint": "/api/v3/discounted-cash-flow/AAPL",
+    "description": "DCF valuation (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 116,
+    "error": ""
+  }
+]

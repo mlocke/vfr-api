@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
-import MLMonitoringPanel from "../components/admin/MLMonitoringPanel";
+// import MLMonitoringPanel from "../components/admin/MLMonitoringPanel"; // Hidden per admin request
 import MLFeatureTogglePanel from "../components/admin/MLFeatureTogglePanel";
 
 // Data source configuration interface
@@ -1644,8 +1644,8 @@ export default function AdminDashboard() {
 						{/* ML Feature Toggle Section */}
 						<MLFeatureTogglePanel />
 
-						{/* ML Monitoring Section */}
-						<MLMonitoringPanel />
+						{/* ML Monitoring Section - Hidden per admin request */}
+						{/* <MLMonitoringPanel /> */}
 
 						{/* Analysis Engine Test Section */}
 						<AnalysisEngineTest />

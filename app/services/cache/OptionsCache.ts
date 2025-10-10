@@ -39,12 +39,12 @@ export class OptionsCache {
 	// Dynamic TTL configuration based on market conditions
 	private static readonly TTL_CONFIG = {
 		MARKET_HOURS: {
-			CHAIN_DATA: 180, // 3 minutes - options prices change rapidly
-			ANALYSIS: 120, // 2 minutes - calculated metrics
-			PUT_CALL_RATIO: 60, // 1 minute - high-frequency sentiment
-			UNUSUAL_ACTIVITY: 90, // 1.5 minutes - flow detection
-			IV_SURFACE: 300, // 5 minutes - volatility surface stability
-			FLOW_SIGNALS: 60, // 1 minute - real-time signals
+			CHAIN_DATA: 600, // 10 minutes - balance freshness with API performance
+			ANALYSIS: 600, // 10 minutes - calculated metrics remain stable
+			PUT_CALL_RATIO: 300, // 5 minutes - sentiment changes gradually
+			UNUSUAL_ACTIVITY: 300, // 5 minutes - flow patterns stabilize
+			IV_SURFACE: 600, // 10 minutes - volatility surface stability
+			FLOW_SIGNALS: 300, // 5 minutes - real-time signals with cache
 		},
 		AFTER_HOURS: {
 			CHAIN_DATA: 900, // 15 minutes

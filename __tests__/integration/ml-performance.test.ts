@@ -12,7 +12,7 @@
  * - Cache hit rate: >85% for repeated predictions
  */
 
-const TEST_TIMEOUT = 60000; // 60 seconds for performance tests
+const ML_PERFORMANCE_TEST_TIMEOUT = 60000; // 60 seconds for performance tests
 
 describe("Phase 4.2.3: ML Performance Testing", () => {
 	const apiUrl = "http://localhost:3000/api/stocks/analyze";
@@ -48,7 +48,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ Single Stock Performance: ${totalTime}ms (target: <3000ms)`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 
 		test(
@@ -94,7 +94,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ ML Overhead: ${mlOverhead}ms (VFR: ${vfrTime}ms, ML-Enhanced: ${mlTime}ms, target: <100ms)`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 
@@ -142,7 +142,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ ML Latency Stats: Avg=${avgLatency.toFixed(2)}ms, Min=${minLatency}ms, Max=${maxLatency}ms (${samples} samples)`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 
@@ -215,7 +215,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 				// ML predictions should still be under 100ms average per symbol
 				expect(avgTimePerSymbol).toBeLessThan(100);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 
 		test(
@@ -262,7 +262,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ Concurrent Load: 3 requests with ${symbols.length} symbols each, ${totalTime}ms total, avg ML latency=${avgLatencies.toFixed(2)}ms`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 
@@ -322,7 +322,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ Cache Performance: Avg cached latency=${avgCachedLatency.toFixed(2)}ms over ${iterations} requests`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 
 		test(
@@ -370,7 +370,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ Cache Warming: First=${warmingMLLatency}ms, Cached=${cachedMLLatency}ms, Improvement=${improvement.toFixed(1)}%`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 
@@ -423,7 +423,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 				// Here we just ensure no massive memory leaks
 				expect(Math.abs(heapIncrease)).toBeLessThan(500); // No more than 500MB increase
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 
@@ -483,7 +483,7 @@ describe("Phase 4.2.3: ML Performance Testing", () => {
 					`✅ Performance Regression: Baseline=${avgBaseline.toFixed(2)}ms, ML-Enhanced=${avgML.toFixed(2)}ms, Overhead=${overhead.toFixed(2)}ms`
 				);
 			},
-			TEST_TIMEOUT
+			ML_PERFORMANCE_TEST_TIMEOUT
 		);
 	});
 });

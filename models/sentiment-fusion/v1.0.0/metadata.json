@@ -1,0 +1,93 @@
+{
+  "model_version": "v1.0.0",
+  "model_type": "sentiment-fusion",
+  "algorithm": "LightGBM",
+  "objective": "multiclass",
+  "num_classes": 3,
+  "classes": [
+    "DOWN",
+    "NEUTRAL",
+    "UP"
+  ],
+  "training_date": "2025-10-09T21:02:04.249166",
+  "training_examples": 34846,
+  "validation_examples": 7467,
+  "num_features": 45,
+  "feature_categories": {
+    "sentiment": 4,
+    "price_technical": 41
+  },
+  "performance": {
+    "validation_accuracy": 0.50287933574394,
+    "best_iteration": 0
+  },
+  "label_distribution": {
+    "train": {
+      "DOWN": 9068,
+      "NEUTRAL": 13428,
+      "UP": 12350
+    }
+  },
+  "top_features": [
+    {
+      "feature": "volatility_20d",
+      "importance": 2578
+    },
+    {
+      "feature": "atr_14",
+      "importance": 2368
+    },
+    {
+      "feature": "sma_50_distance",
+      "importance": 2227
+    },
+    {
+      "feature": "sma_50",
+      "importance": 2133
+    },
+    {
+      "feature": "price_momentum_20d",
+      "importance": 2127
+    },
+    {
+      "feature": "volume_trend",
+      "importance": 2080
+    },
+    {
+      "feature": "volume_ratio_5d",
+      "importance": 1997
+    },
+    {
+      "feature": "volume_acceleration",
+      "importance": 1961
+    },
+    {
+      "feature": "intraday_range",
+      "importance": 1959
+    },
+    {
+      "feature": "ema_20",
+      "importance": 1954
+    },
+    {
+      "feature": "rsi_14",
+      "importance": 1918
+    },
+    {
+      "feature": "macd_signal",
+      "importance": 1912
+    },
+    {
+      "feature": "gap_size",
+      "importance": 1813
+    },
+    {
+      "feature": "sentiment_neutral",
+      "importance": 1777
+    },
+    {
+      "feature": "relative_volume",
+      "importance": 1754
+    }
+  ]
+}

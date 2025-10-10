@@ -1,0 +1,55 @@
+{
+  "models": [
+    {
+      "model_version": "v1.1.0",
+      "model_type": "sentiment-fusion",
+      "algorithm": "LightGBM",
+      "model_path": "models/sentiment-fusion/v1.1.0",
+      "registered_at": "2025-10-09T23:00:44.795707",
+      "training_info": {
+        "training_date": "2025-10-09T21:09:18.536489",
+        "training_examples": 34846,
+        "validation_examples": 7467,
+        "num_features": 45,
+        "feature_categories": {
+          "sentiment": 4,
+          "price_technical": 41
+        }
+      },
+      "performance": {
+        "validation_accuracy": 0.5379670550421857,
+        "test_accuracy": 0.5212267309495112,
+        "test_examples": 7467,
+        "baseline_random": 0.3333333333333333,
+        "baseline_majority": 0.38542922190973616,
+        "improvement_over_random": 0.1878933976161779,
+        "improvement_over_v1_0": 0.019820543725726614,
+        "macro_roc_auc": 0.6945783957092604,
+        "per_class_metrics": {
+          "DOWN": {
+            "precision": 0.46243093922651934,
+            "recall": 0.4307771487390633,
+            "f1_score": 0.4460431654676259,
+            "support": 1943
+          },
+          "NEUTRAL": {
+            "precision": 0.5365932642487047,
+            "recall": 0.5757470465601112,
+            "f1_score": 0.5554810593362387,
+            "support": 2878
+          },
+          "UP": {
+            "precision": 0.5441806150253017,
+            "recall": 0.528344671201814,
+            "f1_score": 0.5361457334611697,
+            "support": 2646
+          }
+        }
+      },
+      "deployment_status": "registered",
+      "is_active": false
+    }
+  ],
+  "active_model": "v1.1.0",
+  "last_updated": "2025-10-09T23:00:44.795763"
+}

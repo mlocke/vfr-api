@@ -23,7 +23,7 @@
 import { StockSelectionService } from "./StockSelectionService";
 import { SelectionRequest, SelectionResponse, EnhancedStockResult } from "./types";
 import { EnhancedScoringEngine, EnhancedScoreResult } from "./EnhancedScoringEngine";
-import { RealTimePredictionEngine, PredictionResult } from "../ml/prediction/RealTimePredictionEngine";
+import { RealTimePredictionEngine, PredictionResult, EnsemblePredictionResult } from "../ml/prediction/RealTimePredictionEngine";
 import { MLPredictionHorizon, MLFeatureVector } from "../ml/types/MLTypes";
 import { Logger } from "../error-handling/Logger";
 import { ErrorHandler } from "../error-handling/ErrorHandler";
@@ -271,13 +271,16 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 	}
 
 	/**
-	 * Fetch ML predictions with timeout protection
+	 * Fetch ML ensemble predictions with timeout protection
+	 *
+	 * Runs all 3 ML models in parallel (early-signal, price-prediction, sentiment-fusion)
+	 * and returns consensus predictions with individual model votes.
 	 */
 	private async fetchMLPredictionsWithTimeout(
 		symbols: string[],
 		options: MLEnhancementOptions
-	): Promise<Map<string, PredictionResult>> {
-		const predictions = new Map<string, PredictionResult>();
+	): Promise<Map<string, EnsemblePredictionResult>> {
+		const predictions = new Map<string, EnsemblePredictionResult>();
 
 		try {
 			// Extract features for all symbols
@@ -313,8 +316,8 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 							qualityScore: 1.0,
 						};
 
-						// Make prediction with features
-						const result = await this.mlPredictionEngine.predict({
+						// Make ensemble prediction with all 3 models
+						const result = await this.mlPredictionEngine.predictEnsemble({
 							symbol,
 							horizon: options.ml_horizon,
 							confidenceThreshold: options.ml_confidence_threshold,
@@ -366,11 +369,13 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 	}
 
 	/**
-	 * Enhance VFR response with ML predictions
+	 * Enhance VFR response with ML ensemble predictions
+	 *
+	 * Integrates consensus predictions from all 3 models into the VFR analysis.
 	 */
 	private enhanceResponseWithML(
 		vfrResponse: SelectionResponse,
-		mlPredictions: Map<string, PredictionResult>,
+		mlPredictions: Map<string, EnsemblePredictionResult>,
 		options: MLEnhancementOptions
 	): SelectionResponse {
 		// Update scoring engine weights if custom weight provided
@@ -385,7 +390,8 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		if (vfrResponse.singleStock) {
 			vfrResponse.singleStock = this.enhanceSingleStockWithML(
 				vfrResponse.singleStock,
-				mlPredictions
+				mlPredictions,
+				options
 			);
 		}
 
@@ -393,7 +399,7 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		if (vfrResponse.multiStockAnalysis?.results) {
 			vfrResponse.multiStockAnalysis.results =
 				vfrResponse.multiStockAnalysis.results.map(result =>
-					this.enhanceSingleStockWithML(result, mlPredictions)
+					this.enhanceSingleStockWithML(result, mlPredictions, options)
 				);
 		}
 
@@ -401,14 +407,14 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		if (vfrResponse.sectorAnalysis?.topSelections) {
 			vfrResponse.sectorAnalysis.topSelections =
 				vfrResponse.sectorAnalysis.topSelections.map(result =>
-					this.enhanceSingleStockWithML(result, mlPredictions)
+					this.enhanceSingleStockWithML(result, mlPredictions, options)
 				);
 		}
 
 		// Enhance top selections
 		if (vfrResponse.topSelections) {
 			vfrResponse.topSelections = vfrResponse.topSelections.map(result =>
-				this.enhanceSingleStockWithML(result, mlPredictions)
+				this.enhanceSingleStockWithML(result, mlPredictions, options)
 			);
 		}
 
@@ -416,27 +422,45 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 	}
 
 	/**
-	 * Enhance single stock result with ML prediction
+	 * Enhance single stock result with ML ensemble prediction
+	 *
+	 * Integrates consensus from all 3 models (early-signal, price-prediction, sentiment-fusion)
+	 * and individual model votes into the stock result.
 	 */
 	private enhanceSingleStockWithML(
 		stock: EnhancedStockResult,
-		mlPredictions: Map<string, PredictionResult>
+		mlPredictions: Map<string, EnsemblePredictionResult>,
+		options: MLEnhancementOptions
 	): EnhancedStockResult {
-		const mlPrediction = mlPredictions.get(stock.symbol);
+		const mlEnsemble = mlPredictions.get(stock.symbol);
 
-		if (!mlPrediction) {
-			// No ML prediction available, return unchanged
+		if (!mlEnsemble) {
+			// No ML ensemble prediction available, return unchanged
 			return stock;
 		}
 
-		// Calculate enhanced score
+		// Convert ensemble consensus to PredictionResult format for scoring engine compatibility
+		const consensusPrediction: PredictionResult = {
+			symbol: mlEnsemble.symbol,
+			modelId: "ensemble",
+			modelType: "ensemble" as any, // Ensemble of all models
+			horizon: options.ml_horizon || MLPredictionHorizon.ONE_WEEK,
+			prediction: (mlEnsemble.consensus.score - 50) / 50, // Convert 0-100 to -1 to +1 range
+			confidence: mlEnsemble.consensus.confidence,
+			direction: mlEnsemble.consensus.signal === "BULLISH" ? "UP" : mlEnsemble.consensus.signal === "BEARISH" ? "DOWN" : "NEUTRAL",
+			latencyMs: mlEnsemble.latencyMs,
+			fromCache: false,
+			timestamp: mlEnsemble.timestamp,
+		};
+
+		// Calculate enhanced score using consensus prediction
 		const enhancedScore = this.enhancedScoringEngine.calculateEnhancedScore(
 			stock.score,
-			mlPrediction
+			consensusPrediction
 		);
 
-		// Log prediction to database for outcome tracking (async, don't wait)
-		this.logPredictionAsync(stock, mlPrediction, enhancedScore.finalScore);
+		// Log ensemble prediction to database for outcome tracking (async, don't wait)
+		this.logPredictionAsync(stock, mlEnsemble, enhancedScore.finalScore);
 
 		// Update stock score with ML-enhanced composite score
 		const enhancedStockScore: StockScore = {
@@ -451,12 +475,12 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			},
 		};
 
-		// Update reasoning with ML insights
+		// Update reasoning with ML ensemble insights
 		const enhancedReasoning = {
 			...stock.reasoning,
 			primaryFactors: [
 				...stock.reasoning.primaryFactors,
-				...this.generateMLInsights(mlPrediction, enhancedScore),
+				...this.generateMLEnsembleInsights(mlEnsemble, enhancedScore),
 			],
 		};
 
@@ -464,31 +488,49 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 			...stock,
 			score: enhancedStockScore,
 			reasoning: enhancedReasoning,
-			confidence: Math.max(stock.confidence, mlPrediction.confidence), // Use higher confidence
-			mlPrediction, // Attach ML prediction for serialization
+			confidence: Math.max(stock.confidence, mlEnsemble.consensus.confidence), // Use higher confidence
+			mlEnsemblePrediction: mlEnsemble, // Attach ML ensemble prediction with all model votes
+			mlPrediction: consensusPrediction, // Legacy compatibility
 		};
 	}
 
 	/**
-	 * Log prediction to database (async, fire-and-forget)
+	 * Log ensemble prediction to database (async, fire-and-forget)
+	 *
+	 * Logs the consensus prediction along with individual model votes for tracking.
 	 */
 	private logPredictionAsync(
 		stock: EnhancedStockResult,
-		prediction: PredictionResult,
+		ensemblePrediction: EnsemblePredictionResult,
 		enhancedScore: number
 	): void {
 		// Get current price from stock context
 		const currentPrice = stock.context?.currentPrice || 0;
 
+		// Create consensus prediction in PredictionResult format for logger
+		const consensusPrediction: PredictionResult = {
+			symbol: ensemblePrediction.symbol,
+			modelId: "ensemble",
+			modelType: "ensemble" as any, // Ensemble of all models
+			horizon: MLPredictionHorizon.ONE_WEEK,
+			prediction: (ensemblePrediction.consensus.score - 50) / 50, // Convert 0-100 to -1 to +1 range
+			confidence: ensemblePrediction.consensus.confidence,
+			direction: ensemblePrediction.consensus.signal === "BULLISH" ? "UP" :
+			          ensemblePrediction.consensus.signal === "BEARISH" ? "DOWN" : "NEUTRAL",
+			latencyMs: ensemblePrediction.latencyMs,
+			fromCache: false,
+			timestamp: ensemblePrediction.timestamp,
+		};
+
 		// Convert prediction to log entry
 		const logEntry = this.predictionLogger.convertPredictionToLogEntry(
 			stock.symbol,
-			prediction,
+			consensusPrediction,
 			{
 				currentPrice,
 				baseVfrScore: stock.score.overallScore,
 				enhancedScore,
-				executionTimeMs: prediction.latency,
+				executionTimeMs: ensemblePrediction.latencyMs,
 				cacheHit: false,
 				tierUsed: 'free'
 			}
@@ -497,39 +539,55 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 		// Log async (don't wait)
 		this.predictionLogger.logPrediction(logEntry).catch(error => {
 			this.mlLogger.warn(
-				`Failed to log prediction for ${stock.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`
+				`Failed to log ensemble prediction for ${stock.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`
 			);
 		});
 	}
 
 	/**
-	 * Generate ML insights for reasoning
+	 * Generate ML ensemble insights showing all model votes
+	 *
+	 * Displays individual predictions from all 3 models plus consensus.
 	 */
-	private generateMLInsights(
-		mlPrediction: PredictionResult,
+	private generateMLEnsembleInsights(
+		ensemblePrediction: EnsemblePredictionResult,
 		enhancedScore: EnhancedScoreResult
 	): string[] {
 		const insights: string[] = [];
 
-		// ML direction insight
-		if (mlPrediction.direction === "UP") {
+		// Consensus prediction header
+		const consensusSignal = ensemblePrediction.consensus.signal;
+		const consensusConfidence = (ensemblePrediction.consensus.confidence * 100).toFixed(0);
+
+		insights.push(
+			`ML Consensus: ${consensusSignal} (${consensusConfidence}% confidence) from ${ensemblePrediction.votes.length} models`
+		);
+
+		// Individual model votes
+		for (const vote of ensemblePrediction.votes) {
+			const modelName = vote.modelName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+			const confidence = (vote.confidence * 100).toFixed(0);
+			const direction = vote.signal;
+
 			insights.push(
-				`ML predicts upward movement (${(mlPrediction.confidence * 100).toFixed(0)}% confidence)`
-			);
-		} else if (mlPrediction.direction === "DOWN") {
-			insights.push(
-				`ML predicts downward movement (${(mlPrediction.confidence * 100).toFixed(0)}% confidence)`
+				`  ├─ ${modelName} (v${vote.modelVersion}): ${direction} (${confidence}% confident)`
 			);
 		}
+
+		// Vote breakdown
+		const { bullish, bearish, neutral } = ensemblePrediction.breakdown;
+		insights.push(
+			`  └─ Vote breakdown: ${bullish.toFixed(0)}% Bullish, ${bearish.toFixed(0)}% Bearish, ${neutral.toFixed(0)}% Neutral`
+		);
 
 		// Enhancement impact
 		if (enhancedScore.enhancement > 0.05) {
 			insights.push(
-				`ML enhancement boosted score by ${(enhancedScore.enhancement * 100).toFixed(1)}%`
+				`ML ensemble boosted score by ${(enhancedScore.enhancement * 100).toFixed(1)}%`
 			);
 		} else if (enhancedScore.enhancement < -0.05) {
 			insights.push(
-				`ML enhancement reduced score by ${(Math.abs(enhancedScore.enhancement) * 100).toFixed(1)}%`
+				`ML ensemble reduced score by ${(Math.abs(enhancedScore.enhancement) * 100).toFixed(1)}%`
 			);
 		}
 
@@ -537,14 +595,16 @@ export class MLEnhancedStockSelectionService extends StockSelectionService {
 	}
 
 	/**
-	 * Calculate average ML confidence
+	 * Calculate average ML ensemble confidence
+	 *
+	 * Uses the consensus confidence from each ensemble prediction.
 	 */
-	private calculateAverageConfidence(predictions: Map<string, PredictionResult>): number {
+	private calculateAverageConfidence(predictions: Map<string, EnsemblePredictionResult>): number {
 		if (predictions.size === 0) return 0;
 
 		let totalConfidence = 0;
-		for (const prediction of predictions.values()) {
-			totalConfidence += prediction.confidence;
+		for (const ensemblePrediction of predictions.values()) {
+			totalConfidence += ensemblePrediction.consensus.confidence;
 		}
 
 		return totalConfidence / predictions.size;

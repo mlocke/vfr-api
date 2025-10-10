@@ -1,8 +1,13 @@
 /**
  * Training Dataset Generation Script for ML Early Signal Detection
  *
+ * ⚠️ IMPORTANT: This script implements historical data caching. Good!
+ *
+ * See scripts/ml/CLAUDE.md "CRITICAL: HISTORICAL DATA CACHING PRINCIPLE" for
+ * caching best practices when modifying or creating new dataset scripts.
+ *
  * Task 1.5: Generate Training Dataset
- * Estimated Time: 2h + 4-6h data collection
+ * Estimated Time: 2h + 4-6h data collection (with caching: 2-3h total)
  * Purpose: Generate comprehensive training dataset by combining:
  *   - Historical analyst ratings (from collect-analyst-history)
  *   - Feature extraction (from FeatureExtractor)

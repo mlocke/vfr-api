@@ -1,0 +1,61 @@
+{
+  "test_examples": 7467,
+  "accuracy": 0.5212267309495112,
+  "baseline_random": 0.3333333333333333,
+  "baseline_majority": 0.38542922190973616,
+  "improvement_over_random": 0.1878933976161779,
+  "improvement_over_v1_0": 0.019820543725726614,
+  "per_class_metrics": {
+    "DOWN": {
+      "precision": 0.46243093922651934,
+      "recall": 0.4307771487390633,
+      "f1_score": 0.4460431654676259,
+      "support": 1943
+    },
+    "NEUTRAL": {
+      "precision": 0.5365932642487047,
+      "recall": 0.5757470465601112,
+      "f1_score": 0.5554810593362387,
+      "support": 2878
+    },
+    "UP": {
+      "precision": 0.5441806150253017,
+      "recall": 0.528344671201814,
+      "f1_score": 0.5361457334611697,
+      "support": 2646
+    }
+  },
+  "confusion_matrix": [
+    [
+      837,
+      628,
+      478
+    ],
+    [
+      528,
+      1657,
+      693
+    ],
+    [
+      445,
+      803,
+      1398
+    ]
+  ],
+  "prediction_distribution": {
+    "DOWN": 1810,
+    "NEUTRAL": 3088,
+    "UP": 2569
+  },
+  "true_distribution": {
+    "DOWN": 1943,
+    "NEUTRAL": 2878,
+    "UP": 2646
+  },
+  "roc_auc_scores": {
+    "DOWN": 0.6990645414591006,
+    "NEUTRAL": 0.6815967451550078,
+    "UP": 0.7030739005136728
+  },
+  "macro_roc_auc": 0.6945783957092604
+}

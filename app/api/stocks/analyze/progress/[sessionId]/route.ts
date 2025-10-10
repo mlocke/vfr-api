@@ -1,0 +1,125 @@
+/**
+ * Server-Sent Events (SSE) endpoint for real-time analysis progress tracking
+ * Streams progress updates to client during stock analysis
+ */
+
+import { NextRequest } from "next/server";
+
+// Global map to store active progress trackers by session ID
+export const progressSessions = new Map<
+	string,
+	{
+		encoder: TextEncoder;
+		controller: ReadableStreamDefaultController;
+		active: boolean;
+	}
+>();
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+/**
+ * SSE endpoint - GET /api/stocks/analyze/progress/[sessionId]
+ */
+export async function GET(
+	request: NextRequest,
+	{ params }: { params: Promise<{ sessionId: string }> }
+): Promise<Response> {
+	const { sessionId } = await params;
+
+	console.log(`📡 SSE connection established for session: ${sessionId}`);
+
+	const encoder = new TextEncoder();
+
+	// Create a readable stream for SSE
+	const stream = new ReadableStream({
+		start(controller) {
+			// Store the controller for this session
+			progressSessions.set(sessionId, {
+				encoder,
+				controller,
+				active: true,
+			});
+
+			// Send initial connection message
+			const initMessage = `data: ${JSON.stringify({
+				stage: "connected",
+				message: "Progress tracking connected",
+				progress: 0,
+				timestamp: Date.now(),
+			})}\n\n`;
+
+			controller.enqueue(encoder.encode(initMessage));
+
+			console.log(`✅ SSE session ${sessionId} initialized`);
+		},
+
+		cancel() {
+			console.log(`❌ SSE connection closed for session: ${sessionId}`);
+			const session = progressSessions.get(sessionId);
+			if (session) {
+				session.active = false;
+				progressSessions.delete(sessionId);
+			}
+		},
+	});
+
+	// Return SSE response
+	return new Response(stream, {
+		headers: {
+			"Content-Type": "text/event-stream",
+			"Cache-Control": "no-cache, no-transform",
+			Connection: "keep-alive",
+			"X-Accel-Buffering": "no", // Disable buffering in nginx
+		},
+	});
+}
+
+/**
+ * Utility function to send progress update to a specific session
+ */
+export function sendProgressUpdate(sessionId: string, update: any): boolean {
+	const session = progressSessions.get(sessionId);
+	if (!session || !session.active) {
+		return false;
+	}
+
+	try {
+		const message = `data: ${JSON.stringify(update)}\n\n`;
+		session.controller.enqueue(session.encoder.encode(message));
+		return true;
+	} catch (error) {
+		console.error(`Failed to send progress update to ${sessionId}:`, error);
+		session.active = false;
+		progressSessions.delete(sessionId);
+		return false;
+	}
+}
+
+/**
+ * Close SSE connection for a session
+ */
+export function closeProgressSession(sessionId: string) {
+	const session = progressSessions.get(sessionId);
+	if (session && session.active) {
+		try {
+			// Send completion message
+			const completeMessage = `data: ${JSON.stringify({
+				stage: "complete",
+				message: "Analysis complete - closing connection",
+				progress: 100,
+				timestamp: Date.now(),
+			})}\n\n`;
+			session.controller.enqueue(session.encoder.encode(completeMessage));
+
+			// Close the stream
+			session.controller.close();
+		} catch (error) {
+			console.error(`Error closing session ${sessionId}:`, error);
+		}
+
+		session.active = false;
+		progressSessions.delete(sessionId);
+		console.log(`🔒 SSE session ${sessionId} closed`);
+	}
+}

@@ -12,7 +12,7 @@
  * - include_ml=false preserves classic VFR
  */
 
-const TEST_TIMEOUT = 30000;
+const ML_FALLBACK_TEST_TIMEOUT = 30000;
 
 describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 	const apiUrl = "http://localhost:3000/api/stocks/analyze";
@@ -56,7 +56,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					`✅ Classic VFR Mode: Score=${stock.compositeScore.toFixed(2)}, ML Disabled`
 				);
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 
 		test(
@@ -90,7 +90,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					`✅ Multi-stock VFR: ${result.data.stocks.length} stocks analyzed without ML`
 				);
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 
@@ -133,7 +133,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 				// VFR score should be present regardless
 				expect(result.data.stocks[0].compositeScore).toBeDefined();
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 
@@ -174,7 +174,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					`✅ Partial ML Failure: ${result.data.stocks.length} stocks analyzed`
 				);
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 
@@ -220,7 +220,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					}
 				}
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 
@@ -276,7 +276,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					`✅ VFR Consistency: Pure VFR=${vfrScore.toFixed(2)}, Fallback=${fallbackScore.toFixed(2)}`
 				);
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 
@@ -315,7 +315,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					);
 				});
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 
 		test(
@@ -350,7 +350,7 @@ describe("Phase 4.2.2: ML Graceful Fallback Validation", () => {
 					`✅ Concurrent VFR Requests: All ${results.length} succeeded`
 				);
 			},
-			TEST_TIMEOUT
+			ML_FALLBACK_TEST_TIMEOUT
 		);
 	});
 });

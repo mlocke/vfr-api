@@ -1,0 +1,111 @@
+{
+  "model_name": "LightGBM_Price_Prediction_with_FinBERT",
+  "version": "v1.3.0",
+  "training_date": "2025-10-09T16:51:40.448310",
+  "num_train_examples": 1030,
+  "num_val_examples": 221,
+  "num_features": 46,
+  "price_features": 43,
+  "finbert_features": 3,
+  "hyperparameters": {
+    "learning_rate": 0.05,
+    "max_depth": 8,
+    "n_estimators": 300,
+    "num_leaves": 31,
+    "min_child_samples": 20,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 0.1
+  },
+  "validation_metrics": {
+    "accuracy": 0.46153846153846156
+  },
+  "label_mapping": {
+    "0": "DOWN",
+    "1": "NEUTRAL",
+    "2": "UP"
+  },
+  "feature_importance": [
+    {
+      "feature": "intraday_volatility",
+      "importance": 1187
+    },
+    {
+      "feature": "gap_percent",
+      "importance": 1186
+    },
+    {
+      "feature": "week_high_distance",
+      "importance": 1052
+    },
+    {
+      "feature": "price_momentum_20d",
+      "importance": 981
+    },
+    {
+      "feature": "relative_volume",
+      "importance": 977
+    },
+    {
+      "feature": "volume_trend_10d",
+      "importance": 957
+    },
+    {
+      "feature": "atr_14",
+      "importance": 929
+    },
+    {
+      "feature": "volume_ratio_5d",
+      "importance": 906
+    },
+    {
+      "feature": "volume_acceleration",
+      "importance": 886
+    },
+    {
+      "feature": "price_acceleration",
+      "importance": 873
+    },
+    {
+      "feature": "rsi_14",
+      "importance": 870
+    },
+    {
+      "feature": "finbert_positive",
+      "importance": 860
+    },
+    {
+      "feature": "stochastic_k",
+      "importance": 781
+    },
+    {
+      "feature": "sma_50_distance",
+      "importance": 781
+    },
+    {
+      "feature": "macd_signal",
+      "importance": 763
+    },
+    {
+      "feature": "price_momentum_5d",
+      "importance": 672
+    },
+    {
+      "feature": "finbert_negative",
+      "importance": 637
+    },
+    {
+      "feature": "bollinger_position",
+      "importance": 636
+    },
+    {
+      "feature": "price_momentum_10d",
+      "importance": 633
+    },
+    {
+      "feature": "finbert_neutral",
+      "importance": 584
+    }
+  ]
+}

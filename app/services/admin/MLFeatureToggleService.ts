@@ -57,6 +57,12 @@ export class MLFeatureToggleService {
 			description: "ML-powered price movement predictions (1-week horizon)",
 			defaultState: true, // Production-ready model (v1.1.0, 46% accuracy, deployed Oct 5, 2025)
 		},
+		SENTIMENT_FUSION: {
+			id: "sentiment_fusion",
+			name: "Sentiment-Fusion Price Prediction",
+			description: "ML predictions for 3-day price direction (UP/NEUTRAL/DOWN)",
+			defaultState: true, // Production model (v1.1.0, 53.8% accuracy, deployed Oct 9, 2025)
+		},
 	};
 
 	// Cache keys
@@ -250,6 +256,41 @@ export class MLFeatureToggleService {
 		await this.ensureInitialized();
 		await this.setFeatureEnabled(
 			MLFeatureToggleService.FEATURES.PRICE_PREDICTION.id,
+			enabled,
+			userId,
+			reason
+		);
+	}
+
+	/**
+	 * Check if Sentiment-Fusion is enabled
+	 * This is used by the stock selection API for sentiment-fusion price predictions
+	 */
+	public async isSentimentFusionEnabled(): Promise<boolean> {
+		try {
+			await this.ensureInitialized();
+			const status = await this.getFeatureStatus(
+				MLFeatureToggleService.FEATURES.SENTIMENT_FUSION.id
+			);
+			return status.enabled;
+		} catch (error) {
+			console.error("Failed to check Sentiment-Fusion status:", error);
+			// Fail safe: return false if unable to determine status
+			return false;
+		}
+	}
+
+	/**
+	 * Enable or disable Sentiment-Fusion
+	 */
+	public async setSentimentFusionEnabled(
+		enabled: boolean,
+		userId?: string,
+		reason?: string
+	): Promise<void> {
+		await this.ensureInitialized();
+		await this.setFeatureEnabled(
+			MLFeatureToggleService.FEATURES.SENTIMENT_FUSION.id,
 			enabled,
 			userId,
 			reason

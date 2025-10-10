@@ -1,0 +1,25 @@
+endpoint,description,status,ok,bytes,error
+/api/v4/insider-trading?symbol=AAPL,Insider trading by symbol (AAPL),200,True,58688,
+/stable/insider-trading/latest,Latest insider trades,200,True,60433,
+/stable/insider-trading/search?symbol=AAPL,Search insider trades by symbol,200,True,60688,
+/stable/insider-trading/reporting-name?name=Cook,Search insider trades by name (Tim Cook),200,True,9808,
+/stable/insider-roaster?symbol=AAPL,List of insiders by symbol,404,False,0,HTTPError 404: Not Found
+/stable/insider-trade-statistics,Insider trading statistics,404,False,0,HTTPError 404: Not Found
+/api/v4/insider-trading-transaction-type,List of insider trading transaction types,200,True,277,
+/api/v4/insider-trading-rss-feed,Insider trading RSS feed,200,True,31233,
+/stable/house-trades,All House member trades,400,False,0,HTTPError 400: Bad Request
+/stable/house-trades?symbol=AAPL,House member trades for AAPL,200,True,229711,
+/stable/house-latest,Latest House disclosures,200,True,49598,
+/stable/house-trading-by-name?name=Johnson,House trades by member name (Johnson),404,False,0,HTTPError 404: Not Found
+/stable/senate-trading,All Senate trades,404,False,0,HTTPError 404: Not Found
+/stable/senate-trading?symbol=AAPL,Senate trades for AAPL,404,False,0,HTTPError 404: Not Found
+/api/v4/senate-disclosure,Senate financial disclosures,200,True,2,
+/api/v4/house-disclosure,House financial disclosures,200,True,2,
+/api/v4/institutional-ownership/symbol-ownership?symbol=AAPL,Institutional ownership (AAPL),403,False,0,HTTPError 403: Forbidden
+/api/v4/institutional-ownership/latest,Latest institutional ownership,200,True,2,
+/api/v4/hedge-fund-holdings,List of hedge funds and holdings,200,True,2,
+/api/v4/hedge-fund-portfolio?manager=Michael%20Burry,Hedge fund portfolio (Michael Burry),200,True,2,
+/api/v4/mutual-fund-ownership/symbol-ownership?symbol=AAPL,Mutual fund ownership (AAPL),200,True,2,
+/api/v3/etf-holder/SPY,ETF holders (SPY),200,True,116948,
+/api/v3/etf-sector-weightings/SPY,ETF sector weights (SPY),200,True,798,
+/api/v3/etf-country-weightings/SPY,ETF country weights (SPY),200,True,554,

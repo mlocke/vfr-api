@@ -6,6 +6,7 @@ import {
 	getESDRecommendationStrength,
 	getCombinedRecommendation,
 } from "../services/utils/RecommendationUtils";
+import ScoreBreakdown from "./ScoreBreakdown";
 
 interface StockRecommendationCardProps {
 	stock: {
@@ -62,6 +63,19 @@ interface StockRecommendationCardProps {
 			latencyMs: number;
 			fromCache: boolean;
 			timestamp: number;
+		};
+		sentiment_fusion?: {
+			direction: "UP" | "NEUTRAL" | "DOWN";
+			confidence: number;
+			probabilities: {
+				UP: number;
+				NEUTRAL: number;
+				DOWN: number;
+			};
+			horizon: "3_days";
+			reasoning: string[];
+			model_version: string;
+			prediction_timestamp: number;
 		};
 	};
 }
@@ -452,12 +466,12 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 			{/* ML Price Prediction Section */}
 			{stock.mlPrediction && (
 				<>
-					{/* Show warning banner if confidence is too low */}
+					{/* Show info banner about ensemble consensus */}
 					{stock.mlPrediction.confidence < 0.4 && (
 						<div
 							style={{
-								background: "rgba(251, 191, 36, 0.1)",
-								border: "1px solid rgba(251, 191, 36, 0.3)",
+								background: "rgba(59, 130, 246, 0.1)",
+								border: "1px solid rgba(59, 130, 246, 0.3)",
 								borderRadius: "12px",
 								padding: "1rem",
 								marginTop: "1rem",
@@ -467,19 +481,17 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 								gap: "0.75rem",
 							}}
 						>
-							<span style={{ fontSize: "1.5rem" }}>⚠️</span>
+							<span style={{ fontSize: "1.5rem" }}>ℹ️</span>
 							<div style={{ flex: 1 }}>
-								<div style={{ color: "rgba(251, 191, 36, 0.9)", fontWeight: "600", marginBottom: "0.5rem", fontSize: "0.95rem" }}>
-									Price Prediction Model Training in Progress
+								<div style={{ color: "rgba(59, 130, 246, 0.9)", fontWeight: "600", marginBottom: "0.5rem", fontSize: "0.95rem" }}>
+									Ensemble ML Consensus
 								</div>
 								<div style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", lineHeight: "1.5" }}>
-									The dedicated price prediction model is being trained on a larger dataset.
-									Current confidence ({(stock.mlPrediction.confidence * 100).toFixed(1)}%) is below production threshold (40%).
+									Current consensus confidence ({(stock.mlPrediction.confidence * 100).toFixed(1)}%) reflects disagreement among the 3 ML models.
 									<br />
-									<strong style={{ color: "rgba(255,255,255,0.9)" }}>Note:</strong> The prediction below uses an analyst upgrade model, not a price movement model.
-									A new price prediction model (v1.0.0) with 43 price-relevant features is in development.
+									<strong style={{ color: "rgba(255,255,255,0.9)" }}>Models voting:</strong> Sentiment-Fusion, Price-Prediction, and Early-Signal-Detection
 									<br />
-									<span style={{ color: "rgba(251, 191, 36, 0.9)", fontWeight: "600" }}>ETA: 2-3 days for production model (target: 55-65% accuracy)</span>
+									<span style={{ color: "rgba(59, 130, 246, 0.9)" }}>Lower confidence indicates models don't strongly agree on direction. See individual votes below.</span>
 								</div>
 							</div>
 						</div>
@@ -756,6 +768,61 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 								</div>
 							)}
 
+							{/* Ensemble Model Votes */}
+							{stock.mlEnsemblePrediction && stock.mlEnsemblePrediction.votes && (
+								<div style={{ marginBottom: "1rem" }}>
+									<h5
+										style={{
+											color: "rgba(139, 92, 246, 0.9)",
+											fontSize: "0.85rem",
+											margin: "0 0 0.5rem 0",
+										}}
+									>
+										Individual Model Votes
+									</h5>
+									<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+										{stock.mlEnsemblePrediction.votes.map((vote, idx) => (
+											<div key={idx} style={{
+												display: "flex",
+												alignItems: "center",
+												justifyContent: "space-between",
+												padding: "0.5rem",
+												background: "rgba(255,255,255,0.05)",
+												borderRadius: "6px",
+												borderLeft: `3px solid ${
+													vote.signal === "BULLISH" ? "rgba(34, 197, 94, 0.8)" :
+													vote.signal === "BEARISH" ? "rgba(239, 68, 68, 0.8)" :
+													"rgba(251, 191, 36, 0.8)"
+												}`
+											}}>
+												<div>
+													<div style={{ fontSize: "0.8rem", fontWeight: "600", color: "rgba(255,255,255,0.9)" }}>
+														{vote.modelName} {vote.modelVersion}
+													</div>
+													<div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.5)", marginTop: "0.15rem" }}>
+														{vote.modelId}
+													</div>
+												</div>
+												<div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+													<span style={{
+														fontSize: "0.75rem",
+														fontWeight: "700",
+														color: vote.signal === "BULLISH" ? "rgba(34, 197, 94, 0.9)" :
+															vote.signal === "BEARISH" ? "rgba(239, 68, 68, 0.9)" :
+															"rgba(251, 191, 36, 0.9)"
+													}}>
+														{vote.signal}
+													</span>
+													<span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)" }}>
+														{(vote.confidence * 100).toFixed(1)}%
+													</span>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
 							{/* Prediction Details */}
 							<div style={{ marginBottom: "1rem" }}>
 								<h5
@@ -849,6 +916,381 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 								{stock.mlPrediction.latencyMs && (
 									<span>Latency: {stock.mlPrediction.latencyMs}ms</span>
 								)}
+							</div>
+						</div>
+					)}
+				</>
+			)}
+
+			{/* Sentiment-Fusion Prediction Section */}
+			{stock.sentiment_fusion && (
+				<>
+					<div
+						onClick={() => toggleSection("sentiment_fusion")}
+						style={{
+							background: "rgba(168, 85, 247, 0.1)",
+							border: "1px solid rgba(168, 85, 247, 0.3)",
+							borderRadius: "12px",
+							padding: "1rem",
+							marginBottom: "0.75rem",
+							cursor: "pointer",
+							transition: "all 0.3s ease",
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+						}}
+					>
+						<div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+							<span style={{ fontSize: "1.5rem" }}>
+								{stock.sentiment_fusion.direction === "UP"
+									? "🚀"
+									: stock.sentiment_fusion.direction === "DOWN"
+										? "⚠️"
+										: "⏸️"}
+							</span>
+							<div>
+								<span
+									style={{
+										fontSize: "0.9rem",
+										fontWeight: "600",
+										color: "rgba(168, 85, 247, 0.9)",
+									}}
+								>
+									Sentiment-Fusion Prediction
+								</span>
+								<div
+									style={{
+										fontSize: "0.75rem",
+										color: "rgba(255,255,255,0.6)",
+										marginTop: "0.25rem",
+									}}
+								>
+									{stock.sentiment_fusion.direction} movement expected (3-day horizon)
+								</div>
+							</div>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.75rem",
+							}}
+						>
+							<div
+								style={{
+									background:
+										stock.sentiment_fusion.direction === "UP"
+											? "rgba(34, 197, 94, 0.2)"
+											: stock.sentiment_fusion.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.2)"
+												: "rgba(251, 191, 36, 0.2)",
+									border: `1px solid ${
+										stock.sentiment_fusion.direction === "UP"
+											? "rgba(34, 197, 94, 0.4)"
+											: stock.sentiment_fusion.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.4)"
+												: "rgba(251, 191, 36, 0.4)"
+									}`,
+									color:
+										stock.sentiment_fusion.direction === "UP"
+											? "rgba(34, 197, 94, 0.9)"
+											: stock.sentiment_fusion.direction === "DOWN"
+												? "rgba(239, 68, 68, 0.9)"
+												: "rgba(251, 191, 36, 0.9)",
+									padding: "0.5rem 1rem",
+									borderRadius: "8px",
+									fontSize: "1rem",
+									fontWeight: "700",
+								}}
+							>
+								{stock.sentiment_fusion.direction}
+							</div>
+							<span style={{ fontSize: "1.2rem", color: "rgba(168, 85, 247, 0.6)" }}>
+								{expandedSection === "sentiment_fusion" ? "−" : "+"}
+							</span>
+						</div>
+					</div>
+
+					{expandedSection === "sentiment_fusion" && (
+						<div
+							style={{
+								background: "rgba(168, 85, 247, 0.05)",
+								borderRadius: "8px",
+								padding: "1rem",
+								marginBottom: "0.75rem",
+							}}
+						>
+							{/* Confidence Display */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(168, 85, 247, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Prediction Confidence
+								</h5>
+								<div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+									<div
+										style={{
+											flex: 1,
+											background: "rgba(255,255,255,0.1)",
+											borderRadius: "20px",
+											height: "8px",
+											overflow: "hidden",
+										}}
+									>
+										<div
+											style={{
+												background:
+													"linear-gradient(90deg, rgba(168,85,247,0.8), rgba(217,70,239,0.8))",
+												height: "100%",
+												width: `${stock.sentiment_fusion.confidence * 100}%`,
+												borderRadius: "20px",
+											}}
+										/>
+									</div>
+									<span
+										style={{
+											fontSize: "1.2rem",
+											fontWeight: "700",
+											color: "rgba(168,85,247,0.9)",
+										}}
+									>
+										{(stock.sentiment_fusion.confidence * 100).toFixed(1)}%
+									</span>
+								</div>
+							</div>
+
+							{/* Probability Breakdown */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(168, 85, 247, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Direction Probabilities
+								</h5>
+								<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+									{/* UP Probability */}
+									<div>
+										<div
+											style={{
+												display: "flex",
+												justifyContent: "space-between",
+												fontSize: "0.8rem",
+												marginBottom: "0.25rem",
+											}}
+										>
+											<span style={{ color: "rgba(34, 197, 94, 0.9)" }}>
+												🚀 Upward
+											</span>
+											<span style={{ color: "rgba(255,255,255,0.8)" }}>
+												{(stock.sentiment_fusion.probabilities.UP * 100).toFixed(1)}%
+											</span>
+										</div>
+										<div
+											style={{
+												background: "rgba(255,255,255,0.1)",
+												borderRadius: "4px",
+												height: "6px",
+												overflow: "hidden",
+											}}
+										>
+											<div
+												style={{
+													background: "rgba(34, 197, 94, 0.8)",
+													height: "100%",
+													width: `${stock.sentiment_fusion.probabilities.UP * 100}%`,
+													borderRadius: "4px",
+												}}
+											/>
+										</div>
+									</div>
+
+									{/* NEUTRAL Probability */}
+									<div>
+										<div
+											style={{
+												display: "flex",
+												justifyContent: "space-between",
+												fontSize: "0.8rem",
+												marginBottom: "0.25rem",
+											}}
+										>
+											<span style={{ color: "rgba(251, 191, 36, 0.9)" }}>
+												⏸️ Neutral
+											</span>
+											<span style={{ color: "rgba(255,255,255,0.8)" }}>
+												{(stock.sentiment_fusion.probabilities.NEUTRAL * 100).toFixed(
+													1
+												)}
+												%
+											</span>
+										</div>
+										<div
+											style={{
+												background: "rgba(255,255,255,0.1)",
+												borderRadius: "4px",
+												height: "6px",
+												overflow: "hidden",
+											}}
+										>
+											<div
+												style={{
+													background: "rgba(251, 191, 36, 0.8)",
+													height: "100%",
+													width: `${stock.sentiment_fusion.probabilities.NEUTRAL * 100}%`,
+													borderRadius: "4px",
+												}}
+											/>
+										</div>
+									</div>
+
+									{/* DOWN Probability */}
+									<div>
+										<div
+											style={{
+												display: "flex",
+												justifyContent: "space-between",
+												fontSize: "0.8rem",
+												marginBottom: "0.25rem",
+											}}
+										>
+											<span style={{ color: "rgba(239, 68, 68, 0.9)" }}>
+												⚠️ Downward
+											</span>
+											<span style={{ color: "rgba(255,255,255,0.8)" }}>
+												{(stock.sentiment_fusion.probabilities.DOWN * 100).toFixed(1)}
+												%
+											</span>
+										</div>
+										<div
+											style={{
+												background: "rgba(255,255,255,0.1)",
+												borderRadius: "4px",
+												height: "6px",
+												overflow: "hidden",
+											}}
+										>
+											<div
+												style={{
+													background: "rgba(239, 68, 68, 0.8)",
+													height: "100%",
+													width: `${stock.sentiment_fusion.probabilities.DOWN * 100}%`,
+													borderRadius: "4px",
+												}}
+											/>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{/* Reasoning */}
+							{stock.sentiment_fusion.reasoning &&
+								stock.sentiment_fusion.reasoning.length > 0 && (
+									<div style={{ marginBottom: "1rem" }}>
+										<h5
+											style={{
+												color: "rgba(168, 85, 247, 0.9)",
+												fontSize: "0.85rem",
+												margin: "0 0 0.5rem 0",
+											}}
+										>
+											Why This Prediction
+										</h5>
+										<ul
+											style={{
+												margin: "0.5rem 0 0 0",
+												paddingLeft: "1.25rem",
+												listStyle: "disc",
+												color: "rgba(255,255,255,0.8)",
+											}}
+										>
+											{stock.sentiment_fusion.reasoning.map((reason, idx) => (
+												<li
+													key={idx}
+													style={{
+														marginBottom: "0.5rem",
+														fontSize: "0.9rem",
+														lineHeight: "1.5",
+													}}
+												>
+													{reason}
+												</li>
+											))}
+										</ul>
+									</div>
+								)}
+
+							{/* Prediction Details */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(168, 85, 247, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Prediction Details
+								</h5>
+								<div
+									style={{
+										display: "grid",
+										gridTemplateColumns: "1fr 1fr",
+										gap: "0.5rem",
+										fontSize: "0.8rem",
+									}}
+								>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Time Horizon:</span>
+										<span
+											style={{
+												color: "rgba(255,255,255,0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											3 DAYS
+										</span>
+									</div>
+									<div>
+										<span style={{ color: "rgba(255,255,255,0.6)" }}>Model Type:</span>
+										<span
+											style={{
+												color: "rgba(255,255,255,0.9)",
+												marginLeft: "0.5rem",
+												fontWeight: "600",
+											}}
+										>
+											Sentiment + Technical
+										</span>
+									</div>
+								</div>
+							</div>
+
+							{/* Model Metadata Footer */}
+							<div
+								style={{
+									marginTop: "1rem",
+									paddingTop: "0.75rem",
+									borderTop: "1px solid rgba(255,255,255,0.1)",
+									fontSize: "0.75rem",
+									color: "rgba(255,255,255,0.5)",
+									display: "flex",
+									justifyContent: "space-between",
+									flexWrap: "wrap",
+									gap: "0.5rem",
+								}}
+							>
+								<span>Model: Sentiment-Fusion {stock.sentiment_fusion.model_version}</span>
+								<span>
+									Predicted:{" "}
+									{new Date(stock.sentiment_fusion.prediction_timestamp).toLocaleString()}
+								</span>
 							</div>
 						</div>
 					)}
@@ -1320,6 +1762,19 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 					)}
 				</>
 			)}
+
+			{/* Score Breakdown Component */}
+			<ScoreBreakdown
+				symbol={stock.symbol}
+				compositeScore={stock.compositeScore || 0}
+				technicalScore={stock.technicalScore}
+				fundamentalScore={stock.fundamentalScore}
+				macroScore={stock.macroScore}
+				sentimentScore={stock.sentimentScore}
+				esgScore={stock.esgScore}
+				analystScore={stock.analystScore}
+				mlPrediction={stock.mlPrediction}
+			/>
 
 			{/* Timestamp */}
 			<div

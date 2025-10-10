@@ -43,6 +43,8 @@ import { MLPredictionService } from "../ml/prediction/MLPredictionService";
 import { EarlySignalService } from "../ml/early-signal/EarlySignalService";
 import { EarlySignalPrediction } from "../ml/early-signal/types";
 import { PricePredictionService, PricePrediction } from "../ml/price-prediction/PricePredictionService";
+import { SentimentFusionService } from "../ml/sentiment-fusion/SentimentFusionService";
+import { PricePrediction as SentimentFusionPrediction } from "../ml/sentiment-fusion/types";
 import ErrorHandler from "../error-handling/ErrorHandler";
 
 /**
@@ -555,12 +557,16 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		// ❌ BUG FIX: ML service was overwriting correct FactorLibrary score (0.61 → 2.11)
 		// ML predictions are NOT yet integrated and should not modify the composite score
 
+		// Skip legacy individual ML services if using ensemble predictions (include_ml=true)
+		// The MLEnhancedStockSelectionService will handle all ML via predictEnsemble()
+		const useEnsemblePredictions = request.options?.include_ml === true;
+
 		// Early Signal Detection (ESD) - ML analyst rating predictions
 		let earlySignalPrediction: EarlySignalPrediction | undefined;
 		console.log(
 			`🔍 ESD Check for ${symbol}: includeEarlySignal=${request.options?.includeEarlySignal}`
 		);
-		if (request.options?.includeEarlySignal) {
+		if (request.options?.includeEarlySignal && !useEnsemblePredictions) {
 			try {
 				console.log(`🚀 Starting ESD prediction for ${symbol}...`);
 				const esdService = new EarlySignalService();
@@ -589,7 +595,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		console.log(
 			`🔍 Price Prediction Check for ${symbol}: includePricePrediction=${request.options?.includePricePrediction}`
 		);
-		if (request.options?.includePricePrediction) {
+		if (request.options?.includePricePrediction && !useEnsemblePredictions) {
 			try {
 				console.log(`🚀 Starting Price Prediction for ${symbol}...`);
 				const priceService = new PricePredictionService();
@@ -621,6 +627,42 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 			}
 		} else {
 			console.log(`⏭️ Price Prediction skipped for ${symbol} (feature not enabled in request options)`);
+		}
+
+		// Sentiment-Fusion - ML 3-day price direction predictions
+		let sentimentFusionPrediction: SentimentFusionPrediction | undefined;
+		console.log(
+			`🔍 Sentiment-Fusion Check for ${symbol}: includeSentimentFusion=${request.options?.includeSentimentFusion}`
+		);
+		if (request.options?.includeSentimentFusion && !useEnsemblePredictions) {
+			try {
+				console.log(`🚀 Starting Sentiment-Fusion for ${symbol}...`);
+				const sfService = new SentimentFusionService();
+				const prediction = await sfService.predict(symbol);
+				console.log(`📊 Sentiment-Fusion raw result for ${symbol}:`, prediction);
+				sentimentFusionPrediction = prediction || undefined;
+				if (sentimentFusionPrediction) {
+					console.log(
+						`🎯 Sentiment-Fusion completed for ${symbol}: ${sentimentFusionPrediction.direction} (${(sentimentFusionPrediction.confidence * 100).toFixed(1)}% confidence)`
+					);
+					// Add sentiment-fusion insights to primary factors
+					primaryFactors.push(
+						`Sentiment-Fusion predicts ${sentimentFusionPrediction.direction} (${(sentimentFusionPrediction.confidence * 100).toFixed(0)}% confidence)`
+					);
+					// Add top reasoning if available
+					if (sentimentFusionPrediction.reasoning && sentimentFusionPrediction.reasoning.length > 0) {
+						sentimentFusionPrediction.reasoning.slice(0, 2).forEach(reason => {
+							primaryFactors.push(reason);
+						});
+					}
+				} else {
+					console.warn(`⚠️ Sentiment-Fusion returned null/undefined for ${symbol}`);
+				}
+			} catch (error) {
+				console.error(`❌ Sentiment-Fusion failed for ${symbol}:`, error);
+			}
+		} else {
+			console.log(`⏭️ Sentiment-Fusion skipped for ${symbol} (feature not enabled in request options)`);
 		}
 
 		// 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration
@@ -680,6 +722,9 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
 			// ML Price Prediction
 			price_prediction: pricePrediction,
+
+			// ML Sentiment-Fusion
+			sentiment_fusion: sentimentFusionPrediction,
 		};
 	}
 

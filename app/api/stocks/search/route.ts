@@ -1,10 +1,28 @@
 /**
  * Stock Search API Route
- * Provides real-time stock symbol search using FMP API
+ * Provides real-time stock symbol search using FMP API with Redis caching
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import ErrorHandler from "../../../services/error-handling/ErrorHandler";
+import { redisCache } from "../../../services/cache/RedisCache";
+
+interface SearchResult {
+	symbol: string;
+	name: string;
+	exchange: string;
+	type: string;
+	status: string;
+	matchScore: number;
+	matchType: string;
+	currency?: string;
+}
+
+interface CachedSearchResponse {
+	results: SearchResult[];
+	query: string;
+	total: number;
+}
 
 export async function GET(request: NextRequest) {
 	try {
@@ -24,7 +42,25 @@ export async function GET(request: NextRequest) {
 
 		console.log(`🔍 Stock search request: "${query}"`);
 
-		// Call FMP search API directly
+		// Create cache key for this search query
+		const cacheKey = `stock:search:${query.toLowerCase().trim()}`;
+
+		// Try to get cached results first
+		const cachedResults = await redisCache.get<CachedSearchResponse>(cacheKey);
+
+		if (cachedResults) {
+			console.log(`✅ Cache HIT for search query: "${query}"`);
+			return NextResponse.json({
+				success: true,
+				data: cachedResults,
+				timestamp: Date.now(),
+				cached: true,
+			});
+		}
+
+		console.log(`📡 Cache MISS - fetching from FMP API for: "${query}"`);
+
+		// Call FMP search API
 		const fmpApiKey = process.env.FMP_API_KEY;
 		if (!fmpApiKey) {
 			throw new Error("FMP API key not configured");
@@ -35,13 +71,26 @@ export async function GET(request: NextRequest) {
 		const response = await fetch(fmpUrl);
 
 		if (!response.ok) {
+			// Handle rate limiting specifically
+			if (response.status === 429) {
+				console.error(`⚠️ FMP API rate limit exceeded for query: "${query}"`);
+				return NextResponse.json(
+					{
+						success: false,
+						error: "Rate limit exceeded",
+						message: "Too many requests. Please try again in a moment.",
+						timestamp: Date.now(),
+					},
+					{ status: 429 }
+				);
+			}
 			throw new Error(`FMP API error: ${response.status} ${response.statusText}`);
 		}
 
 		const fmpData = await response.json();
 
 		// Transform FMP response to our format
-		const results = (fmpData || []).map((item: any) => ({
+		const results: SearchResult[] = (fmpData || []).map((item: any) => ({
 			symbol: item.symbol,
 			name: item.name,
 			exchange: item.exchangeShortName || item.stockExchange || "N/A",
@@ -52,16 +101,26 @@ export async function GET(request: NextRequest) {
 			currency: item.currency,
 		}));
 
-		console.log(`✅ Found ${results.length} results for "${query}"`);
+		const searchResponse: CachedSearchResponse = {
+			results,
+			query,
+			total: results.length,
+		};
+
+		// Cache the results for 5 minutes (300 seconds)
+		// This prevents repeated API calls for the same search query
+		await redisCache.set(cacheKey, searchResponse, 300, {
+			source: "fmp-search",
+			version: "1.0.0",
+		});
+
+		console.log(`✅ Found ${results.length} results for "${query}" (cached for 5 min)`);
 
 		return NextResponse.json({
 			success: true,
-			data: {
-				results,
-				query,
-				total: results.length,
-			},
+			data: searchResponse,
 			timestamp: Date.now(),
+			cached: false,
 		});
 	} catch (error) {
 		const normalizedError = ErrorHandler.normalizeError(error);

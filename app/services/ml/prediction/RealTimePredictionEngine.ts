@@ -20,6 +20,9 @@ import { FeatureStore } from "../features/FeatureStore";
 import { MLCacheService } from "../cache/MLCacheService";
 import { Logger } from "../../error-handling/Logger";
 import { ErrorHandler, ErrorType, ErrorCode } from "../../error-handling/ErrorHandler";
+import { SentimentFusionFeatureExtractor } from "../sentiment-fusion/SentimentFusionFeatureExtractor";
+import { PricePredictionFeatureExtractor } from "../features/PricePredictionFeatureExtractor";
+import { EarlySignalFeatureExtractor } from "../early-signal/FeatureExtractor";
 import {
 	MLServiceResponse,
 	MLPredictionHorizon,
@@ -78,6 +81,45 @@ export interface BatchPredictionResult {
 	failedSymbols: string[];
 }
 
+// ===== Ensemble Prediction Types =====
+
+export type MLSignal = "BULLISH" | "BEARISH" | "NEUTRAL";
+
+export interface ModelVote {
+	modelId: string;
+	modelName: string;
+	modelVersion: string;
+	signal: MLSignal;
+	confidence: number;
+	prediction: number;
+	reasoning?: string;
+}
+
+export interface EnsemblePredictionRequest {
+	symbol: string;
+	horizon?: MLPredictionHorizon;
+	features?: MLFeatureVector;
+	confidenceThreshold?: number;
+}
+
+export interface EnsemblePredictionResult {
+	symbol: string;
+	consensus: {
+		signal: MLSignal;
+		confidence: number;
+		score: number; // 0-100 score for composite scoring
+	};
+	votes: ModelVote[];
+	breakdown: {
+		bullish: number;
+		bearish: number;
+		neutral: number;
+	};
+	lowConsensus: boolean; // True when confidence < 50% (models disagree)
+	latencyMs: number;
+	timestamp: number;
+}
+
 // ===== Performance Metrics =====
 
 export interface PredictionMetrics {
@@ -114,6 +156,9 @@ export class RealTimePredictionEngine {
 	private initialized = false;
 	private pythonProcess: ChildProcess | null = null;
 	private pythonReady = false;
+	private sentimentFusionExtractor: SentimentFusionFeatureExtractor;
+	private pricePredictionExtractor: PricePredictionFeatureExtractor;
+	private earlySignalExtractor: EarlySignalFeatureExtractor;
 
 	private constructor(config?: Partial<PredictionEngineConfig>) {
 		this.logger = Logger.getInstance("RealTimePredictionEngine");
@@ -137,6 +182,10 @@ export class RealTimePredictionEngine {
 			failures: 0,
 			latencySum: 0,
 		};
+		// Initialize model-specific feature extractors
+		this.sentimentFusionExtractor = new SentimentFusionFeatureExtractor();
+		this.pricePredictionExtractor = new PricePredictionFeatureExtractor();
+		this.earlySignalExtractor = new EarlySignalFeatureExtractor();
 	}
 
 	public static getInstance(config?: Partial<PredictionEngineConfig>): RealTimePredictionEngine {
@@ -419,6 +468,321 @@ export class RealTimePredictionEngine {
 	}
 
 	/**
+	 * Ensemble prediction - combines predictions from ALL deployed models
+	 * Returns consensus signal (BULLISH/BEARISH/NEUTRAL) with breakdown of individual model votes
+	 */
+	public async predictEnsemble(
+		request: EnsemblePredictionRequest
+	): Promise<MLServiceResponse<EnsemblePredictionResult>> {
+		const startTime = Date.now();
+
+		try {
+			if (!this.initialized) {
+				await this.initialize();
+			}
+
+			const { symbol, horizon, features, confidenceThreshold = 0.5 } = request;
+
+			this.logger.info(`[predictEnsemble] Starting ensemble prediction for ${symbol}`);
+
+			// Get ALL deployed models
+			const deployedResult = await this.modelRegistry.getDeployedModels();
+			if (!deployedResult.success || !deployedResult.data || deployedResult.data.length === 0) {
+				throw new Error("No deployed models available for ensemble prediction");
+			}
+
+			const models = deployedResult.data;
+			this.logger.info(`[predictEnsemble] Found ${models.length} deployed models`, {
+				models: models.map(m => `${m.modelName} v${m.modelVersion}`),
+			});
+
+			// Run predictions in parallel for ALL models
+			// Each model extracts its own features using model-specific extractors
+			const predictionPromises = models.map(async model => {
+				try {
+					this.logger.debug(`[predictEnsemble] Running ${model.modelName} v${model.modelVersion}`);
+
+					// Extract model-specific features
+					const modelFeatures = await this.getModelSpecificFeatures(model.modelName, symbol);
+					if (!modelFeatures) {
+						throw new Error(`Feature extraction failed for ${model.modelName}`);
+					}
+
+					// Filter out metadata properties (symbol, timestamp) - only keep numeric features
+					const metadataKeys = ['symbol', 'timestamp'];
+					const featureOnlyKeys = Object.keys(modelFeatures).filter(key => !metadataKeys.includes(key));
+					const featuresOnly: Record<string, number> = {};
+					featureOnlyKeys.forEach(key => {
+						featuresOnly[key] = modelFeatures[key];
+					});
+
+					// Convert features object to MLFeatureVector format for runInference
+					const featureVector: MLFeatureVector = {
+						symbol,
+						features: featuresOnly,
+						featureNames: featureOnlyKeys,
+						timestamp: Date.now(),
+						completeness: 1.0,
+						qualityScore: 1.0,
+					};
+
+					const prediction = await this.runInference(model, featureVector);
+					const signal = this.mapPredictionToSignal(
+						prediction.value,
+						model.modelName
+					);
+
+					const vote: ModelVote = {
+						modelId: model.modelId,
+						modelName: model.modelName,
+						modelVersion: model.modelVersion,
+						signal,
+						confidence: prediction.confidence,
+						prediction: prediction.value,
+						reasoning: this.generateModelReasoning(model.modelName, signal, prediction.confidence),
+					};
+
+					this.logger.info(`[predictEnsemble] ${model.modelName}: ${signal} (${(prediction.confidence * 100).toFixed(1)}% confident)`);
+
+					return vote;
+				} catch (error) {
+					this.logger.warn(`[predictEnsemble] ${model.modelName} failed:`, {
+					error: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : undefined,
+					modelName: model.modelName,
+					modelVersion: model.modelVersion,
+					modelPath: model.artifactPath ||
+						path.join(process.cwd(), `models/${model.modelName}/v${model.modelVersion}/model.txt`),
+					normalizerPath: model.artifactPath?.replace('model.txt', 'normalizer.json') ||
+						path.join(process.cwd(), `models/${model.modelName}/v${model.modelVersion}/normalizer.json`)
+				});
+					return null;
+				}
+			});
+
+			const votes = (await Promise.all(predictionPromises)).filter(
+				(v): v is ModelVote => v !== null
+			);
+
+			if (votes.length === 0) {
+				throw new Error("All model predictions failed");
+			}
+
+			// Calculate consensus from votes
+			const consensus = this.calculateConsensus(votes);
+
+			// Calculate breakdown
+			const breakdown = {
+				bullish: votes.filter(v => v.signal === "BULLISH").length / votes.length,
+				bearish: votes.filter(v => v.signal === "BEARISH").length / votes.length,
+				neutral: votes.filter(v => v.signal === "NEUTRAL").length / votes.length,
+			};
+
+			const result: EnsemblePredictionResult = {
+				symbol,
+				consensus,
+				votes,
+				breakdown,
+				lowConsensus: consensus.confidence < 0.5, // Flag model disagreement
+				latencyMs: Date.now() - startTime,
+				timestamp: Date.now(),
+			};
+
+			const consensusNote = result.lowConsensus ? " [LOW CONSENSUS - MODELS DISAGREE]" : "";
+		this.logger.info(`[predictEnsemble] Consensus for ${symbol}: ${consensus.signal} (${(consensus.confidence * 100).toFixed(1)}% confident)${consensusNote}`, {
+				breakdown,
+				votes: votes.map(v => `${v.modelName}: ${v.signal}`),
+				lowConsensus: result.lowConsensus,
+			});
+
+			return {
+				success: true,
+				data: result,
+				metadata: {
+					latency: result.latencyMs,
+					cacheHit: false,
+				},
+			};
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			this.logger.error(`[predictEnsemble] Ensemble prediction failed for ${request.symbol}: ${errorMessage}`);
+			const errorHandler = ErrorHandler.getInstance();
+			const errorResponse = errorHandler.createErrorResponse(error, "RealTimePredictionEngine");
+			return {
+				success: false,
+				error: errorResponse.error,
+			};
+		}
+	}
+
+	/**
+	 * Map raw prediction value to signal based on model type
+	 */
+	private mapPredictionToSignal(value: number, modelName: string): MLSignal {
+		// For early-signal-detection: positive value = analyst upgrade likely (BULLISH)
+		if (modelName.includes("early-signal")) {
+			if (value > 0.6) return "BULLISH"; // High confidence upgrade
+			if (value < -0.6) return "BEARISH"; // High confidence downgrade
+			return "NEUTRAL";
+		}
+
+		// For price-prediction and sentiment-fusion: prediction is price direction
+		// Positive = UP (BULLISH), Negative = DOWN (BEARISH)
+		if (value > 0.15) return "BULLISH"; // Strong upward prediction
+		if (value < -0.15) return "BEARISH"; // Strong downward prediction
+		return "NEUTRAL"; // Mixed or uncertain
+	}
+
+	/**
+	 * Calculate weighted consensus from model votes
+	 *
+	 * Ensemble Voting Architecture:
+	 * This method implements a weighted voting system where each ML model contributes
+	 * to the final prediction based on its reliability and scope.
+	 *
+	 * Model Weights (Total: 100%):
+	 * - sentiment-fusion (50%): Most comprehensive model combining news sentiment +
+	 *   price technicals. Highest weight due to broad feature set (45 features).
+	 *
+	 * - price-prediction (30%): Baseline technical + fundamental analysis. Medium
+	 *   weight for traditional price trend prediction.
+	 *
+	 * - early-signal-detection (20%): Specialized analyst upgrade/downgrade predictions.
+	 *   Lower weight due to specific event focus (28 features).
+	 *
+	 * Voting Algorithm:
+	 * 1. Each model's vote is multiplied by its base weight AND confidence:
+	 *    effectiveWeight = baseWeight * modelConfidence
+	 *
+	 * 2. Votes are accumulated for each signal (BULLISH/BEARISH/NEUTRAL)
+	 *
+	 * 3. Scores are normalized by total weight
+	 *
+	 * 4. Highest score wins (consensus signal)
+	 *
+	 * Example Calculation:
+	 * - sentiment-fusion: BULLISH @ 0.78 confidence → 0.5 * 0.78 = 0.39
+	 * - price-prediction: BULLISH @ 0.65 confidence → 0.3 * 0.65 = 0.195
+	 * - early-signal: NEUTRAL @ 0.52 confidence → 0.2 * 0.52 = 0.104 (neutral)
+	 *
+	 * Result:
+	 * - Bullish Score: (0.39 + 0.195) / 1.0 = 0.585 (58.5%)
+	 * - Neutral Score: 0.104 / 1.0 = 0.104 (10.4%)
+	 * - Bearish Score: 0.0 / 1.0 = 0.0 (0%)
+	 * - Consensus: BULLISH with 58.5% confidence
+	 * - Composite Score: 50 + (0.585 * 50) = 79.25 (0-100 scale)
+	 *
+	 * Adding New Models:
+	 * To add a new model to the ensemble:
+	 * 1. Add entry to weights object below (ensure total ≈ 1.0)
+	 * 2. Consider model accuracy and scope when setting weight
+	 * 3. Start with 10-15% weight, increase if model proves reliable
+	 * 4. Reduce existing weights proportionally to maintain total = 1.0
+	 *
+	 * @param votes - Array of model votes with signal, confidence, and metadata
+	 * @returns Consensus signal, confidence score, and 0-100 composite score
+	 */
+	private calculateConsensus(votes: ModelVote[]): {
+		signal: MLSignal;
+		confidence: number;
+		score: number;
+	} {
+		// CRITICAL: Model weights must be kept in sync with deployed models
+		// Total should equal 1.0 for proper normalization
+		// Update these weights when adding/removing models from ensemble
+		const weights: Record<string, number> = {
+			"sentiment-fusion": 0.5, // Most comprehensive (50%) - 45 features
+			"price-prediction": 0.3, // Baseline price model (30%) - 35 features
+			"early-signal-detection": 0.2, // Analyst signal (20%) - 28 features
+		};
+
+		let bullishScore = 0;
+		let bearishScore = 0;
+		let neutralScore = 0;
+		let totalWeight = 0;
+
+		votes.forEach(vote => {
+			const weight = weights[vote.modelName] || 0.33; // Default equal weight if unknown
+			const confidenceWeight = weight * vote.confidence;
+
+			if (vote.signal === "BULLISH") {
+				bullishScore += confidenceWeight;
+			} else if (vote.signal === "BEARISH") {
+				bearishScore += confidenceWeight;
+			} else {
+				neutralScore += confidenceWeight;
+			}
+
+			totalWeight += weight;
+		});
+
+		// Normalize scores
+		if (totalWeight > 0) {
+			bullishScore /= totalWeight;
+			bearishScore /= totalWeight;
+			neutralScore /= totalWeight;
+		}
+
+		// Determine consensus signal
+		const maxScore = Math.max(bullishScore, bearishScore, neutralScore);
+		let signal: MLSignal;
+		let confidence: number;
+
+		if (maxScore === bullishScore) {
+			signal = "BULLISH";
+			confidence = bullishScore;
+		} else if (maxScore === bearishScore) {
+			signal = "BEARISH";
+			confidence = bearishScore;
+		} else {
+			signal = "NEUTRAL";
+			confidence = neutralScore;
+		}
+
+		// LOW CONFIDENCE THRESHOLD: Override to NEUTRAL when models disagree
+		// If consensus confidence < 50%, models are in strong disagreement
+		// Return NEUTRAL to signal uncertainty rather than picking a weak directional call
+		// Keep the low confidence value to show users the disagreement magnitude
+		const LOW_CONFIDENCE_THRESHOLD = 0.5;
+		if (confidence < LOW_CONFIDENCE_THRESHOLD) {
+			signal = "NEUTRAL";
+			// Confidence remains low (e.g., 0.28) to indicate "we don't know"
+			// This tells users: "Models disagree - don't trust this prediction"
+		}
+
+		// Calculate 0-100 score (50 = neutral baseline)
+		// BULLISH: 50-100, BEARISH: 0-50, NEUTRAL: around 50
+		let score: number;
+		if (signal === "BULLISH") {
+			score = 50 + confidence * 50; // 50-100
+		} else if (signal === "BEARISH") {
+			score = 50 - confidence * 50; // 0-50
+		} else {
+			score = 50; // Neutral
+		}
+
+		return { signal, confidence, score };
+	}
+
+	/**
+	 * Generate reasoning text for a model vote
+	 */
+	private generateModelReasoning(modelName: string, signal: MLSignal, confidence: number): string {
+		const confidenceText =
+			confidence > 0.75 ? "High confidence" : confidence > 0.5 ? "Moderate confidence" : "Low confidence";
+
+		if (modelName.includes("sentiment-fusion")) {
+			return `${confidenceText} ${signal.toLowerCase()} signal from news sentiment + price analysis`;
+		} else if (modelName.includes("price-prediction")) {
+			return `${confidenceText} ${signal.toLowerCase()} signal from technical + fundamental analysis`;
+		} else if (modelName.includes("early-signal")) {
+			return `${confidenceText} ${signal === "BULLISH" ? "analyst upgrade" : signal === "BEARISH" ? "analyst downgrade" : "no rating change"} prediction`;
+		}
+
+		return `${confidenceText} ${signal.toLowerCase()} signal`;
+	}
+
+	/**
 	 * Get cached prediction
 	 */
 	private async getCachedPrediction(
@@ -605,6 +969,36 @@ export class RealTimePredictionEngine {
 	}
 
 	/**
+	 * Get model-specific feature vector
+	 * Each model has different feature requirements:
+	 * - sentiment-fusion: 45 features (sentiment + technical)
+	 * - price-prediction: 43 features (volume + technical)
+	 * - early-signal: 34 features (price momentum + fundamentals)
+	 */
+	private async getModelSpecificFeatures(
+		modelName: string,
+		symbol: string
+	): Promise<any> {
+		try {
+			switch (modelName) {
+				case "sentiment-fusion":
+					return await this.sentimentFusionExtractor.extractFeatures(symbol);
+				case "price-prediction":
+					return await this.pricePredictionExtractor.extractFeatures(symbol);
+				case "early-signal":
+					return await this.earlySignalExtractor.extractFeatures(symbol);
+				default:
+					this.logger.warn(`Unknown model name: ${modelName}, falling back to FeatureStore`);
+					const featureVector = await this.getFeatureVector(symbol);
+					return featureVector?.features || null;
+			}
+		} catch (error) {
+			this.logger.error(`Model-specific feature extraction failed for ${modelName}:`, error);
+			return null;
+		}
+	}
+
+	/**
 	 * Ensure Python prediction subprocess is running
 	 */
 	private async ensurePythonProcess(): Promise<void> {
@@ -720,6 +1114,45 @@ export class RealTimePredictionEngine {
 
 	/**
 	 * Run inference on model using real Python subprocess
+	 *
+	 * CRITICAL: This method implements dynamic model path resolution to ensure each model
+	 * loads independently from its own directory. The `ml_models` table does NOT have an
+	 * `artifact_path` column, so we construct paths dynamically using model metadata.
+	 *
+	 * Directory Structure (REQUIRED):
+	 * models/
+	 *   ├── sentiment-fusion/v1.1.0/
+	 *   │   ├── model.txt
+	 *   │   └── normalizer.json
+	 *   ├── price-prediction/v1.1.0/
+	 *   │   ├── model.txt
+	 *   │   └── normalizer.json
+	 *   └── early-signal/v1.0.0/
+	 *       ├── model.txt
+	 *       └── normalizer.json
+	 *
+	 * Path Construction Logic:
+	 * 1. If model.artifactPath exists (custom path) → use it
+	 * 2. Otherwise → construct: models/{modelName}/{modelVersion}/model.txt
+	 *
+	 * Example Paths Generated:
+	 * - sentiment-fusion: models/sentiment-fusion/v1.1.0/model.txt
+	 * - price-prediction: models/price-prediction/v1.1.0/model.txt
+	 * - early-signal: models/early-signal/v1.0.0/model.txt
+	 *
+	 * Bug Fix (2025-10-10):
+	 * Previously, all models were loading from a static path (sentiment-fusion), causing
+	 * identical 41% confidence values across all predictions. Fixed by making path
+	 * construction dynamic using model.modelName and model.modelVersion.
+	 *
+	 * Troubleshooting:
+	 * - If all models return same confidence → Check this path construction
+	 * - If model not found → Verify directory structure matches pattern above
+	 * - If predictions fail → Check normalizer.json exists in same directory
+	 *
+	 * @param model - Model metadata from ml_models table (contains modelName, modelVersion)
+	 * @param features - Normalized feature vector for prediction
+	 * @returns Prediction with value, confidence, and optional probability distribution
 	 */
 	private async runInference(
 		model: ModelMetadata,
@@ -733,10 +1166,19 @@ export class RealTimePredictionEngine {
 			// Ensure Python subprocess is running
 			await this.ensurePythonProcess();
 
-			// Get model and normalizer paths
+			// CRITICAL: Dynamic model path construction using model metadata
+			// This ensures each model loads from its own directory:
+			// - sentiment-fusion → models/sentiment-fusion/v1.1.0/model.txt
+			// - price-prediction → models/price-prediction/v1.1.0/model.txt
+			// - early-signal → models/early-signal/v1.0.0/model.txt
+			//
+			// The ml_models table does NOT have an artifact_path column, so this
+			// fallback path construction is essential for independent model loading.
 			const modelPath =
 				model.artifactPath ||
-				path.join(process.cwd(), "models/early-signal/v1.0.0/model.txt");
+				path.join(process.cwd(), `models/${model.modelName}/v${model.modelVersion}/model.txt`);
+
+			// Normalizer must be in same directory as model
 			const normalizerPath = path.join(path.dirname(modelPath), "normalizer.json");
 
 			// Call Python for real model inference

@@ -24,7 +24,7 @@ async function testHistoricalQueries() {
 
   console.log('Fetching macro data for 3 different dates...\n');
 
-  const results = [];
+  const results: any[] = [];
 
   for (const date of testDates) {
     try {

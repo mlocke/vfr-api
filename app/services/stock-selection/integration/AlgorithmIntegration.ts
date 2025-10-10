@@ -201,6 +201,9 @@ export class AlgorithmIntegration implements AlgorithmIntegrationInterface {
 
 			dataStatus: this.buildDataStatus(options),
 
+			// ✅ Progress tracking for real-time UI updates
+			progressTracker: (request as any).progressTracker,
+
 			// Current positions would be provided by portfolio management
 			currentPositions: undefined,
 		};

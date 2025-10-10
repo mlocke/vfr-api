@@ -4,6 +4,13 @@ Generate Price Prediction Dataset using yfinance
 
 Uses yfinance for reliable historical data access.
 Generates simplified feature set for price movement prediction.
+
+⚠️ IMPORTANT: Before running this script, review the caching principles in:
+   scripts/ml/CLAUDE.md - "CRITICAL: HISTORICAL DATA CACHING PRINCIPLE"
+
+   Without caching, this script may make 73,200+ redundant API calls for
+   historical data that never changes. Proper caching reduces this to ~100 calls
+   on first run and 0 calls on subsequent runs.
 """
 
 import yfinance as yf

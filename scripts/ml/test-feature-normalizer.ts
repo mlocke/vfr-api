@@ -28,6 +28,21 @@ function createMockFeatureVector(multiplier: number = 1): FeatureVector {
 		analyst_coverage_change: 15 * multiplier,
 		rsi_momentum: 20.0 * multiplier,
 		macd_histogram_trend: 2.5 * multiplier,
+		fed_rate_change_30d: 0.5 * multiplier,
+		unemployment_rate_change: 0.1 * multiplier,
+		cpi_inflation_rate: 3.0 * multiplier,
+		gdp_growth_rate: 2.5 * multiplier,
+		treasury_yield_10y: 4.0 * multiplier,
+		sec_insider_buying_ratio: 0.6 * multiplier,
+		sec_institutional_ownership_change: 2.0 * multiplier,
+		sec_8k_filing_count_30d: 3 * multiplier,
+		analyst_price_target_change: 10.0 * multiplier,
+		earnings_whisper_vs_estimate: 1.5 * multiplier,
+		short_interest_change: 0.5 * multiplier,
+		institutional_ownership_momentum: 1.0 * multiplier,
+		options_put_call_ratio_change: 0.2 * multiplier,
+		dividend_yield_change: 0.1 * multiplier,
+		market_beta_30d: 1.1 * multiplier,
 	};
 }
 

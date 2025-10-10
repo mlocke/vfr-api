@@ -12,7 +12,7 @@
  * - Zero breaking changes confirmed
  */
 
-const TEST_TIMEOUT = 30000;
+const ML_COMPATIBILITY_TEST_TIMEOUT = 30000;
 
 describe("Phase 4.2.4: ML Backward Compatibility", () => {
 	const apiUrl = "http://localhost:3000/api/stocks/analyze";
@@ -58,7 +58,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ API Contract: Standard response structure maintained`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -86,7 +86,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Existing Parameters: All legacy parameters supported`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -119,7 +119,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Default Behavior: ML disabled when not specified`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -159,7 +159,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Classic VFR: Score=${stock.compositeScore.toFixed(2)}, Recommendation=${stock.recommendation}`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -194,7 +194,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Explicit Disable: include_ml=false respected`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -228,7 +228,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Parameter Ignore: ML parameters ignored when include_ml=false`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -285,7 +285,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Response Format: Consistent structure with/without ML`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -321,7 +321,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Stock Fields: Consistent across ${result.data.stocks.length} stocks`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -348,7 +348,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Single Mode: Compatible without ML`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -370,7 +370,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Multiple Mode: Compatible without ML`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -393,7 +393,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Sector Mode: Compatible without ML`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -424,7 +424,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Error Handling: Invalid symbol handled gracefully`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -446,7 +446,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Error Handling: Missing parameters handled`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -479,7 +479,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Metadata: Standard fields present`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -527,7 +527,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ ML Metadata: Present only when ML enabled`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 
@@ -568,7 +568,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 					`✅ Zero Breaking Changes: Existing client code works unchanged`
 				);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 
 		test(
@@ -596,7 +596,7 @@ describe("Phase 4.2.4: ML Backward Compatibility", () => {
 
 				console.log(`✅ Data Types: Consistent with expectations`);
 			},
-			TEST_TIMEOUT
+			ML_COMPATIBILITY_TEST_TIMEOUT
 		);
 	});
 });

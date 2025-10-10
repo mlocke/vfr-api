@@ -70,8 +70,11 @@ class GenericPredictionServer:
                 normalizer_data = json.load(f)
 
             # Handle both array-based and dict-based normalizer formats
-            if 'mean' in normalizer_data and 'std' in normalizer_data:
-                # Array-based format: {"mean": [...], "std": [...]}
+            if 'mean' in normalizer_data and ('std' in normalizer_data or 'scale' in normalizer_data):
+                # Array-based format: {"mean": [...], "std": [...]} or {"mean": [...], "scale": [...]}
+                # Support both "std" and "scale" as they're equivalent (standard deviation)
+                if 'scale' in normalizer_data and 'std' not in normalizer_data:
+                    normalizer_data['std'] = normalizer_data['scale']
                 self.normalizer_cache[normalizer_path] = normalizer_data
             elif 'params' in normalizer_data:
                 # Dict-based format: {"params": {"feature1": {"mean": ..., "stdDev": ...}, ...}}
@@ -149,45 +152,75 @@ class GenericPredictionServer:
         X_norm = self.normalize_features(features, normalizer)
 
         # Make prediction
-        prediction = model.predict(X_norm)[0]
+        raw_prediction = model.predict(X_norm)[0]
 
-        # Calculate confidence and probabilities
-        # For classification (binary): prediction is probability of class 1
-        # For regression: prediction is raw value
-        if prediction >= 0 and prediction <= 1:
-            # Classification mode (binary)
-            confidence = abs(prediction - 0.5) * 2  # Distance from 0.5, scaled to [0, 1]
-            probability = {
-                'up': float(prediction),
-                'down': float(1 - prediction),
-                'neutral': 0.0
-            }
-            # Raw prediction value (normalize to [-1, 1] range)
-            value = (prediction - 0.5) * 2
-        else:
-            # Regression mode
-            value = float(prediction)
-            # Calculate confidence based on prediction magnitude
-            confidence = min(abs(value), 1.0)
-            # Calculate probabilities from value
-            if value > 0:
-                prob_up = min(0.5 + value * 0.3, 0.8)
-                prob_down = 1 - prob_up - 0.1
-                prob_neutral = 0.1
-            elif value < 0:
-                prob_down = min(0.5 + abs(value) * 0.3, 0.8)
-                prob_up = 1 - prob_down - 0.1
-                prob_neutral = 0.1
+        # Handle multi-class vs binary classification vs regression
+        if isinstance(raw_prediction, np.ndarray):
+            # Multi-class classification: prediction is array of probabilities [prob_class0, prob_class1, prob_class2]
+            # For 3-class (DOWN=0, NEUTRAL=1, UP=2)
+            if len(raw_prediction) == 3:
+                prob_down = float(raw_prediction[0])
+                prob_neutral = float(raw_prediction[1])
+                prob_up = float(raw_prediction[2])
+
+                # Predicted class (argmax)
+                predicted_class = int(np.argmax(raw_prediction))
+
+                # Map class to value: DOWN=-1, NEUTRAL=0, UP=1
+                value = float(predicted_class - 1)  # 0->-1, 1->0, 2->1
+
+                # Confidence = max probability
+                confidence = float(np.max(raw_prediction))
+
+                probability = {
+                    'up': prob_up,
+                    'down': prob_down,
+                    'neutral': prob_neutral
+                }
             else:
-                prob_up = 0.33
-                prob_down = 0.33
-                prob_neutral = 0.34
+                # Unexpected array size
+                raise Exception(f'Unexpected prediction array size: {len(raw_prediction)}')
+        else:
+            # Scalar prediction (binary classification or regression)
+            prediction = float(raw_prediction)
 
-            probability = {
-                'up': float(prob_up),
-                'down': float(prob_down),
-                'neutral': float(prob_neutral)
-            }
+            # Calculate confidence and probabilities
+            # For classification (binary): prediction is probability of class 1
+            # For regression: prediction is raw value
+            if prediction >= 0 and prediction <= 1:
+                # Binary classification mode
+                confidence = abs(prediction - 0.5) * 2  # Distance from 0.5, scaled to [0, 1]
+                probability = {
+                    'up': prediction,
+                    'down': 1 - prediction,
+                    'neutral': 0.0
+                }
+                # Raw prediction value (normalize to [-1, 1] range)
+                value = (prediction - 0.5) * 2
+            else:
+                # Regression mode
+                value = prediction
+                # Calculate confidence based on prediction magnitude
+                confidence = min(abs(value), 1.0)
+                # Calculate probabilities from value
+                if value > 0:
+                    prob_up = min(0.5 + value * 0.3, 0.8)
+                    prob_down = 1 - prob_up - 0.1
+                    prob_neutral = 0.1
+                elif value < 0:
+                    prob_down = min(0.5 + abs(value) * 0.3, 0.8)
+                    prob_up = 1 - prob_down - 0.1
+                    prob_neutral = 0.1
+                else:
+                    prob_up = 0.33
+                    prob_down = 0.33
+                    prob_neutral = 0.34
+
+                probability = {
+                    'up': prob_up,
+                    'down': prob_down,
+                    'neutral': prob_neutral
+                }
 
         return {
             'prediction': float(value),

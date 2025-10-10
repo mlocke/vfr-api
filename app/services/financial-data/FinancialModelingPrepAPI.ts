@@ -25,6 +25,7 @@ import {
 import securityValidator from "../security/SecurityValidator";
 import { BaseFinancialDataProvider } from "./BaseFinancialDataProvider";
 import { createApiErrorHandler, ErrorType, ErrorCode } from "../error-handling";
+import { redisCache } from "../cache/RedisCache";
 
 export class FinancialModelingPrepAPI
 	extends BaseFinancialDataProvider
@@ -44,6 +45,15 @@ export class FinancialModelingPrepAPI
 
 	protected getSourceIdentifier(): string {
 		return "fmp";
+	}
+
+	/**
+	 * Build cache key for historical data
+	 * Historical data is immutable and cacheable for long periods
+	 */
+	private buildHistoricalCacheKey(symbol: string, limit: number, endDate?: Date): string {
+		const dateKey = endDate ? endDate.toISOString().split('T')[0] : 'latest';
+		return `fmp:historical:${symbol.toUpperCase()}:${limit}:${dateKey}`;
 	}
 
 	/**
@@ -207,6 +217,19 @@ export class FinancialModelingPrepAPI
 				return [];
 			}
 
+			// 1. BUILD CACHE KEY
+			const cacheKey = this.buildHistoricalCacheKey(symbol, limit, endDate);
+
+			// 2. CHECK REDIS CACHE FIRST (MANDATORY)
+			const cached = await redisCache.get<MarketData[]>(cacheKey);
+			if (cached) {
+				console.log(`✅ Historical cache HIT: ${symbol} ${endDate?.toISOString().split('T')[0] || 'latest'}`);
+				return cached;
+			}
+
+			// 3. ONLY IF CACHE MISS: Make API call
+			console.log(`❌ Historical cache MISS: ${symbol} - calling FMP API`);
+
 			// Build URL with optional date range
 			let url = `/historical-price-full/${symbol.toUpperCase()}`;
 
@@ -242,7 +265,7 @@ export class FinancialModelingPrepAPI
 			}
 
 			// Convert all historical data to MarketData format
-			return response.data.historical.map((historical: any) => ({
+			const data = response.data.historical.map((historical: any) => ({
 				symbol: symbol.toUpperCase(),
 				open: parseFloat(historical.open || "0"),
 				high: parseFloat(historical.high || "0"),
@@ -252,6 +275,11 @@ export class FinancialModelingPrepAPI
 				timestamp: new Date(historical.date).getTime(),
 				source: "fmp",
 			}));
+
+			// 4. STORE IN CACHE (historical data = immutable, 30 day TTL)
+			await redisCache.set(cacheKey, data, 2592000, { source: 'fmp', version: '1.0.0' }); // 30 days
+
+			return data;
 		} catch (error) {
 			this.errorHandler.logger.logApiError("GET", "historical_data", error, undefined, {
 				symbol,
@@ -2689,6 +2717,46 @@ export class FinancialModelingPrepAPI
 	}
 
 	/**
+	 * Get earnings calendar for a symbol
+	 * Returns upcoming and historical earnings dates
+	 * @param symbol Stock ticker
+	 * @returns Array of earnings events with dates and estimates
+	 */
+	async getEarningsCalendar(symbol: string): Promise<Array<{
+		date: string;
+		symbol: string;
+		eps?: number;
+		epsEstimated?: number;
+		time?: 'bmo' | 'amc';
+		revenue?: number;
+		revenueEstimated?: number;
+	}>> {
+		try {
+			this.validateApiKey();
+			const normalizedSymbol = this.normalizeSymbol(symbol);
+
+			// Try v3 earnings calendar endpoint
+			const response = await this.makeRequest(`/historical/earning_calendar/${normalizedSymbol}`);
+
+			if (!this.validateResponse(response, "array")) {
+				return [];
+			}
+
+			return response.data.map((event: any) => ({
+				date: event.date || "",
+				symbol: normalizedSymbol,
+				eps: event.eps ? this.parseNumeric(event.eps) : undefined,
+				epsEstimated: event.epsEstimated ? this.parseNumeric(event.epsEstimated) : undefined,
+				time: event.time || undefined,
+				revenue: event.revenue ? this.parseNumeric(event.revenue) : undefined,
+				revenueEstimated: event.revenueEstimated ? this.parseNumeric(event.revenueEstimated) : undefined,
+			}));
+		} catch (error) {
+			return this.handleApiError(error, symbol, "earnings calendar", []);
+		}
+	}
+
+	/**
 	 * Get social sentiment data from StockTwits and Twitter
 	 * Returns hourly social sentiment metrics with post volume, engagement, and sentiment scores
 	 * @param symbol Stock symbol
@@ -2742,6 +2810,52 @@ export class FinancialModelingPrepAPI
 			}));
 		} catch (error) {
 			return this.handleApiError(error, symbol, "social sentiment", []);
+		}
+	}
+
+	/**
+	 * Get stock news articles
+	 * Returns recent news articles with titles, text snippets, and publication dates
+	 * @param symbol Stock symbol
+	 * @param limit Maximum number of articles to retrieve (default: 50)
+	 */
+	async getStockNews(
+		symbol: string,
+		limit = 50
+	): Promise<
+		{
+			publishedDate: string;
+			title: string;
+			image: string;
+			site: string;
+			text: string;
+			url: string;
+			symbol: string;
+		}[]
+	> {
+		try {
+			this.validateApiKey();
+			const normalizedSymbol = this.normalizeSymbol(symbol);
+
+			const response = await this.makeRequest(
+				`/stock_news?tickers=${normalizedSymbol}&limit=${limit}`
+			);
+
+			if (!this.validateResponse(response, "array")) {
+				return [];
+			}
+
+			return response.data.map((article: any) => ({
+				publishedDate: article.publishedDate || "",
+				title: article.title || "",
+				image: article.image || "",
+				site: article.site || "",
+				text: article.text || "",
+				url: article.url || "",
+				symbol: article.symbol || normalizedSymbol,
+			}));
+		} catch (error) {
+			return this.handleApiError(error, symbol, "stock news", []);
 		}
 	}
 }

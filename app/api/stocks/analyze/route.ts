@@ -25,6 +25,8 @@ import { OptionsDataService } from "../../../services/financial-data/OptionsData
 import { FinancialModelingPrepAPI } from "../../../services/financial-data/FinancialModelingPrepAPI";
 import { MLPredictionService } from "../../../services/ml/prediction/MLPredictionService";
 import { FeatureEngineeringService } from "../../../services/ml/features/FeatureEngineeringService";
+import { ProgressTracker } from "../../../services/progress/ProgressTracker";
+import { sendProgressUpdate, closeProgressSession } from "./progress/[sessionId]/route";
 
 // Request validation - supports admin dashboard test format
 const RequestSchema = z.object({
@@ -45,6 +47,8 @@ const RequestSchema = z.object({
 	ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5),
 	ml_weight: z.number().min(0).max(1).optional().default(0.15),
 	ml_timeout: z.number().min(100).max(30000).optional().default(5000), // Allow Python server initialization time
+	// Real-time progress tracking
+	sessionId: z.string().optional(), // Optional session ID for progress tracking
 });
 
 // Initialize services (lazy initialization for optimal performance)
@@ -221,14 +225,15 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			throw new Error(`Unsupported mode: ${mode}`);
 	}
 
-	// Check if Early Signal Detection is enabled via admin toggle
+	// Check if ML features are enabled via admin toggles
 	const { MLFeatureToggleService } = await import(
 		"../../../services/admin/MLFeatureToggleService"
 	);
 	const toggleService = MLFeatureToggleService.getInstance();
 	const esdEnabled = await toggleService.isEarlySignalEnabled();
+	const sentimentFusionEnabled = await toggleService.isSentimentFusionEnabled();
 
-	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, ML Enhancement: ${include_ml || false}`);
+	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, Sentiment-Fusion Toggle: ${sentimentFusionEnabled}, ML Enhancement: ${include_ml || false}`);
 
 	return {
 		scope,
@@ -238,14 +243,14 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			includeSentiment: true,
 			includeNews: true,
 			includeEarlySignal: esdEnabled,
+			includeSentimentFusion: sentimentFusionEnabled,
 			riskTolerance: "moderate",
-			timeout: config?.timeout || 120000, // Increased to 120s for comprehensive analysis with ESD (Python model loading + feature extraction)
+			timeout: config?.timeout || 90000, // 90 seconds to accommodate multiple slow options API calls (~45s total) plus other data fetching
 			// ML Enhancement Options (Phase 4.1)
 			include_ml,
 			ml_horizon,
 			ml_confidence_threshold,
 			ml_weight,
-			ml_timeout,
 		},
 		requestId: `admin_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
 	};
@@ -323,6 +328,8 @@ function convertToAdminResponse(response: any): any {
 				risks: selection.risks,
 				insights: selection.insights,
 				early_signal: selection.early_signal,
+				price_prediction: selection.price_prediction, // Phase 4.2: Include price prediction in API response
+				sentiment_fusion: selection.sentiment_fusion, // Phase 4.3: Include sentiment-fusion in API response
 				mlPrediction: selection.mlPrediction, // Phase 4.1: Include ML predictions in API response
 			};
 		}) || [];
@@ -365,17 +372,43 @@ function convertToAdminResponse(response: any): any {
  * Main POST endpoint - comprehensive analysis with full StockSelectionService
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+	let progressTracker: ProgressTracker | undefined;
+	let sessionId: string | undefined;
+
 	try {
 		console.log("🔬 Starting comprehensive analysis via StockSelectionService...");
 
 		// Parse and validate request
 		const body = await request.json();
+		console.log("📦 Request body keys:", Object.keys(body));
+		console.log("📦 Raw sessionId from body:", body.sessionId);
+
 		const validatedRequest = RequestSchema.parse(body);
+		sessionId = validatedRequest.sessionId;
+
+		console.log("🎯 Validated sessionId:", sessionId);
+		console.log("🎯 SessionId type:", typeof sessionId);
+
+		// Initialize progress tracker if session ID provided
+		if (sessionId) {
+			console.log("✅ Initializing ProgressTracker for session:", sessionId);
+			progressTracker = new ProgressTracker();
+			progressTracker.onProgress(update => {
+				console.log("📊 Progress update:", update.stage, update.progress + "%");
+				sendProgressUpdate(sessionId!, update);
+			});
+			progressTracker.startStage("init", "Initializing analysis engine...");
+			console.log("✅ Started 'init' stage");
+		} else {
+			console.log("⚠️ No sessionId provided - progress tracking disabled");
+		}
 
 		// Get the comprehensive service
+		progressTracker?.updateStage("init", "Loading analysis services...");
 		const service = await getStockSelectionService();
 
 		// Convert to SelectionRequest format
+		progressTracker?.completeStage("init");
 		const selectionRequest = await convertToSelectionRequest(validatedRequest);
 
 		console.log("📊 Executing comprehensive stock analysis:", {
@@ -383,12 +416,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 			symbols: selectionRequest.scope.symbols,
 			sector: selectionRequest.scope.sector?.label,
 			requestId: selectionRequest.requestId,
+			withProgressTracking: !!sessionId,
 		});
+
+		// Pass progress tracker to analysis
+		if (progressTracker) {
+			(selectionRequest as any).progressTracker = progressTracker;
+		}
 
 		// Execute comprehensive analysis
 		const startTime = Date.now();
 		const analysisResult = await service.selectStocks(selectionRequest);
 		const analysisTime = Date.now() - startTime;
+
+		// Complete progress tracking
+		if (progressTracker) {
+			progressTracker.complete();
+			// Close SSE connection after a short delay
+			setTimeout(() => {
+				if (sessionId) closeProgressSession(sessionId);
+			}, 1000);
+		}
 
 		console.log(`✅ Comprehensive analysis completed in ${analysisTime}ms`, {
 			success: analysisResult.success,
@@ -403,6 +451,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 		return NextResponse.json(adminResponse);
 	} catch (error) {
 		console.error("Comprehensive analysis error:", error);
+
+		// Notify progress tracker of failure
+		if (progressTracker && sessionId) {
+			sendProgressUpdate(sessionId, {
+				stage: "error",
+				message: error instanceof Error ? error.message : "Analysis failed",
+				progress: 0,
+				timestamp: Date.now(),
+				metadata: { error: true },
+			});
+			setTimeout(() => closeProgressSession(sessionId!), 1000);
+		}
 
 		// Return appropriate status codes for different error types
 		if (error instanceof z.ZodError) {

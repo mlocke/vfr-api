@@ -1,0 +1,138 @@
+[
+  {
+    "endpoint": "/api/v4/insider-trading?symbol=AAPL",
+    "description": "Insider trading by symbol (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 58688,
+    "error": ""
+  },
+  {
+    "endpoint": "/stable/insider-trading/latest",
+    "description": "Latest insider trades",
+    "status": 200,
+    "ok": true,
+    "bytes": 60433,
+    "error": ""
+  },
+  {
+    "endpoint": "/stable/insider-trading/search?symbol=AAPL",
+    "description": "Search insider trades by symbol",
+    "status": 200,
+    "ok": true,
+    "bytes": 60688,
+    "error": ""
+  },
+  {
+    "endpoint": "/stable/insider-trading/reporting-name?name=Cook",
+    "description": "Search insider trades by name (Tim Cook)",
+    "status": 200,
+    "ok": true,
+    "bytes": 9808,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/insider-trading-transaction-type",
+    "description": "List of insider trading transaction types",
+    "status": 200,
+    "ok": true,
+    "bytes": 277,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/insider-trading-rss-feed",
+    "description": "Insider trading RSS feed",
+    "status": 200,
+    "ok": true,
+    "bytes": 31233,
+    "error": ""
+  },
+  {
+    "endpoint": "/stable/house-trades?symbol=AAPL",
+    "description": "House member trades for AAPL",
+    "status": 200,
+    "ok": true,
+    "bytes": 229711,
+    "error": ""
+  },
+  {
+    "endpoint": "/stable/house-latest",
+    "description": "Latest House disclosures",
+    "status": 200,
+    "ok": true,
+    "bytes": 49598,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/senate-disclosure",
+    "description": "Senate financial disclosures",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/house-disclosure",
+    "description": "House financial disclosures",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/institutional-ownership/latest",
+    "description": "Latest institutional ownership",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/hedge-fund-holdings",
+    "description": "List of hedge funds and holdings",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/hedge-fund-portfolio?manager=Michael%20Burry",
+    "description": "Hedge fund portfolio (Michael Burry)",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v4/mutual-fund-ownership/symbol-ownership?symbol=AAPL",
+    "description": "Mutual fund ownership (AAPL)",
+    "status": 200,
+    "ok": true,
+    "bytes": 2,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v3/etf-holder/SPY",
+    "description": "ETF holders (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 116948,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v3/etf-sector-weightings/SPY",
+    "description": "ETF sector weights (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 798,
+    "error": ""
+  },
+  {
+    "endpoint": "/api/v3/etf-country-weightings/SPY",
+    "description": "ETF country weights (SPY)",
+    "status": 200,
+    "ok": true,
+    "bytes": 554,
+    "error": ""
+  }
+]

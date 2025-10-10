@@ -72,6 +72,19 @@ data/training/test-fix*.csv
 data/cache/
 data/symbols/
 
+# ML Model files (large binary files)
+models/**/*.safetensors
+models/**/*.pt
+models/**/*.pth
+models/**/optimizer.pt
+models/**/model.txt
+models/**/checkpoint-*/
+# Keep metadata and small config files
+!models/**/metadata.json
+!models/**/config.json
+!models/**/normalizer.json
+!models/**/model-registry.json
+
 # Backup files
 *.backup
 *.backup2

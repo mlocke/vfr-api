@@ -45,6 +45,7 @@ export interface SelectionOptions {
 	includeNews?: boolean; // Include news impact analysis
 	includeEarlySignal?: boolean; // Include Early Signal Detection (ML analyst rating predictions)
 	includePricePrediction?: boolean; // Include Price Prediction (ML price movement predictions)
+	includeSentimentFusion?: boolean; // Include Sentiment-Fusion (ML 3-day price direction predictions)
 	riskTolerance?: "conservative" | "moderate" | "aggressive";
 
 	// Data preferences
@@ -105,6 +106,7 @@ export interface EnhancedStockResult {
 	context: {
 		sector: string;
 		marketCap: number;
+		currentPrice?: number;
 		priceChange24h?: number;
 		volumeChange24h?: number;
 		beta?: number;
@@ -137,11 +139,17 @@ export interface EnhancedStockResult {
 	// ML Early Signal Detection (NEW - Phase 4)
 	early_signal?: EarlySignalPrediction;
 
-	// ML Predictions (Phase 4.1)
+	// ML Predictions (Phase 4.1) - DEPRECATED: Use mlEnsemblePrediction instead
 	mlPrediction?: import("../ml/prediction/RealTimePredictionEngine").PredictionResult;
 
-	// Price Prediction (Phase 4.2)
+	// ML Ensemble Predictions (Phase 4.4) - All 3 models voting with consensus
+	mlEnsemblePrediction?: import("../ml/prediction/RealTimePredictionEngine").EnsemblePredictionResult;
+
+	// Price Prediction (Phase 4.2) - Individual model (legacy)
 	price_prediction?: import("../ml/price-prediction/PricePredictionService").PricePrediction;
+
+	// Sentiment-Fusion Prediction (Phase 4.3) - Individual model (legacy)
+	sentiment_fusion?: import("../ml/sentiment-fusion/types").PricePrediction;
 }
 
 /**

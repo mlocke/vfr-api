@@ -205,9 +205,9 @@ export class PredictionLogger {
         // Map direction to predicted_value for direction predictions
         let predicted_value: number;
         if (prediction.direction === 'UP') {
-            predicted_value = prediction.probability || 1.0;
+            predicted_value = typeof prediction.probability === 'number' ? prediction.probability : 1.0;
         } else if (prediction.direction === 'DOWN') {
-            predicted_value = -(prediction.probability || 1.0);
+            predicted_value = typeof prediction.probability === 'number' ? -(prediction.probability) : -1.0;
         } else {
             predicted_value = 0.0;
         }

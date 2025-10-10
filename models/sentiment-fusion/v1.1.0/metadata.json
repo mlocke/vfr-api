@@ -1,0 +1,105 @@
+{
+  "model_version": "v1.1.0",
+  "model_type": "sentiment-fusion",
+  "algorithm": "LightGBM",
+  "objective": "multiclass",
+  "num_classes": 3,
+  "classes": [
+    "DOWN",
+    "NEUTRAL",
+    "UP"
+  ],
+  "training_date": "2025-10-09T21:09:18.536489",
+  "training_examples": 34846,
+  "validation_examples": 7467,
+  "num_features": 45,
+  "feature_categories": {
+    "sentiment": 4,
+    "price_technical": 41
+  },
+  "improvements_over_v1_0": [
+    "Fixed early stopping callback",
+    "Added class_weight=balanced",
+    "Increased max iterations to 1000",
+    "Proper training monitoring"
+  ],
+  "performance": {
+    "validation_accuracy": 0.5379670550421857,
+    "best_iteration": 1000,
+    "total_iterations": 1000
+  },
+  "comparison_to_v1_0": {
+    "v1_0_accuracy": 0.5029,
+    "v1_1_accuracy": 0.5379670550421857,
+    "improvement": 0.03506705504218566
+  },
+  "label_distribution": {
+    "train": {
+      "DOWN": 9068,
+      "NEUTRAL": 13428,
+      "UP": 12350
+    }
+  },
+  "top_features": [
+    {
+      "feature": "volatility_20d",
+      "importance": 5206
+    },
+    {
+      "feature": "atr_14",
+      "importance": 4420
+    },
+    {
+      "feature": "volume_acceleration",
+      "importance": 4138
+    },
+    {
+      "feature": "volume_trend",
+      "importance": 4062
+    },
+    {
+      "feature": "sma_50_distance",
+      "importance": 4026
+    },
+    {
+      "feature": "price_momentum_20d",
+      "importance": 4001
+    },
+    {
+      "feature": "intraday_range",
+      "importance": 3969
+    },
+    {
+      "feature": "volume_ratio_5d",
+      "importance": 3940
+    },
+    {
+      "feature": "sma_50",
+      "importance": 3805
+    },
+    {
+      "feature": "rsi_14",
+      "importance": 3780
+    },
+    {
+      "feature": "macd_signal",
+      "importance": 3759
+    },
+    {
+      "feature": "ema_20",
+      "importance": 3715
+    },
+    {
+      "feature": "gap_size",
+      "importance": 3660
+    },
+    {
+      "feature": "relative_volume",
+      "importance": 3628
+    },
+    {
+      "feature": "sentiment_neutral",
+      "importance": 3614
+    }
+  ]
+}

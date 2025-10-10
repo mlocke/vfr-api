@@ -216,7 +216,7 @@ export default function AnalysisControls({ onRunAnalysis, isRunning }: AnalysisC
 						style={{
 							fontSize: "1rem",
 							fontWeight: "600",
-							color: "rgba(139, 92, 246, 0.9)",
+							color: "white",
 							marginBottom: "0.75rem",
 							display: "flex",
 							alignItems: "center",

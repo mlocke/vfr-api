@@ -1,263 +1,495 @@
-# VFR Analysis Engine - AI Agent Operational Context
+# VFR Analysis Engine - AI Assistant Context Guide
 
-**Purpose**: Specialized guidance for AI agents working with the VFR financial analysis engine, providing operational procedures, error boundaries, and implementation context.
+## Quick Start for AI Assistants
 
-**⚠️ CRITICAL CONSTRAINT**: NO MOCK DATA in any implementation - Production reliability depends on real API integration.
+This document provides immediate context for AI assistants working on VFR's financial analysis engine. Read this first before making any changes.
 
-## Analysis Engine Context and Mental Model
+## What is VFR?
 
-### System Function and Purpose
-**Primary Role**: Transform fragmented financial data into actionable investment insights through AI-powered analysis
-**Core Process**: Multi-source data → Weighted analysis → Confidence-scored recommendations
-**Business Impact**: Democratizing institutional-grade financial research for individual investors
+**VFR (Value For Results)** is an intelligent financial research platform that democratizes institutional-grade stock analysis for individual investors. Think "Bloomberg Terminal meets AI" but accessible to everyone.
 
-### Operational Context
-This `/docs/analysis-engine` directory provides specialized documentation for the analysis engine subsystem within the main VFR API project. All implementation files are located in the project root under `app/services/`.
+### Core Mission
+Transform fragmented financial data from 12+ sources into actionable investment insights in under 3 seconds.
 
-**Decision Framework for AI Agents**:
-```
-Analysis Request → Data Collection → Weighted Scoring → Recommendation
-       ↓               ↓              ↓              ↓
-   Validate Input   15+ API Sources  5-Factor Analysis  BUY/SELL/HOLD
-   ├─ Symbol format   ├─ Premium APIs   ├─ Technical 40%   ├─ Confidence score
-   ├─ Sector valid    ├─ Government     ├─ Fundamental 25% ├─ Supporting data
-   └─ Multi support   └─ Social intel   └─ Macro 20%      └─ Risk assessment
-                                     ├─ Sentiment 10%
-                                     └─ Alternative 5%
-```
-
-### Directory Structure
+## System Architecture at a Glance
 
 ```
-analysis-engine/
-├── analysis-engine-vision.md    # Core data priorities and AI strategy
-├── vfr-analysis-flow.md         # Complete data flow architecture
-├── data-flow.md                 # Data collection and processing flow
-├── feedback-loop.md             # AI learning and optimization
-├── api-upgrade-strategy.md      # API integration strategy
-├── teir-one-data-inputs.md      # Essential data inputs
-├── type-script/                 # TypeScript implementations
-├── plans/                       # Strategic planning documents
-├── todos/                       # Task management and tracking
-└── logs/                        # Development logs
+User Input (Stock Symbol)
+    ↓
+API Gateway (/api/stocks/analyze)
+    ↓
+Stock Selection Service (Orchestrator)
+    ↓
+┌─────────────────────────────────────────────────────┐
+│  Multi-Source Data Integration (Parallel)           │
+├─────────────────────────────────────────────────────┤
+│ • Financial Modeling Prep (Primary)                 │
+│ • Polygon.io (Technical + News)                     │
+│ • EODHD (Options Data)                              │
+│ • FRED/BLS/EIA (Macro)                              │
+│ • Reddit/Yahoo Finance (Sentiment)                  │
+└─────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────┐
+│  Analysis Engines (Parallel Processing)             │
+├─────────────────────────────────────────────────────┤
+│ 1. Technical Analysis (40% weight)                  │
+│ 2. Fundamental Analysis (25% weight)                │
+│ 3. Macroeconomic Analysis (20% weight)              │
+│ 4. Sentiment Analysis (10% weight)                  │
+│ 5. Alternative Data (5% weight)                     │
+│ 6. ML Predictions (Optional Enhancement)            │
+└─────────────────────────────────────────────────────┘
+    ↓
+Algorithm Engine (Composite Scoring)
+    ↓
+ML Enhancement Layer (Optional)
+    ↓
+Response (7-tier recommendation: STRONG_BUY → STRONG_SELL)
 ```
 
-## Analysis Engine Architecture
+## Critical File Locations
 
-### Core Components
-- **Data Collection Layer**: Multi-tiered approach with 15+ financial APIs
-- **Analysis Engine**: AI-powered analysis with weighted factor scoring
-- **Cache Strategy**: Redis-based caching with TTL optimization
-- **Real-time Processing**: Parallel API calls with fallback mechanisms
-
-### Analysis Engine Weighting Strategy with Implementation Status
-
-#### Weighted Factor Analysis (Total: 100%)
-| Factor | Weight | Implementation Status | Data Sources | Performance Target | Error Boundary |
-|--------|--------|----------------------|--------------|-------------------|---------------|
-| **Technical Analysis** | 40% | ✅ PRODUCTION | FMP + indicators | <500ms | Fallback to basic TA if needed |
-| **Fundamental Health** | 25% | ✅ PRODUCTION | FMP primary + EODHD fallback | <1s | Dual-source redundancy |
-| **Macroeconomic Context** | 20% | ✅ PRODUCTION | FRED + BLS + EIA | <2s | Cache recent data if APIs slow |
-| **Sentiment Analysis** | 10% | ✅ PRODUCTION | FMP analyst consensus + News + Reddit | <1.5s | Multi-source sentiment integration |
-| **Alternative Data** | 5% | ✅ PRODUCTION | ESG + short interest + options | <1s | Skip if unavailable |
-
-#### 7-Tier Recommendation System (PRODUCTION)
-| Tier | Score Range | Classification | Analyst Integration |
-|------|-------------|----------------|-------------------|
-| **Strong Buy** | 0.85-1.00 | Highest conviction | Analyst upgrades weighted |
-| **Buy** | 0.70-0.85 | High conviction | Consensus buy signals |
-| **Moderate Buy** | 0.60-0.70 | Moderate positive | Mixed positive sentiment |
-| **Hold** | 0.40-0.60 | Neutral | Neutral analyst views |
-| **Moderate Sell** | 0.30-0.40 | Moderate negative | Mixed negative sentiment |
-| **Sell** | 0.15-0.30 | High negative | Consensus sell signals |
-| **Strong Sell** | 0.00-0.15 | Highest negative | Analyst downgrades weighted |
-
-#### Factor Scoring Logic
+### Services Architecture
 ```
-Factor Analysis → Weighted Scoring → Confidence Calculation → Final Recommendation
-       ↓                ↓                  ↓                    ↓
-   Individual       Weight × Score     Data Quality Check    BUY/SELL/HOLD
-   ├─ Technical 40%  ├─ Max 40 points    ├─ Source reliability  ├─ Confidence %
-   ├─ Fundamental    ├─ Weighted sum     ├─ Timestamp fresh     ├─ Risk level
-   ├─ Macroeconomic  ├─ Normalization    ├─ Fallback usage      └─ Supporting rationale
-   ├─ Sentiment      └─ Range 0-100     └─ Confidence score
-   └─ Alternative
+app/services/
+├── stock-selection/
+│   ├── StockSelectionService.ts          # Core orchestration
+│   ├── MLEnhancedStockSelectionService.ts # ML-enhanced version
+│   └── types.ts                           # Type definitions
+├── algorithms/
+│   ├── AlgorithmEngine.ts                 # Multi-factor scoring
+│   ├── FactorLibrary.ts                   # Factor calculations
+│   └── types.ts                           # Algorithm types
+├── financial-data/
+│   ├── FinancialModelingPrepAPI.ts       # Primary data source
+│   ├── PolygonAPI.ts                     # Technical + news
+│   ├── EODHDAPI.ts                       # Options data
+│   ├── FREDAPI.ts                        # Federal Reserve data
+│   └── [50+ other services]
+├── ml/
+│   ├── prediction/
+│   │   ├── RealTimePredictionEngine.ts   # <100ms inference
+│   │   └── PredictionLogger.ts
+│   └── sentiment-fusion/                 # Sentiment models
+├── cache/
+│   ├── RedisCache.ts                     # Primary caching
+│   ├── OptionsCache.ts                   # Options-specific
+│   └── HistoricalDataCache.ts            # Historical data
+└── admin/
+    └── MLFeatureToggleService.ts         # Feature flags
 ```
 
-#### Implementation State Matrix
-| Component | Status | File Location | Test Coverage | Performance |
-|-----------|--------|---------------|---------------|-------------|
-| FMP API Integration | ✅ PRODUCTION | `FinancialModelingPrepAPI.ts` | ✅ Comprehensive | <500ms |
-| Analyst Consensus | ✅ PRODUCTION | `SentimentAnalysisService.ts` | ✅ FMP integration | <800ms |
-| 7-Tier Recommendations | ✅ PRODUCTION | `RecommendationUtils.ts` | ✅ Validated | Instant |
-| VWAP Analysis | ✅ PRODUCTION | `VWAPService.ts` | ✅ Comprehensive | <200ms |
-| Reddit WSB Sentiment | ✅ PRODUCTION | `RedditAPI.ts` | ✅ Multi-subreddit | <1.5s |
-| Macroeconomic Data | ✅ PRODUCTION | `MacroeconomicAnalysisService.ts` | ✅ All APIs | <2s |
-| Institutional Intelligence | ✅ PRODUCTION | `InstitutionalDataService.ts` | ✅ 608-line test | <3s |
-| ESG Integration | ✅ PRODUCTION | `ESGDataService.ts` | ✅ Comprehensive | <1s |
-| Short Interest Analysis | ✅ PRODUCTION | `ShortInterestService.ts` | ✅ FINRA integration | <1s |
-| Extended Market Data | ✅ PRODUCTION | `ExtendedMarketDataService.ts` | ✅ FMP primary | <800ms |
-| Options Analysis | ✅ PRODUCTION | `OptionsDataService.ts` | ✅ Comprehensive | <1s |
+### API Endpoints
+```
+app/api/stocks/
+├── analyze/route.ts                       # Main analysis endpoint
+├── search/route.ts                        # Stock search
+└── sentiment-fusion/route.ts              # Sentiment analysis
 
-## Development Commands (From Root Directory)
+app/api/admin/
+├── ml-feature-toggles/[featureId]/route.ts # ML toggles
+└── [20+ other admin endpoints]
+```
 
-Run these commands from `/Users/michaellocke/WebstormProjects/Home/public/vfr-api/`:
+### Frontend Components
+```
+app/components/
+├── StockRecommendationCard.tsx            # Results display
+├── admin/
+│   ├── AnalysisEngineTest.tsx            # Testing interface
+│   ├── MLFeatureTogglePanel.tsx          # ML controls
+│   └── AnalysisResults.tsx               # Results viewer
+└── ScoreBreakdown.tsx                     # Score visualization
+```
+
+## Key Concepts
+
+### 1. Multi-Factor Scoring System
+The algorithm engine combines 5 core factors into a composite score (0-100):
+
+| Factor | Weight | Key Metrics |
+|--------|--------|-------------|
+| **Technical** | 40% | RSI, MACD, Bollinger Bands, VWAP, Volume |
+| **Fundamental** | 25% | P/E, P/B, ROE, Debt/Equity, Growth rates |
+| **Macroeconomic** | 20% | Fed rates, VIX, Yield curve, Unemployment |
+| **Sentiment** | 10% | News sentiment, Reddit mentions, Analyst ratings |
+| **Alternative** | 5% | Options flow, Insider trading, 13F holdings |
+
+**Score → Recommendation Mapping:**
+- 85-100: STRONG_BUY
+- 70-84: BUY
+- 55-69: WEAK_BUY
+- 45-54: HOLD
+- 30-44: WEAK_SELL
+- 15-29: SELL
+- 0-14: STRONG_SELL
+
+### 2. ML Enhancement Layer (Optional)
+Three production ML models:
+
+**Early Signal Detection (v1.0.0)** - LightGBM
+- Purpose: Predict analyst rating upgrades 2 weeks ahead
+- Accuracy: 97.6% test accuracy, 100% recall
+- Status: ✅ Production-ready
+
+**Price Prediction (v1.2.0)** - LightGBM
+- Purpose: Predict price movements across multiple horizons
+- Dataset: 73,200 training examples
+- Status: 🔄 Model trained, integration pending
+
+**Sentiment Fusion (v1.0.0)** - FinBERT + LightGBM
+- Purpose: Advanced sentiment analysis from news
+- Status: 🔄 Experimental, accuracy improvement needed
+
+### 3. Caching Strategy
+**Three-tier caching architecture:**
+
+1. **Redis (L1)** - Hot cache, 5-15 minute TTL
+   - Quote data: 5 minutes
+   - Analysis results: 15 minutes
+   - Features: 15 minutes
+
+2. **PostgreSQL (L2)** - Warm cache, daily updates
+   - Fundamental data: 24 hours
+   - Historical prices: 24 hours
+   - Macro indicators: 24 hours
+
+3. **In-Memory (L3)** - Ultra-hot cache, session-level
+   - Model predictions: 5 minutes
+   - Frequently accessed symbols: Session
+
+**Cache Hit Rate Target:** 82%+ (currently achieving)
+
+### 4. Data Sources
+
+**Premium APIs:**
+- Financial Modeling Prep ($22/mo) - Primary fundamentals, quotes, financials
+- Polygon.io ($29/mo) - Technical data, news, 5-year history
+- EODHD - Options chains, Greeks, IV data
+
+**Government APIs (Free):**
+- FRED - Federal Reserve economic data
+- BLS - Bureau of Labor Statistics (unemployment, CPI)
+- EIA - Energy Information Administration
+
+**Alternative Data (Free):**
+- Reddit API - Social sentiment (r/wallstreetbets, r/stocks)
+- Yahoo Finance - Real-time quotes, news sentiment
+
+## Performance Requirements
+
+### Latency Targets
+| Operation | Target | Current |
+|-----------|--------|---------|
+| **Full stock analysis** | <3s | ~2.5s ✅ |
+| **ML prediction (single)** | <100ms | ~80ms ✅ |
+| **Cache retrieval** | <10ms | ~8ms ✅ |
+| **Feature engineering** | <500ms | ~400ms ✅ |
+
+### Reliability Targets
+- **Uptime:** 99.9%
+- **Cache hit rate:** 82%+
+- **Error rate:** <1%
+- **Data freshness:** <5 minutes
+
+## Common Development Patterns
+
+### 1. Adding a New Data Source
+
+```typescript
+// 1. Create service in app/services/financial-data/
+export class NewDataService {
+  constructor(private cache: RedisCache) {}
+
+  async fetchData(symbol: string): Promise<DataType> {
+    // Check cache first
+    const cached = await this.cache.get(`new-data:${symbol}`);
+    if (cached) return cached;
+
+    // Fetch from API
+    const data = await this.callAPI(symbol);
+
+    // Cache result
+    await this.cache.setex(`new-data:${symbol}`, 900, data);
+
+    return data;
+  }
+}
+
+// 2. Register in StockSelectionService
+// 3. Add to algorithm scoring weights
+// 4. Update tests
+```
+
+### 2. Adding ML Model
+
+```typescript
+// 1. Train model using scripts/ml/
+// 2. Save to models/{model-name}/
+// 3. Register in database:
+//    INSERT INTO ml_models (name, version, type, status, config)
+// 4. Create service in app/services/ml/
+// 5. Integrate with RealTimePredictionEngine
+```
+
+### 3. Error Handling Pattern
+
+```typescript
+// VFR uses graceful degradation everywhere
+try {
+  const result = await primaryDataSource.fetch(symbol);
+  return result;
+} catch (error) {
+  console.warn('Primary failed, trying fallback:', error);
+  try {
+    return await fallbackDataSource.fetch(symbol);
+  } catch (fallbackError) {
+    // Return cached or default values
+    return await this.getCachedOrDefault(symbol);
+  }
+}
+```
+
+## Testing Guidelines
+
+### Test Structure
+```
+__tests__/
+├── unit/                    # Pure function tests
+├── integration/             # Service integration tests
+└── e2e/                     # Full flow tests
+```
+
+### Test Coverage Requirements
+- Core services: 85%+
+- ML services: 75%+
+- API endpoints: 90%+
+
+### Running Tests
+```bash
+npm test                     # All tests
+npm run test:unit           # Unit only
+npm run test:integration    # Integration only
+npm run test:coverage       # With coverage report
+```
+
+## ML Training & Deployment
+
+### Training Pipeline
+```bash
+# 1. Generate training data
+npx tsx scripts/ml/generate-training-data.ts
+
+# 2. Train model
+python scripts/ml/train-{model-name}.py
+
+# 3. Evaluate
+python scripts/ml/evaluate-{model-name}.py
+
+# 4. Register in database
+npx tsx scripts/ml/register-model.ts
+
+# 5. Deploy via admin dashboard
+# Navigate to /admin → ML Feature Toggles
+```
+
+### Model Registry (PostgreSQL)
+```sql
+ml_models
+  ├── name (e.g., 'price-prediction')
+  ├── version (e.g., 'v1.2.0')
+  ├── type (e.g., 'regression', 'classification')
+  ├── status ('active', 'inactive', 'testing')
+  ├── config (JSON model parameters)
+  ├── metrics (JSON performance metrics)
+  └── file_path (path to model file)
+```
+
+## Environment & Configuration
+
+### Required Environment Variables
+```bash
+# Financial APIs
+FINANCIAL_MODELING_PREP_API_KEY=
+POLYGON_API_KEY=
+EODHD_API_KEY=
+
+# Database
+DATABASE_URL=
+REDIS_URL=
+
+# ML
+PYTHON_PATH=python3
+
+# Feature Flags
+ENABLE_ML_PREDICTIONS=true
+ENABLE_OPTIONS_ANALYSIS=true
+```
+
+### Development Setup
+```bash
+# Install dependencies
+npm install
+pip3 install -r requirements.txt
+
+# Start development server
+npm run dev
+
+# Start Redis (required)
+redis-server
+
+# PostgreSQL must be running
+```
+
+## Admin Dashboard
+
+**URL:** `/admin`
+
+**Key Features:**
+- ML Feature Toggles (enable/disable models)
+- Analysis Engine Testing
+- Performance Monitoring
+- Cache Statistics
+- Error Logs
+- Model Performance Metrics
+
+## Documentation Structure
+
+```
+docs/
+├── analysis-engine/
+│   ├── CLAUDE.md (this file)               # AI context
+│   ├── machine-learning/                   # ML architecture
+│   │   ├── ml-architecture.md
+│   │   ├── ml-implementation-roadmap.md
+│   │   └── training/
+│   ├── roadmap/                            # Future plans
+│   ├── feedback-loop.md                    # Continuous improvement
+│   └── technical/                          # Technical specs
+├── core-context/
+│   └── vision.md                           # Product vision
+├── ml/                                     # ML-specific docs
+│   ├── MODEL_REGISTRATION_GUIDE.md
+│   ├── sentiment-fusion/
+│   └── plans/
+└── api/                                    # API documentation
+```
+
+## Common Issues & Solutions
+
+### Issue: "Model not loading"
+**Solution:**
+1. Check `ml_models` table in PostgreSQL
+2. Verify model file exists in `models/` directory
+3. Check `status` field is 'active'
+4. Restart server to reload model cache
+
+### Issue: "Cache not working"
+**Solution:**
+1. Verify Redis is running: `redis-cli ping`
+2. Check REDIS_URL environment variable
+3. Check cache hit metrics in admin dashboard
+
+### Issue: "Slow analysis (>3s)"
+**Solution:**
+1. Check which API calls are slow (add timing logs)
+2. Verify cache hit rate (should be 82%+)
+3. Consider disabling slow data sources temporarily
+4. Check API rate limits
+
+## Making Changes Safely
+
+### Before You Code:
+1. ✅ Read this CLAUDE.md file
+2. ✅ Check `docs/core-context/vision.md` for product context
+3. ✅ Review related tests in `__tests__/`
+4. ✅ Check git status for related changes
+
+### Development Workflow:
+1. **Never** break backward compatibility
+2. **Always** add tests for new features
+3. **Always** use graceful degradation for new data sources
+4. **Always** cache expensive API calls
+5. **Never** expose API keys in code
+
+### Code Review Checklist:
+- [ ] Tests pass (`npm test`)
+- [ ] TypeScript compiles (`npm run type-check`)
+- [ ] No API keys in code
+- [ ] Error handling includes fallbacks
+- [ ] Caching implemented for expensive operations
+- [ ] Performance targets met (<3s for analysis)
+- [ ] Documentation updated
+
+## Key Philosophy: "Enhance, Don't Replace"
+
+VFR follows a **modular enhancement** approach:
+
+```typescript
+// ✅ GOOD: Enhance existing functionality
+async analyzeStock(symbol: string, options?: { includeML?: boolean }) {
+  // Core analysis (always runs)
+  const analysis = await this.runCoreAnalysis(symbol);
+
+  // Optional ML enhancement
+  if (options?.includeML) {
+    try {
+      analysis.mlPrediction = await this.mlService.predict(symbol);
+    } catch (error) {
+      // Graceful degradation - return core analysis
+      console.warn('ML enhancement failed, using core analysis');
+    }
+  }
+
+  return analysis;
+}
+
+// ❌ BAD: Replace core functionality
+async analyzeStock(symbol: string) {
+  // Only ML-based analysis - fails if ML breaks
+  return await this.mlService.predict(symbol);
+}
+```
+
+## Quick Reference Commands
 
 ```bash
 # Development
-npm run dev              # Start development server
-npm run type-check       # TypeScript validation
-npm run lint            # Code quality check
-npm test                # Run all tests
+npm run dev                              # Start dev server
+npm run dev:clean                        # Clean start (clear cache)
+npm run type-check                       # TypeScript validation
 
-# Analysis Engine Specific
-npm test -- app/services/algorithms/  # Test analysis algorithms
-npm test -- app/services/stock-selection/  # Test stock selection service
+# Testing
+npm test                                 # Run all tests
+npm run test:coverage                    # Coverage report
+
+# ML Operations
+npx tsx scripts/ml/predict-generic.py    # Test prediction
+npx tsx scripts/check-ml-models.ts       # Verify models
+
+# Database
+npx tsx scripts/ml/warm-ohlcv-cache.ts   # Warm up cache
 ```
 
-## Key File Locations (Relative to Project Root)
+## Questions to Ask When Working on VFR
 
-### Analysis Engine Implementation
-- **Main Service**: `app/services/stock-selection/StockSelectionService.ts`
-- **Algorithms**: `app/services/algorithms/` (scheduling and analysis)
-- **Data Sources**: `app/services/financial-data/` (API integrations)
-- **Caching**: `app/services/cache/RedisCache.ts`
+1. **Does this enhance or replace?** (Always enhance)
+2. **What happens if this fails?** (Always have fallback)
+3. **Is this cached?** (Expensive operations must be cached)
+4. **How does this affect performance?** (Target: <3s total)
+5. **Are there tests?** (Yes, always)
+6. **Is this documented?** (Update docs/)
 
-### API Endpoints
-- **Stock Analysis**: `app/api/stocks/select/route.ts`
-- **Health Check**: `app/api/health/route.ts`
-- **Admin Testing**: `app/api/admin/test-data-sources/route.ts`
+## Getting Help
 
-## Documentation Workflow
+1. Check `/docs/analysis-engine/` for technical details
+2. Review existing tests for patterns
+3. Check git history for similar changes
+4. Review admin dashboard for production behavior
 
-### When Adding New Analysis Engine Features
-1. Document architecture decisions in relevant `.md` files
-2. Update type definitions in `type-script/` directory
-3. Add planning documents to `plans/` for complex features
-4. Track development tasks in `todos/` directory
+---
 
-### Documentation Standards
-- **Real Data Focus**: All examples use real market data, never mock data
-- **TypeScript First**: All code examples include proper typing
-- **Performance Metrics**: Include timing and optimization details
-- **Error Handling**: Document fallback strategies and error scenarios
-
-## Analysis Engine Data Flow
-
-### Single Stock Analysis Process
-1. **Input Validation**: Symbol normalization and validation
-2. **Parallel Data Collection**: 6+ APIs called simultaneously (~500ms total)
-3. **Data Normalization**: Standardize data formats across sources
-4. **Analysis Engine**: AI-powered weighted analysis
-5. **Result Caching**: Store results in Redis with appropriate TTL
-6. **Response**: BUY/SELL/HOLD recommendation with confidence scores
-
-### Data Collection Strategy
-- **Primary API**: Financial Modeling Prep (FMP) - PRODUCTION
-- **Fallback APIs**: Yahoo Finance, Alpha Vantage, TwelveData
-- **Government APIs**: FRED, Treasury, BLS, EIA
-- **Migration Status**: Polygon API fully removed (September 2025)
-- **Fallback Logic**: Automatic source switching on failures
-
-## Testing Philosophy
-
-### Analysis Engine Testing
-- **Real API Integration**: Always test with live data connections
-- **Performance Testing**: Measure data collection and analysis timing
-- **Fallback Testing**: Verify graceful degradation when APIs fail
-- **Memory Optimization**: Tests run with `maxWorkers: 1` for stability
-
-### Test Patterns
-```bash
-# Run specific analysis engine tests
-npm test -- --testNamePattern="StockSelectionService"
-npm test -- app/services/financial-data/__tests__/
-npm test -- --testNamePattern="PolygonAPI"
-```
-
-## Development Guidelines
-
-### Analysis Engine Specific Rules
-- **KISS Principles**: Keep solutions simple and readable - avoid over-engineering
-- **No Mock Data**: Always use real financial APIs for testing and development
-- **Performance First**: Target < 3 seconds for complete analysis
-- **Graceful Degradation**: Handle API failures without breaking user experience (Live Market Sentiment fix ✅)
-- **Confidence Scoring**: All analysis results include confidence levels
-- **Caching Strategy**: Implement appropriate TTL for different data types
-- **Rate Limit Handling**: Provide meaningful user feedback during API constraints
-
-### Data Quality Standards
-- **Source Attribution**: Track which APIs provided each data point
-- **Timestamp Accuracy**: Precise timing for all market data
-- **Error Logging**: Comprehensive logging for debugging API issues
-- **Rate Limiting**: Respect API limits and implement backoff strategies
-
-## Analysis Engine Error Boundaries and Recovery Procedures
-
-### Error Classification and Recovery Matrix
-
-#### Data Collection Errors
-| Error Type | Symptoms | Root Cause | Recovery Action | Prevention |
-|------------|----------|------------|-----------------|------------|
-| **API Rate Limits** | 429 responses, missing data | Daily/hourly limits exceeded | FallbackDataService auto-switch | Monitor usage in admin dashboard |
-| **API Timeouts** | Slow responses, incomplete data | Network/server issues | 5s timeout → fallback source | Health monitoring |
-| **Invalid Responses** | Data format errors | API changes/outages | Schema validation → cache/backup | Version tracking |
-| **Authentication Failures** | 401/403 errors | Invalid/expired keys | Key rotation → admin notification | Key management |
-
-#### Analysis Engine Errors
-| Issue | Detection | Impact | Immediate Response | Long-term Fix |
-|-------|-----------|--------|--------------------|---------------|
-| **Cache Misses** | Redis connection fails | Slower responses | In-memory fallback | Redis health monitoring |
-| **Analysis Timeouts** | >3s processing time | User experience degradation | Return partial results | Optimize algorithms |
-| **Data Quality Issues** | Inconsistent scoring | Unreliable recommendations | Confidence score adjustment | Data validation |
-| **Memory Pressure** | High heap usage | Performance degradation | Garbage collection | Memory optimization |
-
-### Diagnostic Decision Tree
-```
-Issue Detected → Categorize → Gather Context → Apply Recovery → Monitor
-      ↓             ↓            ↓             ↓           ↓
-  User Report    Data/Engine   Run Diagnostics  Execute Fix   Verify Fix
-     │          ├─ Data       ├─ /api/health   ├─ Auto-retry   ├─ Success metrics
-     │          ├─ Analysis   ├─ Admin panel   ├─ Fallback     ├─ Error reduction
-     │          └─ System     └─ Log analysis └─ Manual fix   └─ Performance
-     └─ Log incident for pattern analysis
-```
-
-### Analysis Engine Diagnostic Command Quick Reference
-
-| Issue Type | Diagnostic Command | Expected Output | Next Action |
-|------------|-------------------|-----------------|-------------|
-| **System Health** | `curl http://localhost:3000/api/health` | `{"status":"healthy"}` | Check individual services if unhealthy |
-| **API Status** | `curl http://localhost:3000/api/admin/data-sources` | Service availability JSON | Enable fallbacks if failures |
-| **Analysis Test** | `npm test -- --testNamePattern="StockSelectionService"` | All tests passing | Fix failures before deployment |
-| **Data Services** | `npm test -- app/services/financial-data/` | Full service validation | Check rate limits if failures |
-| **Performance** | `npm run test:performance` | Memory and timing stats | Optimize services >target times |
-| **Cache Status** | `redis-cli PING` | `PONG` | Restart Redis if no response |
-| **FMP API** | Check admin dashboard | API status and rate limits | Check API key if 401/403 |
-| **Fallback Logic** | `node test-fallback-service.mjs` | Multi-tier fallback success | Review fallback chain if failures |
-
-### Quick Diagnostic Decision Tree
-```
-Analysis Issue Detected
-    ↓
-Categorize Issue Type
-    ├─ Recommendation Wrong → Check factor weights → Review data sources → Validate scoring logic
-    ├─ Slow Response (>3s) → Check cache hit ratio → Review API timeouts → Optimize parallel calls
-    ├─ Data Missing → Check data sources status → Enable fallbacks → Review error logs
-    ├─ Crash/Error → Check error logs → Validate input → Review error boundaries
-    └─ Unexpected Score → Run baseline comparison → Check weight calculations → Validate data quality
-```
-
-### Emergency Recovery Procedures
-1. **Analysis Engine Down**: Check `/api/health` → Restart services → Verify data flow
-2. **Data Quality Degradation**: Admin dashboard → Check source status → Enable manual overrides
-3. **Performance Issues**: Monitor memory → Check cache hit rates → Optimize queries
-4. **Partial Service Failure**: Identify failed component → Enable fallbacks → Monitor confidence scores
-
-## Important Notes
-
-- This directory documents the analysis engine architecture and strategy
-- All implementation files are in the main project structure under `app/`
-- When making changes to analysis logic, update relevant documentation here
-- TypeScript examples in `type-script/` should reflect actual implementation
-- Focus on real-world performance and data quality over theoretical optimization
+**Last Updated:** 2025-10-10
+**VFR Version:** 1.2.0
+**Key Contact Points:** `docs/core-context/vision.md`, `app/services/stock-selection/`

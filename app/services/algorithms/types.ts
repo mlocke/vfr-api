@@ -211,6 +211,9 @@ export interface AlgorithmContext {
 			unrealizedPnL: number;
 		};
 	};
+
+	// Real-time progress tracking (optional)
+	progressTracker?: any; // ProgressTracker from ../progress/ProgressTracker
 }
 
 /**

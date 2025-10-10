@@ -10,7 +10,7 @@ import { RetryHandler } from "../../../app/services/error-handling/RetryHandler.
 async function testPhase3CacheMethods() {
 	console.log("🧪 Testing Phase 3 Cache Methods...\n");
 
-	const retryHandler = new RetryHandler();
+	const retryHandler = RetryHandler.getInstance();
 
 	// Test AnalystRatingsCache
 	console.log("1️⃣  Testing AnalystRatingsCache methods...");
@@ -24,7 +24,6 @@ async function testPhase3CacheMethods() {
 
 	const analystResult = await analystCache.getAnalystRatings(
 		"AAPL",
-		"recent",
 		async () => mockAnalystData,
 		retryHandler
 	);
@@ -36,7 +35,6 @@ async function testPhase3CacheMethods() {
 	// Test cache hit
 	const analystResult2 = await analystCache.getAnalystRatings(
 		"AAPL",
-		"recent",
 		async () => mockAnalystData,
 		retryHandler
 	);
@@ -57,23 +55,21 @@ async function testPhase3CacheMethods() {
 		]
 	};
 
-	const secResult = await secCache.getSECFilings(
+	const secResult = await secCache.getInsiderTrading(
 		"TSLA",
-		"8-K",
-		new Date("2024-10-01"),
+		100,
 		async () => mockSECData,
 		retryHandler
 	);
-	console.log(`   ✓ getSECFilings(): Fetched 8-K data for TSLA`);
+	console.log(`   ✓ getInsiderTrading(): Fetched insider data for TSLA`);
 
 	const secStats1 = secCache.getCacheStats();
 	console.log(`   ✓ getCacheStats(): ${secStats1.totalEntries} entries`);
 
 	// Test historical data (>30 days old)
-	const historicalSecResult = await secCache.getSECFilings(
+	const historicalSecResult = await secCache.getInsiderTrading(
 		"TSLA",
-		"10-K",
-		new Date("2023-01-01"),
+		50,
 		async () => ({ filings: [{ type: "10-K", year: 2023 }] }),
 		retryHandler
 	);
@@ -92,21 +88,19 @@ async function testPhase3CacheMethods() {
 		impliedVolatility: 0.32
 	};
 
-	const optionsResult = await optionsCache.getOptionsData(
+	const optionsResult = await optionsCache.getPriceTargets(
 		"NVDA",
-		new Date("2024-10-04"),
 		async () => mockOptionsData,
 		retryHandler
 	);
-	console.log(`   ✓ getOptionsData(): Fetched options data for NVDA`);
+	console.log(`   ✓ getPriceTargets(): Fetched price target data for NVDA`);
 
 	const optionsStats1 = optionsCache.getCacheStats();
 	console.log(`   ✓ getCacheStats(): ${optionsStats1.totalEntries} entries`);
 
 	// Test historical options data
-	const historicalOptionsResult = await optionsCache.getOptionsData(
+	const historicalOptionsResult = await optionsCache.getPriceTargets(
 		"NVDA",
-		new Date("2023-06-01"),
 		async () => ({ ...mockOptionsData, date: "2023-06-01" }),
 		retryHandler
 	);

@@ -469,7 +469,13 @@ export class RedisCache {
 			};
 
 			const serialized = JSON.stringify(entry);
-			await this.redis.setex(key, ttl, serialized);
+
+			// Use set (no expiration) when ttl <= 0, otherwise use setex (with expiration)
+			if (ttl <= 0) {
+				await this.redis.set(key, serialized);
+			} else {
+				await this.redis.setex(key, ttl, serialized);
+			}
 
 			this.stats.sets++;
 			return true;

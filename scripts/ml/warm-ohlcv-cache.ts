@@ -119,7 +119,7 @@ class RateLimiter {
 async function warmCache() {
 	const fmpAPI = new FinancialModelingPrepAPI();
 	const ohlcvCache = new OHLCVCache();
-	const retryHandler = new RetryHandler();
+	const retryHandler = RetryHandler.getInstance();
 	const rateLimiter = new RateLimiter();
 
 	const { startDate, endDate } = getDateRange(YEARS_OF_HISTORY);

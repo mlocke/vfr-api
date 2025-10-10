@@ -41,7 +41,7 @@ async function verifyMacroFix() {
 				});
 			}
 		} catch (error) {
-			console.error(`❌ ${symbol}: Error during extraction:`, error.message);
+			console.error(`❌ ${symbol}: Error during extraction:`, error instanceof Error ? error.message : String(error));
 		}
 	}
 

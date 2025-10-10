@@ -1,6 +1,13 @@
 /**
  * Multi-Source Dataset Generation for ML Training
  *
+ * ⚠️ CRITICAL: IMPLEMENT HISTORICAL DATA CACHING BEFORE RUNNING
+ *
+ * Without caching, this script will make 70,000+ API calls for historical data
+ * that never changes, taking 60-70 hours instead of 2-3 hours.
+ *
+ * REQUIRED: Review caching principles in scripts/ml/CLAUDE.md before proceeding.
+ *
  * Purpose: Generate comprehensive training datasets using multiple financial APIs:
  * - FMP (Financial Modeling Prep) - Premium financial data
  * - EODHD - End-of-day historical data

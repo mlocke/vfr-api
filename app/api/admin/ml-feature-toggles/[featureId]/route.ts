@@ -13,7 +13,7 @@ import { dataSourceConfigManager } from "../../../../services/admin/DataSourceCo
  */
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { featureId: string } }
+	{ params }: { params: Promise<{ featureId: string }> }
 ) {
 	try {
 		// Validate admin access
@@ -25,8 +25,9 @@ export async function GET(
 			return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
 		}
 
+		const { featureId } = await params;
 		const toggleService = MLFeatureToggleService.getInstance();
-		const featureStatus = await toggleService.getFeatureStatus(params.featureId);
+		const featureStatus = await toggleService.getFeatureStatus(featureId);
 
 		return NextResponse.json({
 			success: true,
@@ -34,7 +35,7 @@ export async function GET(
 			timestamp: Date.now(),
 		});
 	} catch (error) {
-		console.error(`❌ Failed to get feature ${params.featureId}:`, error);
+		console.error(`❌ Failed to get feature:`, error);
 
 		const sanitizedError = error instanceof Error ? error.message : "Unknown error";
 		return NextResponse.json(
@@ -54,7 +55,7 @@ export async function GET(
  */
 export async function POST(
 	request: NextRequest,
-	{ params }: { params: { featureId: string } }
+	{ params }: { params: Promise<{ featureId: string }> }
 ) {
 	try {
 		// Validate admin access
@@ -66,6 +67,7 @@ export async function POST(
 			return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
 		}
 
+		const { featureId } = await params;
 		const body = await request.json();
 		const { enabled, userId, reason } = body;
 
@@ -79,10 +81,10 @@ export async function POST(
 		const toggleService = MLFeatureToggleService.getInstance();
 
 		// Toggle the feature
-		await toggleService.setFeatureEnabled(params.featureId, enabled, userId, reason);
+		await toggleService.setFeatureEnabled(featureId, enabled, userId, reason);
 
 		// Get updated status
-		const updatedStatus = await toggleService.getFeatureStatus(params.featureId);
+		const updatedStatus = await toggleService.getFeatureStatus(featureId);
 
 		return NextResponse.json({
 			success: true,
@@ -91,7 +93,7 @@ export async function POST(
 			timestamp: Date.now(),
 		});
 	} catch (error) {
-		console.error(`❌ Failed to toggle feature ${params.featureId}:`, error);
+		console.error(`❌ Failed to toggle feature:`, error);
 
 		const sanitizedError = error instanceof Error ? error.message : "Unknown error";
 		return NextResponse.json(
