@@ -78,7 +78,11 @@
       "Bash(kill:*)",
       "Bash(sed:*)",
       "Bash(rm:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(test:*)",
+      "Bash(npm run build:*)",
+      "Bash(killall:*)",
+      "Read(//private/tmp/**)"
     ],
     "deny": [],
     "ask": []

@@ -56,7 +56,9 @@ export class FinancialDataService implements FinancialDataProvider {
 		// Priority order: FMP → EODHD
 
 		// 1. FMP - Primary data source (Priority 1)
-		if (process.env.FMP_API_KEY) {
+		// Check both API key AND feature flag
+		const isFmpEnabled = process.env.ENABLE_FMP === 'true';
+		if (process.env.FMP_API_KEY && isFmpEnabled) {
 			this.dataSources.push({
 				name: "Financial Modeling Prep",
 				provider: new FinancialModelingPrepAPI(),
@@ -69,6 +71,10 @@ export class FinancialDataService implements FinancialDataProvider {
 			this.errorHandler.logger.info("FMP initialized as primary data source", {
 				rateLimit: "300/minute",
 				priority: 1,
+			});
+		} else if (process.env.FMP_API_KEY && !isFmpEnabled) {
+			this.errorHandler.logger.warn("FMP API key present but ENABLE_FMP is disabled", {
+				message: "FMP will not be used as a data source. Set ENABLE_FMP=true to enable.",
 			});
 		}
 
@@ -1806,10 +1812,56 @@ export class FinancialDataService implements FinancialDataProvider {
 		days = 50,
 		endDate?: Date
 	): Promise<import("./types").HistoricalOHLC[]> {
-		const fmpSource = this.getFMPSource();
-		if (!fmpSource) {
-			this.errorHandler.logger.warn("No FMP data source available for historical OHLC", {
+		// PRIMARY: Try Polygon first (with historical caching)
+		try {
+			const { PolygonAPI } = require('./PolygonAPI');
+			const polygonAPI = new PolygonAPI();
+
+			// Calculate date range
+			const end = endDate || new Date();
+			const start = new Date(end);
+			start.setDate(start.getDate() - days);
+
+			const startStr = start.toISOString().split('T')[0];
+			const endStr = end.toISOString().split('T')[0];
+
+			const historicalData = await polygonAPI.getAggregates(
 				symbol,
+				1,
+				'day',
+				startStr,
+				endStr
+			);
+
+			if (historicalData && historicalData.length > 0) {
+				// Convert Polygon data to HistoricalOHLC format
+				return historicalData.map((bar: any) => ({
+					symbol: bar.symbol || symbol,
+					date: new Date(bar.timestamp).toISOString(),
+					open: bar.open,
+					high: bar.high,
+					low: bar.low,
+					close: bar.close,
+					volume: bar.volume,
+					source: "polygon",
+				}));
+			}
+		} catch (polygonError) {
+			this.errorHandler.logger.warn("Polygon failed for historical OHLC, trying FMP fallback", {
+				symbol,
+				error: polygonError instanceof Error ? polygonError.message : "Unknown error",
+			});
+		}
+
+		// FALLBACK: Use FMP only if Polygon fails AND FMP is enabled
+		const isFmpEnabled = process.env.ENABLE_FMP === 'true';
+		const fmpSource = this.getFMPSource();
+
+		if (!fmpSource || !isFmpEnabled) {
+			this.errorHandler.logger.warn("No data sources available for historical OHLC", {
+				symbol,
+				fmpEnabled: isFmpEnabled,
+				fmpAvailable: !!fmpSource,
 			});
 			return [];
 		}
@@ -1837,7 +1889,7 @@ export class FinancialDataService implements FinancialDataProvider {
 				source: bar.source || "fmp",
 			}));
 		} catch (error) {
-			this.errorHandler.logger.error("Failed to fetch historical OHLC data", {
+			this.errorHandler.logger.error("Failed to fetch historical OHLC data from all sources", {
 				symbol,
 				days,
 				endDate: endDate?.toISOString(),

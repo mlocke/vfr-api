@@ -15,6 +15,7 @@ import {
 	InstitutionalSentiment,
 	InsiderSentiment,
 } from "./types";
+import { XMLParser } from "fast-xml-parser";
 
 export class SECEdgarAPI implements FinancialDataProvider {
 	name = "SEC EDGAR";
@@ -24,11 +25,21 @@ export class SECEdgarAPI implements FinancialDataProvider {
 	private requestQueue: Promise<any>[] = [];
 	private lastRequestTime = 0;
 	private readonly REQUEST_DELAY = 100; // 100ms delay between requests (10 req/sec limit)
+	private xmlParser: XMLParser;
 
 	constructor(timeout = 15000) {
 		this.timeout = timeout;
 		// SEC EDGAR requires a User-Agent header with contact information
 		this.userAgent = process.env.SEC_USER_AGENT || "VFR-API/1.0 (contact@veritak.com)";
+
+		// Initialize XML parser with appropriate options
+		this.xmlParser = new XMLParser({
+			ignoreAttributes: false,
+			attributeNamePrefix: "@_",
+			textNodeName: "#text",
+			parseAttributeValue: true,
+			trimValues: true,
+		});
 	}
 
 	/**
@@ -466,42 +477,107 @@ export class SECEdgarAPI implements FinancialDataProvider {
 
 	/**
 	 * Parse 13F holdings from filing data
+	 * Extracts institutional holdings from SEC EDGAR 13F-HR XML filings
+	 *
+	 * @param symbol Stock symbol to filter holdings
+	 * @param filingData Raw XML string from SEC EDGAR
+	 * @param filing Filing metadata (date, accession number)
+	 * @returns Array of parsed institutional holdings (empty on error)
 	 */
 	private parse13FHoldings(symbol: string, filingData: any, filing: any): InstitutionalHolding[] {
-		// Simplified parsing - in production would need comprehensive XML parsing
 		const holdings: InstitutionalHolding[] = [];
 
 		try {
-			// This is a simplified implementation
-			// In production, you'd parse XML properly for 13F-HR filings
-			const mockHolding: InstitutionalHolding = {
-				symbol: symbol.toUpperCase(),
-				cusip: "037833100", // Mock CUSIP for AAPL
-				securityName: "Apple Inc",
-				managerName: "Mock Institutional Manager",
-				managerId: "1234567890",
-				reportDate: filing.filingDate,
-				filingDate: filing.filingDate,
-				shares: 1000000,
-				marketValue: 150000000,
-				percentOfPortfolio: 5.5,
-				sharesChange: 50000,
-				sharesChangePercent: 5.26,
-				valueChange: 7500000,
-				valueChangePercent: 5.26,
-				isNewPosition: false,
-				isClosedPosition: false,
-				rank: 1,
-				securityType: "COM",
-				investmentDiscretion: "SOLE",
-				timestamp: Date.now(),
-				source: "sec_edgar",
-				accessionNumber: filing.accessionNumber,
-			};
+			// Parse XML string to JavaScript object
+			const xmlData = this.xmlParser.parse(filingData);
 
-			holdings.push(mockHolding);
+			// Extract information table from XML structure
+			// Structure: informationTable -> infoTable (array)
+			const infoTable = xmlData?.informationTable?.infoTable;
+			if (!infoTable) {
+				console.warn(
+					`No informationTable found in 13F filing ${filing.accessionNumber}`
+				);
+				return [];
+			}
+
+			// Ensure infoTable is an array
+			const holdings_array = Array.isArray(infoTable) ? infoTable : [infoTable];
+
+			// Process each holding in the table
+			for (const holding of holdings_array) {
+				try {
+					// Extract basic information
+					const nameOfIssuer = holding.nameOfIssuer;
+					const cusip = holding.cusip;
+					const value = holding.value; // In thousands of dollars
+					const shrsOrPrnAmt = holding.shrsOrPrnAmt;
+
+					// Skip if required fields are missing
+					if (!cusip || !value || !shrsOrPrnAmt) {
+						continue;
+					}
+
+					// Extract share information
+					const shares = shrsOrPrnAmt.sshPrnamt;
+					const shareType = shrsOrPrnAmt.sshPrnamtType;
+
+					// Skip if not shares (only process "SH", skip "PRN" for principal amount)
+					if (shareType !== "SH" || !shares || shares <= 0) {
+						continue;
+					}
+
+					// Validate CUSIP format (should be 9 characters)
+					if (cusip.length !== 9) {
+						console.warn(`Invalid CUSIP length for ${nameOfIssuer}: ${cusip}`);
+						continue;
+					}
+
+					// Extract voting authority if available
+					const votingAuthority = holding.votingAuthority || {};
+
+					// Create institutional holding object
+					const parsedHolding: InstitutionalHolding = {
+						symbol: symbol.toUpperCase(),
+						cusip,
+						securityName: nameOfIssuer || "Unknown",
+						managerName: "Institutional Investor", // This comes from filing header, not individual holdings
+						managerId: "", // This comes from filing header
+						reportDate: filing.filingDate,
+						filingDate: filing.filingDate,
+						shares: Number(shares),
+						marketValue: Number(value) * 1000, // Convert from thousands to dollars
+						percentOfPortfolio: 0, // Would need total portfolio value to calculate
+						sharesChange: 0, // Would need previous quarter data
+						sharesChangePercent: 0,
+						valueChange: 0,
+						valueChangePercent: 0,
+						isNewPosition: false, // Would need previous quarter data
+						isClosedPosition: false,
+						rank: 0, // Would need all holdings to rank
+						securityType: holding.titleOfClass || "COM",
+						investmentDiscretion: holding.investmentDiscretion || "SOLE",
+						timestamp: Date.now(),
+						source: "sec_edgar",
+						accessionNumber: filing.accessionNumber,
+					};
+
+					holdings.push(parsedHolding);
+				} catch (error) {
+					console.warn(`Skipping invalid 13F holding: ${error instanceof Error ? error.message : String(error)}`);
+					continue; // Skip this holding, continue processing others
+				}
+			}
+
+			if (holdings.length === 0) {
+				console.warn(`No valid holdings parsed from 13F filing ${filing.accessionNumber}`);
+			}
 		} catch (error) {
-			console.error("Error parsing 13F holdings:", error);
+			console.error(
+				`Failed to parse 13F holdings for ${filing.accessionNumber}:`,
+				error instanceof Error ? error.message : String(error)
+			);
+			return []; // Return empty array on complete failure
 		}
 
 		return holdings;
@@ -509,47 +585,181 @@ export class SECEdgarAPI implements FinancialDataProvider {
 
 	/**
 	 * Parse Form 4 transactions from filing data
+	 * Extracts insider transactions from SEC EDGAR Form 4 XML filings
+	 *
+	 * @param symbol Stock symbol for the transactions
+	 * @param filingData Raw XML string from SEC EDGAR
+	 * @param filing Filing metadata (date, accession number, form type)
+	 * @returns Array of parsed insider transactions (empty on error)
 	 */
 	private parseForm4Transactions(
 		symbol: string,
 		filingData: any,
 		filing: any
 	): InsiderTransaction[] {
-		// Simplified parsing - in production would need comprehensive XML parsing
 		const transactions: InsiderTransaction[] = [];
 
 		try {
-			// This is a simplified implementation
-			// In production, you'd parse XML properly for Form 4 filings
-			const mockTransaction: InsiderTransaction = {
-				symbol: symbol.toUpperCase(),
-				companyName: "Apple Inc",
-				reportingOwnerName: "Mock Insider",
-				reportingOwnerTitle: "Chief Executive Officer",
-				reportingOwnerId: "1234567890",
-				relationship: ["Officer"],
-				transactionDate: filing.filingDate,
-				filingDate: filing.filingDate,
-				transactionCode: "S",
-				transactionType: "SELL",
-				securityTitle: "Common Stock",
-				shares: 10000,
-				pricePerShare: 150.0,
-				transactionValue: 1500000,
-				sharesOwnedAfter: 990000,
-				ownershipType: "D",
-				isAmendment: filing.form.includes("/A"),
-				isDerivative: false,
-				confidence: 0.95,
-				timestamp: Date.now(),
-				source: "sec_edgar",
-				accessionNumber: filing.accessionNumber,
-				formType: filing.form as "4" | "4/A",
-			};
+			// Parse XML string to JavaScript object
+			const xmlData = this.xmlParser.parse(filingData);
 
-			transactions.push(mockTransaction);
+			// Extract ownership document from XML structure
+			const ownershipDoc = xmlData?.ownershipDocument;
+			if (!ownershipDoc) {
+				console.warn(
+					`No ownershipDocument found in Form 4 filing ${filing.accessionNumber}`
+				);
+				return [];
+			}
+
+			// Extract reporting owner information
+			const reportingOwner = ownershipDoc.reportingOwner;
+			if (!reportingOwner) {
+				console.warn(
+					`No reportingOwner found in Form 4 filing ${filing.accessionNumber}`
+				);
+				return [];
+			}
+
+			// Get reporting owner details
+			const ownerId = reportingOwner.reportingOwnerId || {};
+			const ownerName = ownerId.rptOwnerName || "Unknown";
+			const ownerCik = ownerId.rptOwnerCik || "";
+
+			// Get relationship information
+			const ownerRelationship = reportingOwner.reportingOwnerRelationship || {};
+			const relationships: string[] = [];
+			if (ownerRelationship.isDirector) relationships.push("Director");
+			if (ownerRelationship.isOfficer) relationships.push("Officer");
+			if (ownerRelationship.isTenPercentOwner) relationships.push("10% Owner");
+			if (ownerRelationship.isOther) relationships.push("Other");
+
+			const ownerTitle = ownerRelationship.officerTitle || undefined;
+
+			// Extract non-derivative transactions
+			const nonDerivativeTable = ownershipDoc.nonDerivativeTable;
+			if (!nonDerivativeTable) {
+				// No non-derivative transactions, return empty array (not an error)
+				return [];
+			}
+
+			// Get non-derivative transactions (could be single object or array)
+			const nonDerivativeTxs = nonDerivativeTable.nonDerivativeTransaction;
+			if (!nonDerivativeTxs) {
+				return [];
+			}
+
+			// Ensure transactions is an array
+			const txArray = Array.isArray(nonDerivativeTxs)
+				? nonDerivativeTxs
+				: [nonDerivativeTxs];
+
+			// Process each transaction
+			for (const tx of txArray) {
+				try {
+					// Extract transaction details
+					const securityTitle = tx.securityTitle?.value || tx.securityTitle || "Common Stock";
+					const transactionDate = tx.transactionDate?.value || tx.transactionDate;
+					const transactionCoding = tx.transactionCoding || {};
+					const transactionCode = transactionCoding.transactionCode || "";
+
+					// Skip if required fields are missing
+					if (!transactionDate || !transactionCode) {
+						continue;
+					}
+
+					// Extract transaction amounts
+					const amounts = tx.transactionAmounts || {};
+					const shares = amounts.transactionShares?.value || amounts.transactionShares || 0;
+					const pricePerShare =
+						amounts.transactionPricePerShare?.value || amounts.transactionPricePerShare || 0;
+					const acquiredDisposedCode =
+						amounts.transactionAcquiredDisposedCode?.value ||
+						amounts.transactionAcquiredDisposedCode;
+
+					// Skip if no shares
+					if (!shares || Number(shares) <= 0) {
+						continue;
+					}
+
+					// Extract post-transaction amounts
+					const postAmounts = tx.postTransactionAmounts || {};
+					const sharesOwnedAfter =
+						postAmounts.sharesOwnedFollowingTransaction?.value ||
+						postAmounts.sharesOwnedFollowingTransaction ||
+						0;
+
+					// Determine transaction type from code
+					// P = Purchase, S = Sale, A = Award/Grant, M = Exercise, G = Gift, etc.
+					let transactionType: "BUY" | "SELL" | "GRANT" | "EXERCISE" | "GIFT" | "OTHER" =
+						"OTHER";
+					if (transactionCode === "P") {
+						transactionType = "BUY";
+					} else if (transactionCode === "S" || transactionCode === "D") {
+						transactionType = "SELL";
+					} else if (transactionCode === "M") {
+						transactionType = "EXERCISE";
+					} else if (transactionCode === "A" || transactionCode === "J") {
+						transactionType = "GRANT";
+					} else if (transactionCode === "G") {
+						transactionType = "GIFT";
+					}
+
+					// Get ownership type
+					const ownershipNature = tx.ownershipNature || {};
+					const ownershipType = ownershipNature.directOrIndirectOwnership?.value || "D";
+
+					// Calculate transaction value
+					const transactionValue =
+						Number(shares) * (Number(pricePerShare) || 0);
+
+					// Create insider transaction object
+					const parsedTransaction: InsiderTransaction = {
+						symbol: symbol.toUpperCase(),
+						companyName: "", // Not available in Form 4 XML
+						reportingOwnerName: ownerName,
+						reportingOwnerTitle: ownerTitle,
+						reportingOwnerId: ownerCik,
+						relationship: relationships.length > 0 ? relationships : ["Unknown"],
+						transactionDate,
+						filingDate: filing.filingDate,
+						transactionCode,
+						transactionType,
+						securityTitle,
+						shares: Number(shares),
+						pricePerShare: Number(pricePerShare) || 0,
+						transactionValue: transactionValue || 0,
+						sharesOwnedAfter: Number(sharesOwnedAfter),
+						ownershipType,
+						isAmendment: filing.form.includes("/A"),
+						isDerivative: false,
+						confidence: 0.95,
+						timestamp: Date.now(),
+						source: "sec_edgar",
+						accessionNumber: filing.accessionNumber,
+						formType: filing.form as "4" | "4/A",
+					};
+
+					transactions.push(parsedTransaction);
+				} catch (error) {
+					console.warn(
+						`Skipping invalid Form 4 transaction: ${error instanceof Error ? error.message : String(error)}`
+					);
+					continue; // Skip this transaction, continue processing others
+				}
+			}
+
+			if (transactions.length === 0) {
+				console.warn(
+					`No valid transactions parsed from Form 4 filing ${filing.accessionNumber}`
+				);
+			}
 		} catch (error) {
-			console.error("Error parsing Form 4 transactions:", error);
+			console.error(
+				`Failed to parse Form 4 transactions for ${filing.accessionNumber}:`,
+				error instanceof Error ? error.message : String(error)
+			);
+			return []; // Return empty array on complete failure
 		}
 
 		return transactions;

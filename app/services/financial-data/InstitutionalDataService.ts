@@ -52,8 +52,8 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
 	protected readonly baseUrl: string;
 	protected readonly userAgent: string;
 
-	// 🆕 FMP as primary data source
-	private readonly fmpAPI: FinancialModelingPrepAPI;
+	// 🆕 FMP as primary data source (nullable - controlled by ENABLE_FMP env var)
+	private readonly fmpAPI: FinancialModelingPrepAPI | null;
 
 	constructor(config?: Partial<EdgarApiConfig>) {
 		const defaultConfig = {
@@ -72,8 +72,13 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
 		this.baseUrl = config?.baseUrl || defaultConfig.baseUrl;
 		this.userAgent = config?.userAgent || defaultConfig.userAgent;
 
-		// Initialize FMP API as primary data source
-		this.fmpAPI = new FinancialModelingPrepAPI();
+		// Initialize FMP API as primary data source only if enabled
+		const isFmpEnabled = process.env.ENABLE_FMP === 'true';
+		this.fmpAPI = isFmpEnabled ? new FinancialModelingPrepAPI() : null;
+
+		if (!isFmpEnabled) {
+			this.errorHandler.logger.info("FMP disabled for InstitutionalDataService, will use SEC EDGAR only");
+		}
 
 		// Optimized XML parser for large 13F filings
 		this.xmlParser = new XMLParser({
@@ -378,14 +383,15 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
 		const sanitizedSymbol = this.normalizeSymbol(symbol);
 
 		try {
-			// 🆕 PRIMARY: Try FMP comprehensive institutional data first
+			// 🆕 PRIMARY: Try FMP comprehensive institutional data first (if enabled)
 			let institutionalData = null;
-			try {
-				this.errorHandler.logger.info(
-					`Fetching institutional data from FMP for ${sanitizedSymbol}`
-				);
-				institutionalData =
-					await this.fmpAPI.getComprehensiveInstitutionalData(sanitizedSymbol);
+			if (this.fmpAPI) {
+				try {
+					this.errorHandler.logger.info(
+						`Fetching institutional data from FMP for ${sanitizedSymbol}`
+					);
+					institutionalData =
+						await this.fmpAPI.getComprehensiveInstitutionalData(sanitizedSymbol);
 
 				if (institutionalData && institutionalData.summary) {
 					this.errorHandler.logger.info(
@@ -420,14 +426,15 @@ export class InstitutionalDataService extends BaseFinancialDataProvider {
 					this.updateCache(sanitizedSymbol, { sentiment: intelligence });
 					return intelligence;
 				}
-			} catch (fmpError) {
-				this.errorHandler.logger.warn(
-					`FMP institutional data failed for ${sanitizedSymbol}, falling back to SEC EDGAR`,
-					{ error: fmpError }
-				);
-			}
+				} catch (fmpError) {
+					this.errorHandler.logger.warn(
+						`FMP institutional data failed for ${sanitizedSymbol}, falling back to SEC EDGAR`,
+						{ error: fmpError }
+					);
+				}
+			} // End if (this.fmpAPI)
 
-			// 🔄 FALLBACK: Use SEC EDGAR if FMP fails or returns no data
+			// 🔄 FALLBACK: Use SEC EDGAR if FMP fails, returns no data, or is disabled
 			this.errorHandler.logger.info(`Using SEC EDGAR fallback for ${sanitizedSymbol}`);
 
 			// Fetch both datasets in parallel

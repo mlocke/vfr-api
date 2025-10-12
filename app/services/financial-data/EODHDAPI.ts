@@ -409,8 +409,27 @@ export class EODHDAPI implements FinancialDataProvider {
 				timestamp: Date.now(),
 			};
 		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
 			console.error(`❌ EODHD API: Request failed (attempt ${retryCount + 1}):`, error);
 
+			// Don't retry on permanent failures (404, 400, 401, 403)
+			const isPermanentFailure =
+				errorMessage.includes("HTTP 404") || // Not found - resource doesn't exist
+				errorMessage.includes("HTTP 400") || // Bad request - malformed URL
+				errorMessage.includes("HTTP 401") || // Unauthorized - bad API key
+				errorMessage.includes("HTTP 403");   // Forbidden - no access
+
+			if (isPermanentFailure) {
+				console.log(`⚠️ EODHD API: Permanent failure (${errorMessage}), not retrying`);
+				return {
+					success: false,
+					error: errorMessage,
+					source: "eodhd",
+					timestamp: Date.now(),
+				};
+			}
+
+			// Only retry on transient errors (5xx, timeouts, network issues)
 			if (retryCount < this.retryAttempts) {
 				console.log(`🔄 EODHD API: Retrying in ${this.retryDelay}ms...`);
 				await new Promise(resolve => setTimeout(resolve, this.retryDelay));
@@ -419,7 +438,7 @@ export class EODHDAPI implements FinancialDataProvider {
 
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: errorMessage,
 				source: "eodhd",
 				timestamp: Date.now(),
 			};

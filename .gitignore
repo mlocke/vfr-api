@@ -1,3 +1,9 @@
+# Historical documentation
+docs/history/
+
+# Archived scripts
+scripts/archive/
+
 # Node.js
 node_modules/
 package-lock.json
@@ -23,6 +29,7 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+.nyc_output/
 
 # Build outputs
 dist/
@@ -65,43 +72,59 @@ logs/
 public/analysis-results/
 *.tsbuildinfo
 
-# ML Training artifacts
-data/training/checkpoint_*.csv
-data/training/dataset-*.csv
-data/training/test-fix*.csv
+# ML Training artifacts - exclude entire directories
+data/training/
 data/cache/
 data/symbols/
 
-# Large training datasets (>50MB)
-data/training/polygon_news_combined_2023-2025.csv
-data/training/polygon_news_with_sentiment.csv
-data/training/polygon_news_2023.csv
-data/training/polygon_news_2024.csv
-data/training/polygon_news_2025.csv
-data/training/*_checkpoint_*.csv
-data/training/combined-*.csv
-data/training/polygon-*.csv
-data/training/sentiment-fusion-*.csv
+# All CSV files (training datasets, checkpoints, predictions)
+**/*.csv
+# Exception: Keep small config CSVs
+!**/feature-config.csv
+!**/model-config.csv
 
-# ML Model files (large binary files)
-models/**/*.safetensors
-models/**/*.pt
-models/**/*.pth
-models/**/optimizer.pt
-models/**/model.txt
-models/**/checkpoint-*/
-# Keep metadata and small config files
+# ML Model files - exclude entire directory except metadata
+models/
+# Keep only metadata and small config files
 !models/**/metadata.json
 !models/**/config.json
 !models/**/normalizer.json
 !models/**/model-registry.json
 
+# ML training artifacts and checkpoints
+**/checkpoint-*/
+**/plots/
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__/
+**/test-*.ts
+**/test-*.tsx
+
+# Image files and media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+
+# Script artifacts and diagnostics
+scripts/ml/**/diagnose-*.ts
+scripts/ml/**/debug-*.ts
+scripts/ml/**/test-*.ts
+scripts/ml/**/evaluate-*.py
+scripts/ml/**/compare-*.py
+scripts/ml/**/fmp_*.py
+scripts/ml/caching/
+
 # Backup files
 *.backup
-*.backup2
-*.backup3
-*.backup4
-*.backup5
+*.backup[0-9]
 
 # Documentation files (developer notes)
 CLAUDE.md

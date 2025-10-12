@@ -77,6 +77,21 @@ interface StockRecommendationCardProps {
 			model_version: string;
 			prediction_timestamp: number;
 		};
+		mlEnsemblePrediction?: {
+			prediction: "UP" | "DOWN" | "NEUTRAL";
+			confidence: number;
+			votes: Array<{
+				model: string;
+				modelName: string;
+				modelVersion: string;
+				modelId: string;
+				prediction: string;
+				signal: "BULLISH" | "BEARISH" | "NEUTRAL";
+				confidence: number;
+				weight: number;
+			}>;
+			reasoning: string[];
+		};
 	};
 }
 
@@ -781,7 +796,16 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 										Individual Model Votes
 									</h5>
 									<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-										{stock.mlEnsemblePrediction.votes.map((vote, idx) => (
+										{stock.mlEnsemblePrediction.votes.map((vote: {
+											model: string;
+											modelName: string;
+											modelVersion: string;
+											modelId: string;
+											prediction: string;
+											signal: "BULLISH" | "BEARISH" | "NEUTRAL";
+											confidence: number;
+											weight: number;
+										}, idx: number) => (
 											<div key={idx} style={{
 												display: "flex",
 												alignItems: "center",

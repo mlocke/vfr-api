@@ -1,0 +1,53 @@
+{
+  "timestamp": "20251010_233421",
+  "best_iteration": 5,
+  "metrics": {
+    "train": {
+      "rmse": 0.08130254990234088,
+      "mae": 0.055925789151496354,
+      "r2": 2.9506277711477402e-05
+    },
+    "val": {
+      "rmse": 0.08551899898771605,
+      "mae": 0.05738884768675136,
+      "r2": -0.00020446539214047377
+    },
+    "test": {
+      "rmse": 0.08427976328445004,
+      "mae": 0.05832524845900211,
+      "r2": 0.0001261294820008585
+    }
+  },
+  "feature_cols": [
+    "insider_buy_ratio_30d",
+    "insider_buy_volume_30d",
+    "insider_sell_volume_30d",
+    "insider_net_flow_30d",
+    "insider_cluster_score",
+    "insider_ownership_change_90d",
+    "insider_avg_premium",
+    "c_suite_activity_ratio",
+    "inst_ownership_pct",
+    "inst_ownership_change_1q",
+    "inst_new_positions_count",
+    "inst_closed_positions_count",
+    "inst_avg_position_size_change",
+    "inst_concentration_top10",
+    "inst_momentum_score",
+    "congress_buy_count_90d",
+    "congress_sell_count_90d",
+    "congress_net_sentiment",
+    "congress_recent_activity_7d",
+    "hedgefund_top20_exposure",
+    "hedgefund_net_change_1q",
+    "hedgefund_new_entry_count",
+    "hedgefund_exit_count",
+    "hedgefund_conviction_score",
+    "etf_ownership_pct",
+    "etf_flow_30d",
+    "etf_concentration"
+  ],
+  "num_features": 27,
+  "model_type": "LightGBM",
+  "target": "return_14d"
+}

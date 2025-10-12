@@ -1,0 +1,190 @@
+{
+  "model_type": "LightGBM Binary Classifier",
+  "model_version": "v1.0.0",
+  "trained_at": "2025-10-11T00:24:08.101382",
+  "num_features": 27,
+  "features": [
+    "insider_buy_ratio_30d",
+    "insider_buy_volume_30d",
+    "insider_sell_volume_30d",
+    "insider_net_flow_30d",
+    "insider_cluster_score",
+    "insider_ownership_change_90d",
+    "insider_avg_premium",
+    "c_suite_activity_ratio",
+    "inst_ownership_pct",
+    "inst_ownership_change_1q",
+    "inst_new_positions_count",
+    "inst_closed_positions_count",
+    "inst_avg_position_size_change",
+    "inst_concentration_top10",
+    "inst_momentum_score",
+    "congress_buy_count_90d",
+    "congress_sell_count_90d",
+    "congress_net_sentiment",
+    "congress_recent_activity_7d",
+    "hedgefund_top20_exposure",
+    "hedgefund_net_change_1q",
+    "hedgefund_new_entry_count",
+    "hedgefund_exit_count",
+    "hedgefund_conviction_score",
+    "etf_ownership_pct",
+    "etf_flow_30d",
+    "etf_concentration"
+  ],
+  "feature_importance": [
+    {
+      "feature": "congress_recent_activity_7d",
+      "importance": 5.802840232849121
+    },
+    {
+      "feature": "congress_net_sentiment",
+      "importance": 0.5306469798088074
+    },
+    {
+      "feature": "congress_sell_count_90d",
+      "importance": 0.2525950074195862
+    },
+    {
+      "feature": "insider_buy_ratio_30d",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_buy_volume_30d",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_sell_volume_30d",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_net_flow_30d",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_cluster_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_ownership_change_90d",
+      "importance": 0.0
+    },
+    {
+      "feature": "insider_avg_premium",
+      "importance": 0.0
+    },
+    {
+      "feature": "c_suite_activity_ratio",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_ownership_pct",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_ownership_change_1q",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_new_positions_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_closed_positions_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_avg_position_size_change",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_concentration_top10",
+      "importance": 0.0
+    },
+    {
+      "feature": "inst_momentum_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "congress_buy_count_90d",
+      "importance": 0.0
+    },
+    {
+      "feature": "hedgefund_top20_exposure",
+      "importance": 0.0
+    },
+    {
+      "feature": "hedgefund_net_change_1q",
+      "importance": 0.0
+    },
+    {
+      "feature": "hedgefund_new_entry_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "hedgefund_exit_count",
+      "importance": 0.0
+    },
+    {
+      "feature": "hedgefund_conviction_score",
+      "importance": 0.0
+    },
+    {
+      "feature": "etf_ownership_pct",
+      "importance": 0.0
+    },
+    {
+      "feature": "etf_flow_30d",
+      "importance": 0.0
+    },
+    {
+      "feature": "etf_concentration",
+      "importance": 0.0
+    }
+  ],
+  "train_metrics": {
+    "accuracy": 0.7899112187247781,
+    "roc_auc": 0.5042051282011022,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "confusion_matrix": [
+      [
+        9787,
+        0
+      ],
+      [
+        2603,
+        0
+      ]
+    ]
+  },
+  "val_metrics": {
+    "accuracy": 0.8244821092278719,
+    "roc_auc": 0.4894840962518406,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1_score": 0.0,
+    "confusion_matrix": [
+      [
+        2189,
+        0
+      ],
+      [
+        466,
+        0
+      ]
+    ]
+  },
+  "hyperparameters": {
+    "objective": "binary",
+    "metric": "auc",
+    "num_leaves": 31,
+    "learning_rate": 0.05,
+    "max_depth": 6,
+    "lambda_l1": 0.1,
+    "lambda_l2": 0.1
+  },
+  "best_iteration": 1,
+  "total_iterations": 1
+}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import SectorDropdown, { SectorOption } from "../components/SectorDropdown";
 import StockAutocomplete from "../components/StockAutocomplete";
 import AnalysisResults from "../components/admin/AnalysisResults";
+import AnalysisProgress from "../components/admin/AnalysisProgress";
 import { AnalysisRequest, AnalysisResponse } from "../components/admin/AnalysisEngineTest";
 
 export default function StockIntelligencePage() {
@@ -15,6 +16,7 @@ export default function StockIntelligencePage() {
 	const [isAnalyzing, setIsAnalyzing] = useState(false);
 	const [results, setResults] = useState<AnalysisResponse | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [sessionId, setSessionId] = useState<string | null>(null);
 
 	const handleSectorChange = (sector: SectorOption) => {
 		setSelectedSector(sector);
@@ -48,6 +50,10 @@ export default function StockIntelligencePage() {
 		setError(null);
 		setResults(null);
 
+		// Generate session ID for progress tracking
+		const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		setSessionId(newSessionId);
+
 		try {
 			// Build request using the SAME format as working admin
 			// Enable ML predictions by default (1-week horizon)
@@ -55,7 +61,8 @@ export default function StockIntelligencePage() {
 				mode: "single",
 				limit: 10,
 				include_ml: true,
-				ml_horizon: "1w"
+				ml_horizon: "1w",
+				sessionId: newSessionId
 			};
 
 			if (analysisType === "sector" && selectedSector) {
@@ -64,7 +71,8 @@ export default function StockIntelligencePage() {
 					sector: selectedSector.id,
 					limit: 20,
 					include_ml: true,
-					ml_horizon: "1w"
+					ml_horizon: "1w",
+					sessionId: newSessionId
 				};
 			} else if (analysisType === "tickers" && selectedSymbols.length > 0) {
 				if (selectedSymbols.length === 1) {
@@ -73,7 +81,8 @@ export default function StockIntelligencePage() {
 						symbols: selectedSymbols,
 						limit: 1,
 						include_ml: true,
-						ml_horizon: "1w"
+						ml_horizon: "1w",
+						sessionId: newSessionId
 					};
 				} else {
 					request = {
@@ -81,7 +90,8 @@ export default function StockIntelligencePage() {
 						symbols: selectedSymbols,
 						limit: selectedSymbols.length,
 						include_ml: true,
-						ml_horizon: "1w"
+						ml_horizon: "1w",
+						sessionId: newSessionId
 					};
 				}
 			}
@@ -118,6 +128,7 @@ export default function StockIntelligencePage() {
 			setError(error instanceof Error ? error.message : "Analysis failed. Please try again.");
 		} finally {
 			setIsAnalyzing(false);
+			setSessionId(null);
 		}
 	};
 
@@ -486,6 +497,17 @@ export default function StockIntelligencePage() {
 					</p>
 				</footer>
 			</div>
+
+			{/* Progress Tracker */}
+			{sessionId && (
+				<AnalysisProgress
+					sessionId={sessionId}
+					onComplete={() => {
+						setSessionId(null);
+						setIsAnalyzing(false);
+					}}
+				/>
+			)}
 
 			{/* CSS Animations */}
 			<style jsx>{`

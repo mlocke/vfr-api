@@ -1,0 +1,101 @@
+# Historical documentation - excluded from context
+docs/history/
+
+# Archived scripts - excluded from context
+scripts/archive/
+
+# Node modules and build artifacts
+node_modules/
+.next/
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Large data files and training datasets (1.1GB total)
+data/training/
+data/cache/
+data/symbols/
+
+# All CSV files (training datasets, checkpoints, predictions)
+**/*.csv
+# Exception: Keep small config CSVs
+!**/feature-config.csv
+!**/model-config.csv
+
+# Trained models directory (10GB total) - exclude everything except metadata
+models/
+
+# Test files - 223 files consuming significant context
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__/
+**/test-*.ts
+**/test-*.tsx
+
+# Test coverage and output
+coverage/
+.nyc_output/
+docs/test-output/
+test-results/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Image files and media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+
+# Script artifacts and diagnostics
+scripts/ml/**/diagnose-*.ts
+scripts/ml/**/debug-*.ts
+scripts/ml/**/test-*.ts
+scripts/ml/**/evaluate-*.py
+scripts/ml/**/compare-*.py
+scripts/ml/**/fmp_*.py
+scripts/ml/caching/
+
+# ML training artifacts and checkpoints
+**/checkpoint-*/
+**/plots/
+
+# Keep only essential model metadata (small JSON files)
+!models/**/metadata.json
+!models/**/config.json
+!models/**/normalizer.json
+!models/**/model-registry.json
+
+# Backup files
+*.backup
+*.backup[0-9]
+
+# Browser automation artifacts
+.playwright-mcp/
+
+# Generated analysis results
+public/analysis-results/
+
+# Python cache
+__pycache__/
+*.pyc
+venv/

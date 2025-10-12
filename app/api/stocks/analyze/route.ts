@@ -26,7 +26,7 @@ import { FinancialModelingPrepAPI } from "../../../services/financial-data/Finan
 import { MLPredictionService } from "../../../services/ml/prediction/MLPredictionService";
 import { FeatureEngineeringService } from "../../../services/ml/features/FeatureEngineeringService";
 import { ProgressTracker } from "../../../services/progress/ProgressTracker";
-import { sendProgressUpdate, closeProgressSession } from "./progress/[sessionId]/route";
+import { sendProgressUpdate, closeProgressSession } from "./progress/[sessionId]/progressUtils";
 
 // Request validation - supports admin dashboard test format
 const RequestSchema = z.object({
