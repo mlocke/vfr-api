@@ -46,6 +46,7 @@ export interface SelectionOptions {
 	includeEarlySignal?: boolean; // Include Early Signal Detection (ML analyst rating predictions)
 	includePricePrediction?: boolean; // Include Price Prediction (ML price movement predictions)
 	includeSentimentFusion?: boolean; // Include Sentiment-Fusion (ML 3-day price direction predictions)
+	includeSmartMoneyFlow?: boolean; // Include Smart Money Flow (institutional/insider activity analysis)
 	riskTolerance?: "conservative" | "moderate" | "aggressive";
 
 	// Data preferences
@@ -150,6 +151,9 @@ export interface EnhancedStockResult {
 
 	// Sentiment-Fusion Prediction (Phase 4.3) - Individual model (legacy)
 	sentiment_fusion?: import("../ml/sentiment-fusion/types").PricePrediction;
+
+	// Smart Money Flow (Phase 4.4) - Institutional/insider activity analysis
+	smart_money_flow?: import("../ml/smart-money-flow/SmartMoneyFlowService").SmartMoneyPrediction;
 }
 
 /**

@@ -92,6 +92,15 @@ interface StockRecommendationCardProps {
 			}>;
 			reasoning: string[];
 		};
+		smart_money_flow?: {
+			action: "BUY" | "SELL";
+			confidence: number;
+			probability: number;
+			reasoning: string;
+			feature_importance: Record<string, number>;
+			prediction_timestamp: number;
+			model_version: string;
+		};
 	};
 }
 
@@ -1314,6 +1323,230 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 								<span>
 									Predicted:{" "}
 									{new Date(stock.sentiment_fusion.prediction_timestamp).toLocaleString()}
+								</span>
+							</div>
+						</div>
+					)}
+				</>
+			)}
+
+			{/* Smart Money Flow Section */}
+			{stock.smart_money_flow && (
+				<>
+					<div
+						onClick={() => toggleSection("smart_money_flow")}
+						style={{
+							background: "rgba(251, 191, 36, 0.1)",
+							border: "1px solid rgba(251, 191, 36, 0.3)",
+							borderRadius: "12px",
+							padding: "1rem",
+							marginBottom: "0.75rem",
+							cursor: "pointer",
+							transition: "all 0.3s ease",
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+						}}
+					>
+						<div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+							<span style={{ fontSize: "1.5rem" }}>
+								{stock.smart_money_flow.action === "BUY" ? "💰" : "📊"}
+							</span>
+							<div>
+								<span
+									style={{
+										fontSize: "0.9rem",
+										fontWeight: "600",
+										color: "rgba(251, 191, 36, 0.9)",
+									}}
+								>
+									Smart Money Flow
+								</span>
+								<div
+									style={{
+										fontSize: "0.75rem",
+										color: "rgba(255,255,255,0.6)",
+										marginTop: "0.25rem",
+									}}
+								>
+									Institutional & insider activity detected
+								</div>
+							</div>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								alignItems: "center",
+								gap: "0.75rem",
+							}}
+						>
+							<div
+								style={{
+									background:
+										stock.smart_money_flow.action === "BUY"
+											? "rgba(34, 197, 94, 0.2)"
+											: "rgba(239, 68, 68, 0.2)",
+									border: `1px solid ${
+										stock.smart_money_flow.action === "BUY"
+											? "rgba(34, 197, 94, 0.4)"
+											: "rgba(239, 68, 68, 0.4)"
+									}`,
+									color:
+										stock.smart_money_flow.action === "BUY"
+											? "rgba(34, 197, 94, 0.9)"
+											: "rgba(239, 68, 68, 0.9)",
+									padding: "0.5rem 1rem",
+									borderRadius: "8px",
+									fontSize: "1rem",
+									fontWeight: "700",
+								}}
+							>
+								{stock.smart_money_flow.action}
+							</div>
+							<span style={{ fontSize: "1.2rem", color: "rgba(251, 191, 36, 0.6)" }}>
+								{expandedSection === "smart_money_flow" ? "−" : "+"}
+							</span>
+						</div>
+					</div>
+
+					{expandedSection === "smart_money_flow" && (
+						<div
+							style={{
+								background: "rgba(251, 191, 36, 0.05)",
+								borderRadius: "8px",
+								padding: "1rem",
+								marginBottom: "0.75rem",
+							}}
+						>
+							{/* Confidence Display */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(251, 191, 36, 0.9)",
+										fontSize: "0.85rem",
+										margin: "0 0 0.5rem 0",
+									}}
+								>
+									Signal Confidence
+								</h5>
+								<div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+									<div
+										style={{
+											flex: 1,
+											background: "rgba(255,255,255,0.1)",
+											borderRadius: "20px",
+											height: "8px",
+											overflow: "hidden",
+										}}
+									>
+										<div
+											style={{
+												background:
+													"linear-gradient(90deg, rgba(251,191,36,0.8), rgba(245,158,11,0.8))",
+												height: "100%",
+												width: `${stock.smart_money_flow.confidence * 100}%`,
+												borderRadius: "20px",
+											}}
+										/>
+									</div>
+									<span
+										style={{
+											fontSize: "1.2rem",
+											fontWeight: "700",
+											color: "rgba(251,191,36,0.9)",
+										}}
+									>
+										{(stock.smart_money_flow.confidence * 100).toFixed(1)}%
+									</span>
+								</div>
+							</div>
+
+							{/* Reasoning */}
+							{stock.smart_money_flow.reasoning && (
+								<div style={{ marginBottom: "1rem" }}>
+									<h5
+										style={{
+											color: "rgba(251, 191, 36, 0.9)",
+											fontSize: "0.85rem",
+											margin: "0 0 0.5rem 0",
+										}}
+									>
+										Why This Signal
+									</h5>
+									<div
+										style={{
+											fontSize: "0.9rem",
+											color: "rgba(255,255,255,0.8)",
+											lineHeight: "1.5",
+											background: "rgba(0,0,0,0.2)",
+											padding: "0.75rem",
+											borderRadius: "6px",
+										}}
+									>
+										{stock.smart_money_flow.reasoning}
+									</div>
+								</div>
+							)}
+
+							{/* Feature Importance */}
+							{stock.smart_money_flow.feature_importance &&
+								Object.keys(stock.smart_money_flow.feature_importance).length > 0 && (
+								<div style={{ marginBottom: "1rem" }}>
+									<h5
+										style={{
+											color: "rgba(251, 191, 36, 0.9)",
+											fontSize: "0.85rem",
+											margin: "0 0 0.5rem 0",
+										}}
+									>
+										Top Influencing Factors
+									</h5>
+									<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+										{Object.entries(stock.smart_money_flow.feature_importance)
+											.sort((a, b) => b[1] - a[1])
+											.slice(0, 5)
+											.map(([feature, importance], idx) => (
+												<div
+													key={idx}
+													style={{
+														display: "flex",
+														justifyContent: "space-between",
+														alignItems: "center",
+														padding: "0.5rem",
+														background: "rgba(255,255,255,0.05)",
+														borderRadius: "6px",
+													}}
+												>
+													<span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.9)" }}>
+														{feature.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+													</span>
+													<span style={{ fontSize: "0.75rem", color: "rgba(251,191,36,0.9)", fontWeight: "600" }}>
+														{importance.toFixed(0)}
+													</span>
+												</div>
+											))}
+									</div>
+								</div>
+							)}
+
+							{/* Model Metadata Footer */}
+							<div
+								style={{
+									marginTop: "1rem",
+									paddingTop: "0.75rem",
+									borderTop: "1px solid rgba(255,255,255,0.1)",
+									fontSize: "0.75rem",
+									color: "rgba(255,255,255,0.5)",
+									display: "flex",
+									justifyContent: "space-between",
+									flexWrap: "wrap",
+									gap: "0.5rem",
+								}}
+							>
+								<span>Model: Smart Money Flow {stock.smart_money_flow.model_version}</span>
+								<span>
+									Predicted:{" "}
+									{new Date(stock.smart_money_flow.prediction_timestamp).toLocaleString()}
 								</span>
 							</div>
 						</div>

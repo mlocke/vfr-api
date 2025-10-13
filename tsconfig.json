@@ -33,6 +33,7 @@
 	"exclude": [
 		"node_modules",
 		"docs/**/*.ts",
+		"scripts/archive/**/*",
 		"app/services/financial-data/__tests__/OptionsAnalysisService.*.test.ts",
 		"app/services/technical-analysis/__tests__/OptionsIntegration*.test.ts"
 	]

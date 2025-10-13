@@ -1,279 +1,218 @@
-# VFR Financial Analysis Platform - AI Agent Quick Start Guide
+# VFR Financial Analysis Platform
 
-**Enterprise Financial Intelligence | Next.js 15 | TypeScript 5.2 | React 19 | 15+ Financial APIs**
+**Created**: 2025-10-11
+**Stack**: Next.js 15 | TypeScript 5.2 | React 19 | 15+ Financial APIs
+**Mission**: Democratize institutional-grade financial analysis through AI-powered multi-source aggregation
 
-## Immediate Action Framework for AI Agents
-
-### 🎯 Primary Context
-
-**System Purpose**: Democratize institutional-grade financial analysis through AI-powered multi-source data aggregation
-**Business Value**: Transform fragmented market data into actionable BUY/SELL/HOLD recommendations
-**Technical Stack**: Production-ready Next.js 15 platform with enterprise security and performance optimization
-
-### ⚡ Instant Setup (30 Seconds)
+## Instant Setup (30s)
 
 ```bash
-# Essential setup sequence
 git clone <repository> && cd vfr-api
 npm install
-cp .env.example .env    # Configure 15+ API keys (see Environment section)
-npm run dev:clean       # Auto-resolves port conflicts, starts on 3000
+cp .env.example .env    # Configure 15+ API keys
+npm run dev:clean       # Auto-resolves port conflicts, starts on :3000
 
-# Verify setup
+# Verify
 curl http://localhost:3000/api/health  # Should return {"status": "healthy"}
 ```
 
-### 🔍 AI Agent Decision Matrix
+## AI Agent Decision Matrix
 
-| Task Type       | Immediate Action               | Verification                 | Next Steps                                  |
-| --------------- | ------------------------------ | ---------------------------- | ------------------------------------------- |
-| **Development** | `npm run type-check`           | Zero TS errors               | Follow TDD with real APIs                   |
-| **Testing**     | `npm test`                     | All 26 tests pass            | Check coverage with `npm run test:coverage` |
-| **Debugging**   | Check `/api/health` + `/admin` | System status green          | Use troubleshooting matrix                  |
-| **Deployment**  | Verify all API keys            | 15+ sources configured       | Follow deployment guide                     |
-| **Integration** | Study service layer            | Understand fallback patterns | Use API documentation                       |
+| Task           | Action                     | Verification               | Next Steps                  |
+| -------------- | -------------------------- | -------------------------- | --------------------------- |
+| **Dev**        | `npm run type-check`       | Zero TS errors             | Follow TDD with real APIs   |
+| **Testing**    | `npm test`                 | All 26 tests pass          | `npm run test:coverage`     |
+| **Debug**      | Check `/api/health`+`/admin` | System status green        | Use troubleshooting matrix  |
+| **Deploy**     | Verify all API keys        | 15+ sources configured     | Follow deployment guide     |
+| **Integration** | Study service layer        | Understand fallback patterns | Use API documentation       |
 
-## System Context and Mental Model
+## System Context
 
-### Problem-Solution Context
-
-**Market Problem**: Individual investors lack access to institutional-grade analysis tools and real-time comprehensive data
-**Technical Solution**: AI-driven analysis engine aggregating 15+ financial data sources with enterprise-grade reliability
-**Business Mission**: Democratize sophisticated financial research through single-click actionable insights
-
-### AI Agent Mental Model
-
-**Think of this system as**: A financial intelligence aggregator that transforms fragmented market data into institutional-quality investment recommendations
+**Problem**: Individual investors lack institutional-grade analysis tools
+**Solution**: AI-driven analysis engine aggregating 15+ financial data sources
+**Mission**: Democratize sophisticated financial research through single-click insights
 
 **Core Data Flow**:
-
 ```
-User Input → Input Validation → Parallel API Collection → AI Analysis → Cached Results → Actionable Insights
-     ↓              ↓                    ↓                ↓            ↓              ↓
-Symbol(s)    SecurityValidator    15+ Financial APIs    Weighted    Redis Cache    BUY/SELL/HOLD
-Sector       OWASP protection     Premium + Government  Scoring     + In-memory    + Confidence
-Multiple     Rate limiting        + Social intelligence 5 Factors   Fallback       + Reasoning
+User Input → Validation → Parallel API Collection → AI Analysis → Cached Results → Actionable Insights
+Symbol(s) → SecurityValidator → 15+ Financial APIs → Weighted Scoring → Redis+Fallback → BUY/SELL/HOLD
 ```
 
-**Success Metrics**:
+**Success Metrics**: Sub-3s analysis, 99.5% uptime (fallback strategies), 80% security risk reduction (OWASP), 85%+ cache hit ratio
 
-- Sub-3-second analysis completion
-- 99.5% uptime via fallback strategies
-- 80% security risk reduction (OWASP compliance)
-- 85%+ cache hit ratio for performance
+## Technology Stack
 
-## Technology Stack with Context and Decision Rationale
+| Category         | Technology                 | Purpose                       | AI Agent Considerations                    |
+| ---------------- | -------------------------- | ----------------------------- | ------------------------------------------ |
+| **Frontend**     | React 19 + Next.js 15      | Modern UX                     | Use App Router patterns, TypeScript strict |
+| **Data**         | 15+ APIs + intelligent fallback | Comprehensive intelligence | Always implement fallback logic            |
+| **Intelligence** | SEC EDGAR + VWAP + Reddit  | Institutional-grade insights  | Respect rate limits, cache aggressively    |
+| **Performance**  | Redis + in-memory caching  | Sub-3s analysis               | Implement cache-aside pattern              |
+| **Security**     | JWT + bcrypt + OWASP       | Enterprise protection         | Validate all inputs, sanitize errors       |
+| **Interface**    | Tailwind CSS + Cyberpunk   | Professional aesthetics       | Follow design system                       |
+| **Quality**      | Jest + Playwright + TDD    | Production reliability        | NO MOCK DATA policy                        |
 
-| Category         | Technology                                | Business Purpose                  | Technical Benefits          | AI Agent Considerations                    |
-| ---------------- | ----------------------------------------- | --------------------------------- | --------------------------- | ------------------------------------------ |
-| **Frontend**     | React 19 + Next.js 15 App Router          | Modern user experience            | SSR/SSG performance         | Use App Router patterns, TypeScript strict |
-| **Data Layer**   | 15+ APIs with intelligent fallback        | Comprehensive market intelligence | Multi-source reliability    | Always implement fallback logic            |
-| **Intelligence** | SEC EDGAR + VWAP + Multi-Reddit sentiment | Institutional-grade insights      | Real insider/sentiment data | Respect rate limits, cache aggressively    |
-| **Performance**  | Redis + in-memory caching                 | Sub-3-second analysis             | 85%+ cache hit ratio        | Implement cache-aside pattern              |
-| **Security**     | JWT + bcrypt + OWASP validation           | Enterprise protection             | 80% risk reduction          | Validate all inputs, sanitize errors       |
-| **Interface**    | Tailwind CSS + Cyberpunk theme            | Professional aesthetics           | Component consistency       | Follow design system                       |
-| **Quality**      | Jest + Playwright + TDD                   | Production reliability            | Real API testing            | NO MOCK DATA policy                        |
-
-### Key Technology Decisions
-
-- **Next.js 15**: Chosen for App Router performance and TypeScript integration
-- **Multi-API Strategy**: Ensures 99.5% uptime through intelligent fallbacks
-- **Redis Caching**: Critical for meeting sub-3-second analysis targets
-- **Real API Testing**: Ensures production reliability (26 test files, 13,200+ lines)
+**Key Decisions**: Next.js 15 (App Router), Multi-API (99.5% uptime), Redis (sub-3s targets), Real API Testing (26 files, 13,200+ lines)
 
 ## Architecture
 
 ```
 app/
 ├── api/                     # Next.js API routes
-│   ├── stocks/             # Stock analysis endpoints
-│   ├── admin/              # Admin dashboard APIs
-│   └── user_auth/          # JWT authentication
-├── services/               # Business logic layer
+│   ├── stocks/             # Analysis endpoints
+│   ├── admin/              # Admin dashboard
+│   └── user_auth/          # JWT auth
+├── services/               # Business logic
 │   ├── financial-data/     # 15+ API integrations
 │   ├── stock-selection/    # Multi-modal analysis
 │   ├── security/           # OWASP protection
 │   ├── cache/              # Redis + fallback
 │   └── error-handling/     # Centralized errors
-├── components/             # React UI components
+├── components/             # React UI
 └── [admin|stock-intelligence]/ # Pages
 ```
 
 **Databases**: PostgreSQL (main), Redis (cache), InfluxDB (optional)
 
-## Development Setup
-
-### Prerequisites & Installation
-
-```bash
-# Requirements: Node.js 18+, PostgreSQL, Redis
-git clone <repository-url> && cd vfr-api
-npm install
-cp .env.example .env  # Add API keys
-
-# Database URLs (defaults):
-# PostgreSQL: postgresql://postgres:dev_password_123@localhost:5432/vfr_api
-# Redis: redis://localhost:6379
-
-npm run dev:clean  # Starts on port 3000
-```
-
 ## Development Commands
 
-| Category    | Command                 | Purpose                          |
-| ----------- | ----------------------- | -------------------------------- |
-| **Server**  | `npm run dev:clean`     | Clean start (port conflicts)     |
-| **Server**  | `npm run dev`           | Standard development (port 3000) |
-| **Quality** | `npm run type-check`    | TypeScript validation            |
-| **Testing** | `npm test`              | Jest with memory optimization    |
-| **Testing** | `npm run test:coverage` | Coverage report                  |
-| **Build**   | `npm run build`         | Production build                 |
+| Category    | Command                 | Purpose                      |
+| ----------- | ----------------------- | ---------------------------- |
+| **Server**  | `npm run dev:clean`     | Clean start (port conflicts) |
+| **Server**  | `npm run dev`           | Standard dev (port 3000)     |
+| **Quality** | `npm run type-check`    | TypeScript validation        |
+| **Testing** | `npm test`              | Jest with memory optimization |
+| **Testing** | `npm run test:coverage` | Coverage report              |
+| **Build**   | `npm run build`         | Production build             |
 
 ## Environment Configuration
 
-### Required .env Variables
-
 ```bash
 # Core APIs (Required)
-ALPHA_VANTAGE_API_KEY=your_key
-POLYGON_API_KEY=your_key
-FMP_API_KEY=your_key
-FRED_API_KEY=your_key
+ALPHA_VANTAGE_API_KEY=key
+POLYGON_API_KEY=key
+FMP_API_KEY=key
+FRED_API_KEY=key
 
-# Database URLs
+# Database
 DATABASE_URL=postgresql://postgres:dev_password_123@localhost:5432/vfr_api
 REDIS_URL=redis://localhost:6379
 
 # Security
-SECRET_KEY=your_jwt_secret
+SECRET_KEY=jwt_secret
 NODE_ENV=development
 ```
 
-### Data Sources (15+ APIs)
+## Data Sources (15+ APIs)
 
-| Tier                | Source                                              | Type      | Purpose                                         | Status         |
-| ------------------- | --------------------------------------------------- | --------- | ----------------------------------------------- | -------------- |
-| Premium             | Polygon, Alpha Vantage, FMP                         | Paid      | Primary data + ratios + VWAP + extended hours   | ✅ IMPLEMENTED |
-| Enhanced            | EODHD, TwelveData                                   | Paid      | Secondary + ratios + ESG data                   | ✅ IMPLEMENTED |
-| Government          | SEC EDGAR, FRED, BLS, EIA                           | Free      | Institutional/macro/energy                      | ✅ IMPLEMENTED |
-| Social Intelligence | Reddit WSB Multi-Subreddit, Yahoo Finance Sentiment | Free/Paid | High-performance sentiment analysis             | ✅ IMPLEMENTED |
-| Alternative Data    | ESG Providers, FINRA                                | Free/Paid | ESG scoring + short interest                    | ✅ IMPLEMENTED |
-| Extended Market     | Polygon Extended Hours, Bid/Ask                     | Paid      | Pre/post market + liquidity                     | ✅ IMPLEMENTED |
-| Primary             | Yahoo Finance REST API                              | Free      | Direct API integration for stocks, fundamentals | ✅ IMPLEMENTED |
-| Backup              | Yahoo Finance                                       | Free      | Multi-tier fallback system                      | ✅ IMPLEMENTED |
+| Tier                | Source                  | Type      | Purpose                   | Status         |
+| ------------------- | ----------------------- | --------- | ------------------------- | -------------- |
+| Premium             | Polygon, Alpha Vantage, FMP | Paid  | Primary + VWAP + extended hours | ✅ IMPLEMENTED |
+| Enhanced            | EODHD, TwelveData       | Paid      | Secondary + ESG           | ✅ IMPLEMENTED |
+| Government          | SEC EDGAR, FRED, BLS, EIA | Free    | Institutional/macro/energy | ✅ IMPLEMENTED |
+| Social Intelligence | Reddit WSB Multi, Yahoo Sentiment | Free/Paid | High-performance sentiment | ✅ IMPLEMENTED |
+| Alternative         | ESG Providers, FINRA    | Free/Paid | ESG + short interest      | ✅ IMPLEMENTED |
+| Extended Market     | Polygon Extended, Bid/Ask | Paid    | Pre/post market + liquidity | ✅ IMPLEMENTED |
+| Primary             | Yahoo Finance REST      | Free      | Direct API integration    | ✅ IMPLEMENTED |
+| Backup              | Yahoo Finance           | Free      | Multi-tier fallback       | ✅ IMPLEMENTED |
 
-## API Usage
+## Key Endpoints
 
-### Key Endpoints
-
-| Endpoint                  | Method | Purpose                                            |
-| ------------------------- | ------ | -------------------------------------------------- |
-| `/api/health`             | GET    | System status                                      |
+| Endpoint                  | Method | Purpose                               |
+| ------------------------- | ------ | ------------------------------------- |
+| `/api/health`             | GET    | System status                         |
 | `/api/stocks/analyze`     | POST   | Comprehensive stock analysis (MLEnhancedStockSelectionService) |
-| `/api/ml/early-signal`    | POST   | ML-powered analyst rating predictions (PRODUCTION) |
-| `/api/user_auth`          | POST   | JWT authentication                                 |
-| `/api/admin/data-sources` | GET    | API monitoring                                     |
+| `/api/ml/early-signal`    | POST   | ML-powered analyst rating predictions |
+| `/api/user_auth`          | POST   | JWT authentication                    |
+| `/api/admin/data-sources` | GET    | API monitoring                        |
 
-### UI Routes
+**UI Routes**: `/stock-intelligence` (analysis), `/admin` (management)
 
-- `/stock-intelligence` - Multi-modal stock analysis
-- `/admin` - Data source management & health monitoring
+## Machine Learning
 
-### Machine Learning Features
+**ML Ensemble** - 4-model weighted voting system for stock analysis ✅ PRODUCTION (Updated Oct 13, 2025)
+- Endpoint: `POST /api/stocks/analyze` with `include_ml=true`
+- Architecture: Weighted voting ensemble with confidence-based consensus
+- Models: 4 deployed models running in parallel
+  1. **Sentiment Fusion** (v1.1.0) - 45% weight, 45 features, 53.8% accuracy
+  2. **Price Prediction** (v1.1.0) - 27% weight, 35 features
+  3. **Early Signal Detection** (v1.0.0) - 18% weight, 28 features, 97.6% accuracy
+  4. **Smart Money Flow** (v3.0.0) - 10% weight, 27 features, R² 1.67% ✨ NEW
+- Integration: Parallel execution via `RealTimePredictionEngine.predictEnsemble()`
+- Output: Consensus signal (BULLISH/BEARISH/NEUTRAL) with confidence and model vote breakdown
+- Performance: Sub-500ms ensemble prediction with Redis caching
+- Documentation: See `ML_ENSEMBLE_ARCHITECTURE_REPORT.md` and `ML_ENSEMBLE_SUMMARY.md`
 
-- **Early Signal Detection** - ML-powered prediction of analyst rating changes (2-week horizon) ✅ PRODUCTION DEPLOYED
-    - Endpoint: `POST /api/ml/early-signal`
-    - Model: LightGBM Gradient Boosting v1.0.0 (PRODUCTION-READY)
-    - Performance: 97.6% test accuracy, 94.3% validation accuracy, 0.998 AUC
-    - Response Time: 600-900ms average (optimization opportunities identified)
-    - Training Data: 1,051 examples from real market data (early-signal-combined-1051.csv)
-    - Features: 20 engineered features across price momentum, volume, sentiment, fundamentals, technical indicators
-    - Top Features: earnings_surprise (36.9%), macd_histogram_trend (27.8%), rsi_momentum (22.5%)
-    - Deployment Date: October 2025
-    - Integration: Python-Node.js bridge with subprocess model serving
+**Individual Model Endpoints** (legacy, standalone access):
+- `POST /api/ml/early-signal` - Analyst rating predictions
+- Feature toggles available in admin dashboard for individual model control
 
 ## Testing
 
-### Philosophy & Commands
-
-- **TDD Approach**: Tests before implementation
-- **Real Data Only**: NO MOCK DATA policy
-- **Memory Optimized**: `maxWorkers: 1` for stability
+**Philosophy**: TDD, Real Data Only (NO MOCK DATA), Memory Optimized (`maxWorkers: 1`)
 
 ```bash
-npm test                    # All tests (26 test files, 13,200+ lines)
-npm run test:coverage      # Coverage report (80% minimum)
+npm test                    # All tests (26 files, 13,200+ lines)
+npm run test:coverage      # Coverage (80% minimum)
 npm test -- --testNamePattern="ServiceName"  # Specific test
 ```
 
-### Integration Test Status
+**Comprehensive Suite**: ✅ **26 TEST FILES PASSING**
+- VWAP Service ✅
+- Yahoo Finance Sentiment API ✅
+- Enhanced Reddit API ✅
+- Sentiment Analysis (<1.5s response) ✅
+- Macroeconomic Data ✅
+- Currency Data ✅
+- Institutional Data (SEC EDGAR 13F + Form 4) ✅
+- ESG Data Service ✅
+- Short Interest Service ✅
+- Extended Market Data ✅
+- Security & Performance (OWASP + memory optimization) ✅
 
-**Comprehensive Test Suite**: ✅ **26 TEST FILES PASSING** (13,200+ lines of test code)
+All tests use real APIs with 5-minute timeout.
 
-- **VWAP Service**: Volume Weighted Average Price analysis and integration ✅ IMPLEMENTED
-- **Yahoo Finance Sentiment API**: High-performance sentiment analysis replacing NewsAPI ✅ IMPLEMENTED
-- **Enhanced Reddit API**: Multi-subreddit sentiment analysis with performance testing ✅ IMPLEMENTED
-- **Sentiment Analysis**: Yahoo Finance + Reddit WSB integration with <1.5s response time ✅ IMPLEMENTED
-- **Macroeconomic Data**: FRED + BLS + EIA integration testing ✅ IMPLEMENTED
-- **Currency Data**: International currency analysis validation ✅ IMPLEMENTED
-- **Institutional Data**: SEC EDGAR 13F + Form 4 comprehensive integration ✅ IMPLEMENTED
-- **ESG Data Service**: ESG scoring with industry-specific baselines ✅ IMPLEMENTED
-- **Short Interest Service**: FINRA data integration with squeeze detection ✅ IMPLEMENTED
-- **Extended Market Data**: Pre/post market data + bid/ask spread analysis ✅ IMPLEMENTED
-- **Security & Performance**: OWASP compliance + memory optimization ✅ IMPLEMENTED
+## Core Services
 
-All tests use real APIs with 5-minute timeout for comprehensive integration validation.
+| Service                      | File                           | Purpose                          | Status                 |
+| ---------------------------- | ------------------------------ | -------------------------------- | ---------------------- |
+| StockSelectionService        | `services/stock-selection/`    | Multi-modal analysis             | ✅                     |
+| VWAPService                  | `services/financial-data/`     | Volume Weighted Average          | ✅                     |
+| SentimentAnalysisService     | `services/financial-data/`     | Yahoo + Reddit sentiment         | ✅                     |
+| MacroeconomicAnalysisService | `services/financial-data/`     | FRED + BLS + EIA                 | ✅                     |
+| InstitutionalDataService     | `services/financial-data/`     | SEC 13F + Form 4                 | ✅                     |
+| CurrencyDataService          | `services/financial-data/`     | International currency           | ✅                     |
+| ESGDataService               | `services/financial-data/`     | ESG scoring                      | ✅                     |
+| ShortInterestService         | `services/financial-data/`     | FINRA + squeeze detection        | ✅                     |
+| ExtendedMarketDataService    | `services/financial-data/`     | Pre/post market + bid/ask        | ✅                     |
+| YahooFinanceAPI              | `services/financial-data/`     | Direct REST integration          | ✅                     |
+| YahooFinanceSentimentAPI     | `services/financial-data/providers/` | High-performance sentiment | ✅                     |
+| FallbackDataService          | `services/financial-data/`     | API orchestration + failover     | ✅                     |
+| SecurityValidator            | `services/security/`           | OWASP protection                 | ✅                     |
+| **RealTimePredictionEngine** | `services/ml/prediction/`      | **ML ensemble orchestration**    | **✅ PRODUCTION** |
+| **EarlySignalMLService**     | `services/ml/early-signal/`    | **ML analyst predictions**       | **✅ PRODUCTION** |
+| **SmartMoneyFlowService**    | `services/ml/smart-money-flow/`| **Institutional activity ML**    | **✅ PRODUCTION** |
 
-## Architecture Details
-
-### Core Services
-
-| Service                      | File                                     | Purpose                                          | Status                     |
-| ---------------------------- | ---------------------------------------- | ------------------------------------------------ | -------------------------- |
-| StockSelectionService        | `app/services/stock-selection/`          | Multi-modal analysis                             | ✅ IMPLEMENTED             |
-| VWAPService                  | `app/services/financial-data/`           | Volume Weighted Average Price analysis           | ✅ IMPLEMENTED             |
-| SentimentAnalysisService     | `app/services/financial-data/`           | Yahoo Finance + Reddit multi-subreddit sentiment | ✅ IMPLEMENTED             |
-| MacroeconomicAnalysisService | `app/services/financial-data/`           | FRED + BLS + EIA integration                     | ✅ IMPLEMENTED             |
-| InstitutionalDataService     | `app/services/financial-data/`           | SEC 13F + Form 4 parsing                         | ✅ IMPLEMENTED             |
-| CurrencyDataService          | `app/services/financial-data/`           | International currency analysis                  | ✅ IMPLEMENTED             |
-| ESGDataService               | `app/services/financial-data/`           | ESG scoring with industry baselines              | ✅ IMPLEMENTED             |
-| ShortInterestService         | `app/services/financial-data/`           | FINRA short interest + squeeze detection         | ✅ IMPLEMENTED             |
-| ExtendedMarketDataService    | `app/services/financial-data/`           | Pre/post market data + bid/ask spreads           | ✅ IMPLEMENTED             |
-| YahooFinanceAPI              | `app/services/financial-data/`           | Direct Yahoo Finance REST API integration        | ✅ IMPLEMENTED             |
-| YahooFinanceSentimentAPI     | `app/services/financial-data/providers/` | High-performance sentiment analysis              | ✅ IMPLEMENTED             |
-| FallbackDataService          | `app/services/financial-data/`           | API orchestration + failover                     | ✅ IMPLEMENTED             |
-| SecurityValidator            | `app/services/security/`                 | OWASP protection                                 | ✅ IMPLEMENTED             |
-| **EarlySignalMLService**     | `app/services/ml/early-signal/`          | **ML-powered analyst rating predictions**        | **✅ PRODUCTION DEPLOYED** |
-
-### Data Flow
-
-1. **Input** → Stock symbols/sectors
-2. **Parallel APIs** → 15+ sources via FallbackDataService
-3. **AI Analysis** → Proprietary algorithms + institutional intelligence
-4. **Cache** → Redis (2min dev, 10min prod) + in-memory fallback
-5. **Output** → Actionable insights + BUY/SELL/HOLD recommendations
-
-## Production & Standards
-
-### Environment Differences
+## Production Standards
 
 | Environment | Cache TTL  | Rate Limits | Admin Access |
 | ----------- | ---------- | ----------- | ------------ |
 | Development | 2 minutes  | Relaxed     | Auto-granted |
 | Production  | 10 minutes | Strict      | JWT Required |
 
-### Development Rules
-
+**Development Rules**:
 1. **NO MOCK DATA** - Always use real APIs
-2. **TypeScript Strict** - All code must pass strict checks
-3. **KISS Principles** - Avoid over-engineering
-4. **80% Test Coverage** - Minimum requirement
+2. **TypeScript Strict** - Must pass strict checks
+3. **KISS** - Avoid over-engineering
+4. **80% Test Coverage** - Minimum
 5. **Performance First** - Core Web Vitals optimization
 
-### Key Documentation
+## Key Documentation
 
 - `docs/vision.md` - Project goals
 - `docs/security-architecture.md` - Security implementation
 - `docs/error-handling-standards.md` - Error management
+- `app/services/*/CLAUDE.md` - Service-specific context
+- `database/CLAUDE.md` - Database architecture
 
 **License**: Private - Veritak Financial Research LLC

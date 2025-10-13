@@ -288,6 +288,7 @@ Components: ${Object.keys(service.components).length} components`;
 											early_signal: stock.early_signal,
 											mlPrediction: stock.mlPrediction,
 											sentiment_fusion: stock.sentiment_fusion,
+											smart_money_flow: stock.smart_money_flow,
 										}}
 									/>
 								))}

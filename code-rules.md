@@ -5,10 +5,14 @@
 - Employ agents in parallel wherever possible.
 - Always follow KISS principles.
 - Do what is necessary, but no more.
-- NEVER create files or folders that are not strictly necessary.
+- Create files or folders that are only strictly necessary.
 - NEVER add dependencies unless absolutely necessary.
 - NEVER "patch" or "hack" or "quick fix" code. Always find the root cause of issues and fix them properly.
-- ALWAYS prefer editing existing code over creating new code.
+- ALWAYS prefer editing existing code over creating new code unless the files are overly large. Then split them up.
+- Attempt to keep files under 300 lines of code. Refactor if necessary.
+- ALWAYS write modular, reusable code.
+- ALWAYS write code with proper error handling and logging.
+- ALWAYS write code with proper input validation and type checking.
 - NEVER proactively create documentation files (\*.md) or README files. Only do so if explicitly requested.
 - NEVER assume the fix works. Test thoroughly and validate.
 - If the issues persist, iterate through the above steps again.

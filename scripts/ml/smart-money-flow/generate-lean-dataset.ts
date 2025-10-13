@@ -2,8 +2,9 @@
  * Smart Money Flow Dataset Generation - LEAN VERSION
  * Uses LeanSmartMoneyFeatureExtractor with ZERO PLACEHOLDERS
  *
- * Features: 10 real features from working data sources only
- * NO FALLBACKS - Fails loudly if data unavailable
+ * Features: 20 real features from verified working data sources
+ * Data Sources: Polygon (price/volume), Congressional Trading, SEC EDGAR (Form 4/13F), EODHD (options)
+ * NO FALLBACKS - Gracefully handles sparse data with zeros
  */
 
 import { LeanSmartMoneyFeatureExtractor } from '../../../app/services/ml/smart-money-flow/LeanSmartMoneyFeatureExtractor';
@@ -21,7 +22,7 @@ interface DatasetSample {
 	price_after_14d: number;
 	return_14d: number;
 	label: number;
-	// 10 features
+	// Original 10 features
 	congress_buy_count_90d: number;
 	congress_sell_count_90d: number;
 	congress_net_sentiment: number;
@@ -32,6 +33,17 @@ interface DatasetSample {
 	price_momentum_20d: number;
 	volume_trend_30d: number;
 	price_volatility_30d: number;
+	// New 10 features (SEC EDGAR, Polygon, EODHD)
+	insider_buy_volume_30d: number;
+	insider_sell_volume_30d: number;
+	insider_buy_ratio_30d: number;
+	insider_transaction_count_30d: number;
+	inst_ownership_pct: number;
+	inst_holders_count: number;
+	inst_ownership_change_qtd: number;
+	block_trade_ratio_30d: number;
+	vwap_deviation_avg_30d: number;
+	options_put_call_ratio_7d: number;
 }
 
 class LeanDatasetGenerator {
@@ -49,11 +61,11 @@ class LeanDatasetGenerator {
 
 	async generateDataset(symbols: string[], startDate: Date, endDate: Date, outputName: string) {
 		console.log('\n═══════════════════════════════════════════════════════════');
-		console.log('LEAN SMART MONEY FLOW DATASET GENERATION');
+		console.log('LEAN SMART MONEY FLOW DATASET GENERATION (20 FEATURES)');
 		console.log('═══════════════════════════════════════════════════════════');
 		console.log(`Symbols: ${symbols.length}`);
 		console.log(`Date range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
-		console.log(`Features: 10 (NO PLACEHOLDERS)`);
+		console.log(`Features: 20 (Congressional, Volume, Price, SEC Insider, SEC 13F, Polygon, EODHD)`);
 		console.log(`Output: ${outputName}.csv`);
 		console.log('═══════════════════════════════════════════════════════════\n');
 
@@ -261,7 +273,9 @@ class LeanDatasetGenerator {
 // Parse command line arguments
 const args = process.argv.slice(2);
 const symbolsArg = args.find(arg => arg.startsWith('--symbols='));
+const nameArg = args.find(arg => arg.startsWith('--name='));
 const testArg = args.includes('--test');
+const top100Arg = args.includes('--top100');
 
 let symbols: string[];
 let outputName: string;
@@ -269,20 +283,21 @@ let outputName: string;
 if (testArg) {
 	// Test with 3 symbols
 	symbols = ['AAPL', 'MSFT', 'GOOGL'];
-	outputName = 'lean-test';
+	outputName = nameArg ? nameArg.replace('--name=', '') : 'lean-test';
 } else if (symbolsArg) {
 	// Custom symbol list
 	symbols = symbolsArg.replace('--symbols=', '').split(',');
-	outputName = 'lean-custom';
+	outputName = nameArg ? nameArg.replace('--name=', '') : 'lean-custom';
+} else if (top100Arg) {
+	// Top 100 stocks (imported from stock-lists.ts)
+	const { getTopNStocks } = require('./stock-lists');
+	symbols = getTopNStocks(100);
+	outputName = nameArg ? nameArg.replace('--name=', '') : 'lean-top100';
 } else {
-	// Top 500 S&P stocks
-	symbols = [
-		'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B', 'UNH', 'JNJ',
-		'V', 'WMT', 'XOM', 'JPM', 'PG', 'MA', 'CVX', 'HD', 'MRK', 'ABBV',
-		'LLY', 'PFE', 'AVGO', 'KO', 'COST', 'PEP', 'TMO', 'MCD', 'CSCO', 'ABT',
-		// Add more S&P 500 symbols as needed...
-	];
-	outputName = 'lean-sp500';
+	// Top 500 stocks (imported from stock-lists.ts)
+	const { getTop500Stocks } = require('./stock-lists');
+	symbols = getTop500Stocks();
+	outputName = nameArg ? nameArg.replace('--name=', '') : 'lean-sp500';
 }
 
 // Date range: 2 years of historical data

@@ -80,6 +80,7 @@ export class ProgressTracker {
 			},
 			{ id: "extended_hours", name: "Getting extended hours data", weight: 5, status: "pending" },
 			{ id: "options", name: "Analyzing options data", weight: 20, status: "pending" }, // Longest operation
+			{ id: "smart_money_flow", name: "Analyzing institutional activity", weight: 8, status: "pending" },
 			{ id: "ml_prediction", name: "Running ML predictions", weight: 5, status: "pending" },
 			{ id: "composite", name: "Calculating composite scores", weight: 3, status: "pending" },
 		];

@@ -42,7 +42,7 @@ const RequestSchema = z.object({
 		})
 		.optional(),
 	// ML Enhancement Parameters (Phase 4.1)
-	include_ml: z.boolean().optional().default(false),
+	include_ml: z.boolean().optional().default(true), // Enabled by default - 4-model ensemble (sentiment-fusion, price-prediction, early-signal-detection, smart-money-flow)
 	ml_horizon: z.enum(["1h", "4h", "1d", "1w", "1m"]).optional().default("1w"),
 	ml_confidence_threshold: z.number().min(0).max(1).optional().default(0.5),
 	ml_weight: z.number().min(0).max(1).optional().default(0.15),
@@ -232,8 +232,9 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 	const toggleService = MLFeatureToggleService.getInstance();
 	const esdEnabled = await toggleService.isEarlySignalEnabled();
 	const sentimentFusionEnabled = await toggleService.isSentimentFusionEnabled();
+	const smartMoneyFlowEnabled = await toggleService.isSmartMoneyFlowEnabled();
 
-	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, Sentiment-Fusion Toggle: ${sentimentFusionEnabled}, ML Enhancement: ${include_ml || false}`);
+	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, Sentiment-Fusion Toggle: ${sentimentFusionEnabled}, Smart-Money-Flow Toggle: ${smartMoneyFlowEnabled}, ML Enhancement: ${include_ml || false}`);
 
 	return {
 		scope,
@@ -244,6 +245,7 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			includeNews: true,
 			includeEarlySignal: esdEnabled,
 			includeSentimentFusion: sentimentFusionEnabled,
+			includeSmartMoneyFlow: smartMoneyFlowEnabled,
 			riskTolerance: "moderate",
 			timeout: config?.timeout || 90000, // 90 seconds to accommodate multiple slow options API calls (~45s total) plus other data fetching
 			// ML Enhancement Options (Phase 4.1)
@@ -330,6 +332,7 @@ function convertToAdminResponse(response: any): any {
 				early_signal: selection.early_signal,
 				price_prediction: selection.price_prediction, // Phase 4.2: Include price prediction in API response
 				sentiment_fusion: selection.sentiment_fusion, // Phase 4.3: Include sentiment-fusion in API response
+				smart_money_flow: selection.smart_money_flow, // Phase 4.4: Include smart-money-flow in API response
 				mlPrediction: selection.mlPrediction, // Phase 4.1: Include ML predictions in API response
 			};
 		}) || [];
@@ -454,14 +457,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 		// Notify progress tracker of failure
 		if (progressTracker && sessionId) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Analysis failed unexpectedly";
+
 			sendProgressUpdate(sessionId, {
 				stage: "error",
-				message: error instanceof Error ? error.message : "Analysis failed",
-				progress: 0,
+				message: errorMessage,
+				progress: 100, // Set to 100 so the progress bar completes
 				timestamp: Date.now(),
 				metadata: { error: true },
 			});
-			setTimeout(() => closeProgressSession(sessionId!), 1000);
+			setTimeout(() => closeProgressSession(sessionId!), 2000); // Slightly longer delay to show error
 		}
 
 		// Return appropriate status codes for different error types

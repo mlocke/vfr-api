@@ -40,12 +40,12 @@ import { ExtendedMarketDataService } from "../financial-data/ExtendedMarketDataS
 import { InstitutionalDataService } from "../financial-data/InstitutionalDataService";
 import { OptionsDataService } from "../financial-data/OptionsDataService";
 import { MLPredictionService } from "../ml/prediction/MLPredictionService";
-import { EarlySignalService } from "../ml/early-signal/EarlySignalService";
 import { EarlySignalPrediction } from "../ml/early-signal/types";
-import { PricePredictionService, PricePrediction } from "../ml/price-prediction/PricePredictionService";
-import { SentimentFusionService } from "../ml/sentiment-fusion/SentimentFusionService";
+import { PricePrediction } from "../ml/price-prediction/PricePredictionService";
 import { PricePrediction as SentimentFusionPrediction } from "../ml/sentiment-fusion/types";
 import ErrorHandler from "../error-handling/ErrorHandler";
+import { MLIntegration } from "./integration/MLIntegration";
+import { DataEnrichment } from "./integration/DataEnrichment";
 
 /**
  * Main Stock Selection Service
@@ -53,6 +53,8 @@ import ErrorHandler from "../error-handling/ErrorHandler";
 export class StockSelectionService extends EventEmitter implements DataIntegrationInterface {
 	private algorithmIntegration: AlgorithmIntegration;
 	private sectorIntegration: SectorIntegration;
+	private mlIntegration: MLIntegration;
+	private dataEnrichment: DataEnrichment;
 	private config: any;
 	private financialDataService: FinancialDataService;
 	private cache: RedisCache;
@@ -171,6 +173,12 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		}
 
 		this.sectorIntegration = new SectorIntegration(this.financialDataService, this.config);
+
+		// Initialize ML integration module
+		this.mlIntegration = new MLIntegration(this.mlPredictionService);
+
+		// Initialize data enrichment module
+		this.dataEnrichment = new DataEnrichment();
 
 		// Initialize statistics
 		this.stats = this.initializeStats();
@@ -517,14 +525,16 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		const stockScore = algorithmResult.selections[0]?.score;
 
 		if (!stockScore) {
-			throw new Error(`No analysis result found for symbol: ${symbol}`);
+			throw new Error(
+				`Unable to analyze ${symbol}: No data available. This may be due to data source API limits or all data sources being disabled. Please check your data source configuration in the admin panel.`
+			);
 		}
 
 		// Get additional market data
 		const additionalData = await this.fetchAdditionalStockData(symbol, request.options);
 
 		// Extract primary factors from the actual calculations for utilization tracking
-		const primaryFactors = this.extractPrimaryFactors(stockScore);
+		const primaryFactors = this.dataEnrichment.extractPrimaryFactors(stockScore);
 		console.log(`Primary factors extracted for ${symbol}:`, primaryFactors);
 
 		// DO NOT adjust scores here - FactorLibrary already calculated the final composite score
@@ -557,113 +567,18 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		// ❌ BUG FIX: ML service was overwriting correct FactorLibrary score (0.61 → 2.11)
 		// ML predictions are NOT yet integrated and should not modify the composite score
 
-		// Skip legacy individual ML services if using ensemble predictions (include_ml=true)
-		// The MLEnhancedStockSelectionService will handle all ML via predictEnsemble()
-		const useEnsemblePredictions = request.options?.include_ml === true;
-
-		// Early Signal Detection (ESD) - ML analyst rating predictions
-		let earlySignalPrediction: EarlySignalPrediction | undefined;
-		console.log(
-			`🔍 ESD Check for ${symbol}: includeEarlySignal=${request.options?.includeEarlySignal}`
+		// Get ML predictions using MLIntegration module (with progress tracking)
+		console.log(`🔍 ML Predictions Check for ${symbol}`);
+		const progressTracker = (request as any).progressTracker;
+		const mlPredictions = await this.mlIntegration.getMLPredictions(
+			symbol,
+			additionalData.sector || "Unknown",
+			request.options,
+			progressTracker
 		);
-		if (request.options?.includeEarlySignal && !useEnsemblePredictions) {
-			try {
-				console.log(`🚀 Starting ESD prediction for ${symbol}...`);
-				const esdService = new EarlySignalService();
-				const prediction = await esdService.predictAnalystChange(
-					symbol,
-					additionalData.sector || "Unknown"
-				);
-				console.log(`📊 ESD raw prediction for ${symbol}:`, prediction);
-				earlySignalPrediction = prediction || undefined;
-				if (earlySignalPrediction) {
-					console.log(
-						`🎯 Early Signal Detection completed for ${symbol}: ${earlySignalPrediction.upgrade_likely ? "UPGRADE" : "DOWNGRADE"} likely (${(earlySignalPrediction.confidence * 100).toFixed(1)}% confidence)`
-					);
-				} else {
-					console.warn(`⚠️ ESD returned null/undefined for ${symbol}`);
-				}
-			} catch (error) {
-				console.error(`❌ Early Signal Detection failed for ${symbol}:`, error);
-			}
-		} else {
-			console.log(`⏭️ ESD skipped for ${symbol} (feature not enabled in request options)`);
-		}
 
-		// Price Prediction - ML price movement predictions
-		let pricePrediction: PricePrediction | undefined;
-		console.log(
-			`🔍 Price Prediction Check for ${symbol}: includePricePrediction=${request.options?.includePricePrediction}`
-		);
-		if (request.options?.includePricePrediction && !useEnsemblePredictions) {
-			try {
-				console.log(`🚀 Starting Price Prediction for ${symbol}...`);
-				const priceService = new PricePredictionService();
-				const prediction = await priceService.predictPriceMovement(
-					symbol,
-					additionalData.sector || "Unknown"
-				);
-				console.log(`📊 Price Prediction raw result for ${symbol}:`, prediction);
-				pricePrediction = prediction || undefined;
-				if (pricePrediction) {
-					console.log(
-						`🎯 Price Prediction completed for ${symbol}: ${pricePrediction.prediction} (${(pricePrediction.confidence * 100).toFixed(1)}% confidence)`
-					);
-					// Add price prediction insights to primary factors
-					primaryFactors.push(
-						`ML predicts ${pricePrediction.prediction} movement (${(pricePrediction.confidence * 100).toFixed(0)}% confidence)`
-					);
-					// Add top reasoning if available
-					if (pricePrediction.reasoning && pricePrediction.reasoning.length > 0) {
-						pricePrediction.reasoning.slice(0, 2).forEach(reason => {
-							primaryFactors.push(reason);
-						});
-					}
-				} else {
-					console.warn(`⚠️ Price Prediction returned null/undefined for ${symbol}`);
-				}
-			} catch (error) {
-				console.error(`❌ Price Prediction failed for ${symbol}:`, error);
-			}
-		} else {
-			console.log(`⏭️ Price Prediction skipped for ${symbol} (feature not enabled in request options)`);
-		}
-
-		// Sentiment-Fusion - ML 3-day price direction predictions
-		let sentimentFusionPrediction: SentimentFusionPrediction | undefined;
-		console.log(
-			`🔍 Sentiment-Fusion Check for ${symbol}: includeSentimentFusion=${request.options?.includeSentimentFusion}`
-		);
-		if (request.options?.includeSentimentFusion && !useEnsemblePredictions) {
-			try {
-				console.log(`🚀 Starting Sentiment-Fusion for ${symbol}...`);
-				const sfService = new SentimentFusionService();
-				const prediction = await sfService.predict(symbol);
-				console.log(`📊 Sentiment-Fusion raw result for ${symbol}:`, prediction);
-				sentimentFusionPrediction = prediction || undefined;
-				if (sentimentFusionPrediction) {
-					console.log(
-						`🎯 Sentiment-Fusion completed for ${symbol}: ${sentimentFusionPrediction.direction} (${(sentimentFusionPrediction.confidence * 100).toFixed(1)}% confidence)`
-					);
-					// Add sentiment-fusion insights to primary factors
-					primaryFactors.push(
-						`Sentiment-Fusion predicts ${sentimentFusionPrediction.direction} (${(sentimentFusionPrediction.confidence * 100).toFixed(0)}% confidence)`
-					);
-					// Add top reasoning if available
-					if (sentimentFusionPrediction.reasoning && sentimentFusionPrediction.reasoning.length > 0) {
-						sentimentFusionPrediction.reasoning.slice(0, 2).forEach(reason => {
-							primaryFactors.push(reason);
-						});
-					}
-				} else {
-					console.warn(`⚠️ Sentiment-Fusion returned null/undefined for ${symbol}`);
-				}
-			} catch (error) {
-				console.error(`❌ Sentiment-Fusion failed for ${symbol}:`, error);
-			}
-		} else {
-			console.log(`⏭️ Sentiment-Fusion skipped for ${symbol} (feature not enabled in request options)`);
-		}
+		// Add ML insights to primary factors
+		this.mlIntegration.addMLInsightsToPrimaryFactors(primaryFactors, mlPredictions);
 
 		// 🎯 CRITICAL FIX: Ensure score-to-recommendation mapping is always correct with analyst integration
 		const scoreBasedAction = getRecommendation(
@@ -688,7 +603,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
 			reasoning: {
 				primaryFactors: primaryFactors,
-				warnings: this.identifyWarnings(
+				warnings: this.dataEnrichment.identifyWarnings(
 					stockScore,
 					additionalData,
 					macroImpact,
@@ -698,7 +613,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 					optionsAnalysis,
 					mlPrediction
 				),
-				opportunities: this.identifyOpportunities(
+				opportunities: this.dataEnrichment.identifyOpportunities(
 					stockScore,
 					additionalData,
 					macroImpact,
@@ -718,13 +633,16 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 			},
 
 			// ML Early Signal Detection
-			early_signal: earlySignalPrediction,
+			early_signal: mlPredictions.earlySignal,
 
 			// ML Price Prediction
-			price_prediction: pricePrediction,
+			price_prediction: mlPredictions.pricePrediction,
 
 			// ML Sentiment-Fusion
-			sentiment_fusion: sentimentFusionPrediction,
+			sentiment_fusion: mlPredictions.sentimentFusion,
+
+			// ML Smart Money Flow
+			smart_money_flow: mlPredictions.smartMoneyFlow,
 		};
 	}
 
@@ -754,7 +672,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 			sector,
 			overview: {
 				totalStocks: algorithmResult.metrics.totalStocksEvaluated,
-				avgScore: this.calculateAverageScore(algorithmResult.selections),
+				avgScore: this.dataEnrichment.calculateAverageScore(algorithmResult.selections),
 				topPerformers: algorithmResult.selections.filter(s => s.score.overallScore > 0.7)
 					.length,
 				underperformers: algorithmResult.selections.filter(s => s.score.overallScore < 0.3)
@@ -765,7 +683,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 
 			sectorMetrics: {
 				momentum: sectorMetrics.momentum?.strength || 0,
-				valuation: this.calculateValuationScore(sectorMetrics),
+				valuation: this.dataEnrichment.calculateValuationScore(sectorMetrics),
 				growth: sectorMetrics.quality?.growth || 0,
 				stability: 1 - (sectorMetrics.momentum?.volume || 1),
 			},
@@ -796,13 +714,13 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 			})
 		);
 
-		const portfolioMetrics = this.calculatePortfolioMetrics(enhancedResults);
+		const portfolioMetrics = this.dataEnrichment.calculatePortfolioMetrics(enhancedResults);
 
 		return {
 			request,
 			results: enhancedResults,
 			portfolioMetrics,
-			recommendations: this.generatePortfolioRecommendations(
+			recommendations: this.dataEnrichment.generatePortfolioRecommendations(
 				enhancedResults,
 				portfolioMetrics
 			),
@@ -2359,377 +2277,7 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		return await this.fetchSingleStockData(symbol, options);
 	}
 
-	private extractPrimaryFactors(stockScore: StockScore): string[] {
-		const factors = Object.entries(stockScore.factorScores)
-			.sort(([, a], [, b]) => b - a)
-			.slice(0, 3)
-			.map(([factor]) => factor);
 
-		// Enhanced factor mapping for utilization tracking
-		const enhancedFactors: string[] = [];
-
-		factors.forEach(factor => {
-			enhancedFactors.push(factor);
-
-			// Map composite factors to their underlying service types
-			if (factor === "quality_composite" || factor === "value_composite") {
-				enhancedFactors.push("fundamentalData", "fundamentals");
-			}
-			if (factor === "momentum_composite") {
-				enhancedFactors.push("technicalAnalysis", "technical");
-			}
-			if (factor === "composite" && Object.keys(stockScore.factorScores).length === 1) {
-				// Main composite includes all services
-				enhancedFactors.push(
-					"fundamentalData",
-					"technicalAnalysis",
-					"fundamentals",
-					"technical"
-				);
-			}
-
-			// Map specific factors to services
-			if (
-				factor.includes("rsi") ||
-				factor.includes("macd") ||
-				factor.includes("momentum") ||
-				factor.includes("technical") ||
-				factor.includes("bollinger") ||
-				factor.includes("sma") ||
-				factor.includes("ema") ||
-				factor.includes("stochastic") ||
-				factor.includes("volatility")
-			) {
-				enhancedFactors.push("technicalAnalysis", "technical");
-			}
-
-			if (
-				factor.includes("pe_") ||
-				factor.includes("pb_") ||
-				factor.includes("roe") ||
-				factor.includes("debt") ||
-				factor.includes("current_ratio") ||
-				factor.includes("revenue")
-			) {
-				enhancedFactors.push("fundamentalData", "fundamentals");
-			}
-		});
-
-		const uniqueFactors = [...new Set(enhancedFactors)];
-		console.log(`Enhanced factors for utilization: [${uniqueFactors.join(", ")}]`);
-		return uniqueFactors;
-	}
-
-	private identifyWarnings(
-		stockScore: StockScore,
-		additionalData?: any,
-		macroImpact?: any,
-		sentimentImpact?: any,
-		esgImpact?: any,
-		shortInterestImpact?: any,
-		optionsAnalysis?: any,
-		mlPrediction?: any
-	): string[] {
-		const warnings = [];
-
-		if (stockScore.dataQuality.overall < 0.6) {
-			warnings.push("Low data quality detected");
-		}
-
-		if (stockScore.marketData.volume < 100000) {
-			warnings.push("Low trading volume");
-		}
-
-		// Analyst-based warnings
-		if (additionalData?.analystData) {
-			const { sentimentScore, totalAnalysts, distribution } = additionalData.analystData;
-
-			if (sentimentScore < 2.5 && totalAnalysts >= 3) {
-				warnings.push("Analysts are bearish on this stock");
-			}
-
-			if (
-				distribution.sell + distribution.strongSell >
-				distribution.buy + distribution.strongBuy
-			) {
-				warnings.push("More sell recommendations than buy recommendations");
-			}
-
-			if (totalAnalysts < 3) {
-				warnings.push("Limited analyst coverage - higher uncertainty");
-			}
-		}
-
-		// Fundamental ratio warnings
-		if (additionalData?.fundamentalRatios) {
-			const ratios = additionalData.fundamentalRatios;
-
-			if (ratios.peRatio && ratios.peRatio > 40) {
-				warnings.push("High P/E ratio suggests potential overvaluation");
-			}
-
-			if (ratios.debtToEquity && ratios.debtToEquity > 2.0) {
-				warnings.push("High debt-to-equity ratio indicates financial risk");
-			}
-
-			if (ratios.currentRatio && ratios.currentRatio < 1.0) {
-				warnings.push("Poor liquidity - current ratio below 1.0");
-			}
-
-			if (ratios.roe && ratios.roe < 0) {
-				warnings.push("Negative return on equity indicates poor profitability");
-			}
-
-			if (ratios.grossProfitMargin && ratios.grossProfitMargin < 0.1) {
-				warnings.push("Low gross profit margin suggests pricing pressure");
-			}
-		}
-
-		// Price target warnings
-		if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside < -15) {
-			warnings.push("Stock trading significantly above analyst price targets");
-		}
-
-		// VWAP-based warnings
-		if (additionalData?.vwapAnalysis) {
-			const vwap = additionalData.vwapAnalysis;
-
-			if (vwap.signal === "below" && vwap.strength === "strong") {
-				warnings.push(
-					`Price significantly below VWAP (${vwap.deviationPercent.toFixed(1)}%) - potential downward pressure`
-				);
-			}
-
-			if (
-				vwap.signal === "above" &&
-				vwap.strength === "strong" &&
-				vwap.deviationPercent > 5
-			) {
-				warnings.push(
-					`Price far above VWAP (${vwap.deviationPercent.toFixed(1)}%) - potential overextension`
-				);
-			}
-		}
-
-		// Macroeconomic warnings
-		if (macroImpact?.macroScore?.warnings) {
-			warnings.push(...macroImpact.macroScore.warnings);
-		}
-
-		if (
-			macroImpact?.sectorImpact?.outlook === "negative" ||
-			macroImpact?.sectorImpact?.outlook === "very_negative"
-		) {
-			warnings.push(
-				`Unfavorable macroeconomic environment for ${macroImpact.sectorImpact.sector} sector`
-			);
-		}
-
-		// Sentiment-based warnings
-		if (sentimentImpact?.sentimentScore?.warnings) {
-			warnings.push(...sentimentImpact.sentimentScore.warnings);
-		}
-		if (sentimentImpact?.sentimentScore?.overall < 0.3) {
-			warnings.push("Negative news sentiment creates downward pressure");
-		}
-
-		// ESG-based warnings
-		if (esgImpact?.factors) {
-			const esgWarnings = esgImpact.factors.filter(
-				(factor: string) =>
-					factor.toLowerCase().includes("risk") ||
-					factor.toLowerCase().includes("controversies") ||
-					factor.toLowerCase().includes("regulatory")
-			);
-			warnings.push(...esgWarnings);
-		}
-		if (esgImpact?.impact === "negative") {
-			warnings.push(
-				"Poor ESG practices may impact long-term sustainability and investor appeal"
-			);
-		}
-
-		// Options-based warnings
-		if (optionsAnalysis?.putCallRatio > 1.5) {
-			warnings.push("High put/call ratio indicates bearish options sentiment");
-		}
-		if (optionsAnalysis?.impliedVolatility && optionsAnalysis.impliedVolatility > 50) {
-			warnings.push("Elevated implied volatility suggests increased market uncertainty");
-		}
-
-		return warnings;
-	}
-
-	private identifyOpportunities(
-		stockScore: StockScore,
-		additionalData?: any,
-		macroImpact?: any,
-		sentimentImpact?: any,
-		esgImpact?: any,
-		shortInterestImpact?: any,
-		optionsAnalysis?: any,
-		mlPrediction?: any
-	): string[] {
-		const opportunities = [];
-
-		if (stockScore.overallScore > 0.8) {
-			opportunities.push("Strong fundamental performance");
-		}
-
-		// Analyst-based opportunities
-		if (additionalData?.analystData) {
-			const { sentimentScore, totalAnalysts, distribution } = additionalData.analystData;
-
-			if (sentimentScore >= 4.0 && totalAnalysts >= 5) {
-				opportunities.push("Strong analyst consensus with high conviction");
-			}
-
-			if (
-				distribution.strongBuy >
-				distribution.hold + distribution.sell + distribution.strongSell
-			) {
-				opportunities.push("Dominated by Strong Buy recommendations");
-			}
-		}
-
-		// Price target opportunities
-		if (additionalData?.priceTargets?.upside && additionalData.priceTargets.upside > 20) {
-			opportunities.push(
-				`Significant upside potential: ${additionalData.priceTargets.upside.toFixed(1)}%`
-			);
-		}
-
-		// Fundamental ratio opportunities
-		if (additionalData?.fundamentalRatios) {
-			const ratios = additionalData.fundamentalRatios;
-
-			if (ratios.peRatio && ratios.pegRatio && ratios.pegRatio < 1.0 && ratios.peRatio < 20) {
-				opportunities.push("Attractive PEG ratio suggests undervalued growth stock");
-			}
-
-			if (ratios.roe && ratios.roe > 0.15) {
-				opportunities.push("Strong return on equity indicates efficient management");
-			}
-
-			if (
-				ratios.currentRatio &&
-				ratios.currentRatio > 2.0 &&
-				ratios.quickRatio &&
-				ratios.quickRatio > 1.5
-			) {
-				opportunities.push("Strong liquidity position provides financial flexibility");
-			}
-
-			if (ratios.grossProfitMargin && ratios.grossProfitMargin > 0.4) {
-				opportunities.push("High gross margin indicates strong pricing power");
-			}
-
-			if (
-				ratios.dividendYield &&
-				ratios.dividendYield > 0.03 &&
-				ratios.payoutRatio &&
-				ratios.payoutRatio < 0.6
-			) {
-				opportunities.push("Attractive dividend yield with sustainable payout ratio");
-			}
-		}
-
-		// VWAP-based opportunities
-		if (additionalData?.vwapAnalysis) {
-			const vwap = additionalData.vwapAnalysis;
-
-			if (
-				vwap.signal === "above" &&
-				vwap.strength === "moderate" &&
-				vwap.deviationPercent > 1 &&
-				vwap.deviationPercent < 3
-			) {
-				opportunities.push(
-					`Price above VWAP (${vwap.deviationPercent.toFixed(1)}%) suggests positive momentum`
-				);
-			}
-
-			if (
-				vwap.signal === "below" &&
-				vwap.strength === "moderate" &&
-				vwap.deviationPercent < -1 &&
-				vwap.deviationPercent > -3
-			) {
-				opportunities.push(
-					`Price slightly below VWAP (${Math.abs(vwap.deviationPercent).toFixed(1)}%) may present entry opportunity`
-				);
-			}
-
-			if (vwap.signal === "at") {
-				opportunities.push(
-					"Price at VWAP provides neutral entry point with balanced risk/reward"
-				);
-			}
-		}
-
-		// Macroeconomic opportunities
-		if (macroImpact?.macroScore?.opportunities) {
-			opportunities.push(...macroImpact.macroScore.opportunities);
-		}
-
-		if (
-			macroImpact?.sectorImpact?.outlook === "positive" ||
-			macroImpact?.sectorImpact?.outlook === "very_positive"
-		) {
-			opportunities.push(
-				`Favorable macroeconomic environment for ${macroImpact.sectorImpact.sector} sector`
-			);
-		}
-
-		if (macroImpact?.adjustedScore > stockScore.overallScore) {
-			const improvement = (
-				(macroImpact.adjustedScore - stockScore.overallScore) *
-				100
-			).toFixed(1);
-			opportunities.push(`Macroeconomic tailwinds boost score by ${improvement}%`);
-		}
-
-		// Sentiment-based opportunities
-		if (sentimentImpact?.sentimentScore?.opportunities) {
-			opportunities.push(...sentimentImpact.sentimentScore.opportunities);
-		}
-		if (sentimentImpact?.sentimentScore?.overall > 0.7) {
-			opportunities.push("Positive news sentiment supports upward momentum");
-		}
-
-		// ESG-based opportunities
-		if (esgImpact?.factors) {
-			const esgOpportunities = esgImpact.factors.filter(
-				(factor: string) =>
-					factor.toLowerCase().includes("strong") ||
-					factor.toLowerCase().includes("value") ||
-					factor.toLowerCase().includes("performance")
-			);
-			opportunities.push(...esgOpportunities);
-		}
-		if (esgImpact?.impact === "positive") {
-			opportunities.push(
-				"Strong ESG practices attract sustainable investment and reduce regulatory risk"
-			);
-		}
-
-		// Options-based opportunities
-		if (optionsAnalysis?.putCallRatio < 0.7) {
-			opportunities.push("Low put/call ratio indicates bullish options sentiment");
-		}
-		if (optionsAnalysis?.maxPain && stockScore.marketData.price) {
-			const maxPainDistance =
-				Math.abs(optionsAnalysis.maxPain - stockScore.marketData.price) /
-				stockScore.marketData.price;
-			if (maxPainDistance > 0.05) {
-				opportunities.push(
-					`Options max pain at $${optionsAnalysis.maxPain} suggests potential price movement`
-				);
-			}
-		}
-
-		return opportunities;
-	}
 
 	private generateAnalystInsights(additionalData: any): string[] {
 		const insights = [];
@@ -2852,17 +2400,6 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 		return insights;
 	}
 
-	private calculateAverageScore(selections: any[]): number {
-		if (selections.length === 0) return 0;
-		return selections.reduce((sum, s) => sum + s.score.overallScore, 0) / selections.length;
-	}
-
-	private calculateValuationScore(sectorMetrics: any): number {
-		return sectorMetrics.valuation?.avgPE
-			? Math.max(0, 1 - sectorMetrics.valuation.avgPE / 30)
-			: 0.5;
-	}
-
 	private async buildSectorComparison(sector: SectorOption, sectorMetrics: any): Promise<any> {
 		return {
 			vsMarket: {
@@ -2871,51 +2408,6 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 				momentum: (Math.random() - 0.5) * 15,
 			},
 			peerSectors: [],
-		};
-	}
-
-	private calculatePortfolioMetrics(results: EnhancedStockResult[]): any {
-		const sectorBreakdown: { [sector: string]: number } = {};
-		const totalWeight = results.reduce((sum, r) => sum + r.weight, 0);
-
-		results.forEach(result => {
-			const sector = result.context.sector;
-			sectorBreakdown[sector] = (sectorBreakdown[sector] || 0) + result.weight / totalWeight;
-		});
-
-		return {
-			overallScore:
-				results.reduce((sum, r) => sum + r.score.overallScore * r.weight, 0) / totalWeight,
-			diversificationScore: Object.keys(sectorBreakdown).length / 10, // Simple diversity measure
-			riskScore:
-				results.reduce((sum, r) => sum + (r.context.beta || 1) * r.weight, 0) / totalWeight,
-			sectorBreakdown,
-			marketCapBreakdown: {
-				large:
-					results.filter(r => r.context.marketCap > 10000000000).length / results.length,
-				mid:
-					results.filter(
-						r => r.context.marketCap > 2000000000 && r.context.marketCap <= 10000000000
-					).length / results.length,
-				small:
-					results.filter(r => r.context.marketCap <= 2000000000).length / results.length,
-			},
-		};
-	}
-
-	private generatePortfolioRecommendations(results: EnhancedStockResult[], metrics: any): any {
-		const allocation = results.reduce(
-			(acc, result) => {
-				acc[result.symbol] = result.weight;
-				return acc;
-			},
-			{} as { [symbol: string]: number }
-		);
-
-		return {
-			allocation,
-			rebalancing: [],
-			riskWarnings: metrics.riskScore > 1.5 ? ["High portfolio beta detected"] : [],
 		};
 	}
 

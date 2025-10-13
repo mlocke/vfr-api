@@ -25,7 +25,10 @@ export class SECEdgarAPI implements FinancialDataProvider {
 	private requestQueue: Promise<any>[] = [];
 	private lastRequestTime = 0;
 	private readonly REQUEST_DELAY = 100; // 100ms delay between requests (10 req/sec limit)
+	private readonly RATE_LIMIT_FILE = '/tmp/sec-edgar-rate-limit.lock';
 	private xmlParser: XMLParser;
+	private tickerToCikCache: Map<string, string> = new Map();
+	private tickerMappingPromise: Promise<void> | null = null;
 
 	constructor(timeout = 15000) {
 		this.timeout = timeout;
@@ -186,6 +189,8 @@ export class SECEdgarAPI implements FinancialDataProvider {
 				return [];
 			}
 
+			console.log(`[SEC EDGAR] get13FHoldings: Looking up institutional holdings for ${symbol} (CIK: ${cik})`);
+
 			// Get company submissions to find 13F filings
 			const submissions = await this.getCompanySubmissions(cik);
 			if (!submissions) {
@@ -198,7 +203,7 @@ export class SECEdgarAPI implements FinancialDataProvider {
 			// Process each 13F filing
 			for (const filing of thirteenFFilings) {
 				try {
-					const filingData = await this.get13FFilingData(filing.accessionNumber);
+					const filingData = await this.get13FFilingData(cik, filing.accessionNumber);
 					if (filingData) {
 						const parsedHoldings = this.parse13FHoldings(symbol, filingData, filing);
 						holdings.push(...parsedHoldings);
@@ -221,8 +226,12 @@ export class SECEdgarAPI implements FinancialDataProvider {
 	/**
 	 * Get Form 4 insider transactions for a symbol
 	 * Retrieves insider trading data from Form 4 filings
+	 *
+	 * @param symbol Stock symbol
+	 * @param days Number of days to look back
+	 * @param asOfDate Date to look back from (defaults to today for real-time, use historical date for backtesting)
 	 */
-	async getForm4Transactions(symbol: string, days = 90): Promise<InsiderTransaction[]> {
+	async getForm4Transactions(symbol: string, days = 90, asOfDate?: Date): Promise<InsiderTransaction[]> {
 		try {
 			const cik = await this.symbolToCik(symbol);
 			if (!cik) {
@@ -237,12 +246,12 @@ export class SECEdgarAPI implements FinancialDataProvider {
 			}
 
 			const transactions: InsiderTransaction[] = [];
-			const form4Filings = this.filterForm4Filings(submissions, days);
+			const form4Filings = this.filterForm4Filings(submissions, days, asOfDate);
 
 			// Process each Form 4 filing
 			for (const filing of form4Filings) {
 				try {
-					const filingData = await this.getForm4FilingData(filing.accessionNumber);
+					const filingData = await this.getForm4FilingData(cik, filing.accessionNumber);
 					if (filingData) {
 						const parsedTransactions = this.parseForm4Transactions(
 							symbol,
@@ -304,74 +313,95 @@ export class SECEdgarAPI implements FinancialDataProvider {
 	}
 
 	/**
+	 * Load ticker to CIK mapping from SEC EDGAR
+	 * Fetches once and caches in memory for the session
+	 */
+	private async loadTickerMapping(): Promise<void> {
+		// If already loaded or currently loading, return
+		if (this.tickerToCikCache.size > 0) return;
+		if (this.tickerMappingPromise) return this.tickerMappingPromise;
+
+		this.tickerMappingPromise = (async () => {
+			try {
+				const response = await fetch('https://www.sec.gov/files/company_tickers.json', {
+					headers: {
+						'User-Agent': 'VFR API financial-research@vfr.com',
+						'Accept-Encoding': 'gzip, deflate',
+					},
+				});
+
+				if (!response.ok) {
+					console.error('Failed to fetch SEC ticker mapping:', response.status);
+					return;
+				}
+
+				const data = await response.json();
+
+				// Build ticker to CIK map
+				for (const key in data) {
+					const entry = data[key];
+					if (entry.ticker && entry.cik_str !== undefined) {
+						// Pad CIK to 10 digits
+						const cik = String(entry.cik_str).padStart(10, '0');
+						this.tickerToCikCache.set(entry.ticker.toUpperCase(), cik);
+					}
+				}
+
+				console.log(`[SEC EDGAR] Loaded ${this.tickerToCikCache.size} ticker-to-CIK mappings`);
+			} catch (error) {
+				console.error('Error loading SEC ticker mapping:', error);
+			}
+		})();
+
+		await this.tickerMappingPromise;
+	}
+
+	/**
 	 * Convert stock symbol to CIK (Central Index Key)
-	 * This is a simplified implementation - in practice you'd need a symbol-to-CIK mapping
+	 * Uses SEC EDGAR's official ticker mapping
 	 */
 	private async symbolToCik(symbol: string): Promise<string | null> {
-		// This is a simplified mapping for common symbols
-		// In a production environment, you'd need a comprehensive symbol-to-CIK database
-		const symbolToCikMap: Record<string, string> = {
-			AAPL: "0000320193",
-			MSFT: "0000789019",
-			GOOGL: "0001652044",
-			AMZN: "0001018724",
-			TSLA: "0001318605",
-			META: "0001326801",
-			NVDA: "0001045810",
-			JPM: "0000019617",
-			JNJ: "0000200406",
-			V: "0001403161",
-		};
+		// Load mapping if not already loaded
+		await this.loadTickerMapping();
 
-		return symbolToCikMap[symbol.toUpperCase()] || null;
+		const upperSymbol = symbol.toUpperCase();
+		const cik = this.tickerToCikCache.get(upperSymbol);
+
+		console.log(`[SEC EDGAR] symbolToCik lookup: ${symbol} → ${upperSymbol} → ${cik || 'NOT FOUND'} (cache size: ${this.tickerToCikCache.size})`);
+
+		return cik || null;
 	}
 
 	/**
 	 * Rate limiting delay to comply with SEC EDGAR 10 req/sec limit
-	 * Uses proper request queuing to prevent race conditions
+	 * Uses file-based global rate limiting across all processes
 	 */
 	private async rateLimitDelay(): Promise<void> {
-		// Create a promise that will resolve when it's this request's turn
-		const requestPromise = new Promise<void>(resolve => {
-			const executeRequest = () => {
-				const now = Date.now();
-				const timeSinceLastRequest = now - this.lastRequestTime;
+		const fs = require('fs').promises;
 
-				if (timeSinceLastRequest < this.REQUEST_DELAY) {
-					const delay = this.REQUEST_DELAY - timeSinceLastRequest;
-					setTimeout(() => {
-						this.lastRequestTime = Date.now();
-						resolve();
-					}, delay);
-				} else {
-					this.lastRequestTime = Date.now();
-					resolve();
-				}
-			};
+		// Try to acquire global rate limit across all processes
+		let lastGlobalRequest = 0;
+		try {
+			const data = await fs.readFile(this.RATE_LIMIT_FILE, 'utf8');
+			lastGlobalRequest = parseInt(data);
+		} catch {
+			// File doesn't exist, this is the first request
+		}
 
-			// Add this request to the queue
-			if (this.requestQueue.length === 0) {
-				// No queue, execute immediately
-				executeRequest();
-			} else {
-				// Wait for previous request to complete, then execute
-				this.requestQueue[this.requestQueue.length - 1].then(executeRequest);
-			}
-		});
+		const now = Date.now();
+		const timeSinceLastRequest = now - lastGlobalRequest;
 
-		// Add this promise to the queue
-		this.requestQueue.push(requestPromise);
+		if (timeSinceLastRequest < this.REQUEST_DELAY) {
+			const delay = this.REQUEST_DELAY - timeSinceLastRequest;
+			await new Promise(resolve => setTimeout(resolve, delay));
+		}
 
-		// Clean up completed requests from queue
-		requestPromise.finally(() => {
-			const index = this.requestQueue.indexOf(requestPromise);
-			if (index > -1) {
-				this.requestQueue.splice(index, 1);
-			}
-		});
-
-		// Wait for this request's turn
-		await requestPromise;
+		// Update global timestamp
+		try {
+			await fs.writeFile(this.RATE_LIMIT_FILE, Date.now().toString());
+		} catch (error) {
+			// Ignore write errors, rate limit still applied via delay
+		}
 	}
 
 	/**
@@ -399,6 +429,11 @@ export class SECEdgarAPI implements FinancialDataProvider {
 		const dates = submissions.filings.recent.filingDate || [];
 		const accessionNumbers = submissions.filings.recent.accessionNumber || [];
 
+		// Debug: Show all form types available
+		const uniqueForms = [...new Set(forms)];
+		console.log(`[SEC EDGAR] Available form types in submissions: ${uniqueForms.join(', ')}`);
+		console.log(`[SEC EDGAR] Total filings: ${forms.length}, Looking for 13F-HR filings in last ${quarters} quarters...`);
+
 		const thirteenFFilings = [];
 		const cutoffDate = new Date();
 		cutoffDate.setMonth(cutoffDate.getMonth() - quarters * 3);
@@ -413,13 +448,18 @@ export class SECEdgarAPI implements FinancialDataProvider {
 			}
 		}
 
+		console.log(`[SEC EDGAR] Found ${thirteenFFilings.length} 13F-HR filings`);
 		return thirteenFFilings.slice(0, quarters);
 	}
 
 	/**
 	 * Filter Form 4 filings from submissions
+	 *
+	 * @param submissions SEC EDGAR submissions data
+	 * @param days Number of days to look back
+	 * @param asOfDate Date to look back from (defaults to today)
 	 */
-	private filterForm4Filings(submissions: any, days: number): any[] {
+	private filterForm4Filings(submissions: any, days: number, asOfDate?: Date): any[] {
 		if (!submissions.filings?.recent) return [];
 
 		const forms = submissions.filings.recent.form || [];
@@ -427,11 +467,16 @@ export class SECEdgarAPI implements FinancialDataProvider {
 		const accessionNumbers = submissions.filings.recent.accessionNumber || [];
 
 		const form4Filings = [];
-		const cutoffDate = new Date();
+		const referenceDate = asOfDate || new Date();
+		const cutoffDate = new Date(referenceDate);
 		cutoffDate.setDate(cutoffDate.getDate() - days);
 
 		for (let i = 0; i < forms.length; i++) {
-			if ((forms[i] === "4" || forms[i] === "4/A") && new Date(dates[i]) >= cutoffDate) {
+			const filingDate = new Date(dates[i]);
+			// Filing must be after cutoff AND before/on the reference date
+			if ((forms[i] === "4" || forms[i] === "4/A") &&
+			    filingDate >= cutoffDate &&
+			    filingDate <= referenceDate) {
 				form4Filings.push({
 					form: forms[i],
 					filingDate: dates[i],
@@ -445,14 +490,21 @@ export class SECEdgarAPI implements FinancialDataProvider {
 
 	/**
 	 * Get 13F filing data
+	 * @param cik Company's Central Index Key (padded to 10 digits)
+	 * @param accessionNumber SEC filing accession number
+	 * @returns XML filing data as text
 	 */
-	private async get13FFilingData(accessionNumber: string): Promise<any> {
+	private async get13FFilingData(cik: string, accessionNumber: string): Promise<string | null> {
 		try {
 			const cleanAccession = accessionNumber.replace(/-/g, "");
-			const response = await this.makeRequest(
-				`/Archives/edgar/data/${cleanAccession}/${accessionNumber}-xslForm13F_X01/${accessionNumber}.xml`
+			// Remove leading zeros from CIK for filing URLs (SEC uses unpadded CIK in filing paths)
+			const unpaddedCik = parseInt(cik, 10).toString();
+			// Correct URL format: /Archives/edgar/data/{unpadded-CIK}/{accession-no-dashes}/{accession-number}-xslForm13F_X01/{accession-number}.xml
+			// 13F filings are returned as XML, not JSON
+			const response = await this.makeTextRequest(
+				`/Archives/edgar/data/${unpaddedCik}/${cleanAccession}/${accessionNumber}-xslForm13F_X01/${accessionNumber}.xml`
 			);
-			return response.success ? response.data : null;
+			return response.success ? (response.data || null) : null;
 		} catch (error) {
 			console.error(`Error getting 13F filing data for ${accessionNumber}:`, error);
 			return null;
@@ -461,14 +513,34 @@ export class SECEdgarAPI implements FinancialDataProvider {
 
 	/**
 	 * Get Form 4 filing data
+	 * @param cik Company's Central Index Key (padded to 10 digits)
+	 * @param accessionNumber SEC filing accession number
+	 * @returns Extracted XML from the filing (not the full SEC-DOCUMENT wrapper)
 	 */
-	private async getForm4FilingData(accessionNumber: string): Promise<any> {
+	private async getForm4FilingData(cik: string, accessionNumber: string): Promise<string | null> {
 		try {
 			const cleanAccession = accessionNumber.replace(/-/g, "");
-			const response = await this.makeRequest(
-				`/Archives/edgar/data/${cleanAccession}/${accessionNumber}.txt`
+			// Remove leading zeros from CIK for filing URLs (SEC uses unpadded CIK in filing paths)
+			const unpaddedCik = parseInt(cik, 10).toString();
+			// Correct URL format: /Archives/edgar/data/{unpadded-CIK}/{accession-no-dashes}/{accession-number}.txt
+			// Form 4 filings are returned as plain text with embedded XML
+			const response = await this.makeTextRequest(
+				`/Archives/edgar/data/${unpaddedCik}/${cleanAccession}/${accessionNumber}.txt`
 			);
-			return response.success ? response.data : null;
+
+			if (!response.success || !response.data) {
+				return null;
+			}
+
+			// Extract XML from SEC-DOCUMENT format
+			// The XML is embedded between <XML> and </XML> tags
+			const xmlMatch = response.data.match(/<XML>([\s\S]*?)<\/XML>/i);
+			if (!xmlMatch || !xmlMatch[1]) {
+				console.warn(`No XML found in Form 4 filing ${accessionNumber}`);
+				return null;
+			}
+
+			return xmlMatch[1].trim();
 		} catch (error) {
 			console.error(`Error getting Form 4 filing data for ${accessionNumber}:`, error);
 			return null;
@@ -887,7 +959,7 @@ export class SECEdgarAPI implements FinancialDataProvider {
 	}
 
 	/**
-	 * Make HTTP request to SEC EDGAR API
+	 * Make HTTP request to SEC EDGAR API for JSON responses
 	 */
 	private async makeRequest(endpoint: string): Promise<ApiResponse<any>> {
 		// Apply rate limiting before making the request
@@ -912,6 +984,53 @@ export class SECEdgarAPI implements FinancialDataProvider {
 			}
 
 			const data = await response.json();
+
+			return {
+				success: true,
+				data,
+				source: "sec_edgar",
+				timestamp: Date.now(),
+			};
+		} catch (error) {
+			clearTimeout(timeoutId);
+
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+				source: "sec_edgar",
+				timestamp: Date.now(),
+			};
+		}
+	}
+
+	/**
+	 * Make HTTP request to SEC EDGAR API for text/XML responses
+	 * Used for Form 4 and 13F filings which return plain text or XML
+	 */
+	private async makeTextRequest(endpoint: string): Promise<ApiResponse<string>> {
+		// Apply rate limiting before making the request
+		await this.rateLimitDelay();
+
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+		try {
+			// Filing archives are hosted on www.sec.gov, not data.sec.gov
+			const response = await fetch(`https://www.sec.gov${endpoint}`, {
+				signal: controller.signal,
+				headers: {
+					Accept: "*/*",
+					"User-Agent": this.userAgent,
+				},
+			});
+
+			clearTimeout(timeoutId);
+
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			const data = await response.text();
 
 			return {
 				success: true,

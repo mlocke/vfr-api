@@ -84,6 +84,8 @@ scripts/ml/caching/
 !models/**/config.json
 !models/**/normalizer.json
 !models/**/model-registry.json
+!models/**/model.txt
+!models/**/test_evaluation.json
 
 # Backup files
 *.backup

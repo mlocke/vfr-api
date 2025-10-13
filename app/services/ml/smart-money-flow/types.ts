@@ -7,8 +7,8 @@
  */
 
 /**
- * Lean Smart Money Flow Features (10 total)
- * Used by LeanSmartMoneyFeatureExtractor - only verified working data sources
+ * Lean Smart Money Flow Features (27 total)
+ * Used by LeanSmartMoneyFeatureExtractor - matches smart-money-flow v3.0.0 model
  */
 export interface LeanSmartMoneyFeatures {
 	// === Congressional Trading Features (4) ===
@@ -26,6 +26,25 @@ export interface LeanSmartMoneyFeatures {
 	price_momentum_20d: number;
 	volume_trend_30d: number;
 	price_volatility_30d: number;
+
+	// === Detailed Options Flow Features from EODHD (17) ===
+	put_call_volume_ratio: number;           // Put volume / Call volume
+	put_call_oi_ratio: number;               // Put open interest / Call open interest
+	large_block_call_pct: number;            // % of call contracts with volume > 100
+	large_block_put_pct: number;             // % of put contracts with volume > 100
+	avg_call_premium_above_mid: number;      // Avg (last - mid) / mid for calls
+	avg_put_premium_above_mid: number;       // Avg (last - mid) / mid for puts
+	oi_skew_call_put: number;                // (Call OI - Put OI) / (Call OI + Put OI)
+	near_money_call_concentration: number;   // ATM call volume / total call volume
+	far_otm_call_activity: number;           // Far OTM call volume / total call volume
+	protective_put_ratio: number;            // ATM put volume / total put volume
+	high_delta_call_volume_pct: number;      // ITM call volume / total call volume
+	long_dated_call_ratio: number;           // Calls expiring >30d / total call volume
+	net_gamma_exposure: number;              // (Call gamma - Put gamma) / (Call + Put gamma)
+	iv_rank_percentile: number;              // Average implied volatility rank
+	iv_skew_25delta: number;                 // Put IV - Call IV (25 delta)
+	avg_call_vol_oi_ratio: number;           // Call volume / Call open interest
+	avg_put_vol_oi_ratio: number;            // Put volume / Put open interest
 }
 
 /**

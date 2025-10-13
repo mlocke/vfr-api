@@ -140,7 +140,9 @@ def split_dataset(input_path: str):
         print(f"\n⚠ Stratification warning: Max difference {max_diff:.2f}% >= 2.0%")
 
     # Create output directory if it doesn't exist
-    output_dir = "data/training/smart-money-flow"
+    # Use same directory as input file
+    input_dir = os.path.dirname(input_path)
+    output_dir = input_dir if input_dir else "data/training/smart-money-flow"
     os.makedirs(output_dir, exist_ok=True)
 
     # Save splits to CSV files

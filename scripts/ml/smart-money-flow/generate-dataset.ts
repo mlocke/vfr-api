@@ -499,8 +499,8 @@ async function main() {
 	const args = process.argv.slice(2);
 	let symbols = TEST_SYMBOLS;
 	const dateRange = {
-		start: new Date("2022-01-01"),
-		end: new Date("2024-12-31"),
+		start: new Date("2023-10-11"),
+		end: new Date("2025-10-11"),
 	};
 
 	// Parse arguments

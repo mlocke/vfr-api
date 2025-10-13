@@ -82,7 +82,8 @@
       "Bash(test:*)",
       "Bash(npm run build:*)",
       "Bash(killall:*)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

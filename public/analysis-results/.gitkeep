@@ -1,2 +1,0 @@
-# This file ensures the analysis-results directory is tracked in git
-# Analysis JSON files are generated dynamically by the frontend analysis API

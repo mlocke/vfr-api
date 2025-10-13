@@ -155,6 +155,8 @@ export default function MLFeatureTogglePanel() {
 				return "📈";
 			case "sentiment_fusion":
 				return "🧠";
+			case "smart_money_flow":
+				return "💰";
 			default:
 				return "🤖";
 		}

@@ -49,12 +49,14 @@ class GenericPredictionServer:
     def load_model(self, model_path: str) -> lgb.Booster:
         """Load LightGBM model from file (cached)"""
         if model_path in self.model_cache:
+            sys.stderr.write(f'Model cache HIT: {model_path}\n')
+            sys.stderr.flush()
             return self.model_cache[model_path]
 
         try:
             model = lgb.Booster(model_file=model_path)
             self.model_cache[model_path] = model
-            sys.stderr.write(f'Model loaded: {model_path}\n')
+            sys.stderr.write(f'Model loaded: {model_path} (num_trees={model.num_trees()}, num_features={model.num_feature()})\n')
             sys.stderr.flush()
             return model
         except Exception as e:
@@ -153,6 +155,10 @@ class GenericPredictionServer:
 
         # Make prediction
         raw_prediction = model.predict(X_norm)[0]
+
+        # DEBUG: Log raw prediction from LightGBM
+        sys.stderr.write(f'RAW PREDICTION from {model_path}: {raw_prediction}\n')
+        sys.stderr.flush()
 
         # Handle multi-class vs binary classification vs regression
         if isinstance(raw_prediction, np.ndarray):

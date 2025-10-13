@@ -63,6 +63,12 @@ export class MLFeatureToggleService {
 			description: "ML predictions for 3-day price direction (UP/NEUTRAL/DOWN)",
 			defaultState: true, // Production model (v1.1.0, 53.8% accuracy, deployed Oct 9, 2025)
 		},
+		SMART_MONEY_FLOW: {
+			id: "smart_money_flow",
+			name: "Smart Money Flow",
+			description: "Institutional & insider trading activity analysis with congressional trades",
+			defaultState: true, // Production model (v3.0.0, 27 features, deployed Oct 13, 2025) - Uses FMP Starter API
+		},
 	};
 
 	// Cache keys
@@ -291,6 +297,41 @@ export class MLFeatureToggleService {
 		await this.ensureInitialized();
 		await this.setFeatureEnabled(
 			MLFeatureToggleService.FEATURES.SENTIMENT_FUSION.id,
+			enabled,
+			userId,
+			reason
+		);
+	}
+
+	/**
+	 * Check if Smart Money Flow is enabled
+	 * This is used by the stock selection API for institutional/insider analysis
+	 */
+	public async isSmartMoneyFlowEnabled(): Promise<boolean> {
+		try {
+			await this.ensureInitialized();
+			const status = await this.getFeatureStatus(
+				MLFeatureToggleService.FEATURES.SMART_MONEY_FLOW.id
+			);
+			return status.enabled;
+		} catch (error) {
+			console.error("Failed to check Smart Money Flow status:", error);
+			// Fail safe: return false if unable to determine status
+			return false;
+		}
+	}
+
+	/**
+	 * Enable or disable Smart Money Flow
+	 */
+	public async setSmartMoneyFlowEnabled(
+		enabled: boolean,
+		userId?: string,
+		reason?: string
+	): Promise<void> {
+		await this.ensureInitialized();
+		await this.setFeatureEnabled(
+			MLFeatureToggleService.FEATURES.SMART_MONEY_FLOW.id,
 			enabled,
 			userId,
 			reason

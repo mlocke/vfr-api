@@ -23,6 +23,8 @@ import { InstitutionalDataService } from '../../financial-data/InstitutionalData
 import { PolygonAPI } from '../../financial-data/PolygonAPI';
 import { OptionsDataService } from '../../financial-data/OptionsDataService';
 import { SECEdgarAPI } from '../../financial-data/SECEdgarAPI';
+import { FinancialModelingPrepAPI } from '../../financial-data/FinancialModelingPrepAPI';
+import { cusipMapper } from '../../financial-data/CUSIPToSymbolMapper';
 import { smartMoneyCache } from '../../cache/SmartMoneyDataCache';
 import {
 	InsiderTransaction,
@@ -30,6 +32,8 @@ import {
 	CongressionalTrade,
 	ETFHolding,
 } from './types';
+import { spawn } from 'child_process';
+import * as path from 'path';
 
 export interface OptionsFlowData {
 	unusualCallVolume30d: number;
@@ -49,12 +53,14 @@ export class HybridSmartMoneyDataService {
 	private polygonAPI: PolygonAPI;
 	private optionsService: OptionsDataService;
 	private secAPI: SECEdgarAPI; // REAL SEC EDGAR API - NO FMP, NO MOCK DATA
+	private fmpAPI: FinancialModelingPrepAPI;
 
 	constructor() {
 		this.institutionalService = new InstitutionalDataService();
 		this.polygonAPI = new PolygonAPI();
 		this.optionsService = new OptionsDataService();
 		this.secAPI = new SECEdgarAPI(); // REAL implementation with XML parsing
+		this.fmpAPI = new FinancialModelingPrepAPI();
 	}
 
 	/**
@@ -78,7 +84,7 @@ export class HybridSmartMoneyDataService {
 			async () => {
 				// REAL SEC EDGAR API - NO FMP, NO MOCK DATA
 				const days = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
-				const secTransactions = await this.secAPI.getForm4Transactions(symbol, days);
+				const secTransactions = await this.secAPI.getForm4Transactions(symbol, days, new Date(endDate));
 
 				// Map SEC EDGAR types to ML types
 				return secTransactions
@@ -128,10 +134,13 @@ export class HybridSmartMoneyDataService {
 	}
 
 	/**
-	 * Get Institutional Ownership from SEC EDGAR (13F filings)
-	 * FREE, quarterly data
+	 * Get Institutional Ownership from local Parquet file (SEC 13F filings)
+	 * Uses pre-parsed SEC 13F data with CUSIP lookups
 	 *
-	 * ⚠️ CRITICAL: Uses cache-first pattern to avoid redundant API calls
+	 * Data Source: datasets/SEC/13F/*.zip → data/smart_money_features/institutional_features.parquet
+	 * Coverage: 269,039 holdings, 7 quarters (2024-2025)
+	 *
+	 * ⚠️ CRITICAL: Uses cache-first pattern to avoid redundant disk I/O
 	 */
 	async getInstitutionalOwnership(
 		symbol: string,
@@ -141,22 +150,75 @@ export class HybridSmartMoneyDataService {
 		const endDate = new Date().toISOString().split('T')[0];
 		const startDate = this.subtractDays(new Date(), 365); // 1 year of data
 
-		// Use cache.getOrFetch pattern - checks cache FIRST, calls API on miss
+		// Use cache.getOrFetch pattern - checks cache FIRST, queries Parquet on miss
 		const cachedData = await smartMoneyCache.getOrFetch<InstitutionalHolding[]>(
 			symbol,
 			startDate,
 			endDate,
 			'institutional_ownership',
 			async () => {
-				// REAL SEC EDGAR API - NO FMP, NO MOCK DATA
-				const secHoldings = await this.secAPI.get13FHoldings(symbol, 4);
+				try {
+					// Step 1: Get CUSIP for this symbol
+					console.log(`[HybridSmartMoney] Looking up CUSIP for ${symbol}...`);
+					const cusip = await cusipMapper.symbolToCUSIP(symbol);
 
-				// Map SEC types to ML types
-				return secHoldings
-					.map(h => this.mapSEC13FHolding(h))
-					.slice(0, limit);
+					if (!cusip) {
+						console.warn(`[HybridSmartMoney] No CUSIP found for ${symbol}, cannot query institutional data`);
+						return [];
+					}
+
+					console.log(`[HybridSmartMoney] Found CUSIP ${cusip} for ${symbol}`);
+
+					// Step 2: Query Parquet file by CUSIP
+					const parquetPath = path.join(process.cwd(), 'data', 'smart_money_features', 'institutional_features.parquet');
+
+					const query = `
+						SELECT
+							cusip,
+							quarter_date,
+							total_shares,
+							total_value,
+							num_institutions,
+							share_change,
+							value_change
+						FROM read_parquet('${parquetPath}')
+						WHERE cusip = '${cusip}'
+						AND quarter_date >= '${startDate}'
+						AND quarter_date <= '${endDate}'
+						ORDER BY quarter_date DESC
+						LIMIT ${limit}
+					`;
+
+					const results = await this.executeDuckDBQuery(query);
+
+					if (!results || results.length === 0) {
+						console.log(`[HybridSmartMoney] No institutional data found in Parquet for ${symbol} (CUSIP: ${cusip})`);
+						return [];
+					}
+
+					console.log(`[HybridSmartMoney] Got ${results.length} quarters of institutional data from Parquet for ${symbol}`);
+
+					// Step 3: Map Parquet results to InstitutionalHolding format
+					// Note: Parquet has aggregated data (all institutions combined per quarter)
+					return results.map(row => ({
+						symbol,
+						date: row.quarter_date,
+						investorName: 'ALL INSTITUTIONS (AGGREGATED)',
+						shares: row.total_shares || 0,
+						change: row.share_change || 0,
+						changePercent: row.total_shares > 0 && row.share_change
+							? (row.share_change / (row.total_shares - row.share_change)) * 100
+							: 0,
+						marketValue: row.total_value || 0,
+						putCallShare: row.share_change > 0 ? 'Add' : row.share_change < 0 ? 'Reduce' : 'New',
+					}));
+
+				} catch (error) {
+					console.error(`[HybridSmartMoney] Error querying institutional data for ${symbol}:`, error);
+					return [];
+				}
 			},
-			{ ttl: '7d', source: 'sec-edgar' }
+			{ ttl: '7d', source: 'parquet-13f' }
 		);
 
 		return cachedData || [];
@@ -448,5 +510,51 @@ export class HybridSmartMoneyDataService {
 		const result = new Date(date);
 		result.setDate(result.getDate() - days);
 		return result.toISOString().split('T')[0];
+	}
+
+	/**
+	 * Execute DuckDB query and return results as JSON
+	 * Used for querying Parquet files
+	 */
+	private async executeDuckDBQuery(query: string): Promise<any[]> {
+		return new Promise((resolve, reject) => {
+			const duckdb = spawn('duckdb', ['-json']);
+			let output = '';
+			let error = '';
+
+			duckdb.stdout.on('data', (data: Buffer) => {
+				output += data.toString();
+			});
+
+			duckdb.stderr.on('data', (data: Buffer) => {
+				error += data.toString();
+			});
+
+			duckdb.on('close', (code: number) => {
+				if (code !== 0) {
+					reject(new Error(`DuckDB error: ${error}`));
+					return;
+				}
+
+				try {
+					// DuckDB with -json flag returns a JSON array like: [{"col1":val1},{"col2":val2}]
+					// Parse the entire output as JSON array
+					const trimmedOutput = output.trim();
+					if (!trimmedOutput) {
+						resolve([]);
+						return;
+					}
+
+					const results = JSON.parse(trimmedOutput);
+					resolve(Array.isArray(results) ? results : [results]);
+				} catch (parseError) {
+					reject(new Error(`Failed to parse DuckDB output: ${parseError}. Output: ${output}`));
+				}
+			});
+
+			// Write query and close stdin
+			duckdb.stdin.write(query + '\n');
+			duckdb.stdin.end();
+		});
 	}
 }

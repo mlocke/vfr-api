@@ -34,6 +34,7 @@ const PARALLEL_SERVICES = [
 	{ id: "short_interest", name: "Short Interest", icon: "📊" },
 	{ id: "extended_hours", name: "Extended Hours", icon: "🕐" },
 	{ id: "options", name: "Options", icon: "📈" },
+	{ id: "smart_money_flow", name: "Smart Money", icon: "💰" },
 ];
 
 export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProgressProps) {
@@ -109,6 +110,17 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 					setEstimatedTimeRemaining(estimated);
 				}
 
+				// Handle errors first
+				if (update.metadata?.error || update.stage === "error") {
+					console.error("❌ Analysis error:", update.message);
+					setEstimatedTimeRemaining(null);
+					// Don't close immediately - let the error message display
+					setTimeout(() => {
+						eventSource.close();
+					}, 2000);
+					return; // Don't process as completion
+				}
+
 				// Handle completion
 				if (update.stage === "complete" || update.progress === 100) {
 					console.log("✅ Analysis complete");
@@ -117,12 +129,6 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 						eventSource.close();
 						if (onComplete) onComplete();
 					}, 1000);
-				}
-
-				// Handle errors
-				if (update.metadata?.error) {
-					console.error("❌ Analysis error:", update.message);
-					eventSource.close();
 				}
 			} catch (error) {
 				console.error("Failed to parse SSE message:", error);
@@ -164,6 +170,7 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			extended_hours: "🕐",
 			options: "📊",
 			ml_prediction: "🤖",
+			smart_money_flow: "💰",
 			composite: "🎯",
 			complete: "✅",
 			error: "❌",
@@ -251,12 +258,16 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 						style={{
 							width: `${currentProgress}%`,
 							height: "100%",
-							background: currentProgress === 100
+							background: progressUpdates[progressUpdates.length - 1]?.metadata?.error
+								? "linear-gradient(90deg, rgba(239, 68, 68, 0.8), rgba(220, 38, 38, 0.8))"
+								: currentProgress === 100
 								? "linear-gradient(90deg, rgba(34, 197, 94, 0.8), rgba(16, 185, 129, 0.8))"
 								: "linear-gradient(90deg, rgba(99, 102, 241, 0.8), rgba(59, 130, 246, 0.8))",
 							transition: "width 0.3s ease-out",
 							borderRadius: "6px",
-							boxShadow: currentProgress === 100
+							boxShadow: progressUpdates[progressUpdates.length - 1]?.metadata?.error
+								? "0 0 20px rgba(239, 68, 68, 0.5)"
+								: currentProgress === 100
 								? "0 0 20px rgba(34, 197, 94, 0.5)"
 								: "0 0 20px rgba(99, 102, 241, 0.5)",
 						}}
@@ -267,8 +278,14 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			{/* Current Status */}
 			<div
 				style={{
-					background: "rgba(99, 102, 241, 0.1)",
-					border: "1px solid rgba(99, 102, 241, 0.3)",
+					background:
+						progressUpdates[progressUpdates.length - 1]?.metadata?.error
+							? "rgba(239, 68, 68, 0.1)"
+							: "rgba(99, 102, 241, 0.1)",
+					border:
+						progressUpdates[progressUpdates.length - 1]?.metadata?.error
+							? "1px solid rgba(239, 68, 68, 0.3)"
+							: "1px solid rgba(99, 102, 241, 0.3)",
 					borderRadius: "12px",
 					padding: "0.75rem",
 					marginBottom: "1rem",
@@ -284,7 +301,11 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 					<div
 						style={{
 							fontSize: "1.5rem",
-							animation: currentProgress < 100 ? "spin 2s linear infinite" : "none",
+							animation:
+								currentProgress < 100 &&
+								!progressUpdates[progressUpdates.length - 1]?.metadata?.error
+									? "spin 2s linear infinite"
+									: "none",
 						}}
 					>
 						{progressUpdates.length > 0
@@ -295,7 +316,9 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 						style={{
 							fontSize: "1rem",
 							fontWeight: "500",
-							color: "white",
+							color: progressUpdates[progressUpdates.length - 1]?.metadata?.error
+								? "rgba(239, 68, 68, 1)"
+								: "white",
 							margin: 0,
 							flex: 1,
 						}}

@@ -16,8 +16,9 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-# Configuration
-DATA_DIR = Path('data/training/smart-money-flow')
+# Configuration (can be overridden via sys.argv)
+import sys
+DATA_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('data/training/smart-money-flow')
 MODEL_DIR = Path('app/services/ml/smart-money-flow/models')
 PLOTS_DIR = Path('app/services/ml/smart-money-flow/plots')
 

@@ -16,6 +16,7 @@ import {
 	OptionsAnalysis,
 	FundamentalRatios,
 } from "./types";
+import { historicalCache } from "../cache/HistoricalDataCache";
 
 interface EODHDQuote {
 	code: string;
@@ -148,6 +149,8 @@ export class EODHDAPI implements FinancialDataProvider {
 	private timeout: number;
 	private retryAttempts: number;
 	private retryDelay: number;
+	private lastOptionsRequestTime: number = 0;
+	private optionsRateLimitDelay: number = 500; // 500ms delay between options requests to avoid HTTP 429
 
 	constructor(apiKey?: string, timeout: number = 8000, debugMode: boolean = false) {
 		this.apiKey = apiKey || process.env.EODHD_API_KEY || "";
@@ -382,6 +385,23 @@ export class EODHDAPI implements FinancialDataProvider {
 		}
 	}
 
+	/**
+	 * Simple rate limiting for options API requests
+	 * Ensures minimum delay between consecutive options calls
+	 */
+	private async waitForOptionsRateLimit(): Promise<void> {
+		const now = Date.now();
+		const timeSinceLastRequest = now - this.lastOptionsRequestTime;
+
+		if (timeSinceLastRequest < this.optionsRateLimitDelay) {
+			const delayNeeded = this.optionsRateLimitDelay - timeSinceLastRequest;
+			console.log(`⏱️ EODHD API: Rate limiting - waiting ${delayNeeded}ms before options request`);
+			await new Promise(resolve => setTimeout(resolve, delayNeeded));
+		}
+
+		this.lastOptionsRequestTime = Date.now();
+	}
+
 	private async makeRequest(url: string, retryCount: number = 0): Promise<ApiResponse<any>> {
 		try {
 			const controller = new AbortController();
@@ -466,6 +486,9 @@ export class EODHDAPI implements FinancialDataProvider {
 				console.warn("⚠️ EODHD UnicornBay: No API key for enhanced options data");
 				return null;
 			}
+
+			// Apply rate limiting for options requests
+			await this.waitForOptionsRateLimit();
 
 			const normalizedSymbol = symbol.toUpperCase();
 			// Use URL-encoded square brackets as required by UnicornBay API
@@ -814,19 +837,58 @@ export class EODHDAPI implements FinancialDataProvider {
 	 * Get put/call ratio for a symbol with UnicornBay enhancement
 	 * Primary: UnicornBay API (enhanced accuracy), Fallback: Standard EODHD
 	 * Requires EODHD options add-on subscription
+	 *
+	 * @param symbol Stock symbol
+	 * @param useEnhanced Use UnicornBay enhanced data (default: true)
+	 * @param asOfDate Optional date for historical data (enables caching)
 	 */
 	async getPutCallRatio(
 		symbol: string,
-		useEnhanced: boolean = true
+		useEnhanced: boolean = true,
+		asOfDate?: Date
 	): Promise<PutCallRatio | null> {
 		try {
-			console.log(`📊 EODHD API: Fetching put/call ratio for ${symbol}`);
+			// Check if requesting historical data (>1 day ago)
+			const isHistorical = asOfDate && this.isHistoricalDate(asOfDate);
+			const dateStr = asOfDate ? this.formatDate(asOfDate) : new Date().toISOString().split('T')[0];
+
+			console.log(`📊 EODHD API: Fetching put/call ratio for ${symbol}${isHistorical ? ` (historical: ${dateStr})` : ''}`);
 
 			if (!this.apiKey) {
 				console.warn("⚠️ EODHD API: No API key for options data");
 				return null;
 			}
 
+			// Use cache for historical data
+			if (isHistorical) {
+				return await historicalCache.getOrFetch(
+					"options",
+					symbol,
+					dateStr,
+					async () => {
+						return await this.fetchPutCallRatioFromAPI(symbol, useEnhanced);
+					},
+					"eodhd"
+				);
+			}
+
+			// Fetch directly for current data (no cache)
+			return await this.fetchPutCallRatioFromAPI(symbol, useEnhanced);
+		} catch (error) {
+			console.error(`❌ EODHD API: Error in getPutCallRatio for ${symbol}:`, error);
+			return null;
+		}
+	}
+
+	/**
+	 * Internal method to fetch put/call ratio from API
+	 * Separated from getPutCallRatio to enable caching
+	 */
+	private async fetchPutCallRatioFromAPI(
+		symbol: string,
+		useEnhanced: boolean = true
+	): Promise<PutCallRatio | null> {
+		try {
 			// Try UnicornBay enhanced put/call ratio first if enabled
 			if (useEnhanced) {
 				console.log(`🦄 Attempting UnicornBay enhanced put/call ratio for ${symbol}`);
@@ -1575,6 +1637,22 @@ export class EODHDAPI implements FinancialDataProvider {
 				errorMessage: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
+	}
+
+	/**
+	 * Check if a date is historical (more than 1 day in the past)
+	 */
+	private isHistoricalDate(date: Date): boolean {
+		const yesterday = new Date();
+		yesterday.setDate(yesterday.getDate() - 1);
+		return date < yesterday;
+	}
+
+	/**
+	 * Format date as YYYY-MM-DD
+	 */
+	private formatDate(date: Date): string {
+		return date.toISOString().split('T')[0];
 	}
 
 	getName(): string {

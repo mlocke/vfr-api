@@ -77,19 +77,38 @@ data/training/
 data/cache/
 data/symbols/
 
+# Dataset directories
+datasets/
+data/eodhd_options/
+data/polygon_options/
+data/smart_money_features/
+
+# Archived documentation
+archive/
+
 # All CSV files (training datasets, checkpoints, predictions)
 **/*.csv
 # Exception: Keep small config CSVs
 !**/feature-config.csv
 !**/model-config.csv
 
-# ML Model files - exclude entire directory except metadata
+# ML Model files - exclude entire directory except essential files
 models/
-# Keep only metadata and small config files
+# Keep only essential inference and config files (exclude large binaries)
 !models/**/metadata.json
 !models/**/config.json
 !models/**/normalizer.json
 !models/**/model-registry.json
+!models/**/model.txt
+!models/**/test_evaluation.json
+# Explicitly ignore large model binaries
+models/**/*.pt
+models/**/*.safetensors
+models/**/*.bin
+# Ignore large tokenizer files (695KB each, not needed in git)
+models/**/tokenizer.json
+models/**/tokenizer_config.json
+models/**/special_tokens_map.json
 
 # ML training artifacts and checkpoints
 **/checkpoint-*/

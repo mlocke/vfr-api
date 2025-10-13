@@ -23,6 +23,7 @@ import { ErrorHandler, ErrorType, ErrorCode } from "../../error-handling/ErrorHa
 import { SentimentFusionFeatureExtractor } from "../sentiment-fusion/SentimentFusionFeatureExtractor";
 import { PricePredictionFeatureExtractor } from "../features/PricePredictionFeatureExtractor";
 import { EarlySignalFeatureExtractor } from "../early-signal/FeatureExtractor";
+import { LeanSmartMoneyFeatureExtractor } from "../smart-money-flow/LeanSmartMoneyFeatureExtractor";
 import {
 	MLServiceResponse,
 	MLPredictionHorizon,
@@ -156,9 +157,17 @@ export class RealTimePredictionEngine {
 	private initialized = false;
 	private pythonProcess: ChildProcess | null = null;
 	private pythonReady = false;
+	private pythonStarting: Promise<void> | null = null;
+	private pythonRequestQueue: Array<{
+		request: { features: Record<string, number>; modelPath: string; normalizerPath: string };
+		resolve: (value: any) => void;
+		reject: (error: any) => void;
+	}> = [];
+	private processingPythonRequest = false;
 	private sentimentFusionExtractor: SentimentFusionFeatureExtractor;
 	private pricePredictionExtractor: PricePredictionFeatureExtractor;
 	private earlySignalExtractor: EarlySignalFeatureExtractor;
+	private smartMoneyFlowExtractor: LeanSmartMoneyFeatureExtractor;
 
 	private constructor(config?: Partial<PredictionEngineConfig>) {
 		this.logger = Logger.getInstance("RealTimePredictionEngine");
@@ -186,6 +195,7 @@ export class RealTimePredictionEngine {
 		this.sentimentFusionExtractor = new SentimentFusionFeatureExtractor();
 		this.pricePredictionExtractor = new PricePredictionFeatureExtractor();
 		this.earlySignalExtractor = new EarlySignalFeatureExtractor();
+		this.smartMoneyFlowExtractor = new LeanSmartMoneyFeatureExtractor();
 	}
 
 	public static getInstance(config?: Partial<PredictionEngineConfig>): RealTimePredictionEngine {
@@ -527,6 +537,14 @@ export class RealTimePredictionEngine {
 					};
 
 					const prediction = await this.runInference(model, featureVector);
+
+					// DEBUG: Log raw prediction values to diagnose identical confidences
+					console.log(`[DEBUG] ${model.modelName} raw prediction:`, {
+						value: prediction.value,
+						confidence: prediction.confidence,
+						probability: prediction.probability
+					});
+
 					const signal = this.mapPredictionToSignal(
 						prediction.value,
 						model.modelName
@@ -626,6 +644,13 @@ export class RealTimePredictionEngine {
 			return "NEUTRAL";
 		}
 
+		// For smart-money-flow: positive value = institutional buying (BULLISH)
+		if (modelName.includes("smart-money")) {
+			if (value > 0.6) return "BULLISH"; // Strong institutional buying
+			if (value < -0.6) return "BEARISH"; // Strong institutional selling
+			return "NEUTRAL";
+		}
+
 		// For price-prediction and sentiment-fusion: prediction is price direction
 		// Positive = UP (BULLISH), Negative = DOWN (BEARISH)
 		if (value > 0.15) return "BULLISH"; // Strong upward prediction
@@ -641,14 +666,17 @@ export class RealTimePredictionEngine {
 	 * to the final prediction based on its reliability and scope.
 	 *
 	 * Model Weights (Total: 100%):
-	 * - sentiment-fusion (50%): Most comprehensive model combining news sentiment +
+	 * - sentiment-fusion (45%): Most comprehensive model combining news sentiment +
 	 *   price technicals. Highest weight due to broad feature set (45 features).
 	 *
-	 * - price-prediction (30%): Baseline technical + fundamental analysis. Medium
+	 * - price-prediction (27%): Baseline technical + fundamental analysis. Medium
 	 *   weight for traditional price trend prediction.
 	 *
-	 * - early-signal-detection (20%): Specialized analyst upgrade/downgrade predictions.
+	 * - early-signal-detection (18%): Specialized analyst upgrade/downgrade predictions.
 	 *   Lower weight due to specific event focus (28 features).
+	 *
+	 * - smart-money-flow (10%): Institutional & insider trading activity analysis.
+	 *   Conservative weight - includes congressional trades, options flow, dark pool (27 features).
 	 *
 	 * Voting Algorithm:
 	 * 1. Each model's vote is multiplied by its base weight AND confidence:
@@ -660,17 +688,18 @@ export class RealTimePredictionEngine {
 	 *
 	 * 4. Highest score wins (consensus signal)
 	 *
-	 * Example Calculation:
-	 * - sentiment-fusion: BULLISH @ 0.78 confidence → 0.5 * 0.78 = 0.39
-	 * - price-prediction: BULLISH @ 0.65 confidence → 0.3 * 0.65 = 0.195
-	 * - early-signal: NEUTRAL @ 0.52 confidence → 0.2 * 0.52 = 0.104 (neutral)
+	 * Example Calculation (4-model ensemble):
+	 * - sentiment-fusion: BULLISH @ 0.78 confidence → 0.45 * 0.78 = 0.351
+	 * - price-prediction: BULLISH @ 0.65 confidence → 0.27 * 0.65 = 0.176
+	 * - early-signal: NEUTRAL @ 0.52 confidence → 0.18 * 0.52 = 0.094 (neutral)
+	 * - smart-money-flow: BULLISH @ 0.70 confidence → 0.10 * 0.70 = 0.070
 	 *
 	 * Result:
-	 * - Bullish Score: (0.39 + 0.195) / 1.0 = 0.585 (58.5%)
-	 * - Neutral Score: 0.104 / 1.0 = 0.104 (10.4%)
+	 * - Bullish Score: (0.351 + 0.176 + 0.070) / 1.0 = 0.597 (59.7%)
+	 * - Neutral Score: 0.094 / 1.0 = 0.094 (9.4%)
 	 * - Bearish Score: 0.0 / 1.0 = 0.0 (0%)
-	 * - Consensus: BULLISH with 58.5% confidence
-	 * - Composite Score: 50 + (0.585 * 50) = 79.25 (0-100 scale)
+	 * - Consensus: BULLISH with 59.7% confidence
+	 * - Composite Score: 50 + (0.597 * 50) = 79.85 (0-100 scale)
 	 *
 	 * Adding New Models:
 	 * To add a new model to the ensemble:
@@ -691,9 +720,10 @@ export class RealTimePredictionEngine {
 		// Total should equal 1.0 for proper normalization
 		// Update these weights when adding/removing models from ensemble
 		const weights: Record<string, number> = {
-			"sentiment-fusion": 0.5, // Most comprehensive (50%) - 45 features
-			"price-prediction": 0.3, // Baseline price model (30%) - 35 features
-			"early-signal-detection": 0.2, // Analyst signal (20%) - 28 features
+			"sentiment-fusion": 0.45, // Most comprehensive (45%) - 45 features
+			"price-prediction": 0.27, // Baseline price model (27%) - 35 features
+			"early-signal-detection": 0.18, // Analyst signal (18%) - 28 features
+			"smart-money-flow": 0.10, // Institutional/insider analysis (10%) - 27 features [DEPLOYED Oct 13, 2025]
 		};
 
 		let bullishScore = 0;
@@ -777,6 +807,8 @@ export class RealTimePredictionEngine {
 			return `${confidenceText} ${signal.toLowerCase()} signal from technical + fundamental analysis`;
 		} else if (modelName.includes("early-signal")) {
 			return `${confidenceText} ${signal === "BULLISH" ? "analyst upgrade" : signal === "BEARISH" ? "analyst downgrade" : "no rating change"} prediction`;
+		} else if (modelName.includes("smart-money")) {
+			return `${confidenceText} ${signal === "BULLISH" ? "institutional buying" : signal === "BEARISH" ? "institutional selling" : "neutral institutional activity"} signal`;
 		}
 
 		return `${confidenceText} ${signal.toLowerCase()} signal`;
@@ -974,6 +1006,7 @@ export class RealTimePredictionEngine {
 	 * - sentiment-fusion: 45 features (sentiment + technical)
 	 * - price-prediction: 43 features (volume + technical)
 	 * - early-signal: 34 features (price momentum + fundamentals)
+	 * - smart-money-flow: 27 features (institutional/insider activity)
 	 */
 	private async getModelSpecificFeatures(
 		modelName: string,
@@ -987,6 +1020,8 @@ export class RealTimePredictionEngine {
 					return await this.pricePredictionExtractor.extractFeatures(symbol);
 				case "early-signal":
 					return await this.earlySignalExtractor.extractFeatures(symbol);
+				case "smart-money-flow":
+					return await this.smartMoneyFlowExtractor.extractFeatures(symbol);
 				default:
 					this.logger.warn(`Unknown model name: ${modelName}, falling back to FeatureStore`);
 					const featureVector = await this.getFeatureVector(symbol);
@@ -999,58 +1034,76 @@ export class RealTimePredictionEngine {
 	}
 
 	/**
-	 * Ensure Python prediction subprocess is running
+	 * Ensure Python prediction subprocess is running (with race condition protection)
 	 */
 	private async ensurePythonProcess(): Promise<void> {
+		// If Python is ready, return immediately
 		if (this.pythonProcess && this.pythonReady) {
 			return;
 		}
 
-		try {
-			const scriptPath = path.join(process.cwd(), "scripts/ml/predict-generic.py");
-			this.logger.info(`Starting Python prediction server: ${scriptPath}`);
-
-			this.pythonProcess = spawn("python3", [scriptPath], {
-				cwd: process.cwd(),
-				stdio: ["pipe", "pipe", "pipe"],
-			});
-
-			// Wait for READY signal from Python server
-			await new Promise<void>((resolve, reject) => {
-				const timeout = setTimeout(() => {
-					reject(new Error("Python server startup timeout (10s)"));
-				}, 10000);
-
-				this.pythonProcess!.stderr!.on("data", (data: Buffer) => {
-					const message = data.toString().trim();
-					if (message.includes("READY")) {
-						clearTimeout(timeout);
-						this.pythonReady = true;
-						this.logger.info("Python prediction server ready");
-						resolve();
-					}
-					if (message.includes("ERROR")) {
-						clearTimeout(timeout);
-						reject(new Error(`Python server error: ${message}`));
-					}
-				});
-
-				this.pythonProcess!.on("error", (err: Error) => {
-					clearTimeout(timeout);
-					reject(err);
-				});
-			});
-		} catch (error) {
-			this.pythonProcess = null;
-			this.pythonReady = false;
-			throw new Error(
-				`Failed to start Python prediction server: ${error instanceof Error ? error.message : "Unknown error"}`
-			);
+		// If Python is starting, wait for it to finish
+		if (this.pythonStarting) {
+			await this.pythonStarting;
+			return;
 		}
+
+		// Start Python process (only one caller will reach here)
+		this.pythonStarting = (async () => {
+			try {
+				const scriptPath = path.join(process.cwd(), "scripts/ml/predict-generic.py");
+				this.logger.info(`Starting Python prediction server: ${scriptPath}`);
+
+				this.pythonProcess = spawn("python3", [scriptPath], {
+					cwd: process.cwd(),
+					stdio: ["pipe", "pipe", "pipe"],
+				});
+
+				// Wait for READY signal from Python server
+				await new Promise<void>((resolve, reject) => {
+					const timeout = setTimeout(() => {
+						reject(new Error("Python server startup timeout (10s)"));
+					}, 10000);
+
+					this.pythonProcess!.stderr!.on("data", (data: Buffer) => {
+						const message = data.toString().trim();
+						if (message.includes("READY")) {
+							clearTimeout(timeout);
+							this.pythonReady = true;
+							this.logger.info("Python prediction server ready");
+							resolve();
+						}
+						if (message.includes("ERROR")) {
+							clearTimeout(timeout);
+							reject(new Error(`Python server error: ${message}`));
+						}
+					});
+
+					this.pythonProcess!.on("error", (err: Error) => {
+						clearTimeout(timeout);
+						reject(err);
+					});
+				});
+
+				this.pythonStarting = null;
+			} catch (error) {
+				this.pythonProcess = null;
+				this.pythonReady = false;
+				this.pythonStarting = null;
+				throw new Error(
+					`Failed to start Python prediction server: ${error instanceof Error ? error.message : "Unknown error"}`
+				);
+			}
+		})();
+
+		await this.pythonStarting;
 	}
 
 	/**
 	 * Call Python subprocess for model inference
+	 */
+	/**
+	 * Add request to queue and process
 	 */
 	private async callPython(
 		features: Record<string, number>,
@@ -1065,11 +1118,61 @@ export class RealTimePredictionEngine {
 			throw new Error("Python prediction server not ready");
 		}
 
-		// Capture reference for use in promise
-		const pythonProcess = this.pythonProcess;
+		// Add request to queue
+		return new Promise((resolve, reject) => {
+			this.pythonRequestQueue.push({
+				request: { features, modelPath, normalizerPath },
+				resolve,
+				reject,
+			});
+
+			// Start processing queue if not already processing
+			if (!this.processingPythonRequest) {
+				this.processPythonQueue();
+			}
+		});
+	}
+
+	/**
+	 * Process Python request queue (one at a time)
+	 */
+	private async processPythonQueue(): Promise<void> {
+		if (this.processingPythonRequest || this.pythonRequestQueue.length === 0) {
+			return;
+		}
+
+		this.processingPythonRequest = true;
+
+		while (this.pythonRequestQueue.length > 0) {
+			const { request, resolve, reject } = this.pythonRequestQueue.shift()!;
+
+			try {
+				const result = await this.executePythonRequest(request);
+				resolve(result);
+			} catch (error) {
+				reject(error);
+			}
+		}
+
+		this.processingPythonRequest = false;
+	}
+
+	/**
+	 * Execute a single Python request (synchronized)
+	 */
+	private async executePythonRequest(request: {
+		features: Record<string, number>;
+		modelPath: string;
+		normalizerPath: string;
+	}): Promise<{
+		value: number;
+		confidence: number;
+		probability?: { up: number; down: number; neutral: number };
+	}> {
+		const pythonProcess = this.pythonProcess!;
 
 		return new Promise((resolve, reject) => {
-			const request = JSON.stringify({ features, modelPath, normalizerPath }) + "\n";
+			const requestStr = JSON.stringify(request) + "\n";
 			const timeout = setTimeout(() => {
 				reject(new Error("Prediction timeout (5s)"));
 			}, 5000);
@@ -1091,12 +1194,13 @@ export class RealTimePredictionEngine {
 					}
 				} catch (err) {
 					clearTimeout(timeout);
+					pythonProcess.stdout!.removeListener("data", onData);
 					reject(err);
 				}
 			};
 
 			pythonProcess.stdout!.on("data", onData);
-			pythonProcess.stdin!.write(request);
+			pythonProcess.stdin!.write(requestStr);
 		});
 	}
 
@@ -1182,6 +1286,12 @@ export class RealTimePredictionEngine {
 			const normalizerPath = path.join(path.dirname(modelPath), "normalizer.json");
 
 			// Call Python for real model inference
+			console.log(`[DEBUG runInference] Calling Python with:`, {
+				modelName: model.modelName,
+				modelPath,
+				normalizerPath,
+				featureCount: Object.keys(features.features).length
+			});
 			const prediction = await this.callPython(features.features, modelPath, normalizerPath);
 
 			return prediction;

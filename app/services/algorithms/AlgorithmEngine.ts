@@ -124,6 +124,11 @@ export class AlgorithmEngine {
 		const startTime = Date.now();
 		const progressTracker = (context as any).progressTracker;
 
+		console.log("🔍 [AlgorithmEngine] Progress Tracker Status:", {
+			hasProgressTracker: !!progressTracker,
+			contextKeys: Object.keys(context),
+		});
+
 		try {
 			// Register execution
 			const execution: AlgorithmExecution = {
