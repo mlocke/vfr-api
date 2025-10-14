@@ -357,6 +357,31 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 						requestId,
 						data: { key: cacheKey },
 					});
+
+					// Send simulated progress updates for datasources when serving from cache
+					// This ensures the UI shows expected progress indicators
+					const progressTracker = (request as any).progressTracker;
+					if (progressTracker) {
+						const datasources = [
+							{ id: "sentiment", name: "Market sentiment (cached)" },
+							{ id: "vwap", name: "VWAP analysis (cached)" },
+							{ id: "macro", name: "Macroeconomic factors (cached)" },
+							{ id: "esg", name: "ESG metrics (cached)" },
+							{ id: "short_interest", name: "Short interest data (cached)" },
+							{ id: "extended_hours", name: "Extended hours data (cached)" },
+							{ id: "options", name: "Options data (cached)" },
+							{ id: "smart_money_flow", name: "Institutional activity (cached)" },
+						];
+
+						// Simulate quick progress through all datasources
+						for (const ds of datasources) {
+							progressTracker.startStage(ds.id, ds.name);
+							// Small delay to make it feel realistic
+							await new Promise(resolve => setTimeout(resolve, 50));
+							progressTracker.completeStage(ds.id);
+						}
+					}
+
 					return cached;
 				} else {
 					// Missing price data - use cached result but warn
@@ -369,6 +394,27 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 						requestId,
 						data: { key: cacheKey, warning: "price_validation_failed" },
 					});
+
+					// Send simulated progress updates for datasources when serving from cache
+					const progressTracker = (request as any).progressTracker;
+					if (progressTracker) {
+						const datasources = [
+							{ id: "sentiment", name: "Market sentiment (cached)" },
+							{ id: "vwap", name: "VWAP analysis (cached)" },
+							{ id: "macro", name: "Macroeconomic factors (cached)" },
+							{ id: "esg", name: "ESG metrics (cached)" },
+							{ id: "short_interest", name: "Short interest data (cached)" },
+							{ id: "extended_hours", name: "Extended hours data (cached)" },
+							{ id: "options", name: "Options data (cached)" },
+							{ id: "smart_money_flow", name: "Institutional activity (cached)" },
+						];
+						for (const ds of datasources) {
+							progressTracker.startStage(ds.id, ds.name);
+							await new Promise(resolve => setTimeout(resolve, 50));
+							progressTracker.completeStage(ds.id);
+						}
+					}
+
 					return cached;
 				}
 			} catch (error) {
@@ -381,6 +427,27 @@ export class StockSelectionService extends EventEmitter implements DataIntegrati
 					requestId,
 					data: { key: cacheKey, warning: "price_fetch_error" },
 				});
+
+				// Send simulated progress updates for datasources when serving from cache
+				const progressTracker = (request as any).progressTracker;
+				if (progressTracker) {
+					const datasources = [
+						{ id: "sentiment", name: "Market sentiment (cached)" },
+						{ id: "vwap", name: "VWAP analysis (cached)" },
+						{ id: "macro", name: "Macroeconomic factors (cached)" },
+						{ id: "esg", name: "ESG metrics (cached)" },
+						{ id: "short_interest", name: "Short interest data (cached)" },
+						{ id: "extended_hours", name: "Extended hours data (cached)" },
+						{ id: "options", name: "Options data (cached)" },
+						{ id: "smart_money_flow", name: "Institutional activity (cached)" },
+					];
+					for (const ds of datasources) {
+						progressTracker.startStage(ds.id, ds.name);
+						await new Promise(resolve => setTimeout(resolve, 50));
+						progressTracker.completeStage(ds.id);
+					}
+				}
+
 				return cached;
 			}
 		}
