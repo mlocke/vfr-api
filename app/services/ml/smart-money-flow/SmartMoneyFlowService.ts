@@ -18,9 +18,24 @@
 import { LeanSmartMoneyFeatureExtractor } from "./LeanSmartMoneyFeatureExtractor";
 import { ParquetSmartMoneyFeatureExtractor } from "./ParquetSmartMoneyFeatureExtractor";
 import { RedisCache } from "../../cache/RedisCache";
-import type { LeanSmartMoneyFeatures } from "./types";
+import type { LeanSmartMoneyFeatures, ParquetSmartMoneyFeatures } from "./types";
 import * as fs from "fs";
 import * as path from "path";
+
+// Base features shared by both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures
+type SmartMoneyBaseFeatures = Pick<
+	LeanSmartMoneyFeatures,
+	| 'congress_buy_count_90d'
+	| 'congress_sell_count_90d'
+	| 'congress_net_sentiment'
+	| 'congress_recent_activity_7d'
+	| 'institutional_volume_ratio'
+	| 'volume_concentration'
+	| 'dark_pool_volume_30d'
+	| 'price_momentum_20d'
+	| 'volume_trend_30d'
+	| 'price_volatility_30d'
+>;
 
 export interface SmartMoneyPrediction {
 	action: 'BUY' | 'SELL';
@@ -224,9 +239,10 @@ export class SmartMoneyFlowService {
 	/**
 	 * Convert feature object to ordered array matching model training order
 	 */
-	private featuresToArray(features: LeanSmartMoneyFeatures): number[] {
+	private featuresToArray(features: LeanSmartMoneyFeatures | ParquetSmartMoneyFeatures): number[] {
 		// Order must match training data column order (10 lean features)
 		// Based on: data/training/smart-money-flow-lean/train.csv header
+		// Both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures have these base 10 features
 		return [
 			features.congress_buy_count_90d,
 			features.congress_sell_count_90d,
@@ -293,10 +309,11 @@ export class SmartMoneyFlowService {
 	}
 
 	/**
-	 * Generate human-readable reasoning based on lean features
+	 * Generate human-readable reasoning based on base features
+	 * Works with both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures
 	 */
 	private generateReasoning(
-		features: LeanSmartMoneyFeatures,
+		features: LeanSmartMoneyFeatures | ParquetSmartMoneyFeatures,
 		action: 'BUY' | 'SELL',
 		confidence: number
 	): string {

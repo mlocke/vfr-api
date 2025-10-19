@@ -209,9 +209,17 @@ All tests use real APIs with 5-minute timeout.
 
 ## Key Documentation
 
-- `docs/vision.md` - Project goals
-- `docs/security-architecture.md` - Security implementation
-- `docs/error-handling-standards.md` - Error management
+### Core Architecture
+- `docs/core-context/vision.md` - Project goals and mission
+- `docs/core-context/SYSTEM_ARCHITECTURE.md` - Complete system architecture
+- `docs/core-context/VFR_ANALYSIS_ENGINE_TECHNICAL_SPECIFICATION.md` - Analysis engine specs
+
+### API Documentation
+- `docs/endpoints/government-apis-endpoints.md` - FRED, BLS, EIA API documentation
+- `docs/endpoints/twelve-data-sec-api-endpoints.md` - Twelve Data & SEC API documentation
+- `docs/endpoints/reddit-api-endpoints.md` - Reddit API documentation
+
+### Service Context
 - `app/services/*/CLAUDE.md` - Service-specific context
 - `database/CLAUDE.md` - Database architecture
 

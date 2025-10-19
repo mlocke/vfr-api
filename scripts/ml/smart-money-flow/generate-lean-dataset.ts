@@ -2,8 +2,8 @@
  * Smart Money Flow Dataset Generation - LEAN VERSION
  * Uses LeanSmartMoneyFeatureExtractor with ZERO PLACEHOLDERS
  *
- * Features: 20 real features from verified working data sources
- * Data Sources: Polygon (price/volume), Congressional Trading, SEC EDGAR (Form 4/13F), EODHD (options)
+ * Features: 27 real features from verified working data sources
+ * Data Sources: Polygon (price/volume), Congressional Trading, EODHD (detailed options flow)
  * NO FALLBACKS - Gracefully handles sparse data with zeros
  */
 
@@ -22,28 +22,37 @@ interface DatasetSample {
 	price_after_14d: number;
 	return_14d: number;
 	label: number;
-	// Original 10 features
+	// Congressional Trading Features (4)
 	congress_buy_count_90d: number;
 	congress_sell_count_90d: number;
 	congress_net_sentiment: number;
 	congress_recent_activity_7d: number;
+	// Volume & Dark Pool Features (3)
 	institutional_volume_ratio: number;
 	volume_concentration: number;
 	dark_pool_volume_30d: number;
+	// Price & Volume Momentum Features (3)
 	price_momentum_20d: number;
 	volume_trend_30d: number;
 	price_volatility_30d: number;
-	// New 10 features (SEC EDGAR, Polygon, EODHD)
-	insider_buy_volume_30d: number;
-	insider_sell_volume_30d: number;
-	insider_buy_ratio_30d: number;
-	insider_transaction_count_30d: number;
-	inst_ownership_pct: number;
-	inst_holders_count: number;
-	inst_ownership_change_qtd: number;
-	block_trade_ratio_30d: number;
-	vwap_deviation_avg_30d: number;
-	options_put_call_ratio_7d: number;
+	// Detailed Options Flow Features from EODHD (17)
+	put_call_volume_ratio: number;
+	put_call_oi_ratio: number;
+	large_block_call_pct: number;
+	large_block_put_pct: number;
+	avg_call_premium_above_mid: number;
+	avg_put_premium_above_mid: number;
+	oi_skew_call_put: number;
+	near_money_call_concentration: number;
+	far_otm_call_activity: number;
+	protective_put_ratio: number;
+	high_delta_call_volume_pct: number;
+	long_dated_call_ratio: number;
+	net_gamma_exposure: number;
+	iv_rank_percentile: number;
+	iv_skew_25delta: number;
+	avg_call_vol_oi_ratio: number;
+	avg_put_vol_oi_ratio: number;
 }
 
 class LeanDatasetGenerator {
@@ -61,11 +70,11 @@ class LeanDatasetGenerator {
 
 	async generateDataset(symbols: string[], startDate: Date, endDate: Date, outputName: string) {
 		console.log('\n═══════════════════════════════════════════════════════════');
-		console.log('LEAN SMART MONEY FLOW DATASET GENERATION (20 FEATURES)');
+		console.log('LEAN SMART MONEY FLOW DATASET GENERATION (27 FEATURES)');
 		console.log('═══════════════════════════════════════════════════════════');
 		console.log(`Symbols: ${symbols.length}`);
 		console.log(`Date range: ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}`);
-		console.log(`Features: 20 (Congressional, Volume, Price, SEC Insider, SEC 13F, Polygon, EODHD)`);
+		console.log(`Features: 27 (Congressional, Volume, Price, Detailed Options Flow)`);
 		console.log(`Output: ${outputName}.csv`);
 		console.log('═══════════════════════════════════════════════════════════\n');
 

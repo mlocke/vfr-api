@@ -72,7 +72,7 @@ async function example2_ParquetFeatureExtractor() {
 			console.log(`  📊 Sample features:`);
 			console.log(`     Congressional buys (90d): ${features.congress_buy_count_90d}`);
 			console.log(`     Congressional sells (90d): ${features.congress_sell_count_90d}`);
-			console.log(`     Insider buy volume (30d): $${features.insider_buy_volume_30d.toLocaleString()}`);
+			console.log(`     Insider buy volume (30d): $${(features.insider_buy_volume_30d || 0).toLocaleString()}`);
 			console.log(`     Institutional volume ratio: ${(features.institutional_volume_ratio * 100).toFixed(1)}%`);
 			console.log(`     Price momentum (20d): ${(features.price_momentum_20d * 100).toFixed(2)}%`);
 

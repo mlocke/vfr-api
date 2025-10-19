@@ -48,6 +48,47 @@ export interface LeanSmartMoneyFeatures {
 }
 
 /**
+ * Parquet Smart Money Flow Features (20 total)
+ * Used by ParquetSmartMoneyFeatureExtractor - reads from Parquet feature store
+ * Different feature set than LeanSmartMoneyFeatures (includes insider/institutional)
+ */
+export interface ParquetSmartMoneyFeatures {
+	// === Congressional Trading Features (4) ===
+	congress_buy_count_90d: number;
+	congress_sell_count_90d: number;
+	congress_net_sentiment: number;
+	congress_recent_activity_7d: number;
+
+	// === Volume & Dark Pool Features (3) ===
+	institutional_volume_ratio: number;
+	volume_concentration: number;
+	dark_pool_volume_30d: number;
+
+	// === Price & Volume Momentum Features (3) ===
+	price_momentum_20d: number;
+	volume_trend_30d: number;
+	price_volatility_30d: number;
+
+	// === SEC Form 4 - Insider Trading Features (4) ===
+	insider_buy_volume_30d: number;          // Total insider buy value (30 days)
+	insider_sell_volume_30d: number;         // Total insider sell value (30 days)
+	insider_buy_ratio_30d: number;           // Buy value / (Buy + Sell value)
+	insider_transaction_count_30d: number;   // Total insider transactions (30 days)
+
+	// === SEC 13F - Institutional Holdings Features (3) ===
+	inst_ownership_pct: number;              // % of shares held by institutions
+	inst_holders_count: number;              // Number of institutional holders
+	inst_ownership_change_qtd: number;       // Change in ownership (quarter-to-date)
+
+	// === Advanced Volume Features (2) ===
+	block_trade_ratio_30d: number;           // Block trades / total trades (30 days)
+	vwap_deviation_avg_30d: number;          // Average deviation from VWAP (30 days)
+
+	// === Options Flow Features (1) ===
+	options_put_call_ratio_7d: number;       // Put/Call ratio (7 days)
+}
+
+/**
  * Smart Money Flow Features (27 total)
  * Extracted from FMP API insider/institutional data
  */

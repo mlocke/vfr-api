@@ -9,7 +9,7 @@
 - NEVER add dependencies unless absolutely necessary.
 - NEVER "patch" or "hack" or "quick fix" code. Always find the root cause of issues and fix them properly.
 - ALWAYS prefer editing existing code over creating new code unless the files are overly large. Then split them up.
-- Attempt to keep files under 300 lines of code. Refactor if necessary.
+- Attempt to keep files under 1000 lines of code. Refactor if necessary.
 - ALWAYS write modular, reusable code.
 - ALWAYS write code with proper error handling and logging.
 - ALWAYS write code with proper input validation and type checking.

@@ -16,10 +16,11 @@
 
 **Related Documents**:
 
-- `SERVICE_DOCUMENTATION.md` - Detailed service implementation specs
-- `API_DOCUMENTATION.md` - REST API endpoint specifications
-- `DEPLOYMENT_CONFIGURATION.md` - Infrastructure and deployment
-- `analysis-engine/CLAUDE.md` - Analysis engine specifics
+- `VFR_ANALYSIS_ENGINE_TECHNICAL_SPECIFICATION.md` - Analysis engine technical specs
+- `../endpoints/government-apis-endpoints.md` - FRED, BLS, EIA API documentation
+- `../endpoints/twelve-data-sec-api-endpoints.md` - Twelve Data & SEC API documentation
+- `../endpoints/reddit-api-endpoints.md` - Reddit API documentation
+- `../../app/services/*/CLAUDE.md` - Service-specific implementation details
 
 ## Overview
 
@@ -76,7 +77,7 @@ The VFR (Veritak Financial Research) Platform is a cyberpunk-themed, institution
                                 │
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Data Provider Layer                         │
-│                  12+ Financial Data APIs                       │
+│                  15+ Financial Data APIs                       │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐               │
 │  │  Polygon.io │ │Alpha Vantage│ │    FMP      │               │
 │  │   (Primary) │ │ (Secondary) │ │ (Enhanced)  │               │
@@ -85,6 +86,10 @@ The VFR (Veritak Financial Research) Platform is a cyberpunk-themed, institution
 │  │  SEC EDGAR  │ │    FRED     │ │ Reddit WSB  │               │
 │  │(Regulatory) │ │ (Macro Econ)│ │ (Sentiment) │               │
 │  └─────────────┘ └─────────────┘ └─────────────┘               │
+│  ┌─────────────┐ ┌─────────────┐                                │
+│  │     BLS     │ │     EIA     │                                │
+│  │(Employment) │ │  (Energy)   │                                │
+│  └─────────────┘ └─────────────┘                                │
 └─────────────────────────────────────────────────────────────────┘
                                 │
 ┌─────────────────────────────────────────────────────────────────┐
@@ -129,8 +134,12 @@ Cache Storage → Response Formatting
 - **Alpha Vantage**: Technical indicators, fundamental data
 - **Financial Modeling Prep**: Enhanced ratios, analyst ratings
 - **SEC EDGAR**: 13F filings, Form 4 insider trading
-- **FRED**: Macroeconomic indicators
+- **FRED** (Federal Reserve Economic Data): GDP, unemployment, inflation, interest rates, money supply
+- **BLS** (Bureau of Labor Statistics): Employment data, CPI, PPI, nonfarm payrolls, job openings
+- **EIA** (Energy Information Administration): Oil prices, natural gas, electricity, energy production
 - **Reddit WSB**: Sentiment analysis
+
+**Documentation**: See `docs/endpoints/government-apis-endpoints.md` for comprehensive FRED, BLS, and EIA API documentation
 
 **Fallback Strategy**:
 
@@ -238,7 +247,9 @@ Algorithm Processing → Cache Storage → Response
 | **Real-time Prices**     | Polygon        | Alpha Vantage | FMP           | Last known      | Error if >1hr old       |
 | **Technical Indicators** | Alpha Vantage  | Polygon       | TwelveData    | Calculated      | Error if no source      |
 | **Fundamental Ratios**   | FMP            | EODHD         | Alpha Vantage | Last quarter    | Error if >1 quarter     |
-| **Macroeconomic**        | FRED           | BLS           | EIA           | Last release    | Skip if unavailable     |
+| **Macroeconomic (GDP, Money Supply)** | FRED           | Cache         | None          | Last release    | Skip if unavailable     |
+| **Employment Data**      | BLS            | FRED          | Cache         | Last release    | Skip if unavailable     |
+| **Energy Prices (Oil/Gas)** | EIA         | FMP           | Cache         | Last release    | Skip if unavailable     |
 | **Sentiment**            | News API       | Reddit        | Yahoo         | Neutral default | Use neutral if all fail |
 | **Regulatory (13F)**     | SEC EDGAR      | FMP           | None          | Last filing     | Skip if unavailable     |
 
@@ -382,11 +393,15 @@ export class PolygonAPI extends BaseFinancialDataProvider {
 ### Required Environment Variables
 
 ```bash
-# API Keys
+# Primary Market Data API Keys
 ALPHA_VANTAGE_API_KEY=your_key
 POLYGON_API_KEY=your_key
 FMP_API_KEY=your_key
-FRED_API_KEY=your_key
+
+# Government API Keys (See docs/endpoints/government-apis-endpoints.md)
+FRED_API_KEY=your_key         # Federal Reserve Economic Data
+BLS_API_KEY=your_key          # Bureau of Labor Statistics
+EIA_API_KEY=your_key          # Energy Information Administration
 
 # Database URLs
 DATABASE_URL=postgresql://...

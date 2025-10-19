@@ -27,8 +27,8 @@ EODHDOptionsDatasetBuilder = builder_module.EODHDOptionsDatasetBuilder
 
 # Configuration
 PROGRESS_FILE = './data/eodhd_options/progress.json'
-BATCH_SIZE = 50  # Process 50 tickers per night
-MAX_API_CALLS = 95000  # Stop before hitting daily limit
+BATCH_SIZE = 25  # Process 25 tickers per night (varies based on ticker size)
+MAX_API_CALLS = 9000  # Stop at ~90% of daily limit (9,000 requests × 10 credits = 90,000/100,000)
 LOG_FILE = './data/eodhd_options/nightly_build.log'
 
 # Email Configuration

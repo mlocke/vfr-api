@@ -30,8 +30,8 @@ load_dotenv()
 EODHD_API_KEY = os.getenv('EODHD_API_KEY', '68ec0c6a3bd8a9.01565032')
 BASE_URL = 'https://eodhd.com/api/mp/unicornbay'  # Marketplace endpoint!
 OUTPUT_DIR = './data/eodhd_options'
-RATE_LIMIT = 100000  # Daily limit
-DELAY_MS = 0.1  # 100ms delay between requests
+RATE_LIMIT = 10000  # Daily limit in requests (100,000 credits ÷ 10 credits per options call)
+DELAY_MS = 0.15  # 150ms delay between requests (~400 req/min, well under 1000/min limit)
 
 
 class EODHDOptionsDatasetBuilder:

@@ -337,7 +337,8 @@ export class LeanSmartMoneyFeatureExtractor {
 		try {
 			// Get options chain data from EODHD with 3-second timeout
 			// This ensures we fail fast if the API is slow, allowing ML prediction to complete
-			const optionsDataPromise = this.eodhdAPI.getOptionsChain(symbol, asOfDate);
+			const asOfDateStr = asOfDate.toISOString().split('T')[0];
+			const optionsDataPromise = this.eodhdAPI.getOptionsChain(symbol, asOfDateStr);
 			const timeoutPromise = new Promise((_, reject) =>
 				setTimeout(() => reject(new Error('Options data fetch timeout (3s)')), 3000)
 			);

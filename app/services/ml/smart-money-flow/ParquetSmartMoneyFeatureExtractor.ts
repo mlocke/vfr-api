@@ -23,7 +23,7 @@
  * ZERO FALLBACKS - throws error if Parquet data unavailable
  */
 
-import { LeanSmartMoneyFeatures } from './types';
+import { ParquetSmartMoneyFeatures } from './types';
 import { parquetFeatureStore } from '../../cache/ParquetFeatureStoreCache';
 import type {
 	InsiderFeatures,
@@ -47,7 +47,7 @@ export class ParquetSmartMoneyFeatureExtractor {
 	async extractFeatures(
 		symbol: string,
 		asOfDate: Date
-	): Promise<LeanSmartMoneyFeatures> {
+	): Promise<ParquetSmartMoneyFeatures> {
 		const startTime = Date.now();
 		const dateStr = asOfDate.toISOString().split('T')[0];
 
@@ -89,7 +89,7 @@ export class ParquetSmartMoneyFeatureExtractor {
 		]);
 
 		// Combine all features
-		const features: LeanSmartMoneyFeatures = {
+		const features: ParquetSmartMoneyFeatures = {
 			...congressFeatures,
 			...insiderFeatures,
 			...institutionalFeatures,
@@ -522,8 +522,8 @@ export class ParquetSmartMoneyFeatureExtractor {
 	 * Validate all features are present and finite
 	 * Throws error if any feature is missing, NaN, or Infinity
 	 */
-	private validateFeatures(features: LeanSmartMoneyFeatures, symbol: string): void {
-		const requiredFeatures: (keyof LeanSmartMoneyFeatures)[] = [
+	private validateFeatures(features: ParquetSmartMoneyFeatures, symbol: string): void {
+		const requiredFeatures: (keyof ParquetSmartMoneyFeatures)[] = [
 			'congress_buy_count_90d',
 			'congress_sell_count_90d',
 			'congress_net_sentiment',
