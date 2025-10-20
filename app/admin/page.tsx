@@ -5,6 +5,7 @@ import Link from "next/link";
 import AnalysisEngineTest from "../components/admin/AnalysisEngineTest";
 // import MLMonitoringPanel from "../components/admin/MLMonitoringPanel"; // Hidden per admin request
 import MLFeatureTogglePanel from "../components/admin/MLFeatureTogglePanel";
+import VolatilityModelPanel from "../components/admin/VolatilityModelPanel";
 
 // Data source configuration interface
 interface DataSourceConfig {
@@ -1643,6 +1644,9 @@ export default function AdminDashboard() {
 
 						{/* ML Feature Toggle Section */}
 						<MLFeatureTogglePanel />
+
+						{/* Volatility Model Section */}
+						<VolatilityModelPanel />
 
 						{/* ML Monitoring Section - Hidden per admin request */}
 						{/* <MLMonitoringPanel /> */}

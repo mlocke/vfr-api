@@ -264,7 +264,7 @@ export class SmartMoneyFlowService {
 		return new Promise((resolve, reject) => {
 			const { spawn } = require("child_process");
 
-			const pythonScript = path.join(process.cwd(), "scripts", "ml", "predict-generic.py");
+			const pythonScript = path.join(process.cwd(), "scripts", "ml", "predict-cli.py");
 			const pythonProcess = spawn("python3", [
 				pythonScript,
 				"--features",

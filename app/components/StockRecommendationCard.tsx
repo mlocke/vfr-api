@@ -101,6 +101,16 @@ interface StockRecommendationCardProps {
 			prediction_timestamp: number;
 			model_version: string;
 		};
+		volatility_prediction?: {
+			predicted_volatility: number;
+			confidence_level: "low" | "medium" | "high";
+			risk_category: "very_low" | "low" | "moderate" | "high" | "extreme";
+			prediction_horizon_days: number;
+			reasoning: string;
+			feature_completeness: number;
+			prediction_timestamp: number;
+			model_version: string;
+		};
 	};
 }
 
@@ -1547,6 +1557,276 @@ export default function StockRecommendationCard({ stock }: StockRecommendationCa
 								<span>
 									Predicted:{" "}
 									{new Date(stock.smart_money_flow.prediction_timestamp).toLocaleString()}
+								</span>
+							</div>
+						</div>
+					)}
+				</>
+			)}
+
+			{/* Volatility Prediction Section */}
+			{stock.volatility_prediction && (
+				<>
+					<div
+						onClick={() => toggleSection("volatility_prediction")}
+						style={{
+							background: "rgba(168, 85, 247, 0.1)",
+							border: "1px solid rgba(168, 85, 247, 0.3)",
+							borderRadius: "12px",
+							padding: "1rem",
+							marginBottom: "1rem",
+							cursor: "pointer",
+							transition: "all 0.3s ease",
+							display: "flex",
+							justifyContent: "space-between",
+							alignItems: "center",
+						}}
+					>
+						<div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+							<span style={{ fontSize: "1.5rem" }}>📊</span>
+							<div>
+								<span
+									style={{
+										fontSize: "0.9rem",
+										fontWeight: "600",
+										color: "white",
+										display: "flex",
+										alignItems: "center",
+										gap: "0.5rem",
+									}}
+								>
+									Volatility Prediction
+								</span>
+								<div
+									style={{
+										fontSize: "0.75rem",
+										color: "rgba(255,255,255,0.6)",
+										marginTop: "0.25rem",
+									}}
+								>
+									{stock.volatility_prediction.predicted_volatility.toFixed(1)}% volatility expected (
+									{stock.volatility_prediction.prediction_horizon_days}-day horizon)
+								</div>
+							</div>
+						</div>
+						<div
+							style={{
+								display: "flex",
+								gap: "1rem",
+								alignItems: "center",
+							}}
+						>
+							<div
+								style={{
+									background:
+										stock.volatility_prediction.risk_category === "very_low"
+											? "rgba(34, 197, 94, 0.2)"
+											: stock.volatility_prediction.risk_category === "low"
+												? "rgba(132, 204, 22, 0.2)"
+												: stock.volatility_prediction.risk_category === "moderate"
+													? "rgba(251, 191, 36, 0.2)"
+													: stock.volatility_prediction.risk_category === "high"
+														? "rgba(249, 115, 22, 0.2)"
+														: "rgba(239, 68, 68, 0.2)",
+									border: `1px solid ${
+										stock.volatility_prediction.risk_category === "very_low"
+											? "rgba(34, 197, 94, 0.4)"
+											: stock.volatility_prediction.risk_category === "low"
+												? "rgba(132, 204, 22, 0.4)"
+												: stock.volatility_prediction.risk_category === "moderate"
+													? "rgba(251, 191, 36, 0.4)"
+													: stock.volatility_prediction.risk_category === "high"
+														? "rgba(249, 115, 22, 0.4)"
+														: "rgba(239, 68, 68, 0.4)"
+									}`,
+									color:
+										stock.volatility_prediction.risk_category === "very_low"
+											? "rgba(34, 197, 94, 0.9)"
+											: stock.volatility_prediction.risk_category === "low"
+												? "rgba(132, 204, 22, 0.9)"
+												: stock.volatility_prediction.risk_category === "moderate"
+													? "rgba(251, 191, 36, 0.9)"
+													: stock.volatility_prediction.risk_category === "high"
+														? "rgba(249, 115, 22, 0.9)"
+														: "rgba(239, 68, 68, 0.9)",
+									padding: "0.5rem 1rem",
+									borderRadius: "8px",
+									fontSize: "0.85rem",
+									fontWeight: "700",
+									textTransform: "uppercase",
+								}}
+							>
+								{stock.volatility_prediction.risk_category.replace("_", " ")}
+							</div>
+							<span style={{ fontSize: "1.2rem", color: "rgba(168, 85, 247, 0.6)" }}>
+								{expandedSection === "volatility_prediction" ? "−" : "+"}
+							</span>
+						</div>
+					</div>
+
+					{expandedSection === "volatility_prediction" && (
+						<div
+							style={{
+								background: "rgba(168, 85, 247, 0.05)",
+								borderRadius: "8px",
+								padding: "1rem",
+								marginBottom: "1rem",
+								border: "1px solid rgba(168, 85, 247, 0.2)",
+							}}
+						>
+							{/* Predicted Volatility */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(168, 85, 247, 0.9)",
+										fontSize: "0.85rem",
+										marginBottom: "0.5rem",
+									}}
+								>
+									Predicted Volatility
+								</h5>
+								<div
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: "1rem",
+									}}
+								>
+									<div
+										style={{
+											flex: 1,
+											background: "rgba(255,255,255,0.1)",
+											borderRadius: "20px",
+											height: "8px",
+											position: "relative",
+											overflow: "hidden",
+										}}
+									>
+										<div
+											style={{
+												background:
+													"linear-gradient(90deg, rgba(168,85,247,0.8), rgba(217,70,239,0.8))",
+												height: "100%",
+												width: `${Math.min(stock.volatility_prediction.predicted_volatility, 100)}%`,
+												borderRadius: "20px",
+											}}
+										/>
+									</div>
+									<span
+										style={{
+											fontSize: "1.5rem",
+											fontWeight: "700",
+											color: "rgba(168,85,247,0.9)",
+										}}
+									>
+										{stock.volatility_prediction.predicted_volatility.toFixed(1)}%
+									</span>
+								</div>
+							</div>
+
+							{/* Confidence Level */}
+							<div style={{ marginBottom: "1rem" }}>
+								<h5
+									style={{
+										color: "rgba(168, 85, 247, 0.9)",
+										fontSize: "0.85rem",
+										marginBottom: "0.5rem",
+									}}
+								>
+									Confidence Level
+								</h5>
+								<div
+									style={{
+										display: "flex",
+										gap: "0.5rem",
+										alignItems: "center",
+									}}
+								>
+									<div
+										style={{
+											padding: "0.5rem 1rem",
+											background:
+												stock.volatility_prediction.confidence_level === "high"
+													? "rgba(34, 197, 94, 0.2)"
+													: stock.volatility_prediction.confidence_level === "medium"
+														? "rgba(251, 191, 36, 0.2)"
+														: "rgba(239, 68, 68, 0.2)",
+											border: `1px solid ${
+												stock.volatility_prediction.confidence_level === "high"
+													? "rgba(34, 197, 94, 0.4)"
+													: stock.volatility_prediction.confidence_level === "medium"
+														? "rgba(251, 191, 36, 0.4)"
+														: "rgba(239, 68, 68, 0.4)"
+											}`,
+											borderRadius: "8px",
+											color:
+												stock.volatility_prediction.confidence_level === "high"
+													? "rgba(34, 197, 94, 0.9)"
+													: stock.volatility_prediction.confidence_level === "medium"
+														? "rgba(251, 191, 36, 0.9)"
+														: "rgba(239, 68, 68, 0.9)",
+											fontWeight: "600",
+											textTransform: "capitalize",
+										}}
+									>
+										{stock.volatility_prediction.confidence_level} Confidence
+									</div>
+									<span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.85rem" }}>
+										Feature Completeness:{" "}
+										{(stock.volatility_prediction.feature_completeness * 100).toFixed(0)}%
+									</span>
+								</div>
+							</div>
+
+							{/* Reasoning */}
+							{stock.volatility_prediction.reasoning && (
+								<div style={{ marginBottom: "1rem" }}>
+									<h5
+										style={{
+											color: "rgba(168, 85, 247, 0.9)",
+											fontSize: "0.85rem",
+											marginBottom: "0.5rem",
+										}}
+									>
+										Analysis
+									</h5>
+									<div
+										style={{
+											fontSize: "0.9rem",
+											lineHeight: "1.6",
+											color: "rgba(255,255,255,0.8)",
+											background: "rgba(0,0,0,0.2)",
+											padding: "0.75rem",
+											borderRadius: "6px",
+										}}
+									>
+										{stock.volatility_prediction.reasoning}
+									</div>
+								</div>
+							)}
+
+							{/* Model Info */}
+							<div
+								style={{
+									fontSize: "0.75rem",
+									color: "rgba(255,255,255,0.5)",
+									marginTop: "0.5rem",
+									display: "flex",
+									justifyContent: "space-between",
+									flexWrap: "wrap",
+									gap: "0.5rem",
+								}}
+							>
+								<span>
+									Model: Volatility Prediction{" "}
+									{stock.volatility_prediction.model_version || "1.0.0"}
+								</span>
+								<span>
+									Predicted:{" "}
+									{new Date(
+										stock.volatility_prediction.prediction_timestamp ||
+											Date.now()
+									).toLocaleString()}
 								</span>
 							</div>
 						</div>

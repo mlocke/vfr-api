@@ -24,6 +24,7 @@ import { SentimentFusionFeatureExtractor } from "../sentiment-fusion/SentimentFu
 import { PricePredictionFeatureExtractor } from "../features/PricePredictionFeatureExtractor";
 import { EarlySignalFeatureExtractor } from "../early-signal/FeatureExtractor";
 import { LeanSmartMoneyFeatureExtractor } from "../smart-money-flow/LeanSmartMoneyFeatureExtractor";
+import { VolatilityFeatureExtractor } from "../volatility-prediction/VolatilityFeatureExtractor";
 import {
 	MLServiceResponse,
 	MLPredictionHorizon,
@@ -168,6 +169,7 @@ export class RealTimePredictionEngine {
 	private pricePredictionExtractor: PricePredictionFeatureExtractor;
 	private earlySignalExtractor: EarlySignalFeatureExtractor;
 	private smartMoneyFlowExtractor: LeanSmartMoneyFeatureExtractor;
+	private volatilityExtractor: VolatilityFeatureExtractor;
 
 	private constructor(config?: Partial<PredictionEngineConfig>) {
 		this.logger = Logger.getInstance("RealTimePredictionEngine");
@@ -196,6 +198,7 @@ export class RealTimePredictionEngine {
 		this.pricePredictionExtractor = new PricePredictionFeatureExtractor();
 		this.earlySignalExtractor = new EarlySignalFeatureExtractor();
 		this.smartMoneyFlowExtractor = new LeanSmartMoneyFeatureExtractor();
+		this.volatilityExtractor = new VolatilityFeatureExtractor();
 	}
 
 	public static getInstance(config?: Partial<PredictionEngineConfig>): RealTimePredictionEngine {
@@ -651,6 +654,15 @@ export class RealTimePredictionEngine {
 			return "NEUTRAL";
 		}
 
+		// For volatility-prediction: high volatility = BEARISH (risk-off)
+		if (modelName.includes("volatility-prediction")) {
+			// Volatility above 50% = high risk (bearish signal)
+			if (value > 50) return "BEARISH";
+			// Volatility below 20% = low risk (bullish signal)
+			if (value < 20) return "BULLISH";
+			return "NEUTRAL"; // Moderate volatility
+		}
+
 		// For price-prediction and sentiment-fusion: prediction is price direction
 		// Positive = UP (BULLISH), Negative = DOWN (BEARISH)
 		if (value > 0.15) return "BULLISH"; // Strong upward prediction
@@ -720,10 +732,11 @@ export class RealTimePredictionEngine {
 		// Total should equal 1.0 for proper normalization
 		// Update these weights when adding/removing models from ensemble
 		const weights: Record<string, number> = {
-			"sentiment-fusion": 0.45, // Most comprehensive (45%) - 45 features
-			"price-prediction": 0.27, // Baseline price model (27%) - 35 features
+			"sentiment-fusion": 0.40, // Most comprehensive (40%) - 45 features [REDUCED from 0.45]
+			"price-prediction": 0.25, // Baseline price model (25%) - 35 features [REDUCED from 0.27]
 			"early-signal-detection": 0.18, // Analyst signal (18%) - 28 features
 			"smart-money-flow": 0.10, // Institutional/insider analysis (10%) - 27 features [DEPLOYED Oct 13, 2025]
+			"volatility-prediction": 0.07, // Risk/volatility indicator (7%) - 28 features [DEPLOYED Oct 19, 2025]
 		};
 
 		let bullishScore = 0;
@@ -809,6 +822,12 @@ export class RealTimePredictionEngine {
 			return `${confidenceText} ${signal === "BULLISH" ? "analyst upgrade" : signal === "BEARISH" ? "analyst downgrade" : "no rating change"} prediction`;
 		} else if (modelName.includes("smart-money")) {
 			return `${confidenceText} ${signal === "BULLISH" ? "institutional buying" : signal === "BEARISH" ? "institutional selling" : "neutral institutional activity"} signal`;
+		} else if (modelName.includes("volatility-prediction")) {
+			const riskLevel =
+				signal === "BEARISH" ? "high volatility (elevated risk)" :
+				signal === "BULLISH" ? "low volatility (stable conditions)" :
+				"moderate volatility";
+			return `${confidenceText} ${riskLevel} detected`;
 		}
 
 		return `${confidenceText} ${signal.toLowerCase()} signal`;
@@ -1022,6 +1041,8 @@ export class RealTimePredictionEngine {
 					return await this.earlySignalExtractor.extractFeatures(symbol);
 				case "smart-money-flow":
 					return await this.smartMoneyFlowExtractor.extractFeatures(symbol);
+				case "volatility-prediction":
+					return await this.volatilityExtractor.extractFeatures(symbol);
 				default:
 					this.logger.warn(`Unknown model name: ${modelName}, falling back to FeatureStore`);
 					const featureVector = await this.getFeatureVector(symbol);

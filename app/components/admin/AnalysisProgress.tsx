@@ -35,6 +35,7 @@ const PARALLEL_SERVICES = [
 	{ id: "extended_hours", name: "Extended Hours", icon: "🕐" },
 	{ id: "options", name: "Options", icon: "📈" },
 	{ id: "smart_money_flow", name: "Smart Money", icon: "💰" },
+	{ id: "volatility_prediction", name: "Volatility", icon: "📊" },
 ];
 
 export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProgressProps) {
@@ -171,6 +172,7 @@ export default function AnalysisProgress({ sessionId, onComplete }: AnalysisProg
 			options: "📊",
 			ml_prediction: "🤖",
 			smart_money_flow: "💰",
+			volatility_prediction: "📊",
 			composite: "🎯",
 			complete: "✅",
 			error: "❌",
