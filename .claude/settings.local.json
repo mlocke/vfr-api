@@ -84,7 +84,9 @@
       "Bash(killall:*)",
       "Read(//private/tmp/**)",
       "Bash(python3:*)",
-      "Bash(launchctl list:*)"
+      "Bash(launchctl list:*)",
+      "Bash(xargs kill:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

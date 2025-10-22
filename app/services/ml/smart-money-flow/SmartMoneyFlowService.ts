@@ -15,27 +15,12 @@
  * - Binary classification (BUY/SELL)
  */
 
-import { LeanSmartMoneyFeatureExtractor } from "./LeanSmartMoneyFeatureExtractor";
-import { ParquetSmartMoneyFeatureExtractor } from "./ParquetSmartMoneyFeatureExtractor";
+import { AdaptiveFeatureExtractor } from "../features/AdaptiveFeatureExtractor";
 import { RedisCache } from "../../cache/RedisCache";
-import type { LeanSmartMoneyFeatures, ParquetSmartMoneyFeatures } from "./types";
 import * as fs from "fs";
 import * as path from "path";
 
-// Base features shared by both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures
-type SmartMoneyBaseFeatures = Pick<
-	LeanSmartMoneyFeatures,
-	| 'congress_buy_count_90d'
-	| 'congress_sell_count_90d'
-	| 'congress_net_sentiment'
-	| 'congress_recent_activity_7d'
-	| 'institutional_volume_ratio'
-	| 'volume_concentration'
-	| 'dark_pool_volume_30d'
-	| 'price_momentum_20d'
-	| 'volume_trend_30d'
-	| 'price_volatility_30d'
->;
+// Removed hardcoded feature types - now using adaptive extraction
 
 export interface SmartMoneyPrediction {
 	action: 'BUY' | 'SELL';
@@ -61,54 +46,59 @@ export interface SmartMoneyFlowConfig {
 export class SmartMoneyFlowService {
 	private static modelInstance: any = null;
 	private static pythonProcess: any = null;
-	private static modelVersion: string = "v2.0.0"; // Using lean 10-feature model
-	private featureExtractor: LeanSmartMoneyFeatureExtractor | ParquetSmartMoneyFeatureExtractor;
+	private static modelVersion: string = "v2.0.0";
+	private featureExtractor: AdaptiveFeatureExtractor;
 	private cache: RedisCache;
 	private config: SmartMoneyFlowConfig;
 	private featureImportance: Record<string, number> = {};
+	private modelDir: string = "";
 
 	constructor(config?: Partial<SmartMoneyFlowConfig>) {
-		// Choose feature extractor based on configuration
-		const useParquet = config?.useParquetFeatureStore ?? false;
-		this.featureExtractor = useParquet
-			? new ParquetSmartMoneyFeatureExtractor()
-			: new LeanSmartMoneyFeatureExtractor();
-
+		// Use adaptive feature extractor
+		this.featureExtractor = new AdaptiveFeatureExtractor();
 		this.cache = new RedisCache();
 
-		console.log(`SmartMoneyFlowService using ${useParquet ? 'Parquet' : 'API'}-based feature extraction`);
+		console.log(`SmartMoneyFlowService using AdaptiveFeatureExtractor`);
 
-		// Default configuration - will use v3.0.0 when available, fallback to v2.0.0
-		const modelVersion = "v3.0.0"; // 27-feature model with options data (trained Oct 13, 2025)
-		const fallbackVersion = "v2.0.0"; // Lean 10-feature model
+		// Find the best available model version
+		const availableVersions = ['v2.0.0', 'v1.0.0'];
+		let activeVersion = 'v2.0.0';
+		let modelPath = '';
 
-		// Check if v2.0.0 exists, otherwise use v1.0.0
-		const preferredModelPath = path.join(process.cwd(), "models", "smart-money-flow", modelVersion, "model.txt");
-		const fallbackModelPath = path.join(process.cwd(), "models", "smart-money-flow", fallbackVersion, "model.txt");
+		for (const version of availableVersions) {
+			const testPath = path.join(process.cwd(), "models", "smart-money-flow", version, "model.txt");
+			if (fs.existsSync(testPath)) {
+				activeVersion = version;
+				modelPath = testPath;
+				break;
+			}
+		}
 
-		const modelPath = fs.existsSync(preferredModelPath) ? preferredModelPath : fallbackModelPath;
-		const activeVersion = fs.existsSync(preferredModelPath) ? modelVersion : fallbackVersion;
+		if (!modelPath) {
+			throw new Error("No smart-money-flow model found in models/smart-money-flow/");
+		}
 
-		const normalizerPath = path.join(
-			process.cwd(),
-			"models",
-			"smart-money-flow",
-			activeVersion,
-			"normalizer.json"
-		);
+		this.modelDir = path.dirname(modelPath);
+		const normalizerPath = path.join(this.modelDir, "normalizer.json");
 
 		this.config = {
 			modelPath,
 			normalizerParamsPath: normalizerPath,
-			normalizerPath: normalizerPath, // Alias for Python script
-			cacheTTL: 300, // 5 minutes
+			normalizerPath: normalizerPath,
+			cacheTTL: 300,
 			confidenceThresholdLow: 0.35,
 			confidenceThresholdHigh: 0.65,
 			enableCaching: true,
 			...config,
 		};
 
-		console.log(`SmartMoneyFlowService initialized with model ${activeVersion} (${activeVersion === 'v3.0.0' ? '27' : '10'} features)`);
+		SmartMoneyFlowService.modelVersion = activeVersion;
+
+		// Log feature count from metadata
+		const requiredFeatures = this.featureExtractor.getRequiredFeatures(this.modelDir);
+		console.log(
+			`SmartMoneyFlowService initialized with model ${activeVersion} (${requiredFeatures.length} features)`
+		);
 	}
 
 	/**
@@ -135,12 +125,13 @@ export class SmartMoneyFlowService {
 				await this.loadModel();
 			}
 
-			// Extract features (Python script handles normalization)
-			const asOfDate = new Date(); // Use current date for real-time analysis
-			const features = await this.featureExtractor.extractFeatures(symbol, asOfDate);
-
-			// Convert FeatureVector to ordered array for Python (10 lean features)
-			const featureArray = this.featuresToArray(features);
+			// Extract features adaptively based on model metadata
+			const asOfDate = new Date();
+			const featureArray = await this.featureExtractor.extractFeaturesForModel(
+				this.modelDir,
+				symbol,
+				asOfDate
+			);
 
 			// Make prediction with raw features (Python normalizes them)
 			const predictionResponse = await this.predictWithModel(featureArray);
@@ -161,7 +152,7 @@ export class SmartMoneyFlowService {
 			}
 
 			// Generate human-readable reasoning
-			const reasoning = this.generateReasoning(features, action, confidence);
+			const reasoning = `Smart Money ${action} signal (${(confidence * 100).toFixed(1)}% confidence) based on ${featureArray.length} features`;
 
 			// Build prediction result
 			const result: SmartMoneyPrediction = {
@@ -236,26 +227,7 @@ export class SmartMoneyFlowService {
 		}
 	}
 
-	/**
-	 * Convert feature object to ordered array matching model training order
-	 */
-	private featuresToArray(features: LeanSmartMoneyFeatures | ParquetSmartMoneyFeatures): number[] {
-		// Order must match training data column order (10 lean features)
-		// Based on: data/training/smart-money-flow-lean/train.csv header
-		// Both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures have these base 10 features
-		return [
-			features.congress_buy_count_90d,
-			features.congress_sell_count_90d,
-			features.congress_net_sentiment,
-			features.congress_recent_activity_7d,
-			features.institutional_volume_ratio,
-			features.volume_concentration,
-			features.dark_pool_volume_30d,
-			features.price_momentum_20d,
-			features.volume_trend_30d,
-			features.price_volatility_30d,
-		];
-	}
+	// Removed featuresToArray - now using adaptive extraction
 
 	/**
 	 * Make prediction using Python subprocess
@@ -308,63 +280,7 @@ export class SmartMoneyFlowService {
 		});
 	}
 
-	/**
-	 * Generate human-readable reasoning based on base features
-	 * Works with both LeanSmartMoneyFeatures and ParquetSmartMoneyFeatures
-	 */
-	private generateReasoning(
-		features: LeanSmartMoneyFeatures | ParquetSmartMoneyFeatures,
-		action: 'BUY' | 'SELL',
-		confidence: number
-	): string {
-		const reasons: string[] = [];
-
-		// Congressional trades (4 features)
-		if (features.congress_recent_activity_7d === 1) {
-			const netSentiment = features.congress_net_sentiment;
-			if (netSentiment > 0.3) {
-				reasons.push(`Strong congressional buying (${features.congress_buy_count_90d} buys in 90d)`);
-			} else if (netSentiment < -0.3) {
-				reasons.push(`Heavy congressional selling (${features.congress_sell_count_90d} sells in 90d)`);
-			} else {
-				reasons.push("Recent congressional trading activity");
-			}
-		}
-
-		// Institutional volume (3 features)
-		if (features.institutional_volume_ratio > 0.3) {
-			reasons.push("High institutional trading activity");
-		}
-		if (features.volume_concentration > 0.5) {
-			reasons.push("Volume concentrated in large blocks");
-		}
-		if (features.dark_pool_volume_30d > 1000000000) {
-			reasons.push("Significant dark pool volume");
-		}
-
-		// Price momentum (3 features)
-		if (features.price_momentum_20d > 0.1) {
-			reasons.push("Strong 20-day upward momentum");
-		} else if (features.price_momentum_20d < -0.1) {
-			reasons.push("Strong 20-day downward momentum");
-		}
-
-		if (features.volume_trend_30d > 1.5) {
-			reasons.push("Volume increasing significantly");
-		} else if (features.volume_trend_30d < 0.7) {
-			reasons.push("Volume declining");
-		}
-
-		if (features.price_volatility_30d > 0.03) {
-			reasons.push("High price volatility (30d)");
-		}
-
-		if (reasons.length === 0) {
-			reasons.push("Mixed smart money signals");
-		}
-
-		return `Smart Money ${action} signal (${(confidence * 100).toFixed(1)}% confidence): ${reasons.join("; ")}`;
-	}
+	// Removed generateReasoning - now using simple generic reasoning
 
 	/**
 	 * Generate cache key for a symbol

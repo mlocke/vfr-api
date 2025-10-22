@@ -233,8 +233,9 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 	const esdEnabled = await toggleService.isEarlySignalEnabled();
 	const sentimentFusionEnabled = await toggleService.isSentimentFusionEnabled();
 	const smartMoneyFlowEnabled = await toggleService.isSmartMoneyFlowEnabled();
+	const volatilityPredictionEnabled = await toggleService.isVolatilityPredictionEnabled();
 
-	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, Sentiment-Fusion Toggle: ${sentimentFusionEnabled}, Smart-Money-Flow Toggle: ${smartMoneyFlowEnabled}, ML Enhancement: ${include_ml || false}`);
+	console.log(`🔍 /api/stocks/analyze - ESD Toggle: ${esdEnabled}, Sentiment-Fusion Toggle: ${sentimentFusionEnabled}, Smart-Money-Flow Toggle: ${smartMoneyFlowEnabled}, Volatility-Prediction Toggle: ${volatilityPredictionEnabled}, ML Enhancement: ${include_ml || false}`);
 
 	return {
 		scope,
@@ -246,6 +247,7 @@ async function convertToSelectionRequest(body: any): Promise<SelectionRequest> {
 			includeEarlySignal: esdEnabled,
 			includeSentimentFusion: sentimentFusionEnabled,
 			includeSmartMoneyFlow: smartMoneyFlowEnabled,
+			includeVolatilityPrediction: volatilityPredictionEnabled,
 			riskTolerance: "moderate",
 			timeout: config?.timeout || 90000, // 90 seconds to accommodate multiple slow options API calls (~45s total) plus other data fetching
 			// ML Enhancement Options (Phase 4.1)

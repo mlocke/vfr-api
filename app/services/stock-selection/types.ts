@@ -47,6 +47,7 @@ export interface SelectionOptions {
 	includePricePrediction?: boolean; // Include Price Prediction (ML price movement predictions)
 	includeSentimentFusion?: boolean; // Include Sentiment-Fusion (ML 3-day price direction predictions)
 	includeSmartMoneyFlow?: boolean; // Include Smart Money Flow (institutional/insider activity analysis)
+	includeVolatilityPrediction?: boolean; // Include Volatility Prediction (21-day forward realized volatility for risk management)
 	riskTolerance?: "conservative" | "moderate" | "aggressive";
 
 	// Data preferences

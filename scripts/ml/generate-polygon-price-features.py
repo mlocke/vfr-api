@@ -2,7 +2,7 @@
 """
 Generate Price Features for Polygon News Dataset
 
-Generates 43 price/technical features for each (ticker, date) pair from the
+Generates 22 price/technical features for each (ticker, date) pair from the
 sentiment-scored news dataset.
 
 CRITICAL OPTIMIZATION: Fetches historical price data ONCE per ticker and caches
@@ -12,19 +12,15 @@ Input:
   - data/training/polygon_news_with_sentiment.csv (118K articles with sentiment)
 
 Output:
-  - data/training/polygon_price_features.csv (unique ticker-date pairs with 43 features + label)
+  - data/training/polygon_price_features.csv (unique ticker-date pairs with 22 features + label)
 
 Cache:
   - data/cache/polygon_prices/ (historical OHLCV data per ticker)
 
-Features (43 total):
-  - Volume (6): ratios, spikes, trends, acceleration, dark pool (placeholder)
-  - Technical (10): RSI, MACD, Bollinger, Stochastic, ADX, ATR, EMAs, Williams %R
+Features (22 total - NO PLACEHOLDERS):
+  - Technical (9): RSI, MACD, Bollinger, Stochastic, ATR, EMAs, Williams %R
+  - Volume (5): ratios, spikes, trends, acceleration
   - Price action (8): momentum, acceleration, gaps, volatility, overnight
-  - Options (7): put/call ratio, unusual activity, IV rank (placeholders)
-  - Institutional (4): net flow, block trades, insider buying (placeholders)
-  - Sentiment (4): news sentiment, social, analyst targets (from news data)
-  - Macro (4): sector/SPY momentum, VIX, correlation (placeholders)
 
 Label:
   - UP: price change > 2% in next 7 trading days
@@ -84,9 +80,6 @@ def calculate_technical_features(df):
     true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
     features['atr_14'] = true_range.rolling(14).mean()
 
-    # ADX (simplified placeholder)
-    features['adx_14'] = 25
-
     # Stochastic K%
     low_14 = df['Low'].rolling(14).min()
     high_14 = df['High'].rolling(14).max()
@@ -111,9 +104,6 @@ def calculate_volume_features(df):
 
     # Volume acceleration
     features['volume_acceleration'] = df['Volume'].diff().rolling(5).mean()
-
-    # Dark pool activity (placeholder)
-    features['dark_pool_ratio'] = 0.3
 
     return pd.DataFrame(features)
 
@@ -142,31 +132,6 @@ def calculate_price_action_features(df):
     features['intraday_range'] = (df['High'] - df['Low']) / df['Open']
 
     return pd.DataFrame(features)
-
-def calculate_placeholder_features():
-    """Placeholder features for options, institutional, macro"""
-    return {
-        # Options flow (7 features) - placeholders
-        'options_put_call_ratio': 0.8,
-        'options_unusual_activity': 0.0,
-        'options_iv_rank': 50.0,
-        'options_call_volume': 1000,
-        'options_put_volume': 800,
-        'options_oi_put_call': 0.85,
-        'options_gamma_exposure': 0.0,
-
-        # Institutional (4 features) - placeholders
-        'institutional_net_flow': 0.0,
-        'institutional_block_trades': 0,
-        'institutional_ownership_pct': 0.7,
-        'insider_buying_ratio': 0.5,
-
-        # Macro (4 features) - placeholders
-        'sector_momentum': 0.0,
-        'spy_correlation': 0.5,
-        'vix_level': 20.0,
-        'sector_relative_strength': 0.0,
-    }
 
 def get_historical_prices(ticker, start_date, end_date, cache_dir='data/cache/polygon_prices'):
     """Fetch historical prices with disk caching"""
@@ -359,9 +324,6 @@ def generate_polygon_price_features():
             # Add price action features
             for col in price_features.columns:
                 features[col] = price_features.iloc[target_idx][col]
-
-            # Add placeholder features
-            features.update(calculate_placeholder_features())
 
             # Generate label (use normalized dataframe with normalized target_date)
             features['label'] = generate_label(df_prices_normalized, target_date, lookahead_days=7, threshold=0.02)

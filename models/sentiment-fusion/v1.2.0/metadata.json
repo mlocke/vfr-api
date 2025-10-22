@@ -1,39 +1,116 @@
 {
-  "model_name": "ProsusAI/finbert",
-  "version": "1.2.0",
-  "improvements": [
-    "Increased epochs from 3 to 5",
-    "Increased learning rate from 2e-5 to 3e-5",
-    "Added class weighting for imbalance (CRITICAL FIX)",
-    "No filtering - use all 1680 training examples"
+  "model_version": "v1.2.0",
+  "model_type": "sentiment-fusion",
+  "algorithm": "LightGBM",
+  "objective": "multiclass",
+  "num_classes": 3,
+  "classes": [
+    "DOWN",
+    "NEUTRAL",
+    "UP"
   ],
-  "training_date": "2025-10-08T21:36:00.287980",
-  "training_duration_hours": 0.15,
-  "num_train_examples": 1680,
-  "num_val_examples": 360,
-  "class_weights": {
-    "BEARISH": 2.231075697211155,
-    "NEUTRAL": 0.49733570159857904,
-    "BULLISH": 1.8481848184818481
+  "training_date": "2025-10-21T10:29:23.631330",
+  "training_examples": 34828,
+  "validation_examples": 3823,
+  "num_features": 29,
+  "feature_names": [
+    "sentiment_negative",
+    "sentiment_neutral",
+    "sentiment_positive",
+    "sentiment_score",
+    "rsi_14",
+    "ema_20",
+    "sma_50",
+    "ema_20_distance",
+    "sma_50_distance",
+    "bollinger_position",
+    "macd_signal",
+    "macd_histogram",
+    "atr_14",
+    "stochastic_k",
+    "volume_ratio_5d",
+    "volume_spike",
+    "relative_volume",
+    "volume_trend",
+    "volume_acceleration",
+    "price_momentum_5d",
+    "price_momentum_10d",
+    "price_momentum_20d",
+    "price_acceleration",
+    "gap_size",
+    "volatility_20d",
+    "overnight_return",
+    "intraday_range",
+    "williams_r",
+    "roc_10"
+  ],
+  "feature_categories": {
+    "sentiment": 4,
+    "price_technical": 25
   },
-  "hyperparameters": {
-    "epochs": 5,
-    "batch_size": 16,
-    "learning_rate": 3e-05,
-    "max_length": 512
+  "improvements_over_v1_1": [
+    "Fresh data through Oct 23, 2025",
+    "Updated market conditions",
+    "Maintained class weight balancing",
+    "Improved early stopping"
+  ],
+  "performance": {
+    "validation_accuracy": 0.44441538059115876,
+    "best_iteration": 497,
+    "total_iterations": 1000
   },
-  "validation_metrics": {
-    "accuracy": 0.46944444444444444,
-    "f1_score": 0.4961836478456527,
-    "precision": 0.5368458085124753,
-    "recall": 0.46944444444444444,
-    "bearish_f1": 0.18333333333333332,
-    "neutral_f1": 0.6376146788990825,
-    "bullish_f1": 0.23170731707317074
+  "comparison_to_v1_1": {
+    "v1_1_accuracy": 0.538,
+    "v1_2_accuracy": 0.44441538059115876,
+    "improvement": -0.09358461940884127
   },
-  "label_mapping": {
-    "0": "BEARISH",
-    "1": "NEUTRAL",
-    "2": "BULLISH"
-  }
+  "label_distribution": {
+    "train": {
+      "DOWN": 9144,
+      "NEUTRAL": 13466,
+      "UP": 12218
+    }
+  },
+  "top_features": [
+    {
+      "feature": "volatility_20d",
+      "importance": 2684
+    },
+    {
+      "feature": "atr_14",
+      "importance": 2502
+    },
+    {
+      "feature": "sma_50",
+      "importance": 2167
+    },
+    {
+      "feature": "ema_20",
+      "importance": 2126
+    },
+    {
+      "feature": "sma_50_distance",
+      "importance": 2043
+    },
+    {
+      "feature": "macd_signal",
+      "importance": 1926
+    },
+    {
+      "feature": "volume_trend",
+      "importance": 1911
+    },
+    {
+      "feature": "intraday_range",
+      "importance": 1910
+    },
+    {
+      "feature": "price_momentum_5d",
+      "importance": 1876
+    },
+    {
+      "feature": "volume_acceleration",
+      "importance": 1861
+    }
+  ]
 }

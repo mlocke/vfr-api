@@ -102,6 +102,7 @@ export interface EnsemblePredictionRequest {
 	horizon?: MLPredictionHorizon;
 	features?: MLFeatureVector;
 	confidenceThreshold?: number;
+	progressTracker?: any; // ProgressTracker instance for real-time updates
 }
 
 export interface EnsemblePredictionResult {
@@ -515,6 +516,15 @@ export class RealTimePredictionEngine {
 				try {
 					this.logger.debug(`[predictEnsemble] Running ${model.modelName} v${model.modelVersion}`);
 
+					// Notify progress tracker for this model
+					if (request.progressTracker) {
+						if (model.modelName === 'volatility-prediction') {
+							request.progressTracker.startStage('volatility_prediction', 'Predicting volatility');
+						} else if (model.modelName === 'smart-money-flow') {
+							request.progressTracker.startStage('smart_money_flow', 'Analyzing institutional activity');
+						}
+					}
+
 					// Extract model-specific features
 					const modelFeatures = await this.getModelSpecificFeatures(model.modelName, symbol);
 					if (!modelFeatures) {
@@ -564,6 +574,15 @@ export class RealTimePredictionEngine {
 					};
 
 					this.logger.info(`[predictEnsemble] ${model.modelName}: ${signal} (${(prediction.confidence * 100).toFixed(1)}% confident)`);
+
+					// Complete progress stage for this model
+					if (request.progressTracker) {
+						if (model.modelName === 'volatility-prediction') {
+							request.progressTracker.completeStage('volatility_prediction', `Volatility: ${signal}`);
+						} else if (model.modelName === 'smart-money-flow') {
+							request.progressTracker.completeStage('smart_money_flow', `Smart Money: ${signal}`);
+						}
+					}
 
 					return vote;
 				} catch (error) {

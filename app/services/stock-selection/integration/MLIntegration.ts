@@ -21,6 +21,7 @@ export interface MLPredictions {
 	pricePrediction?: PricePrediction;
 	sentimentFusion?: SentimentFusionPrediction;
 	smartMoneyFlow?: any;
+	volatilityPrediction?: any; // Volatility prediction for risk management
 }
 
 /**
@@ -69,6 +70,13 @@ export class MLIntegration {
 		// It should run whenever the toggle is enabled, regardless of include_ml
 		if (options?.includeSmartMoneyFlow) {
 			predictions.smartMoneyFlow = await this.getSmartMoneyFlow(symbol, progressTracker);
+		}
+
+		// Volatility Prediction - Risk management and volatility forecasting
+		// NOTE: Volatility Prediction runs independently like Smart Money Flow
+		// It should run whenever the toggle is enabled, regardless of include_ml
+		if (options?.includeVolatilityPrediction) {
+			predictions.volatilityPrediction = await this.getVolatilityPrediction(symbol, progressTracker);
 		}
 
 		return predictions;
@@ -191,6 +199,55 @@ export class MLIntegration {
 				progressTracker?.completeStage("smart_money_flow", "Smart Money Flow unavailable (no data)");
 			} else {
 				progressTracker?.completeStage("smart_money_flow", "Smart Money Flow completed - analysis failed");
+			}
+			return undefined;
+		}
+	}
+
+	/**
+	 * Get Volatility Prediction
+	 * 21-day forward realized volatility prediction for risk management
+	 */
+	async getVolatilityPrediction(symbol: string, progressTracker?: ProgressTracker): Promise<any | undefined> {
+		progressTracker?.startStage("volatility_prediction", `Predicting volatility for ${symbol}...`);
+		try {
+			console.log(`🚀 Starting Volatility Prediction for ${symbol}...`);
+			const { VolatilityPredictionService } = await import("../../ml/volatility-prediction/VolatilityPredictionService");
+			const volatilityService = VolatilityPredictionService.getInstance();
+
+			// Note: VolatilityPredictionService requires features, but we'll handle that gracefully
+			// For now, it will return null if features aren't available
+			const prediction = await volatilityService.predict(symbol).catch(err => {
+				// If feature extraction not implemented, gracefully handle
+				if (err.message.includes('Feature extraction not yet implemented')) {
+					console.warn(`⚠️ Volatility features not available for ${symbol}`);
+					return null;
+				}
+				throw err;
+			});
+
+			console.log(`📊 Volatility Prediction raw result for ${symbol}:`, prediction);
+
+			if (prediction) {
+				console.log(
+					`🎯 Volatility Prediction completed for ${symbol}: ${prediction.predicted_volatility.toFixed(1)}% (${prediction.confidence_level} confidence, ${prediction.risk_category} risk)`
+				);
+				progressTracker?.completeStage("volatility_prediction", `Volatility Prediction completed for ${symbol}`);
+				return prediction;
+			} else {
+				console.warn(`⚠️ Volatility Prediction returned null for ${symbol}`);
+				progressTracker?.completeStage("volatility_prediction", "Volatility Prediction completed - features unavailable");
+				return undefined;
+			}
+		} catch (error) {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			console.error(`❌ Volatility Prediction failed for ${symbol}:`, errorMsg);
+
+			// Check if it's a feature availability issue
+			if (errorMsg.includes('features')) {
+				progressTracker?.completeStage("volatility_prediction", "Volatility Prediction unavailable (no features)");
+			} else {
+				progressTracker?.completeStage("volatility_prediction", "Volatility Prediction completed - analysis failed");
 			}
 			return undefined;
 		}

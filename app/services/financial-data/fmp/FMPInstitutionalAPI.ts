@@ -451,11 +451,11 @@ export class FMPInstitutionalAPI extends BaseFinancialDataProvider {
 			}
 
 			if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-				const error = new Error(
-					"No price target data available from Financial Modeling Prep API"
+				this.errorHandler.logger.debug(
+					`Price target consensus not available for ${symbol}, trying fallback`
 				);
-				if (this.throwErrors) throw error;
-				return null;
+				// Try fallback method using rating changes
+				return await this.getPriceTargetsFromRatingChanges(symbol);
 			}
 
 			const target = response.data[0];
@@ -480,6 +480,56 @@ export class FMPInstitutionalAPI extends BaseFinancialDataProvider {
 				symbol,
 			});
 			if (this.throwErrors) throw error;
+			// Try fallback on error
+			return await this.getPriceTargetsFromRatingChanges(symbol);
+		}
+	}
+
+	/**
+	 * Fallback: Derive price targets from recent analyst rating changes
+	 * Used when the price-target-consensus endpoint returns no data
+	 */
+	private async getPriceTargetsFromRatingChanges(symbol: string): Promise<PriceTarget | null> {
+		try {
+			const recentChanges = await this.getRecentRatingChanges(symbol, 20);
+
+			if (!recentChanges || recentChanges.length === 0) {
+				return null;
+			}
+
+			// Extract price targets from recent analyst changes
+			const priceTargets = recentChanges
+				.filter(change => change.priceTarget && change.priceTarget > 0)
+				.map(change => change.priceTarget!);
+
+			if (priceTargets.length === 0) {
+				return null;
+			}
+
+			const targetConsensus = priceTargets.reduce((a, b) => a + b) / priceTargets.length;
+			const targetHigh = Math.max(...priceTargets);
+			const targetLow = Math.min(...priceTargets);
+
+			// Get current price from most recent change
+			const currentPrice = recentChanges.find(c => c.priceWhenPosted)?.priceWhenPosted;
+
+			const upside = currentPrice
+				? ((targetConsensus - currentPrice) / currentPrice) * 100
+				: undefined;
+
+			return {
+				symbol: symbol.toUpperCase(),
+				targetHigh,
+				targetLow,
+				targetConsensus,
+				targetMedian: targetConsensus,
+				currentPrice,
+				upside,
+				timestamp: Date.now(),
+				source: "fmp_derived",
+			};
+		} catch (error) {
+			this.errorHandler.logger.debug(`Failed to derive price targets for ${symbol}`, { error });
 			return null;
 		}
 	}

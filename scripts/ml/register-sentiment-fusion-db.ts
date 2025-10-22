@@ -9,7 +9,7 @@ import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const MODEL_DIR = path.join(process.cwd(), 'models/sentiment-fusion/v1.1.0');
+const MODEL_DIR = path.join(process.cwd(), 'models/sentiment-fusion/v1.5.0');
 const METADATA_FILE = path.join(MODEL_DIR, 'metadata.json');
 const TEST_EVAL_FILE = path.join(MODEL_DIR, 'test_evaluation.json');
 
@@ -21,7 +21,7 @@ async function registerModel() {
     const metadata = JSON.parse(fs.readFileSync(METADATA_FILE, 'utf-8'));
     const testEval = JSON.parse(fs.readFileSync(TEST_EVAL_FILE, 'utf-8'));
 
-    console.log('📦 Registering sentiment-fusion model v1.1.0...');
+    console.log('📦 Registering sentiment-fusion model v1.5.0...');
     console.log(`📁 Model directory: ${MODEL_DIR}`);
     console.log(`✓ Validation accuracy: ${metadata.performance.validation_accuracy}`);
     console.log(`✓ Test accuracy: ${testEval.accuracy}`);
@@ -29,7 +29,7 @@ async function registerModel() {
     // Check if model already exists
     const existing = await pool.query(
       'SELECT * FROM ml_models WHERE model_name = $1 AND model_version = $2',
-      ['sentiment-fusion', '1.1.0']
+      ['sentiment-fusion', '1.5.0']
     );
 
     if (existing.rows.length > 0) {
@@ -49,7 +49,7 @@ async function registerModel() {
         testEval.accuracy,
         'deployed',
         'sentiment-fusion',
-        '1.1.0'
+        '1.5.0'
       ]);
 
       console.log('✅ Model updated successfully!');
@@ -73,11 +73,11 @@ async function registerModel() {
         RETURNING *
       `, [
         'sentiment-fusion',
-        '1.1.0',
+        '1.5.0',
         'lightgbm',
         'direction_classification',
         'price_direction',
-        '1w',
+        '3d',
         testEval.accuracy,
         testEval.accuracy,
         'premium',

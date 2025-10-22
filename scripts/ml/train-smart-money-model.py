@@ -21,10 +21,12 @@ from datetime import datetime
 def load_data():
     """Load train and validation datasets"""
 
-    train_path = "data/training/smart-money-flow/train.csv"
-    val_path = "data/training/smart-money-flow/val.csv"
+    # Use comprehensive dataset with all available features
+    train_path = "data/training/smart-money-flow-comprehensive/train.csv"
+    val_path = "data/training/smart-money-flow-comprehensive/val.csv"
 
     print(f"📖 Loading datasets...")
+    print(f"   Using comprehensive dataset with all features")
 
     if not Path(train_path).exists():
         print(f"❌ Train file not found: {train_path}")
@@ -75,15 +77,29 @@ def normalize_features(X_train, X_val):
     return X_train_norm, X_val_norm, mean.tolist(), std.tolist()
 
 def train_model(X_train, y_train, X_val, y_val):
-    """Train LightGBM model with early stopping"""
+    """Train LightGBM model with early stopping and class balancing"""
 
     print(f"\n🎯 Training LightGBM model...")
+
+    # Calculate class weights for imbalanced dataset
+    unique, counts = np.unique(y_train, return_counts=True)
+    class_counts = dict(zip(unique, counts))
+
+    # Calculate scale_pos_weight (ratio of negative to positive)
+    neg_count = class_counts.get(0, 1)
+    pos_count = class_counts.get(1, 1)
+    scale_pos_weight = neg_count / pos_count
+
+    print(f"\n⚖️  Class Balance:")
+    print(f"   Negative (0): {neg_count:,} ({neg_count/(neg_count+pos_count)*100:.1f}%)")
+    print(f"   Positive (1): {pos_count:,} ({pos_count/(neg_count+pos_count)*100:.1f}%)")
+    print(f"   Scale pos weight: {scale_pos_weight:.2f}")
 
     # Create LightGBM datasets
     train_data = lgb.Dataset(X_train, label=y_train)
     val_data = lgb.Dataset(X_val, label=y_val, reference=train_data)
 
-    # Model hyperparameters
+    # Model hyperparameters with class balancing
     params = {
         'objective': 'binary',
         'metric': 'auc',
@@ -98,7 +114,9 @@ def train_model(X_train, y_train, X_val, y_val):
         'lambda_l1': 0.1,
         'lambda_l2': 0.1,
         'verbose': 1,
-        'force_col_wise': True
+        'force_col_wise': True,
+        # CLASS BALANCING PARAMETER
+        'scale_pos_weight': scale_pos_weight  # Weight positive class more heavily to handle imbalance
     }
 
     # Train with early stopping
@@ -172,7 +190,7 @@ def get_feature_importance(model, feature_cols):
 def save_model(model, mean, std, feature_cols, train_metrics, val_metrics, feature_importance):
     """Save model, normalizer, and metadata"""
 
-    output_dir = Path("models/smart-money-flow/v1.0.0")
+    output_dir = Path("models/smart-money-flow/v2.0.0")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n💾 Saving model...")
@@ -197,7 +215,7 @@ def save_model(model, mean, std, feature_cols, train_metrics, val_metrics, featu
     metadata_path = output_dir / "metadata.json"
     metadata = {
         'model_type': 'LightGBM Binary Classifier',
-        'model_version': 'v1.0.0',
+        'model_version': 'v2.0.0',
         'trained_at': datetime.now().isoformat(),
         'num_features': len(feature_cols),
         'features': feature_cols,
@@ -211,7 +229,8 @@ def save_model(model, mean, std, feature_cols, train_metrics, val_metrics, featu
             'learning_rate': 0.05,
             'max_depth': 6,
             'lambda_l1': 0.1,
-            'lambda_l2': 0.1
+            'lambda_l2': 0.1,
+            'scale_pos_weight': 'dynamic (calculated from class distribution)'
         },
         'best_iteration': model.best_iteration,
         'total_iterations': model.num_trees()

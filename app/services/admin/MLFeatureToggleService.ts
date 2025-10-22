@@ -69,6 +69,12 @@ export class MLFeatureToggleService {
 			description: "Institutional & insider trading activity analysis with congressional trades",
 			defaultState: true, // Production model (v3.0.0, 27 features, deployed Oct 13, 2025) - Uses FMP Starter API
 		},
+		VOLATILITY_PREDICTION: {
+			id: "volatility_prediction",
+			name: "Volatility Prediction",
+			description: "21-day forward realized volatility prediction for risk management",
+			defaultState: true, // Production model (v1.0.0, R²=72.3%, deployed Oct 19, 2025)
+		},
 	};
 
 	// Cache keys
@@ -316,6 +322,24 @@ export class MLFeatureToggleService {
 			return status.enabled;
 		} catch (error) {
 			console.error("Failed to check Smart Money Flow status:", error);
+			// Fail safe: return false if unable to determine status
+			return false;
+		}
+	}
+
+	/**
+	 * Check if Volatility Prediction is enabled
+	 * This is used by the stock selection API for risk management and volatility forecasting
+	 */
+	public async isVolatilityPredictionEnabled(): Promise<boolean> {
+		try {
+			await this.ensureInitialized();
+			const status = await this.getFeatureStatus(
+				MLFeatureToggleService.FEATURES.VOLATILITY_PREDICTION.id
+			);
+			return status.enabled;
+		} catch (error) {
+			console.error("Failed to check Volatility Prediction status:", error);
 			// Fail safe: return false if unable to determine status
 			return false;
 		}
