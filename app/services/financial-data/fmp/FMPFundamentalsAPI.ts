@@ -274,27 +274,19 @@ export class FMPFundamentalsAPI extends BaseFinancialDataProvider {
 			return null;
 		}
 
-		if (ratiosResponse.success) {
-			const ratiosValidation = securityValidator.validateApiResponse(ratiosResponse.data, []);
-			if (!ratiosValidation.isValid) {
-				this.errorHandler.logger.warn("Invalid ratios response structure", {
-					errors: ratiosValidation.errors,
-					symbol: sanitizedSymbol,
-				});
-			}
+		// FMP returns arrays of objects - validate array structure
+		if (ratiosResponse.success && !Array.isArray(ratiosResponse.data)) {
+			this.errorHandler.logger.warn("Unexpected ratios response format - expected array", {
+				symbol: sanitizedSymbol,
+				dataType: typeof ratiosResponse.data,
+			});
 		}
 
-		if (metricsResponse.success) {
-			const metricsValidation = securityValidator.validateApiResponse(
-				metricsResponse.data,
-				[]
-			);
-			if (!metricsValidation.isValid) {
-				this.errorHandler.logger.warn("Invalid metrics response structure", {
-					errors: metricsValidation.errors,
-					symbol: sanitizedSymbol,
-				});
-			}
+		if (metricsResponse.success && !Array.isArray(metricsResponse.data)) {
+			this.errorHandler.logger.warn("Unexpected metrics response format - expected array", {
+				symbol: sanitizedSymbol,
+				dataType: typeof metricsResponse.data,
+			});
 		}
 
 		const ratiosData =

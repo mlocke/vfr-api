@@ -19,6 +19,7 @@ import csv
 import os
 import time
 import argparse
+import signal
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -32,6 +33,11 @@ BASE_URL = 'https://eodhd.com/api/mp/unicornbay'  # Marketplace endpoint!
 OUTPUT_DIR = './data/eodhd_options'
 RATE_LIMIT = 10000  # Daily limit in requests (100,000 credits ÷ 10 credits per options call)
 DELAY_MS = 0.15  # 150ms delay between requests (~400 req/min, well under 1000/min limit)
+
+# Timeout settings to prevent stuck processes
+MAX_TICKER_RUNTIME_SECONDS = 600  # 10 minutes per ticker max
+MAX_TOTAL_RUNTIME_SECONDS = 7200  # 2 hours total max
+MAX_PAGES_PER_TICKER = 500  # Stop if a ticker has > 500k contracts (500 pages × 1000)
 
 
 class EODHDOptionsDatasetBuilder:
@@ -76,12 +82,24 @@ class EODHDOptionsDatasetBuilder:
         all_options = []
         page = 1
         total_contracts = 0
+        ticker_start_time = time.time()
 
         try:
             while True:
                 # Check rate limit before each page
                 if self.api_call_count >= RATE_LIMIT * 0.95:
                     print(f"  ⚠️  Rate limit approaching, stopping pagination for {ticker}")
+                    break
+
+                # Check per-ticker timeout
+                ticker_elapsed = time.time() - ticker_start_time
+                if ticker_elapsed > MAX_TICKER_RUNTIME_SECONDS:
+                    print(f"  ⏱️  {ticker}: Timeout after {ticker_elapsed:.1f}s ({len(all_options):,} contracts saved)")
+                    break
+
+                # Check page limit (prevents infinite pagination loops)
+                if page > MAX_PAGES_PER_TICKER:
+                    print(f"  ⚠️  {ticker}: Reached max page limit ({MAX_PAGES_PER_TICKER} pages, {len(all_options):,} contracts)")
                     break
 
                 # Use marketplace endpoint
@@ -197,6 +215,8 @@ class EODHDOptionsDatasetBuilder:
         print(f'\n📊 Output directory: {OUTPUT_DIR}')
         print(f'📁 Format: {format}')
         print(f'⚡ Daily limit: {RATE_LIMIT:,} API calls')
+        print(f'⏱️  Max runtime: {MAX_TOTAL_RUNTIME_SECONDS/3600:.1f} hours')
+        print(f'⏱️  Max per ticker: {MAX_TICKER_RUNTIME_SECONDS/60:.0f} minutes')
         print()
 
         # Get tickers
@@ -207,6 +227,12 @@ class EODHDOptionsDatasetBuilder:
 
         for i, ticker in enumerate(tickers):
             print(f'\n[{i+1}/{len(tickers)}] Processing {ticker}...')
+
+            # Check total runtime timeout
+            total_elapsed = time.time() - self.start_time
+            if total_elapsed > MAX_TOTAL_RUNTIME_SECONDS:
+                print(f'\n⏱️  Total runtime timeout ({total_elapsed/3600:.1f} hours). Stopping gracefully...')
+                break
 
             # Check rate limit
             if self.api_call_count >= RATE_LIMIT * 0.95:

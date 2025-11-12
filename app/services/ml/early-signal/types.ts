@@ -1,65 +1,47 @@
 /**
- * Type Definitions for ML Early Signal Detection
+ * Type Definitions for ML Early Signal Detection v2.0
  *
- * Task 1.4: Create Type Definitions
- * Estimated Time: 30 minutes
  * Purpose: TypeScript interfaces for ML data structures
+ * Model Version: v2.0.0 - "Macro + Fundamental Catalyst" Model
+ * Feature Count: 22 (reduced from 34 in v1.x)
+ *
+ * Design Philosophy: ZERO overlap with other ML models
+ * - No technical indicators (used by Price Prediction, Volatility)
+ * - No price/volume momentum (used by Price Prediction, Sentiment Fusion)
+ * - Focus: Macroeconomic levels, social media, fundamental catalysts, SEC activity
  */
 
 export interface FeatureVector {
-	// Momentum features (3)
-	price_change_5d: number;
-	price_change_10d: number;
-	price_change_20d: number;
+	// Macroeconomic LEVELS (5) - Absolute values, not changes
+	// Using levels ensures natural variance over time (e.g., Fed rate 0.08% → 5.5%)
+	fed_rate_level: number;             // Federal Funds Rate level (%)
+	unemployment_rate_level: number;    // Unemployment rate level (%)
+	cpi_level: number;                  // Consumer Price Index level (index value)
+	gdp_level: number;                  // GDP level (billions USD)
+	treasury_yield_10y_level: number;   // 10-Year Treasury yield level (%)
 
-	// Volume features (2)
-	volume_ratio: number;
-	volume_trend: number;
+	// Social Media Momentum (6) - StockTwits & Twitter metrics
+	stocktwits_24h_change: number;           // 24h sentiment change
+	stocktwits_hourly_momentum: number;      // Hourly momentum (acceleration)
+	stocktwits_7d_trend: number;             // 7-day trend (linear regression slope)
+	twitter_24h_change: number;              // 24h sentiment change
+	twitter_hourly_momentum: number;         // Hourly momentum (acceleration)
+	twitter_7d_trend: number;                // 7-day trend (linear regression slope)
 
-	// Sentiment delta features (3)
-	sentiment_news_delta: number;
-	sentiment_reddit_accel: number;
-	sentiment_options_shift: number;
+	// Fundamental Catalysts (8) - Earnings, analyst activity, market metrics
+	earnings_surprise_pct: number;           // Earnings surprise percentage
+	revenue_growth_accel: number;            // Revenue growth acceleration (QoQ)
+	analyst_coverage_change: number;         // Change in analyst coverage
+	analyst_price_target_change_pct: number; // Analyst price target change %
+	earnings_whisper_vs_estimate: number;    // Whisper number vs estimate
+	short_interest_change: number;           // Short interest change
+	dividend_yield_change: number;           // Dividend yield change (YoY)
+	market_beta_30d: number;                 // 30-day beta vs SPY
 
-	// Social sentiment features (6)
-	social_stocktwits_24h_change: number;
-	social_stocktwits_hourly_momentum: number;
-	social_stocktwits_7d_trend: number;
-	social_twitter_24h_change: number;
-	social_twitter_hourly_momentum: number;
-	social_twitter_7d_trend: number;
-
-	// Fundamental features (3)
-	earnings_surprise: number;
-	revenue_growth_accel: number;
-	analyst_coverage_change: number;
-
-	// Technical features (2)
-	rsi_momentum: number;
-	macd_histogram_trend: number;
-
-	// Government/Macro features (5)
-	fed_rate_change_30d: number;
-	unemployment_rate_change: number;
-	cpi_inflation_rate: number;
-	gdp_growth_rate: number;
-	treasury_yield_10y: number;
-
-	// SEC filing features (3)
-	sec_insider_buying_ratio: number;
-	sec_institutional_ownership_change: number;
-	sec_8k_filing_count_30d: number;
-
-	// FMP Premium features (4)
-	analyst_price_target_change: number;
-	earnings_whisper_vs_estimate: number;
-	short_interest_change: number;
-	institutional_ownership_momentum: number;
-
-	// Additional market features (3)
-	options_put_call_ratio_change: number;
-	dividend_yield_change: number;
-	market_beta_30d: number;
+	// SEC/Regulatory Activity (3) - Filing and ownership changes
+	sec_8k_filing_count_30d: number;         // Count of 8-K filings in 30 days
+	insider_buying_ratio: number;            // Insider buy ratio (buys / total)
+	institutional_ownership_change: number;  // Institutional ownership change (QoQ)
 }
 
 export interface TrainingExample {
@@ -70,14 +52,16 @@ export interface TrainingExample {
 }
 
 export interface EarlySignalPrediction {
-	upgrade_likely: boolean;
-	downgrade_likely: boolean;
-	confidence: number; // 0.0-1.0
+	predicted_class: "UP" | "NEUTRAL" | "DOWN"; // 3-class prediction
+	upgrade_likely: boolean;                     // Derived from predicted_class === "UP"
+	downgrade_likely: boolean;                   // Derived from predicted_class === "DOWN"
+	confidence: number;                          // 0.0-1.0
+	class_probabilities: [number, number, number]; // [DOWN, NEUTRAL, UP] probabilities
 	horizon: "2_weeks";
 	reasoning: string[];
 	feature_importance: Record<string, number>;
 	prediction_timestamp: number;
-	model_version: string;
+	model_version: string; // "v2.0.0"
 }
 
 export interface AnalystRatings {
@@ -143,15 +127,53 @@ export interface TechnicalData {
 }
 
 /**
- * Macroeconomic data for feature extraction
- * Time-aligned with 20-day stock analysis window (matching price_change_20d)
+ * Macroeconomic data for feature extraction (v2.0)
+ * Uses ABSOLUTE LEVELS instead of changes/rates to ensure natural variance
  */
 export interface MacroeconomicData {
-	fedRateChange20d: number | null;
-	unemploymentRateChange: number | null;
-	cpiInflationRate: number | null;
-	gdpGrowthRate: number | null;
-	treasuryYieldChange: number | null;
+	fedRateLevel: number | null;           // Federal Funds Rate level (%)
+	unemploymentRateLevel: number | null;  // Unemployment rate level (%)
+	cpiLevel: number | null;               // CPI index level
+	gdpLevel: number | null;               // GDP level (billions USD)
+	treasuryYieldLevel: number | null;     // 10Y Treasury yield level (%)
+}
+
+/**
+ * Social media momentum data (v2.0)
+ * Captures StockTwits and Twitter sentiment trends
+ */
+export interface SocialMediaMomentum {
+	stocktwits_24h_change: number | null;
+	stocktwits_hourly_momentum: number | null;
+	stocktwits_7d_trend: number | null;
+	twitter_24h_change: number | null;
+	twitter_hourly_momentum: number | null;
+	twitter_7d_trend: number | null;
+}
+
+/**
+ * Fundamental catalyst data (v2.0)
+ * Earnings, analyst activity, and market metrics
+ */
+export interface FundamentalCatalysts {
+	earningsSurprise: number | null;
+	revenueGrowthAccel: number | null;
+	analystCoverageChange: number | null;
+	analystPriceTargetChange: number | null;
+	earningsWhisperVsEstimate: number | null;
+	shortInterestChange: number | null;
+	dividendYieldChange: number | null;
+	marketBeta30d: number | null;
+}
+
+/**
+ * SEC/Regulatory activity data (v2.0)
+ * Filings and ownership changes
+ */
+export interface SECActivity {
+	sec8kFilingCount: number | null;
+	insiderBuyingRatio: number | null;
+	institutionalOwnershipChange: number | null;
 }
 
 /**

@@ -86,7 +86,10 @@
       "Bash(python3:*)",
       "Bash(launchctl list:*)",
       "Bash(xargs kill:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(export FINANCIAL_MODELING_PREP_API_KEY:*)",
+      "Bash(./setup-smart-money-cron.sh)",
+      "Bash(crontab:*)"
     ],
     "deny": [],
     "ask": []

@@ -125,10 +125,10 @@ export interface SmartMoneyFeatures {
 	hedgefund_exit_count: number;            // Number of hedge funds that exited
 	hedgefund_conviction_score: number;      // Weighted score (larger funds = higher weight)
 
-	// === ETF Holdings Features (3) ===
-	etf_ownership_pct: number;               // % held by ETFs
-	etf_flow_30d: number;                    // Net ETF buying/selling
-	etf_concentration: number;               // % held by top 5 ETFs
+	// === ETF Holdings Features (3) === REMOVED: No reliable data source
+	// etf_ownership_pct: number;               // % held by ETFs
+	// etf_flow_30d: number;                    // Net ETF buying/selling
+	// etf_concentration: number;               // % held by top 5 ETFs
 }
 
 /**

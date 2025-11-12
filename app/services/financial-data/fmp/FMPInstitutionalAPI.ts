@@ -619,6 +619,7 @@ export class FMPInstitutionalAPI extends BaseFinancialDataProvider {
 
 	/**
 	 * Get institutional ownership data (13F filings)
+	 * Tries v4 endpoint first, falls back to v3 if v4 requires premium subscription
 	 */
 	async getInstitutionalOwnership(
 		symbol: string,
@@ -641,29 +642,64 @@ export class FMPInstitutionalAPI extends BaseFinancialDataProvider {
 			this.validateApiKey();
 			const normalizedSymbol = this.normalizeSymbol(symbol);
 
-			const response = await this.makeRequest(
+			// Try v4 endpoint first (more features, requires premium)
+			const v4Response = await this.makeRequest(
 				`/institutional-ownership/symbol-ownership?symbol=${normalizedSymbol}&limit=${limit}`,
 				"v4"
 			);
 
-			if (!this.validateResponse(response, "array")) {
+			if (this.validateResponse(v4Response, "array") && v4Response.data.length > 0) {
+				const holders = v4Response.data.map((holding: any) => ({
+					managerName: holding.investorName || "",
+					managerId: holding.cik || "",
+					shares: parseInt(holding.shares?.toString().replace(/,/g, "")) || 0,
+					marketValue: parseFloat(holding.marketValue?.toString().replace(/,/g, "")) || 0,
+					percentOfShares: parseFloat(holding.weightPercent) || 0,
+					reportDate: holding.reportDate || "",
+					changeType: holding.changeType as
+						| "NEW"
+						| "ADDED"
+						| "REDUCED"
+						| "SOLD_OUT"
+						| undefined,
+					changePercent: parseFloat(holding.changePercent) || undefined,
+				}));
+
+				return {
+					symbol: normalizedSymbol,
+					institutionalHolders: holders,
+					timestamp: Date.now(),
+				};
+			}
+
+			// Fallback to v3 endpoint (works on all tiers)
+			this.errorHandler.logger.info(
+				`V4 institutional ownership unavailable for ${normalizedSymbol}, using v3 fallback`
+			);
+
+			const v3Response = await this.makeRequest(
+				`/institutional-holder/${normalizedSymbol}?limit=${limit}`,
+				"v3"
+			);
+
+			if (!this.validateResponse(v3Response, "array")) {
 				return null;
 			}
 
-			const holders = response.data.map((holding: any) => ({
-				managerName: holding.investorName || "",
+			// Map v3 response format to our standard format
+			const holders = v3Response.data.map((holding: any) => ({
+				managerName: holding.holder || "",
 				managerId: holding.cik || "",
 				shares: parseInt(holding.shares?.toString().replace(/,/g, "")) || 0,
-				marketValue: parseFloat(holding.marketValue?.toString().replace(/,/g, "")) || 0,
-				percentOfShares: parseFloat(holding.weightPercent) || 0,
-				reportDate: holding.reportDate || "",
-				changeType: holding.changeType as
-					| "NEW"
-					| "ADDED"
-					| "REDUCED"
-					| "SOLD_OUT"
-					| undefined,
-				changePercent: parseFloat(holding.changePercent) || undefined,
+				marketValue: 0, // v3 doesn't provide market value directly
+				percentOfShares: 0, // v3 doesn't provide percentage
+				reportDate: holding.dateReported || "",
+				changeType: holding.change > 0
+					? "ADDED"
+					: holding.change < 0
+						? "REDUCED"
+						: undefined,
+				changePercent: holding.change ? parseFloat(holding.change.toString()) : undefined,
 			}));
 
 			return {

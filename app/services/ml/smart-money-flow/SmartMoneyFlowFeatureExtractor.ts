@@ -105,13 +105,13 @@ export class SmartMoneyFlowFeatureExtractor {
 				insiderTrades,
 				institutionalHoldings,
 				congressionalTrades,
-				etfHoldings,
+				// etfHoldings, // REMOVED: No reliable ETF holdings data
 				currentPrice,
 			] = await Promise.all([
 				this.smartMoneyService.getInsiderTrading(symbol, date90dAgoStr, dateStr, 500),
 				this.smartMoneyService.getInstitutionalOwnership(symbol, 500),
 				this.smartMoneyService.getCongressionalTradesProxy(symbol, date90dAgoStr, dateStr),
-				this.smartMoneyService.getETFHoldingsProxy(symbol),
+				// this.smartMoneyService.getETFHoldingsProxy(symbol), // REMOVED
 				this.getCurrentPrice(symbol, date),
 			]);
 
@@ -144,15 +144,16 @@ export class SmartMoneyFlowFeatureExtractor {
 				date1qAgo
 			);
 
-			const etfFeatures = this.extractETFFeatures(etfHoldings, date, date30dAgo);
+			// ETF features REMOVED - no reliable data source
+		// const etfFeatures = this.extractETFFeatures(etfHoldings, date, date30dAgo);
 
-			// Combine all features
+			// Combine all features (24 features total, ETF features excluded)
 			const features: SmartMoneyFeatures = {
 				...insiderFeatures,
 				...institutionalFeatures,
 				...congressionalFeatures,
 				...hedgeFundFeatures,
-				...etfFeatures,
+				// ...etfFeatures, // REMOVED: 3 ETF features excluded
 			};
 
 			const duration = Date.now() - startTime;

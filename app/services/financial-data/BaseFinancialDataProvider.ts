@@ -52,7 +52,8 @@ export abstract class BaseFinancialDataProvider {
 	 */
 	protected validateResponse(
 		response: ApiResponse<any>,
-		expectedDataType: "array" | "object" = "array"
+		expectedDataType: "array" | "object" = "array",
+		allowEmpty: boolean = false
 	): boolean {
 		if (!response.success) {
 			const error = new Error(response.error || `${this.name} API request failed`);
@@ -61,8 +62,15 @@ export abstract class BaseFinancialDataProvider {
 		}
 
 		if (expectedDataType === "array") {
-			if (!response.data || !Array.isArray(response.data) || response.data.length === 0) {
-				const error = new Error(`Invalid response format from ${this.name} API`);
+			// Check if data exists and is an array
+			if (!response.data || !Array.isArray(response.data)) {
+				const error = new Error(`Invalid response format from ${this.name} API - expected array`);
+				if (this.throwErrors) throw error;
+				return false;
+			}
+			// Only reject empty arrays if allowEmpty is false
+			if (!allowEmpty && response.data.length === 0) {
+				const error = new Error(`Empty response from ${this.name} API`);
 				if (this.throwErrors) throw error;
 				return false;
 			}
